@@ -1,13 +1,22 @@
 {
-  "extends": "./tsconfig.json",
-  "include": ["vite.config.ts"],
-  "compilerOptions": {
-    "composite": true,
-    "strict": true,
-    "types": ["node"],
-    "lib": ["ES2022"],
-    "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "bundler"
-  }
+	"include": [
+		"vite.config.ts",
+		"vitest.config.ts",
+		"test/workerd/vitest.config.ts",
+		"scripts/**/*"
+	],
+	"compilerOptions": {
+		"composite": true,
+		"noEmit": true,
+		"tsBuildInfoFile": "./node_modules/.cache/tsconfig.node.tsbuildinfo",
+		"strict": true,
+		"skipLibCheck": true,
+		"verbatimModuleSyntax": true,
+		"allowImportingTsExtensions": true,
+		"lib": ["ES2023"],
+		"types": ["node"],
+		"target": "ES2023",
+		"module": "ESNext",
+		"moduleResolution": "bundler"
+	}
 }

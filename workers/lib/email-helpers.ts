@@ -1,7 +1,10 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
+import { formatQuotedDate } from "../../shared/dates";
+import { Folders } from "../../shared/folders";
 /**
  * Shared email helpers to eliminate duplication across API routes, MCP, and agent.
  *
@@ -9,10 +12,8 @@
  * threading, HTML utilities, and tool-logic (getFullEmail / getFullThread).
  */
 import type { MailboxDO } from "../durableObject";
-import type { EmailFull } from "./schemas";
-import { Folders } from "../../shared/folders";
 import type { Env } from "../types";
-import { formatQuotedDate } from "../../shared/dates";
+import type { EmailFull } from "./schemas";
 
 // ── DO Stub ────────────────────────────────────────────────────────
 
@@ -20,10 +21,7 @@ import { formatQuotedDate } from "../../shared/dates";
  * Resolve a MailboxDO stub from a mailbox email address.
  * Replaces the repeated 3-line ns.idFromName / ns.get pattern.
  */
-export function getMailboxStub(
-	env: Env,
-	mailboxId: string,
-): DurableObjectStub<MailboxDO> {
+export function getMailboxStub(env: Env, mailboxId: string): DurableObjectStub<MailboxDO> {
 	const ns = env.MAILBOX;
 	const id = ns.idFromName(mailboxId);
 	return ns.get(id);
@@ -34,9 +32,7 @@ export function getMailboxStub(
 /**
  * List all mailboxes from R2 bucket metadata.
  */
-export async function listMailboxes(
-	bucket: R2Bucket,
-): Promise<{ id: string; email: string }[]> {
+export async function listMailboxes(bucket: R2Bucket): Promise<{ id: string; email: string }[]> {
 	const list = await bucket.list({ prefix: "mailboxes/" });
 	return list.objects.map((obj) => {
 		const id = obj.key.replace("mailboxes/", "").replace(".json", "");
@@ -124,9 +120,7 @@ export function buildThreadingHeaders(
 ): Record<string, string> {
 	return {
 		"In-Reply-To": `<${originalMsgId}>`,
-		...(references.length > 0
-			? { References: references.map((r) => `<${r}>`).join(" ") }
-			: {}),
+		...(references.length > 0 ? { References: references.map((r) => `<${r}>`).join(" ") } : {}),
 	};
 }
 
@@ -204,7 +198,7 @@ export function buildQuotedReplyBlock(original: {
 	body?: string;
 }): string {
 	if (!original.body) return "";
-	
+
 	// HTML-escape sender and date to prevent injection
 	const originalSender = escapeHtml(original.sender || "unknown");
 	const originalDate = escapeHtml(formatEmailDate(original.date || ""));
@@ -229,10 +223,7 @@ type MailboxThreadReaderStub = {
  * Fetch a single email and return it with both HTML and plain-text body.
  * Returns null if the email is not found.
  */
-export async function getFullEmail(
-	stub: DurableObjectStub<MailboxDO>,
-	emailId: string,
-) {
+export async function getFullEmail(stub: DurableObjectStub<MailboxDO>, emailId: string) {
 	const email = (await stub.getEmail(emailId)) as EmailFull | null;
 	if (!email) return null;
 
@@ -245,10 +236,7 @@ export async function getFullEmail(
  * Uses `getThreadEmails` which runs 2 SQL queries (emails + attachments)
  * instead of the previous N+1 pattern (1 list query + N getEmail calls).
  */
-export async function getFullThread(
-	stub: DurableObjectStub<MailboxDO>,
-	threadId: string,
-) {
+export async function getFullThread(stub: DurableObjectStub<MailboxDO>, threadId: string) {
 	const threadStub = stub as unknown as MailboxThreadReaderStub;
 	const emails = await threadStub.getThreadEmails(threadId);
 
@@ -258,9 +246,7 @@ export async function getFullThread(
 	});
 
 	// Already sorted ASC by the DO query, but ensure consistency
-	enriched.sort(
-		(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-	);
+	enriched.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
 	return { thread_id: threadId, message_count: enriched.length, messages: enriched };
 }

@@ -1,8 +1,9 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
-import { PaperclipIcon, FileIcon, ImageIcon } from "@phosphor-icons/react";
+import { FileIcon, ImageIcon, PaperclipIcon } from "@phosphor-icons/react";
 import { formatBytes, getAttachmentUrl, getNonInlineAttachments } from "~/lib/utils";
 import type { Attachment } from "~/types";
 

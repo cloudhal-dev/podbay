@@ -1,12 +1,14 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 /**
  * Shared attachment storage logic.
  * Eliminates the triplicated atob → Uint8Array → R2.put pattern.
  */
 import type { Env } from "../types";
+import { storageFilename } from "./filenames";
 
 export interface StoredAttachment {
 	id: string;
@@ -38,7 +40,7 @@ export async function storeAttachments(
 	for (const att of attachments) {
 		const attachmentId = crypto.randomUUID();
 		// Sanitize filename to prevent path traversal in R2 keys
-		const safeFilename = (att.filename || "untitled").replace(/[\/\\:*?"<>|\x00-\x1f]/g, "_");
+		const safeFilename = storageFilename(att.filename);
 		const key = `attachments/${emailId}/${attachmentId}/${safeFilename}`;
 		const binaryStr = atob(att.content);
 		const bytes = Uint8Array.from(binaryStr, (c) => c.charCodeAt(0));

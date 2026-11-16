@@ -1,22 +1,23 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import type { Context } from "hono";
+import { Folders } from "../../shared/folders";
 import { sendEmail } from "../email-sender";
 import { storeAttachments } from "../lib/attachments";
-import type { EmailFull } from "../lib/schemas";
 import {
-	validateSender,
-	SenderValidationError,
-	generateMessageId,
 	buildReferencesChain,
 	buildThreadingHeaders,
+	generateMessageId,
 	resolveOriginalEmail,
+	SenderValidationError,
+	validateSender,
 } from "../lib/email-helpers";
-import { SendEmailRequestSchema } from "../lib/schemas";
-import { Folders } from "../../shared/folders";
 import type { MailboxContext } from "../lib/mailbox";
+import type { EmailFull } from "../lib/schemas";
+import { SendEmailRequestSchema } from "../lib/schemas";
 
 type AppContext = Context<MailboxContext>;
 type RateLimitStub = { checkSendRateLimit: () => Promise<string | null> };
@@ -47,8 +48,7 @@ export async function handleReplyEmail(c: AppContext) {
 
 	const { messageId, outgoingMessageId } = generateMessageId(fromDomain);
 
-	const rateLimitError = await (stub as unknown as RateLimitStub)
-		.checkSendRateLimit();
+	const rateLimitError = await (stub as unknown as RateLimitStub).checkSendRateLimit();
 	if (rateLimitError) {
 		return c.json({ error: rateLimitError }, 429);
 	}
@@ -79,7 +79,9 @@ export async function handleReplyEmail(c: AppContext) {
 				{ key: "date", value: new Date().toISOString() },
 				{ key: "message-id", value: `<${outgoingMessageId}>` },
 				...(originalMsgId ? [{ key: "in-reply-to", value: `<${originalMsgId}>` }] : []),
-				...(references.length > 0 ? [{ key: "references", value: references.map((r: string) => `<${r}>`).join(" ") }] : []),
+				...(references.length > 0
+					? [{ key: "references", value: references.map((r: string) => `<${r}>`).join(" ") }]
+					: []),
 			]),
 		},
 		attachmentData,
@@ -137,8 +139,7 @@ export async function handleForwardEmail(c: AppContext) {
 
 	const { messageId, outgoingMessageId } = generateMessageId(fromDomain);
 
-	const rateLimitError = await (stub as unknown as RateLimitStub)
-		.checkSendRateLimit();
+	const rateLimitError = await (stub as unknown as RateLimitStub).checkSendRateLimit();
 	if (rateLimitError) {
 		return c.json({ error: rateLimitError }, 429);
 	}

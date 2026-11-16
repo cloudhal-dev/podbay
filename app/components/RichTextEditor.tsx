@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import { Button, Tooltip } from "@cloudflare/kumo";
 import {
@@ -33,10 +34,7 @@ interface RichTextEditorProps {
 	onChange: (value: string) => void;
 }
 
-export default function RichTextEditor({
-	value,
-	onChange,
-}: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 	const editor = useEditor({
 		extensions: [
 			StarterKit,
@@ -66,7 +64,7 @@ export default function RichTextEditor({
 			// Place cursor at the start of the document (above quoted text)
 			const rafId = requestAnimationFrame(() => {
 				if (!editor.isDestroyed) {
-					editor.commands.focus('start');
+					editor.commands.focus("start");
 				}
 			});
 			return () => cancelAnimationFrame(rafId);

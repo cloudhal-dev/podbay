@@ -1,11 +1,12 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import { Badge, Button, Input, Loader, useKumoToastManager } from "@cloudflare/kumo";
-import { RobotIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
+import { ArrowCounterClockwiseIcon, RobotIcon } from "@phosphor-icons/react";
+import { useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
 import { useMailbox, useUpdateMailbox } from "~/queries/mailboxes";
 
 // Placeholder shown in the textarea when no custom prompt is set.
@@ -13,7 +14,7 @@ import { useMailbox, useUpdateMailbox } from "~/queries/mailboxes";
 const PROMPT_PLACEHOLDER = `You are an email assistant that helps manage this inbox. You read emails, draft replies, and help organize conversations.\n\nWrite like a real person. Short, direct, flowing prose. Plain text only.\n\n(Leave empty to use the full built-in default prompt)`;
 
 export default function SettingsRoute() {
-	const { mailboxId } = useParams<{ mailboxId: string }>();
+	const { mailboxId } = useParams({ strict: false });
 	const toastManager = useKumoToastManager();
 	const { data: mailbox } = useMailbox(mailboxId);
 	const updateMailboxMutation = useUpdateMailbox();
@@ -71,9 +72,7 @@ export default function SettingsRoute() {
 			<div className="space-y-6">
 				{/* Account */}
 				<div className="rounded-lg border border-kumo-line bg-kumo-base p-5">
-					<div className="text-sm font-medium text-kumo-default mb-4">
-						Account
-					</div>
+					<div className="text-sm font-medium text-kumo-default mb-4">Account</div>
 					<div className="space-y-3">
 						<Input
 							label="Display Name"
@@ -89,9 +88,7 @@ export default function SettingsRoute() {
 					<div className="flex items-center justify-between mb-4">
 						<div className="flex items-center gap-2">
 							<RobotIcon size={16} weight="duotone" className="text-kumo-subtle" />
-							<span className="text-sm font-medium text-kumo-default">
-								AI Agent Prompt
-							</span>
+							<span className="text-sm font-medium text-kumo-default">AI Agent Prompt</span>
 							{isCustomPrompt ? (
 								<Badge variant="primary">Custom</Badge>
 							) : (
@@ -110,8 +107,8 @@ export default function SettingsRoute() {
 						)}
 					</div>
 					<p className="text-xs text-kumo-subtle mb-3">
-						Customize how the AI agent behaves for this mailbox.
-						Leave empty to use the built-in default prompt.
+						Customize how the AI agent behaves for this mailbox. Leave empty to use the built-in
+						default prompt.
 					</p>
 					<textarea
 						value={agentPrompt}
@@ -121,8 +118,8 @@ export default function SettingsRoute() {
 						className="w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 text-xs text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring font-mono leading-relaxed"
 					/>
 					<p className="text-xs text-kumo-subtle mt-2">
-						The prompt is sent as the system message to the AI model.
-						It controls the agent's personality, writing style, and behavior rules.
+						The prompt is sent as the system message to the AI model. It controls the agent's
+						personality, writing style, and behavior rules.
 					</p>
 				</div>
 

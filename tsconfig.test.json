@@ -1,0 +1,25 @@
+{
+	"include": [
+		"test/**/*",
+		"workers/**/*",
+		"shared/**/*",
+		"scripts/**/*",
+		"worker-configuration.d.ts"
+	],
+	"exclude": ["test/workerd/vitest.config.ts"],
+	"compilerOptions": {
+		"composite": true,
+		"noEmit": true,
+		"tsBuildInfoFile": "./node_modules/.cache/tsconfig.test.tsbuildinfo",
+		"strict": true,
+		"skipLibCheck": true,
+		"verbatimModuleSyntax": true,
+		"allowImportingTsExtensions": true,
+		"lib": ["ES2023", "DOM", "DOM.Iterable"],
+		"types": ["node", "vite/client", "@cloudflare/vitest-plugin/types"],
+		"target": "ES2023",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"paths": { "shared/*": ["./shared/*"] }
+	}
+}

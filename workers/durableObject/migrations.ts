@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 export interface Migration {
 	name: string;
@@ -26,12 +27,7 @@ export function applyMigrations(
 	)`);
 
 	for (const migration of migrations) {
-		const applied = [
-			...sql.exec(
-				`SELECT 1 FROM d1_migrations WHERE name = ?`,
-				migration.name,
-			),
-		];
+		const applied = [...sql.exec(`SELECT 1 FROM d1_migrations WHERE name = ?`, migration.name)];
 		if (applied.length > 0) continue;
 
 		// Strip any existing BEGIN/COMMIT wrapper from the migration SQL.
@@ -44,9 +40,7 @@ export function applyMigrations(
 		const escapedName = migration.name.replace(/'/g, "''");
 		const run = () => {
 			sql.exec(migrationSql);
-			sql.exec(
-				`INSERT INTO d1_migrations (name) VALUES ('${escapedName}')`,
-			);
+			sql.exec(`INSERT INTO d1_migrations (name) VALUES ('${escapedName}')`);
 		};
 
 		if (storage) {

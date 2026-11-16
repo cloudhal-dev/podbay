@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import { Badge, Button, Dialog, Input, Tooltip } from "@cloudflare/kumo";
 import {
@@ -14,12 +15,12 @@ import {
 	TrashIcon,
 	TrayIcon,
 } from "@phosphor-icons/react";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { NavLink, useNavigate, useParams } from "react-router";
 import { Folders, SYSTEM_FOLDER_IDS } from "shared/folders";
+import { useUIStore } from "~/hooks/useUIStore";
 import { useCreateFolder, useFolders } from "~/queries/folders";
 import { useMailbox } from "~/queries/mailboxes";
-import { useUIStore } from "~/hooks/useUIStore";
 
 const FOLDER_ICONS: Record<string, React.ReactNode> = {
 	[Folders.INBOX]: <TrayIcon size={18} weight="regular" />,
@@ -38,43 +39,33 @@ const SYSTEM_FOLDER_LINKS = [
 ];
 
 interface FolderLinkProps {
-	to: string;
+	mailboxId: string;
+	folderId: string;
 	icon: React.ReactNode;
 	label: string;
 	unreadCount?: number;
 	onClick?: () => void;
 }
 
-function FolderLink({
-	to,
-	icon,
-	label,
-	unreadCount,
-	onClick,
-}: FolderLinkProps) {
+function FolderLink({ mailboxId, folderId, icon, label, unreadCount, onClick }: FolderLinkProps) {
 	return (
-		<NavLink
-			to={to}
+		<Link
+			to="/mailbox/$mailboxId/emails/$folder"
+			params={{ mailboxId, folder: folderId }}
 			onClick={onClick}
-			className={({ isActive }) =>
-				`flex items-center gap-3 py-2 px-3 rounded-md text-sm transition-colors ${
-					isActive
-						? "bg-kumo-fill font-semibold text-kumo-default"
-						: "text-kumo-strong hover:bg-kumo-tint"
-				}`
-			}
+			className="flex items-center gap-3 py-2 px-3 rounded-md text-sm transition-colors"
+			activeProps={{ className: "bg-kumo-fill font-semibold text-kumo-default" }}
+			inactiveProps={{ className: "text-kumo-strong hover:bg-kumo-tint" }}
 		>
 			<span className="shrink-0">{icon}</span>
 			<span className="truncate flex-1">{label}</span>
-			{unreadCount != null && unreadCount > 0 && (
-				<Badge variant="secondary">{unreadCount}</Badge>
-			)}
-		</NavLink>
+			{unreadCount != null && unreadCount > 0 && <Badge variant="secondary">{unreadCount}</Badge>}
+		</Link>
 	);
 }
 
 export default function Sidebar() {
-	const { mailboxId } = useParams<{ mailboxId: string }>();
+	const { mailboxId } = useParams({ strict: false });
 	const navigate = useNavigate();
 	const { data: folders = [] } = useFolders(mailboxId);
 	const createFolderMutation = useCreateFolder();
@@ -84,8 +75,7 @@ export default function Sidebar() {
 	const [newFolderName, setNewFolderName] = useState("");
 
 	const customFolders = useMemo(
-		() =>
-			folders.filter((f) => !(SYSTEM_FOLDER_IDS as readonly string[]).includes(f.id)),
+		() => folders.filter((f) => !(SYSTEM_FOLDER_IDS as readonly string[]).includes(f.id)),
 		[folders],
 	);
 
@@ -127,7 +117,7 @@ export default function Sidebar() {
 				<button
 					type="button"
 					onClick={() => {
-						navigate("/");
+						void navigate({ to: "/" });
 						closeSidebar();
 					}}
 					className="flex items-center gap-1.5 text-kumo-subtle text-sm hover:text-kumo-default transition-colors mb-2.5 cursor-pointer bg-transparent border-0 p-0"
@@ -136,9 +126,7 @@ export default function Sidebar() {
 					<span>Mailboxes</span>
 				</button>
 				<div className="px-1">
-					<div className="text-base font-semibold text-kumo-default truncate">
-						{displayName}
-					</div>
+					<div className="text-base font-semibold text-kumo-default truncate">{displayName}</div>
 					<div className="text-sm text-kumo-subtle truncate mt-0.5">
 						{currentMailbox?.email || mailboxId}
 					</div>
@@ -162,7 +150,8 @@ export default function Sidebar() {
 				{SYSTEM_FOLDER_LINKS.map((folder) => (
 					<FolderLink
 						key={folder.id}
-						to={`/mailbox/${mailboxId}/emails/${folder.id}`}
+						mailboxId={mailboxId ?? ""}
+						folderId={folder.id}
 						icon={FOLDER_ICONS[folder.id]}
 						label={folder.label}
 						unreadCount={getUnreadCount(folder.id)}
@@ -191,7 +180,8 @@ export default function Sidebar() {
 						{customFolders.map((folder) => (
 							<FolderLink
 								key={folder.id}
-								to={`/mailbox/${mailboxId}/emails/${folder.id}`}
+								mailboxId={mailboxId ?? ""}
+								folderId={folder.id}
 								icon={<FolderIcon size={18} />}
 								label={folder.name}
 								unreadCount={folder.unreadCount}
@@ -224,14 +214,9 @@ export default function Sidebar() {
 			</nav>
 
 			{/* Create folder dialog */}
-			<Dialog.Root
-				open={isCreateFolderOpen}
-				onOpenChange={setIsCreateFolderOpen}
-			>
+			<Dialog.Root open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
 				<Dialog size="sm" className="p-6">
-					<Dialog.Title className="text-base font-semibold mb-4">
-						Create folder
-					</Dialog.Title>
+					<Dialog.Title className="text-base font-semibold mb-4">Create folder</Dialog.Title>
 					<form onSubmit={handleCreateFolder} className="space-y-4">
 						<Input
 							label="Folder name"
@@ -248,11 +233,7 @@ export default function Sidebar() {
 									</Button>
 								)}
 							/>
-							<Button
-								type="submit"
-								variant="primary"
-								disabled={!newFolderName.trim()}
-							>
+							<Button type="submit" variant="primary" disabled={!newFolderName.trim()}>
 								Create
 							</Button>
 						</div>

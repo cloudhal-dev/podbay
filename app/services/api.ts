@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import type { Email, Folder, Mailbox } from "~/types";
 
@@ -18,10 +19,7 @@ export class ApiError extends Error {
 	}
 }
 
-async function request<T>(
-	url: string,
-	options: RequestInit = {},
-): Promise<T> {
+async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -57,7 +55,10 @@ async function request<T>(
 	}
 }
 
-function get<T>(url: string, opts?: { params?: Record<string, string>; responseType?: string; signal?: AbortSignal }) {
+function get<T>(
+	url: string,
+	opts?: { params?: Record<string, string>; responseType?: string; signal?: AbortSignal },
+) {
 	const query = opts?.params ? `?${new URLSearchParams(opts.params)}` : "";
 	return request<T>(`${url}${query}`, {
 		method: "GET",
@@ -97,22 +98,31 @@ interface EmailListResponse {
 const api = {
 	// Config
 	getConfig: () =>
-		get<{ domains: string[]; emailAddresses: string[] }>("/api/v1/config"),
+		get<{
+			domains: string[];
+			emailAddresses: string[];
+			features: { agent: boolean; mcp: boolean };
+		}>("/api/v1/config"),
 
 	// Mailboxes
 	listMailboxes: () => get<Mailbox[]>("/api/v1/mailboxes"),
 	createMailbox: (email: string, name: string, settings?: unknown) =>
 		post<Mailbox>("/api/v1/mailboxes", { email, name, settings }),
-	getMailbox: (mailboxId: string) =>
-		get<Mailbox>(`/api/v1/mailboxes/${mailboxId}`),
+	getMailbox: (mailboxId: string) => get<Mailbox>(`/api/v1/mailboxes/${mailboxId}`),
 	updateMailbox: (mailboxId: string, settings: unknown) =>
 		put<Mailbox>(`/api/v1/mailboxes/${mailboxId}`, { settings }),
-	deleteMailbox: (mailboxId: string) =>
-		del<void>(`/api/v1/mailboxes/${mailboxId}`),
+	deleteMailbox: (mailboxId: string) => del<void>(`/api/v1/mailboxes/${mailboxId}`),
 
 	// Emails
-	listEmails: (mailboxId: string, params: Record<string, string>, opts?: { signal?: AbortSignal }) =>
-		get<EmailListResponse | Email[]>(`/api/v1/mailboxes/${mailboxId}/emails`, { params, signal: opts?.signal }),
+	listEmails: (
+		mailboxId: string,
+		params: Record<string, string>,
+		opts?: { signal?: AbortSignal },
+	) =>
+		get<EmailListResponse | Email[]>(`/api/v1/mailboxes/${mailboxId}/emails`, {
+			params,
+			signal: opts?.signal,
+		}),
 	sendEmail: (mailboxId: string, email: unknown) =>
 		post<void>(`/api/v1/mailboxes/${mailboxId}/emails`, email),
 	getEmail: (mailboxId: string, id: string, opts?: { signal?: AbortSignal }) =>
@@ -128,7 +138,9 @@ const api = {
 	markThreadRead: (mailboxId: string, threadId: string) =>
 		post<void>(`/api/v1/mailboxes/${mailboxId}/threads/${threadId}/read`),
 	getAttachment: (mailboxId: string, emailId: string, attachmentId: string) =>
-		get<Blob>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/attachments/${attachmentId}`, { responseType: "blob" }),
+		get<Blob>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/attachments/${attachmentId}`, {
+			responseType: "blob",
+		}),
 	saveDraft: (
 		mailboxId: string,
 		draft: {
@@ -148,8 +160,7 @@ const api = {
 		post<void>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/forward`, email),
 
 	// Folders
-	listFolders: (mailboxId: string) =>
-		get<Folder[]>(`/api/v1/mailboxes/${mailboxId}/folders`),
+	listFolders: (mailboxId: string) => get<Folder[]>(`/api/v1/mailboxes/${mailboxId}/folders`),
 	createFolder: (mailboxId: string, name: string) =>
 		post<Folder>(`/api/v1/mailboxes/${mailboxId}/folders`, { name }),
 	updateFolder: (mailboxId: string, id: string, name: string) =>

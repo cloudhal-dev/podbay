@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import {
 	Button,
@@ -14,15 +15,11 @@ import {
 } from "@cloudflare/kumo";
 import { EnvelopeIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
+import { Link as RouterLink } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { Link as RouterLink } from "react-router";
-import api from "~/services/api";
-import {
-	useCreateMailbox,
-	useDeleteMailbox,
-	useMailboxes,
-} from "~/queries/mailboxes";
 import { queryKeys } from "~/queries/keys";
+import { useCreateMailbox, useDeleteMailbox, useMailboxes } from "~/queries/mailboxes";
+import api from "~/services/api";
 
 export function meta() {
 	return [{ title: "Agentic Inbox" }];
@@ -30,7 +27,11 @@ export function meta() {
 
 export default function HomeRoute() {
 	const toastManager = useKumoToastManager();
-	const { data: mailboxes = [], refetch: refetchMailboxes, isFetched: mailboxesFetched } = useMailboxes();
+	const {
+		data: mailboxes = [],
+		refetch: refetchMailboxes,
+		isFetched: mailboxesFetched,
+	} = useMailboxes();
 	const createMailbox = useCreateMailbox();
 	const deleteMailbox = useDeleteMailbox();
 
@@ -68,12 +69,8 @@ export default function HomeRoute() {
 	useEffect(() => {
 		if (autoCreateDone.current) return;
 		if (emailAddresses.length === 0 || !mailboxesFetched) return;
-		const existingEmails = new Set(
-			mailboxes.map((m) => m.email.toLowerCase()),
-		);
-		const toCreate = emailAddresses.filter(
-			(addr) => !existingEmails.has(addr.toLowerCase()),
-		);
+		const existingEmails = new Set(mailboxes.map((m) => m.email.toLowerCase()));
+		const toCreate = emailAddresses.filter((addr) => !existingEmails.has(addr.toLowerCase()));
 		if (toCreate.length === 0) {
 			autoCreateDone.current = true;
 			return;
@@ -85,8 +82,12 @@ export default function HomeRoute() {
 				const localPart = addr.split("@")[0] || addr;
 				return api.createMailbox(addr, localPart).catch(() => {});
 			}),
-		).then(() => { if (!cancelled) refetchMailboxes(); });
-		return () => { cancelled = true; };
+		).then(() => {
+			if (!cancelled) refetchMailboxes();
+		});
+		return () => {
+			cancelled = true;
+		};
 	}, [emailAddresses, mailboxes, refetchMailboxes]);
 
 	const handleCreate = async (e: FormEvent) => {
@@ -156,9 +157,7 @@ export default function HomeRoute() {
 						)}
 					</div>
 					{domains.length > 0 && (
-						<p className="text-sm text-kumo-subtle mt-1">
-							{domains.join(", ")}
-						</p>
+						<p className="text-sm text-kumo-subtle mt-1">{domains.join(", ")}</p>
 					)}
 				</div>
 
@@ -171,7 +170,8 @@ export default function HomeRoute() {
 						{accounts.map((account, idx) => (
 							<RouterLink
 								key={account.id}
-								to={`/mailbox/${account.id}`}
+								to="/mailbox/$mailboxId"
+								params={{ mailboxId: account.id }}
 								className={`group flex items-center gap-4 px-5 py-4 no-underline transition-colors hover:bg-kumo-tint ${
 									idx > 0 ? "border-t border-kumo-line" : ""
 								}`}
@@ -183,9 +183,7 @@ export default function HomeRoute() {
 									<div className="text-sm font-medium text-kumo-default truncate">
 										{account.name}
 									</div>
-									<div className="text-sm text-kumo-subtle">
-										{account.email}
-									</div>
+									<div className="text-sm text-kumo-subtle">{account.email}</div>
 								</div>
 								{!isConfigured && (
 									<Button
@@ -212,15 +210,9 @@ export default function HomeRoute() {
 					<div className="rounded-xl border border-kumo-line bg-kumo-base py-16 px-6">
 						<div className="flex flex-col items-center text-center">
 							<div className="mb-4">
-								<EnvelopeIcon
-									size={48}
-									weight="thin"
-									className="text-kumo-subtle"
-								/>
+								<EnvelopeIcon size={48} weight="thin" className="text-kumo-subtle" />
 							</div>
-							<h3 className="text-base font-semibold text-kumo-default mb-1.5">
-								No mailboxes yet
-							</h3>
+							<h3 className="text-base font-semibold text-kumo-default mb-1.5">No mailboxes yet</h3>
 							<p className="text-sm text-kumo-subtle max-w-sm mb-5">
 								{isConfigured
 									? "Your email routing is configured but no mailboxes have been created yet. They will appear here automatically."
@@ -243,9 +235,7 @@ export default function HomeRoute() {
 			{/* Create Dialog */}
 			<Dialog.Root open={isCreateOpen} onOpenChange={setIsCreateOpen}>
 				<Dialog size="sm" className="p-6">
-					<Dialog.Title className="text-base font-semibold mb-5">
-						Create New Mailbox
-					</Dialog.Title>
+					<Dialog.Title className="text-base font-semibold mb-5">Create New Mailbox</Dialog.Title>
 					<form onSubmit={handleCreate} className="space-y-4">
 						{createError && (
 							<Text variant="error" size="sm">
@@ -270,13 +260,13 @@ export default function HomeRoute() {
 								<span className="text-sm text-kumo-subtle">@</span>
 								{domains.length > 1 ? (
 									<div className="flex-1">
-							<Select
-								aria-label="Domain"
-								value={selectedDomain}
-								onValueChange={(value) => {
-									if (value) setSelectedDomain(value);
-								}}
-							>
+										<Select
+											aria-label="Domain"
+											value={selectedDomain}
+											onValueChange={(value) => {
+												if (value) setSelectedDomain(value);
+											}}
+										>
 											{domains.map((d) => (
 												<Select.Option key={d} value={d}>
 													{d}
@@ -285,9 +275,7 @@ export default function HomeRoute() {
 										</Select>
 									</div>
 								) : (
-									<span className="text-sm text-kumo-subtle">
-										{selectedDomain || "no domain"}
-									</span>
+									<span className="text-sm text-kumo-subtle">{selectedDomain || "no domain"}</span>
 								)}
 							</div>
 						</div>
@@ -329,15 +317,11 @@ export default function HomeRoute() {
 				}}
 			>
 				<Dialog size="sm" className="p-6">
-					<Dialog.Title className="text-base font-semibold mb-2">
-						Delete Mailbox
-					</Dialog.Title>
+					<Dialog.Title className="text-base font-semibold mb-2">Delete Mailbox</Dialog.Title>
 					<Dialog.Description className="text-kumo-subtle text-sm mb-5">
 						Are you sure you want to delete{" "}
-						<strong className="text-kumo-default">
-							{mailboxToDelete?.email}
-						</strong>
-						? This action cannot be undone.
+						<strong className="text-kumo-default">{mailboxToDelete?.email}</strong>? This action
+						cannot be undone.
 					</Dialog.Description>
 					<div className="flex justify-end gap-2">
 						<Dialog.Close
@@ -347,12 +331,7 @@ export default function HomeRoute() {
 								</Button>
 							)}
 						/>
-						<Button
-							variant="destructive"
-							size="sm"
-							loading={isDeleting}
-							onClick={handleDelete}
-						>
+						<Button variant="destructive" size="sm" loading={isDeleting} onClick={handleDelete}>
 							Delete
 						</Button>
 					</div>

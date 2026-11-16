@@ -1,0 +1,22 @@
+{
+	"include": ["app/**/*", "workers/**/*", "shared/**/*", "worker-configuration.d.ts"],
+	"compilerOptions": {
+		"composite": true,
+		"noEmit": true,
+		"tsBuildInfoFile": "./node_modules/.cache/tsconfig.app.tsbuildinfo",
+		"strict": true,
+		"skipLibCheck": true,
+		"verbatimModuleSyntax": true,
+		"lib": ["DOM", "DOM.Iterable", "ES2023"],
+		"types": ["vite/client"],
+		"target": "ES2023",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"resolveJsonModule": true,
+		"paths": {
+			"~/*": ["./app/*"],
+			"shared/*": ["./shared/*"]
+		}
+	}
+}

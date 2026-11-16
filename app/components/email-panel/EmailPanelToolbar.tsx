@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import { Button, Tooltip } from "@cloudflare/kumo";
-import { useEffect, useRef, useState } from "react";
 import {
 	ArrowBendUpLeftIcon,
 	ArrowBendUpRightIcon,
@@ -19,7 +19,8 @@ import {
 	TrashIcon,
 	XIcon,
 } from "@phosphor-icons/react";
-import type { Folder, Email } from "~/types";
+import { useEffect, useRef, useState } from "react";
+import type { Email, Folder } from "~/types";
 
 interface EmailPanelToolbarProps {
 	email: Email;
@@ -195,7 +196,13 @@ export default function EmailPanelToolbar({
 	);
 }
 
-function MoveToFolderMenu({ folders, onMove }: { folders: Folder[]; onMove: (id: string) => void }) {
+function MoveToFolderMenu({
+	folders,
+	onMove,
+}: {
+	folders: Folder[];
+	onMove: (id: string) => void;
+}) {
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 
@@ -229,7 +236,10 @@ function MoveToFolderMenu({ folders, onMove }: { folders: Folder[]; onMove: (id:
 							key={f.id}
 							type="button"
 							className="w-full text-left px-3 py-1.5 text-sm text-kumo-default hover:bg-kumo-overlay transition-colors"
-							onClick={() => { onMove(f.id); setOpen(false); }}
+							onClick={() => {
+								onMove(f.id);
+								setOpen(false);
+							}}
 						>
 							{f.name}
 						</button>

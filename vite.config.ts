@@ -1,18 +1,23 @@
-// Copyright (c) 2026 Cloudflare, Inc.
-// Licensed under the Apache 2.0 license found in the LICENSE file or at:
-//     https://opensource.org/licenses/Apache-2.0
+// Copyright 2026 Cloudhal and the Podbay contributors
+// Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { reactRouter } from "@react-router/dev/vite";
+import { fileURLToPath } from "node:url";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
+
+const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 export default defineConfig({
-  plugins: [
-    cloudflare({ viteEnvironment: { name: "ssr" } }),
-    tailwindcss(),
-    reactRouter(),
-    tsconfigPaths(),
-  ],
+	plugins: [react(), tailwindcss(), cloudflare({ viteEnvironment: { name: "worker" } })],
+	resolve: {
+		alias: {
+			"~": at("./app"),
+			shared: at("./shared"),
+		},
+	},
+	environments: {
+		worker: { build: { sourcemap: true } },
+	},
 });

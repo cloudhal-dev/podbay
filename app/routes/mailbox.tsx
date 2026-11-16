@@ -1,35 +1,30 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
+import { Outlet, useParams } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { Outlet, useParams } from "react-router";
 import AgentSidebar from "~/components/AgentSidebar";
 import ComposeEmail from "~/components/ComposeEmail";
 import Header from "~/components/Header";
 import Sidebar from "~/components/Sidebar";
-import { useMailbox } from "~/queries/mailboxes";
 import { useUIStore } from "~/hooks/useUIStore";
+import { useFeatures } from "~/queries/config";
+import { useMailbox } from "~/queries/mailboxes";
 
 export default function MailboxRoute() {
-	const { mailboxId } = useParams<{ mailboxId: string }>();
+	const { mailboxId } = useParams({ strict: false });
 	// Prefetch mailbox data for child components
 	useMailbox(mailboxId);
+	const enabled = useFeatures();
+	const hasAssistant = enabled.agent || enabled.mcp;
 	const prevMailboxIdRef = useRef<string | undefined>(undefined);
-	const {
-		isSidebarOpen,
-		closeSidebar,
-		isAgentPanelOpen,
-		closePanel,
-		closeComposeModal,
-	} = useUIStore();
+	const { isSidebarOpen, closeSidebar, isAgentPanelOpen, closePanel, closeComposeModal } =
+		useUIStore();
 
 	useEffect(() => {
-		if (
-			prevMailboxIdRef.current &&
-			mailboxId &&
-			prevMailboxIdRef.current !== mailboxId
-		) {
+		if (prevMailboxIdRef.current && mailboxId && prevMailboxIdRef.current !== mailboxId) {
 			closePanel();
 			closeComposeModal();
 			closeSidebar();
@@ -70,7 +65,7 @@ export default function MailboxRoute() {
 			</div>
 
 			{/* Agent + MCP sidebar -- togglable on desktop */}
-			{isAgentPanelOpen && (
+			{hasAssistant && isAgentPanelOpen && (
 				<div className="hidden lg:flex w-[380px] shrink-0 border-l border-kumo-line flex-col bg-kumo-base overflow-hidden">
 					<AgentSidebar />
 				</div>

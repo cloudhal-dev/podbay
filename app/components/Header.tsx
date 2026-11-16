@@ -1,24 +1,34 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import { Button, Input, Tooltip } from "@cloudflare/kumo";
-import { GearSixIcon, ListIcon, MagnifyingGlassIcon, RobotIcon, XIcon } from "@phosphor-icons/react";
+import {
+	GearSixIcon,
+	ListIcon,
+	MagnifyingGlassIcon,
+	RobotIcon,
+	XIcon,
+} from "@phosphor-icons/react";
+import { useLocation, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { type KeyboardEvent, useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { useUIStore } from "~/hooks/useUIStore";
+import { useFeatures } from "~/queries/config";
 
 export default function Header() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-	const { mailboxId } = useParams<{ mailboxId: string }>();
+	const { mailboxId } = useParams({ strict: false });
 	const navigate = useNavigate();
 	const location = useLocation();
-	const [searchParams] = useSearchParams();
+	const search = useSearch({ strict: false });
 	const { toggleSidebar, toggleAgentPanel, isAgentPanelOpen } = useUIStore();
+	const enabled = useFeatures();
+	const hasAssistant = enabled.agent || enabled.mcp;
 
 	// Sync search input with URL query param so it stays populated
-	const urlQuery = searchParams.get("q") || "";
+	const urlQuery = search.q ?? "";
 	useEffect(() => {
 		if (location.pathname.includes("/search") && urlQuery) {
 			setSearchQuery(urlQuery);
@@ -28,7 +38,7 @@ export default function Header() {
 	const performSearch = () => {
 		if (mailboxId && searchQuery.trim()) {
 			const q = searchQuery.trim();
-			navigate(`/mailbox/${mailboxId}/search?q=${encodeURIComponent(q)}`);
+			void navigate({ to: "/mailbox/$mailboxId/search", params: { mailboxId }, search: { q } });
 			setIsSearchExpanded(false);
 		}
 	};
@@ -36,7 +46,10 @@ export default function Header() {
 	const clearSearch = () => {
 		setSearchQuery("");
 		if (location.pathname.includes("/search") && mailboxId) {
-			navigate(`/mailbox/${mailboxId}/emails/inbox`);
+			void navigate({
+				to: "/mailbox/$mailboxId/emails/$folder",
+				params: { mailboxId, folder: "inbox" },
+			});
 		}
 	};
 
@@ -119,28 +132,38 @@ export default function Header() {
 			)}
 
 			<div className="flex items-center gap-1 ml-auto shrink-0">
-				<Tooltip content={isAgentPanelOpen ? "Hide agent panel" : "Show agent panel"} side="bottom" asChild>
-					<Button
-						variant={isAgentPanelOpen ? "secondary" : "ghost"}
-						shape="square"
-						icon={<RobotIcon size={20} />}
-						onClick={toggleAgentPanel}
-						aria-label="Toggle agent panel"
-						className="hidden lg:inline-flex"
-					/>
-				</Tooltip>
+				{hasAssistant && (
+					<Tooltip
+						content={isAgentPanelOpen ? "Hide agent panel" : "Show agent panel"}
+						side="bottom"
+						asChild
+					>
+						<Button
+							variant={isAgentPanelOpen ? "secondary" : "ghost"}
+							shape="square"
+							icon={<RobotIcon size={20} />}
+							onClick={toggleAgentPanel}
+							aria-label="Toggle agent panel"
+							className="hidden lg:inline-flex"
+						/>
+					</Tooltip>
+				)}
 				<Tooltip content="Settings" side="bottom" asChild>
 					<Button
 						variant={isSettingsActive ? "secondary" : "ghost"}
 						shape="square"
 						icon={<GearSixIcon size={20} />}
-						onClick={() =>
-							navigate(
-								isSettingsActive
-									? `/mailbox/${mailboxId}/emails/inbox`
-									: `/mailbox/${mailboxId}/settings`,
-							)
-						}
+						onClick={() => {
+							if (!mailboxId) return;
+							if (isSettingsActive) {
+								void navigate({
+									to: "/mailbox/$mailboxId/emails/$folder",
+									params: { mailboxId, folder: "inbox" },
+								});
+							} else {
+								void navigate({ to: "/mailbox/$mailboxId/settings", params: { mailboxId } });
+							}
+						}}
 						aria-label="Settings"
 					/>
 				</Tooltip>

@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import { Button, Dialog } from "@cloudflare/kumo";
 import { downloadFile } from "~/lib/utils";
@@ -107,11 +108,13 @@ export default function EmailPanelDialogs({
 						</div>
 					)}
 					<div className="flex justify-end mt-4">
-						<Dialog.Close>
-							<Button variant="secondary" size="sm">
-								Close
-							</Button>
-						</Dialog.Close>
+						<Dialog.Close
+							render={(props) => (
+								<Button {...props} variant="secondary" size="sm">
+									Close
+								</Button>
+							)}
+						/>
 					</div>
 				</Dialog>
 			</Dialog.Root>
@@ -145,11 +148,13 @@ export default function EmailPanelDialogs({
 						>
 							Download Original
 						</Button>
-						<Dialog.Close>
-							<Button variant="primary" size="sm">
-								Close
-							</Button>
-						</Dialog.Close>
+						<Dialog.Close
+							render={(props) => (
+								<Button {...props} variant="primary" size="sm">
+									Close
+								</Button>
+							)}
+						/>
 					</div>
 				</Dialog>
 			</Dialog.Root>

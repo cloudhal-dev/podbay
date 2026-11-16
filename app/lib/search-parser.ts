@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 /**
  * Parse a Gmail-style search query into structured filters.
@@ -34,8 +35,7 @@ export interface ParsedSearch {
 }
 
 // Matches operator:value or operator:"quoted value"
-const OPERATOR_RE =
-	/\b(from|to|subject|in|is|has|before|after):(?:"([^"]*?)"|(\S+))/gi;
+const OPERATOR_RE = /\b(from|to|subject|in|is|has|before|after):(?:"([^"]*?)"|(\S+))/gi;
 
 export function parseSearchQuery(input: string): ParsedSearch {
 	const result: ParsedSearch = { query: "" };

@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 /**
  * AI-powered email security and quality tools.
@@ -21,33 +22,32 @@ Return ONLY "NO" if it is a normal email (even if angry, confused, or containing
 
 Respond with exactly one word: YES or NO.`;
 
-export async function isPromptInjection(ai: Ai, bodyHtml: string | null | undefined): Promise<boolean> {
+export async function isPromptInjection(
+	ai: Ai,
+	bodyHtml: string | null | undefined,
+): Promise<boolean> {
 	if (!bodyHtml) return false;
-	
+
 	const plainText = stripHtmlToText(bodyHtml).trim();
 	if (plainText.length < 10) return false;
 
 	try {
-		const response = (await ai.run(
-			// @ts-expect-error — model string not in generated union
-			"@cf/meta/llama-3.1-8b-instruct-fast",
-			{
-				messages: [
-					{ role: "system", content: INJECTION_PROMPT },
-					{ role: "user", content: plainText },
-				],
-				max_tokens: 10,
-				temperature: 0,
-			},
-		)) as { response?: string };
+		const response = (await ai.run("@cf/meta/llama-3.1-8b-instruct-fast", {
+			messages: [
+				{ role: "system", content: INJECTION_PROMPT },
+				{ role: "user", content: plainText },
+			],
+			max_tokens: 10,
+			temperature: 0,
+		})) as { response?: string };
 
 		const result = (response?.response || "NO").trim().toUpperCase();
-		
+
 		if (result.includes("YES")) {
 			console.warn("Prompt injection detected in incoming email, blocking auto-draft");
 			return true;
 		}
-		
+
 		return false;
 	} catch (e) {
 		console.error("Prompt injection scanner failed, skipping auto-draft:", (e as Error).message);
@@ -104,9 +104,7 @@ RULES:
  * Split an HTML body into the reply portion and the quoted block.
  */
 function splitQuotedBlock(html: string): { reply: string; quoted: string } {
-	const match = html.match(
-		/(\s*(?:<br\s*\/?>)\s*)?(<blockquote[\s\S]*<\/blockquote>)\s*$/i,
-	);
+	const match = html.match(/(\s*(?:<br\s*\/?>)\s*)?(<blockquote[\s\S]*<\/blockquote>)\s*$/i);
 	if (match) {
 		const quoted = match[0];
 		const reply = html.slice(0, html.length - quoted.length);
@@ -135,17 +133,14 @@ export async function verifyDraft(ai: Ai, body: string): Promise<string> {
 	if (replyText.trim().length < 20) return body;
 
 	try {
-		const response = (await ai.run(
-			"@cf/meta/llama-4-scout-17b-16e-instruct",
-			{
-				messages: [
-					{ role: "system", content: VERIFIER_PROMPT },
-					{ role: "user", content: replyText },
-				],
-				max_tokens: 4096,
-				temperature: 0,
-			},
-		)) as { response?: string };
+		const response = (await ai.run("@cf/meta/llama-4-scout-17b-16e-instruct", {
+			messages: [
+				{ role: "system", content: VERIFIER_PROMPT },
+				{ role: "user", content: replyText },
+			],
+			max_tokens: 4096,
+			temperature: 0,
+		})) as { response?: string };
 
 		const cleaned = response?.response ?? null;
 
@@ -179,11 +174,12 @@ export async function verifyDraft(ai: Ai, body: string): Promise<string> {
 		}
 
 		// Plain text: reattach quoted block if any
-		return quotedBlock
-			? `${cleanedTrimmed}\n\n${quotedBlock}`
-			: cleanedTrimmed;
+		return quotedBlock ? `${cleanedTrimmed}\n\n${quotedBlock}` : cleanedTrimmed;
 	} catch (e) {
-				console.error("AI failed — returns empty body, callers may save blank draft:", (e as Error).message);
+		console.error(
+			"AI failed — returns empty body, callers may save blank draft:",
+			(e as Error).message,
+		);
 		return "";
 	}
 }

@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 /**
  * Shared tool business logic for the Agent and MCP server.
@@ -14,29 +15,26 @@
  * are reused directly — this module covers the remaining shared operations.
  */
 
-import type { EmailFull } from "./schemas";
+import { Folders } from "../../shared/folders";
+import { sendEmail } from "../email-sender";
+import type { Env } from "../types";
+import { verifyDraft } from "./ai";
 import {
-	getMailboxStub,
-	getFullEmail,
-	getFullThread,
 	buildQuotedReplyBlock,
-	textToHtml,
-	listMailboxes,
-	generateMessageId,
 	buildReferencesChain,
 	buildThreadingHeaders,
+	generateMessageId,
+	getFullEmail,
+	getFullThread,
+	getMailboxStub,
+	listMailboxes,
+	textToHtml,
 } from "./email-helpers";
-import { verifyDraft } from "./ai";
-import { sendEmail } from "../email-sender";
-import { Folders } from "../../shared/folders";
-import type { Env } from "../types";
+import type { EmailFull } from "./schemas";
 
 // ── Type casts for DO methods not on the base stub type ────────────
 type MailboxSearchStub = {
-	searchEmails: (options: {
-		query: string;
-		folder?: string;
-	}) => Promise<unknown>;
+	searchEmails: (options: { query: string; folder?: string }) => Promise<unknown>;
 };
 
 type RateLimitStub = {
@@ -68,11 +66,7 @@ export async function toolListEmails(
 
 // ── get_email ──────────────────────────────────────────────────────
 
-export async function toolGetEmail(
-	env: Env,
-	mailboxId: string,
-	emailId: string,
-) {
+export async function toolGetEmail(env: Env, mailboxId: string, emailId: string) {
 	const stub = getMailboxStub(env, mailboxId);
 	const email = await getFullEmail(stub, emailId);
 	if (!email) return { error: "Email not found" };
@@ -81,11 +75,7 @@ export async function toolGetEmail(
 
 // ── get_thread ─────────────────────────────────────────────────────
 
-export async function toolGetThread(
-	env: Env,
-	mailboxId: string,
-	threadId: string,
-) {
+export async function toolGetThread(env: Env, mailboxId: string, threadId: string) {
 	const stub = getMailboxStub(env, mailboxId);
 	return getFullThread(stub, threadId);
 }
@@ -210,7 +200,13 @@ export async function toolDraftEmail(
 		thread_id?: string;
 	},
 ): Promise<
-	| { status: string; draftId: string; threadId?: string; message: string; draft?: Record<string, string> }
+	| {
+			status: string;
+			draftId: string;
+			threadId?: string;
+			message: string;
+			draft?: Record<string, string>;
+	  }
 	| { error: string }
 > {
 	const stub = getMailboxStub(env, mailboxId);
@@ -281,8 +277,7 @@ export async function toolUpdateDraft(
 		bodyHtml?: string;
 	},
 ): Promise<
-	| { status: string; newDraftId: string; oldDraftId: string; message: string }
-	| { error: string }
+	{ status: string; newDraftId: string; oldDraftId: string; message: string } | { error: string }
 > {
 	const stub = getMailboxStub(env, mailboxId);
 
@@ -297,7 +292,9 @@ export async function toolUpdateDraft(
 	const verifiedBody = await verifyDraft(env.AI, rawBody);
 
 	if (!verifiedBody) {
-		return { error: "Draft verification failed — keeping existing draft unchanged. Please try again." };
+		return {
+			error: "Draft verification failed — keeping existing draft unchanged. Please try again.",
+		};
 	}
 
 	await stub.deleteEmail(params.draftId);
@@ -356,11 +353,7 @@ export async function toolMoveEmail(
 
 // ── discard_draft ──────────────────────────────────────────────────
 
-export async function toolDiscardDraft(
-	env: Env,
-	mailboxId: string,
-	draftId: string,
-) {
+export async function toolDiscardDraft(env: Env, mailboxId: string, draftId: string) {
 	const stub = getMailboxStub(env, mailboxId);
 	const email = (await stub.getEmail(draftId)) as { folder_id?: string } | null;
 	if (!email) {
@@ -375,11 +368,7 @@ export async function toolDiscardDraft(
 
 // ── delete_email ───────────────────────────────────────────────────
 
-export async function toolDeleteEmail(
-	env: Env,
-	mailboxId: string,
-	emailId: string,
-) {
+export async function toolDeleteEmail(env: Env, mailboxId: string, emailId: string) {
 	const stub = getMailboxStub(env, mailboxId);
 	const result = await stub.deleteEmail(emailId);
 	if (result === null) {
@@ -399,10 +388,7 @@ export async function toolSendReply(
 		subject: string;
 		bodyHtml: string;
 	},
-): Promise<
-	| { status: "sent"; messageId: string; message: string }
-	| { error: string }
-> {
+): Promise<{ status: "sent"; messageId: string; message: string } | { error: string }> {
 	const stub = getMailboxStub(env, mailboxId);
 
 	// Check send rate limit
@@ -424,7 +410,9 @@ export async function toolSendReply(
 	// Verify and append quoted original message
 	const sanitizedBody = await verifyDraft(env.AI, params.bodyHtml);
 	if (!sanitizedBody) {
-		return { error: "Draft verification failed — refusing to send unverified content. Please try again." };
+		return {
+			error: "Draft verification failed — refusing to send unverified content. Please try again.",
+		};
 	}
 	const quotedBlock = buildQuotedReplyBlock({
 		date: originalEmail.date,
@@ -456,8 +444,7 @@ export async function toolSendReply(
 			date: new Date().toISOString(),
 			body: fullBodyHtml,
 			in_reply_to: originalMsgId,
-			email_references:
-				references.length > 0 ? JSON.stringify(references) : null,
+			email_references: references.length > 0 ? JSON.stringify(references) : null,
 			thread_id: threadId,
 			message_id: outgoingMessageId,
 		},
@@ -477,10 +464,7 @@ export async function toolSendEmail(
 		subject: string;
 		bodyHtml: string;
 	},
-): Promise<
-	| { status: "sent"; messageId: string; message: string }
-	| { error: string }
-> {
+): Promise<{ status: "sent"; messageId: string; message: string } | { error: string }> {
 	const stub = getMailboxStub(env, mailboxId);
 
 	// Check send rate limit
@@ -495,7 +479,9 @@ export async function toolSendEmail(
 
 	const sanitizedBody = await verifyDraft(env.AI, params.bodyHtml);
 	if (!sanitizedBody) {
-		return { error: "Draft verification failed — refusing to send unverified content. Please try again." };
+		return {
+			error: "Draft verification failed — refusing to send unverified content. Please try again.",
+		};
 	}
 
 	try {

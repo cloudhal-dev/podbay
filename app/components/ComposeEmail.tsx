@@ -1,20 +1,18 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import { Banner, Button, Dialog, Input, Text } from "@cloudflare/kumo";
 import { FloppyDiskIcon, PaperPlaneTiltIcon } from "@phosphor-icons/react";
-import { useParams } from "react-router";
+import { useParams } from "@tanstack/react-router";
 import { useComposeForm } from "~/hooks/useComposeForm";
-import RichTextEditor from "./RichTextEditor";
 import { useUIStore } from "~/hooks/useUIStore";
+import RichTextEditor from "./RichTextEditor";
 
 export default function ComposeEmail() {
-	const { mailboxId, folder } = useParams<{
-		mailboxId: string;
-		folder: string;
-	}>();
-	
+	const { mailboxId, folder } = useParams({ strict: false });
+
 	const { isComposeModalOpen, closeComposeModal } = useUIStore();
 
 	const {
@@ -44,9 +42,7 @@ export default function ComposeEmail() {
 			onOpenChange={(open) => !open && !isSending && closeComposeModal()}
 		>
 			<Dialog size="lg" className="p-6 max-h-[85vh] overflow-y-auto">
-				<Dialog.Title className="text-lg font-semibold mb-5">
-					{formTitle}
-				</Dialog.Title>
+				<Dialog.Title className="text-lg font-semibold mb-5">{formTitle}</Dialog.Title>
 				<form onSubmit={(e) => handleSend(e, closeComposeModal)} className="space-y-4">
 					{error && <Banner variant="error" text={error} />}
 					<div className="flex items-center gap-2">

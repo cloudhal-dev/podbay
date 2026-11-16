@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 /**
  * Shared utility functions used across the frontend.
@@ -13,8 +14,8 @@ import { formatQuotedDate } from "shared/dates";
 import type { Attachment } from "~/types";
 
 export {
-	formatListDate,
 	formatDetailDate,
+	formatListDate,
 	formatShortDate,
 } from "shared/dates";
 
@@ -30,7 +31,7 @@ export function formatBytes(bytes: number, decimals = 1): string {
 	const dm = decimals < 0 ? 0 : decimals;
 	const sizes = ["B", "KB", "MB", "GB"];
 	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+	return `${Number.parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
 }
 
 /**
@@ -75,14 +76,15 @@ export function htmlToPlainText(html: string): string {
  * Strip all HTML tags from a string.
  */
 export function stripHtml(html: string): string {
-	return html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+	return html
+		.replace(/<[^>]*>/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
 }
 
 function decodeHtmlEntities(text: string): string {
 	return text
-		.replace(/&#(\d+);/g, (_match: string, code: string) =>
-			String.fromCharCode(Number(code)),
-		)
+		.replace(/&#(\d+);/g, (_match: string, code: string) => String.fromCharCode(Number(code)))
 		.replace(/&#x([0-9a-f]+);/gi, (_match: string, hex: string) =>
 			String.fromCharCode(Number.parseInt(hex, 16)),
 		)
@@ -95,10 +97,7 @@ function decodeHtmlEntities(text: string): string {
 		.replace(/&nbsp;/g, " ");
 }
 
-export function getSnippetText(
-	snippet?: string | null,
-	maxLength = 100,
-): string {
+export function getSnippetText(snippet?: string | null, maxLength = 100): string {
 	if (!snippet) return "";
 
 	const clean = decodeHtmlEntities(
@@ -140,9 +139,7 @@ export function getSignatureBlock(settings?: {
 		// Sanitize HTML signatures with DOMPurify to allow safe formatting
 		// (bold, italic, links, etc.) while stripping scripts and event handlers.
 		// Text signatures are HTML-escaped since they have no formatting.
-		const content = sig.html
-			? DOMPurify.sanitize(sig.html)
-			: escapeHtml(sig.text || "");
+		const content = sig.html ? DOMPurify.sanitize(sig.html) : escapeHtml(sig.text || "");
 		return `<div style="border-top: 1px solid #ccc; margin-top: 16px; padding-top: 12px;">${content}</div>`;
 	}
 	return "";
@@ -158,7 +155,7 @@ export function buildQuotedReplyBlock(
 ): string {
 	if (!body) return "";
 	const formattedDate = formatComposeDate(dateStr);
-	
+
 	// HTML-escape sender to prevent <john@example.com> from disappearing as a tag
 	const escapedSender = escapeHtml(sender);
 
@@ -187,10 +184,11 @@ export function rewriteInlineImages(
 		if (att.disposition === "inline" && att.content_id) {
 			const url = `/api/v1/mailboxes/${mailboxId}/emails/${emailId}/attachments/${att.id}`;
 			// Strip angle brackets from content_id if present
-			const cid = att.content_id.startsWith("<")
-				? att.content_id.slice(1, -1)
-				: att.content_id;
-			result = result.replace(new RegExp(`cid:${cid.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "gi"), url);
+			const cid = att.content_id.startsWith("<") ? att.content_id.slice(1, -1) : att.content_id;
+			result = result.replace(
+				new RegExp(`cid:${cid.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "gi"),
+				url,
+			);
 		}
 	}
 	return result;
@@ -200,11 +198,7 @@ export function getNonInlineAttachments(attachments?: Attachment[]): Attachment[
 	return attachments?.filter((attachment) => attachment.disposition !== "inline") ?? [];
 }
 
-export function getAttachmentUrl(
-	mailboxId: string,
-	emailId: string,
-	attachmentId: string,
-): string {
+export function getAttachmentUrl(mailboxId: string, emailId: string, attachmentId: string): string {
 	return `/api/v1/mailboxes/${mailboxId}/emails/${emailId}/attachments/${attachmentId}`;
 }
 

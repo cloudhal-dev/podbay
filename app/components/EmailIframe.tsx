@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import DOMPurify from "dompurify";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -81,7 +82,7 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 				setTimeout(reportHeight, 50);
 				setTimeout(reportHeight, 150);
 				setTimeout(reportHeight, 400);
-			<\/script>`
+			</script>`
 			: "";
 
 		// Use srcdoc so the iframe is truly sandboxed (no same-origin access).

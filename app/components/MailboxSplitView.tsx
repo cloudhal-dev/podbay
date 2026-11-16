@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 import type { ReactNode } from "react";
 import ComposePanel from "~/components/ComposePanel";
@@ -23,9 +24,7 @@ export default function MailboxSplitView({
 		<div className="flex h-full">
 			<div
 				className={`flex flex-col min-w-0 shrink-0 ${
-					isPanelOpen
-						? "hidden md:flex md:w-[380px] md:border-r md:border-kumo-line"
-						: "w-full"
+					isPanelOpen ? "hidden md:flex md:w-[380px] md:border-r md:border-kumo-line" : "w-full"
 				}`}
 			>
 				{children}
