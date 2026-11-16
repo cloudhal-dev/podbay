@@ -1,0 +1,13 @@
+Podbay
+Copyright 2026 Cloudhal and the Podbay contributors
+
+This product includes software developed by Cloudflare, Inc.
+
+Podbay started from "Agentic Inbox" (https://github.com/cloudflare/agentic-inbox),
+Copyright (c) 2026 Cloudflare, Inc., licensed under the Apache License, Version 2.0,
+imported at commit 48039bb6785af34e592c2966f87cde2b255c4c80. The files that came
+from it keep their copyright headers and are listed in copies.json. Files changed
+by the Podbay contributors carry a notice of the change, as the licence requires.
+
+"Cloudflare" is a trademark of Cloudflare, Inc. Podbay is not affiliated with,
+endorsed by or sponsored by Cloudflare, Inc.
