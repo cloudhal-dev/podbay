@@ -8,7 +8,7 @@
 
 | Rule | Enforcement |
 |---|---|
-| **V1.** Every dependency starts at its latest stable version and is pinned exactly in one pnpm catalog | A pins test fails on a range or a second copy of a version |
+| **V1.** Every dependency starts at its latest stable version and is pinned exactly in one place: the package manifest today, a pnpm catalog once the repository has more than one package | The pins check fails on a range or a pre-release |
 | **V2.** Updates arrive as automated weekly pull requests. A new major is adopted within 30 days or gets a dated exception in the catalog. A security fix is merged within 48 hours | Update bot; a scheduled job fails when a pin is more than one major behind without an exception |
 | **V3.** No pre-release package in production dependencies without a written exception | The pins test rejects `-alpha`, `-beta`, `-rc` and `0.0.x` versions that are not on the exception list |
 | **V4.** The Workers `compatibility_date` moves forward every month, with the full test run | Scheduled job opens the pull request |

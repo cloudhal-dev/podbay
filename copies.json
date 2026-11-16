@@ -1,375 +1,376 @@
 {
-  "$comment": "Every file that came from another repository. Checked by scripts/checks/copies.ts: a listed file must exist (or be marked removed), and a file with a Cloudflare copyright header must be listed. status: verbatim | modified | removed.",
-  "sources": [
-    {
-      "name": "agentic-inbox",
-      "url": "https://github.com/cloudflare/agentic-inbox",
-      "commit": "48039bb6785af34e592c2966f87cde2b255c4c80",
-      "licence": "Apache-2.0",
-      "copyright": "Copyright (c) 2026 Cloudflare, Inc.",
-      "files": [
-        {
-          "path": ".dev.vars.example",
-          "upstream": ".dev.vars.example",
-          "status": "verbatim"
-        },
-        {
-          "path": ".gitignore",
-          "upstream": ".gitignore",
-          "status": "verbatim"
-        },
-        {
-          "path": "LICENSE",
-          "upstream": "LICENSE",
-          "status": "verbatim"
-        },
-        {
-          "path": null,
-          "upstream": "README.md",
-          "status": "removed",
-          "note": "Replaced by Podbay's own README; the upstream text is in the import commit."
-        },
-        {
-          "path": "app/components/AgentPanel.tsx",
-          "upstream": "app/components/AgentPanel.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/AgentSidebar.tsx",
-          "upstream": "app/components/AgentSidebar.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/ComposeEmail.tsx",
-          "upstream": "app/components/ComposeEmail.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/ComposePanel.tsx",
-          "upstream": "app/components/ComposePanel.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/EmailAttachmentList.tsx",
-          "upstream": "app/components/EmailAttachmentList.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/EmailIframe.tsx",
-          "upstream": "app/components/EmailIframe.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/EmailPanel.tsx",
-          "upstream": "app/components/EmailPanel.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/Header.tsx",
-          "upstream": "app/components/Header.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/MCPPanel.tsx",
-          "upstream": "app/components/MCPPanel.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/MailboxSplitView.tsx",
-          "upstream": "app/components/MailboxSplitView.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/RichTextEditor.tsx",
-          "upstream": "app/components/RichTextEditor.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/Sidebar.tsx",
-          "upstream": "app/components/Sidebar.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/email-panel/EmailPanelDialogs.tsx",
-          "upstream": "app/components/email-panel/EmailPanelDialogs.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/email-panel/EmailPanelHeader.tsx",
-          "upstream": "app/components/email-panel/EmailPanelHeader.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/email-panel/EmailPanelToolbar.tsx",
-          "upstream": "app/components/email-panel/EmailPanelToolbar.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/email-panel/SingleMessageView.tsx",
-          "upstream": "app/components/email-panel/SingleMessageView.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/components/email-panel/ThreadMessage.tsx",
-          "upstream": "app/components/email-panel/ThreadMessage.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/entry.server.tsx",
-          "upstream": "app/entry.server.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/hooks/useComposeForm.ts",
-          "upstream": "app/hooks/useComposeForm.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/hooks/useUIStore.ts",
-          "upstream": "app/hooks/useUIStore.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/index.css",
-          "upstream": "app/index.css",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/lib/search-parser.ts",
-          "upstream": "app/lib/search-parser.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/lib/utils.ts",
-          "upstream": "app/lib/utils.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/queries/emails.ts",
-          "upstream": "app/queries/emails.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/queries/folders.ts",
-          "upstream": "app/queries/folders.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/queries/keys.ts",
-          "upstream": "app/queries/keys.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/queries/mailboxes.ts",
-          "upstream": "app/queries/mailboxes.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/queries/search.ts",
-          "upstream": "app/queries/search.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/root.tsx",
-          "upstream": "app/root.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/routes.ts",
-          "upstream": "app/routes.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/routes/email-list.tsx",
-          "upstream": "app/routes/email-list.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/routes/home.tsx",
-          "upstream": "app/routes/home.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/routes/mailbox-index.tsx",
-          "upstream": "app/routes/mailbox-index.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/routes/mailbox.tsx",
-          "upstream": "app/routes/mailbox.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/routes/not-found.tsx",
-          "upstream": "app/routes/not-found.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/routes/search-results.tsx",
-          "upstream": "app/routes/search-results.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/routes/settings.tsx",
-          "upstream": "app/routes/settings.tsx",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/services/api.ts",
-          "upstream": "app/services/api.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "app/types/index.ts",
-          "upstream": "app/types/index.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "demo_app.png",
-          "upstream": "demo_app.png",
-          "status": "verbatim"
-        },
-        {
-          "path": "package-lock.json",
-          "upstream": "package-lock.json",
-          "status": "verbatim"
-        },
-        {
-          "path": "package.json",
-          "upstream": "package.json",
-          "status": "verbatim"
-        },
-        {
-          "path": "public/favicon.ico",
-          "upstream": "public/favicon.ico",
-          "status": "verbatim"
-        },
-        {
-          "path": "public/favicon.svg",
-          "upstream": "public/favicon.svg",
-          "status": "verbatim"
-        },
-        {
-          "path": "react-router.config.ts",
-          "upstream": "react-router.config.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "shared/dates.ts",
-          "upstream": "shared/dates.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "shared/folders.ts",
-          "upstream": "shared/folders.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "tsconfig.cloudflare.json",
-          "upstream": "tsconfig.cloudflare.json",
-          "status": "verbatim"
-        },
-        {
-          "path": "tsconfig.json",
-          "upstream": "tsconfig.json",
-          "status": "verbatim"
-        },
-        {
-          "path": "tsconfig.node.json",
-          "upstream": "tsconfig.node.json",
-          "status": "verbatim"
-        },
-        {
-          "path": "vite.config.ts",
-          "upstream": "vite.config.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/agent/index.ts",
-          "upstream": "workers/agent/index.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/app.ts",
-          "upstream": "workers/app.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/db/schema.ts",
-          "upstream": "workers/db/schema.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/durableObject/index.ts",
-          "upstream": "workers/durableObject/index.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/durableObject/migrations.ts",
-          "upstream": "workers/durableObject/migrations.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/email-sender.ts",
-          "upstream": "workers/email-sender.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/index.ts",
-          "upstream": "workers/index.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/lib/ai.ts",
-          "upstream": "workers/lib/ai.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/lib/attachments.ts",
-          "upstream": "workers/lib/attachments.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/lib/email-helpers.ts",
-          "upstream": "workers/lib/email-helpers.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/lib/mailbox.ts",
-          "upstream": "workers/lib/mailbox.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/lib/schemas.ts",
-          "upstream": "workers/lib/schemas.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/lib/tools.ts",
-          "upstream": "workers/lib/tools.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/mcp/index.ts",
-          "upstream": "workers/mcp/index.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/routes/reply-forward.ts",
-          "upstream": "workers/routes/reply-forward.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "workers/types.ts",
-          "upstream": "workers/types.ts",
-          "status": "verbatim"
-        },
-        {
-          "path": "wrangler.jsonc",
-          "upstream": "wrangler.jsonc",
-          "status": "verbatim"
-        }
-      ]
-    }
-  ]
+	"$comment": "Every file that came from another repository. Checked by scripts/checks/copies.ts: a listed file must exist (or be marked removed), and a file with a Cloudflare copyright header must be listed. status: verbatim | modified | removed.",
+	"importCommit": "9478c14",
+	"sources": [
+		{
+			"name": "agentic-inbox",
+			"url": "https://github.com/cloudflare/agentic-inbox",
+			"commit": "48039bb6785af34e592c2966f87cde2b255c4c80",
+			"licence": "Apache-2.0",
+			"copyright": "Copyright (c) 2026 Cloudflare, Inc.",
+			"files": [
+				{
+					"path": ".dev.vars.example",
+					"upstream": ".dev.vars.example",
+					"status": "verbatim"
+				},
+				{
+					"path": ".gitignore",
+					"upstream": ".gitignore",
+					"status": "modified"
+				},
+				{
+					"path": "LICENSE",
+					"upstream": "LICENSE",
+					"status": "verbatim"
+				},
+				{
+					"path": null,
+					"upstream": "README.md",
+					"status": "removed",
+					"note": "Replaced by Podbay's own README; the upstream text is in the import commit."
+				},
+				{
+					"path": "app/components/AgentPanel.tsx",
+					"upstream": "app/components/AgentPanel.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/AgentSidebar.tsx",
+					"upstream": "app/components/AgentSidebar.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/ComposeEmail.tsx",
+					"upstream": "app/components/ComposeEmail.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/ComposePanel.tsx",
+					"upstream": "app/components/ComposePanel.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/EmailAttachmentList.tsx",
+					"upstream": "app/components/EmailAttachmentList.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/EmailIframe.tsx",
+					"upstream": "app/components/EmailIframe.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/EmailPanel.tsx",
+					"upstream": "app/components/EmailPanel.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/Header.tsx",
+					"upstream": "app/components/Header.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/MCPPanel.tsx",
+					"upstream": "app/components/MCPPanel.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/MailboxSplitView.tsx",
+					"upstream": "app/components/MailboxSplitView.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/RichTextEditor.tsx",
+					"upstream": "app/components/RichTextEditor.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/Sidebar.tsx",
+					"upstream": "app/components/Sidebar.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/email-panel/EmailPanelDialogs.tsx",
+					"upstream": "app/components/email-panel/EmailPanelDialogs.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/email-panel/EmailPanelHeader.tsx",
+					"upstream": "app/components/email-panel/EmailPanelHeader.tsx",
+					"status": "verbatim"
+				},
+				{
+					"path": "app/components/email-panel/EmailPanelToolbar.tsx",
+					"upstream": "app/components/email-panel/EmailPanelToolbar.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/email-panel/SingleMessageView.tsx",
+					"upstream": "app/components/email-panel/SingleMessageView.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/components/email-panel/ThreadMessage.tsx",
+					"upstream": "app/components/email-panel/ThreadMessage.tsx",
+					"status": "modified"
+				},
+				{
+					"path": null,
+					"upstream": "app/entry.server.tsx",
+					"status": "removed"
+				},
+				{
+					"path": "app/hooks/useComposeForm.ts",
+					"upstream": "app/hooks/useComposeForm.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/hooks/useUIStore.ts",
+					"upstream": "app/hooks/useUIStore.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/index.css",
+					"upstream": "app/index.css",
+					"status": "modified"
+				},
+				{
+					"path": "app/lib/search-parser.ts",
+					"upstream": "app/lib/search-parser.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/lib/utils.ts",
+					"upstream": "app/lib/utils.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/queries/emails.ts",
+					"upstream": "app/queries/emails.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/queries/folders.ts",
+					"upstream": "app/queries/folders.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/queries/keys.ts",
+					"upstream": "app/queries/keys.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/queries/mailboxes.ts",
+					"upstream": "app/queries/mailboxes.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/queries/search.ts",
+					"upstream": "app/queries/search.ts",
+					"status": "modified"
+				},
+				{
+					"path": null,
+					"upstream": "app/root.tsx",
+					"status": "removed"
+				},
+				{
+					"path": null,
+					"upstream": "app/routes.ts",
+					"status": "removed"
+				},
+				{
+					"path": "app/routes/email-list.tsx",
+					"upstream": "app/routes/email-list.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/routes/home.tsx",
+					"upstream": "app/routes/home.tsx",
+					"status": "modified"
+				},
+				{
+					"path": null,
+					"upstream": "app/routes/mailbox-index.tsx",
+					"status": "removed"
+				},
+				{
+					"path": "app/routes/mailbox.tsx",
+					"upstream": "app/routes/mailbox.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/routes/not-found.tsx",
+					"upstream": "app/routes/not-found.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/routes/search-results.tsx",
+					"upstream": "app/routes/search-results.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/routes/settings.tsx",
+					"upstream": "app/routes/settings.tsx",
+					"status": "modified"
+				},
+				{
+					"path": "app/services/api.ts",
+					"upstream": "app/services/api.ts",
+					"status": "modified"
+				},
+				{
+					"path": "app/types/index.ts",
+					"upstream": "app/types/index.ts",
+					"status": "verbatim"
+				},
+				{
+					"path": "demo_app.png",
+					"upstream": "demo_app.png",
+					"status": "verbatim"
+				},
+				{
+					"path": null,
+					"upstream": "package-lock.json",
+					"status": "removed"
+				},
+				{
+					"path": "package.json",
+					"upstream": "package.json",
+					"status": "modified"
+				},
+				{
+					"path": "public/favicon.ico",
+					"upstream": "public/favicon.ico",
+					"status": "verbatim"
+				},
+				{
+					"path": "public/favicon.svg",
+					"upstream": "public/favicon.svg",
+					"status": "verbatim"
+				},
+				{
+					"path": null,
+					"upstream": "react-router.config.ts",
+					"status": "removed"
+				},
+				{
+					"path": "shared/dates.ts",
+					"upstream": "shared/dates.ts",
+					"status": "verbatim"
+				},
+				{
+					"path": "shared/folders.ts",
+					"upstream": "shared/folders.ts",
+					"status": "modified"
+				},
+				{
+					"path": null,
+					"upstream": "tsconfig.cloudflare.json",
+					"status": "removed"
+				},
+				{
+					"path": "tsconfig.json",
+					"upstream": "tsconfig.json",
+					"status": "modified"
+				},
+				{
+					"path": "tsconfig.node.json",
+					"upstream": "tsconfig.node.json",
+					"status": "modified"
+				},
+				{
+					"path": "vite.config.ts",
+					"upstream": "vite.config.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/agent/index.ts",
+					"upstream": "workers/agent/index.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/app.ts",
+					"upstream": "workers/app.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/db/schema.ts",
+					"upstream": "workers/db/schema.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/durableObject/index.ts",
+					"upstream": "workers/durableObject/index.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/durableObject/migrations.ts",
+					"upstream": "workers/durableObject/migrations.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/email-sender.ts",
+					"upstream": "workers/email-sender.ts",
+					"status": "verbatim"
+				},
+				{
+					"path": "workers/index.ts",
+					"upstream": "workers/index.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/lib/ai.ts",
+					"upstream": "workers/lib/ai.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/lib/attachments.ts",
+					"upstream": "workers/lib/attachments.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/lib/email-helpers.ts",
+					"upstream": "workers/lib/email-helpers.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/lib/mailbox.ts",
+					"upstream": "workers/lib/mailbox.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/lib/schemas.ts",
+					"upstream": "workers/lib/schemas.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/lib/tools.ts",
+					"upstream": "workers/lib/tools.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/mcp/index.ts",
+					"upstream": "workers/mcp/index.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/routes/reply-forward.ts",
+					"upstream": "workers/routes/reply-forward.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/types.ts",
+					"upstream": "workers/types.ts",
+					"status": "modified"
+				},
+				{
+					"path": "wrangler.jsonc",
+					"upstream": "wrangler.jsonc",
+					"status": "modified"
+				}
+			]
+		}
+	]
 }

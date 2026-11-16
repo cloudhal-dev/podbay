@@ -1,0 +1,10 @@
+# S16: security-sensitive paths need the project lead's review.
+*                         @madraka
+/.github/                 @madraka
+/scripts/checks/          @madraka
+/copies.json              @madraka
+/ratchets.json            @madraka
+/biome.json               @madraka
+/docs/engineering-rules.md @madraka
+/workers/lib/inbound.ts   @madraka
+/workers/lib/filenames.ts @madraka

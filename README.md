@@ -4,6 +4,18 @@ Self-hosted mail that runs entirely in your own Cloudflare account. Email Routin
 
 > **Status: early development.** Milestone 1 (repository bootstrap) is in progress. Nothing here is ready for real mail yet.
 
+## Try it locally
+
+No Cloudflare account is needed. Local development uses simulated mail and never sends anything.
+
+```bash
+pnpm install
+pnpm dev        # http://localhost:5173
+pnpm check      # lint, static checks, typecheck, unit tests, build
+```
+
+See [`AGENTS.md`](AGENTS.md) for the layout, the commands and the rules, and [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request.
+
 ## Documents
 
 - [Architecture](docs/architecture.md): what Podbay is, its components, the installer contract and the roadmap.
