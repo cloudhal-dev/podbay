@@ -1,6 +1,6 @@
 # Podbay: architecture
 
-- Status: **Accepted** (2026-11-17, [ADR-0001](adr/0001-founding-decisions.md)). Describes the target. The [roadmap](#6-roadmap) says what exists today.
+- Status: **Accepted** (2026-11-17, [ADR-0001](adr/0001-founding-decisions.md)). Describes the target. The [roadmap](#7-roadmap) says what exists today.
 - Companion documents: [feature scope](feature-scope.md), [sign-in and access](auth-and-access.md), [engineering rules](engineering-rules.md).
 - Cloudflare facts below were read from the cited pages on 2026-11-16 (UTC). They are re-checked whenever the code that depends on them changes (rule V5).
 
@@ -78,7 +78,11 @@ Podbay can be installed by hand from the docs or by an installer acting for the 
 | No credential, no call home | No Cloudflare token in the Worker and no request to any vendor. Removing the installer leaves Podbay running |
 | Domain setup | Email Routing enabled on the zone, a catch-all rule to the Worker, the domain onboarded for Email Sending, the domain registered in Podbay. Done from the setup guide, or by the installer over Cloudflare's API |
 
-## 6. Roadmap
+## 6. Where Podbay is hosted by the project
+
+The project's own site, demos and trial instances live under `cloudhal.dev`, with the home at `podbay.cloudhal.dev`. **No running Podbay instance is served from `cloudhal.com` or a subdomain of it** ([ADR-0003](adr/0003-project-home-on-cloudhal-dev.md)): Podbay renders mail written by strangers, and a browser treats all subdomains of one domain as the same site. The same reasoning applies to anyone who deploys Podbay: give it a hostname on a domain that does not also host services whose sessions you care about, or accept that they share a site.
+
+## 7. Roadmap
 
 | # | Milestone | Done when |
 |---|---|---|

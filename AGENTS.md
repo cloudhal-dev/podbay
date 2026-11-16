@@ -22,7 +22,7 @@ pnpm check            # lint → static checks → typecheck → unit tests → 
 pnpm test:workerd     # handlers in the real Workers runtime, every binding local (about 30 s)
 pnpm dev              # local development on http://localhost:5173, simulated mail, no account
 pnpm format           # Biome formatting and safe fixes
-pnpm static [name]    # one static check: pins, copies, licences, names, imports, docs, ratchets
+pnpm static [name]    # one static check: pins, copies, licences, names, imports, hosts, docs, ratchets
 node scripts/pins.ts --resolve [names]   # newest stable version that is at least 3 days old (network, read-only)
 pnpm pins:outdated                       # pins that are behind (network, read-only)
 node scripts/checks/copies.ts --fix      # after editing a seed file: set its status and add the notice
@@ -55,8 +55,9 @@ Short form; the full text and the reason for each is in [docs/engineering-rules.
 5. **A change to a trust boundary ships a regression test**: sign-in, authorisation, mail rendering, attachments, the sender check, the agent and MCP, tokens, exports, CI and releases. (S18)
 6. **Cloudflare facts come from current sources**, never memory: the docs page as `index.md`, the OpenAPI document, the changelog, with the URL and the date in the change. (V5)
 7. **Dependency direction.** The UI never imports Worker code; the Worker never imports the UI; Worker-reachable code imports no Node-only module. (D5)
-8. **Debt only shrinks.** `ratchets.json` records lint warnings, `console.*` calls and oversized files. Lower it when you pay debt down; never raise it. New files get no exemption. (D1, D4, S7)
-9. **Conventional commits, signed off** (`git commit -s`). A contract, a persisted format or a sticky name (a binding, a queue, a Durable Object class) needs an RFC first. (D12)
+8. **Nothing runs under `cloudhal.com`.** The project's site, demos and test mail domains live under `cloudhal.dev` (home: `podbay.cloudhal.dev`). A running Podbay renders strangers' mail and must not share a site with services that hold sessions. ([ADR-0003](docs/adr/0003-project-home-on-cloudhal-dev.md))
+9. **Debt only shrinks.** `ratchets.json` records lint warnings, `console.*` calls and oversized files. Lower it when you pay debt down; never raise it. New files get no exemption. (D1, D4, S7)
+10. **Conventional commits, signed off** (`git commit -s`). A contract, a persisted format or a sticky name (a binding, a queue, a Durable Object class) needs an RFC first. (D12)
 
 ### What is enforced today
 
@@ -68,6 +69,7 @@ Short form; the full text and the reason for each is in [docs/engineering-rules.
 | Licence allow-list over every installed package | S15, S17 | `pnpm static licences` |
 | No other mail product named | S17 | `pnpm static names` |
 | Dependency direction | D5 | `pnpm static imports` |
+| No deployment configuration or workflow names a `cloudhal.com` host | ADR-0003 | `pnpm static hosts` |
 | Markdown links and anchors | D14 | `pnpm static docs` |
 | Lint warnings, `console.*` calls, file size: only down | D1, D4, S7 | `pnpm static ratchets` |
 | Lint errors, formatting | D1 | `pnpm lint` |

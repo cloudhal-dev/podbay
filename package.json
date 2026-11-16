@@ -3,7 +3,7 @@
 	"version": "0.0.0",
 	"private": true,
 	"description": "Self-hosted mail that runs entirely in your own Cloudflare account",
-	"homepage": "https://podbay.cloudhal.com",
+	"homepage": "https://podbay.cloudhal.dev",
 	"license": "Apache-2.0",
 	"type": "module",
 	"packageManager": "pnpm@12.10.1",

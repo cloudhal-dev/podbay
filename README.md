@@ -26,7 +26,7 @@ See [`AGENTS.md`](AGENTS.md) for the layout, the commands and the rules, and [`C
 
 ## Home
 
-The project's home is `podbay.cloudhal.com` ([ADR-0002](docs/adr/0002-project-home.md)). Nothing is published there yet.
+The project's home is `podbay.cloudhal.dev` ([ADR-0003](docs/adr/0003-project-home-on-cloudhal-dev.md)). Nothing is published there yet.
 
 ## Origin
 

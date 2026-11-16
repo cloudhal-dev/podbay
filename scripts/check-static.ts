@@ -6,6 +6,7 @@
  */
 import { check as copies } from "./checks/copies.ts";
 import { check as docs } from "./checks/docs.ts";
+import { check as hosts } from "./checks/hosts.ts";
 import { check as imports } from "./checks/imports.ts";
 import type { Check } from "./checks/lib.ts";
 import { check as licences } from "./checks/licences.ts";
@@ -14,7 +15,7 @@ import { check as ratchets } from "./checks/ratchets.ts";
 import { checkPins, readManifest } from "./pins.ts";
 
 const pins: Check = { name: "pins", run: () => checkPins(readManifest()) };
-const ALL: Check[] = [pins, copies, licences, names, imports, docs, ratchets];
+const ALL: Check[] = [pins, copies, licences, names, imports, hosts, docs, ratchets];
 
 const wanted = process.argv.slice(2);
 const selected = wanted.length > 0 ? ALL.filter((c) => wanted.includes(c.name)) : ALL;

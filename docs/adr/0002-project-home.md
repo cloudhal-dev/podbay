@@ -1,6 +1,6 @@
 # ADR-0002: Project home is podbay.cloudhal.com
 
-- Status: **Accepted**
+- Status: **Superseded by [ADR-0003](0003-project-home-on-cloudhal-dev.md)** (accepted 2026-11-17)
 - Date: 2026-11-17
 - Decided by: Halil (@madraka), project lead
 - Amends: [ADR-0001](0001-founding-decisions.md), decision 8 (the repository becomes public after the name's domain and trademark check)

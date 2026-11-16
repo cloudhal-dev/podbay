@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
+import { hostProblems } from "../../scripts/checks/hosts.ts";
 import { importProblems } from "../../scripts/checks/imports.ts";
 import { checkLicences, licenceAllowed } from "../../scripts/checks/licences.ts";
 import { forbiddenWords } from "../../scripts/checks/names.ts";
@@ -114,5 +115,34 @@ describe("ratchets", () => {
 
 	it("asks to drop a file that is no longer oversized", () => {
 		expect(compare(base, { ...base, oversizedFiles: {} })[0]).toContain("no longer oversized");
+	});
+});
+
+describe("hosts", () => {
+	it("rejects a cloudhal.com host in a deployment configuration", () => {
+		const config = '{ "routes": [{ "pattern": "podbay.cloudhal.com", "custom_domain": true }] }';
+		expect(hostProblems("wrangler.jsonc", config)).toEqual([
+			"wrangler.jsonc: names podbay.cloudhal.com; nothing runs under cloudhal.com (ADR-0003)",
+		]);
+		expect(hostProblems("wrangler.production.jsonc", '"pattern": "cloudhal.com/*"')).toHaveLength(
+			1,
+		);
+	});
+
+	it("rejects one in a workflow", () => {
+		expect(
+			hostProblems(".github/workflows/deploy.yml", "url: https://Mail.CloudHal.com"),
+		).toHaveLength(1);
+	});
+
+	it("accepts cloudhal.dev and look-alike hosts", () => {
+		const config =
+			'"pattern": "podbay.cloudhal.dev", "other": "notcloudhal.com", "x": "cloudhal.com.example.org"';
+		expect(hostProblems("wrangler.jsonc", config)).toEqual([]);
+	});
+
+	it("does not scan documents or contact addresses", () => {
+		expect(hostProblems("SECURITY.md", "email security@cloudhal.com")).toEqual([]);
+		expect(hostProblems("docs/adr/0003.md", "nothing runs under cloudhal.com")).toEqual([]);
 	});
 });
