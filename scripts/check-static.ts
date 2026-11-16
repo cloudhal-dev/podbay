@@ -4,18 +4,39 @@
  *   node scripts/check-static.ts            every check
  *   node scripts/check-static.ts copies     one check by name
  */
+import { check as account } from "./checks/account.ts";
+import { check as compat } from "./checks/compat.ts";
 import { check as copies } from "./checks/copies.ts";
 import { check as docs } from "./checks/docs.ts";
 import { check as hosts } from "./checks/hosts.ts";
+import { check as html } from "./checks/html.ts";
 import { check as imports } from "./checks/imports.ts";
+import { check as ledger } from "./checks/ledger.ts";
 import type { Check } from "./checks/lib.ts";
 import { check as licences } from "./checks/licences.ts";
 import { check as names } from "./checks/names.ts";
 import { check as ratchets } from "./checks/ratchets.ts";
+import { check as secrets } from "./checks/secrets.ts";
+import { check as vendored } from "./checks/vendored-skills.ts";
 import { checkPins, readManifest } from "./pins.ts";
 
 const pins: Check = { name: "pins", run: () => checkPins(readManifest()) };
-const ALL: Check[] = [pins, copies, licences, names, imports, hosts, docs, ratchets];
+const ALL: Check[] = [
+	pins,
+	copies,
+	licences,
+	names,
+	secrets,
+	account,
+	imports,
+	html,
+	hosts,
+	compat,
+	ledger,
+	vendored,
+	docs,
+	ratchets,
+];
 
 const wanted = process.argv.slice(2);
 const selected = wanted.length > 0 ? ALL.filter((c) => wanted.includes(c.name)) : ALL;

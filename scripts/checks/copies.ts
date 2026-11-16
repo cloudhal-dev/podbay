@@ -108,7 +108,7 @@ export function checkCopies(fix = false): string[] {
 		}
 	}
 
-	if (fix && changed) writeFileSync("copies.json", `${JSON.stringify(file, null, 2)}\n`);
+	if (fix && changed) writeFileSync("copies.json", `${JSON.stringify(file, null, "\t")}\n`);
 	return problems;
 }
 

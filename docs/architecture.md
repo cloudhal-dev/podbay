@@ -2,7 +2,7 @@
 
 - Status: **Accepted** (2026-11-17, [ADR-0001](adr/0001-founding-decisions.md)). Describes the target. The [roadmap](#7-roadmap) says what exists today.
 - Companion documents: [feature scope](feature-scope.md), [sign-in and access](auth-and-access.md), [engineering rules](engineering-rules.md).
-- Cloudflare facts below were read from the cited pages on 2026-11-16 (UTC). They are re-checked whenever the code that depends on them changes (rule V5).
+- Cloudflare facts below were read from the cited pages on 2026-11-16 (UTC) and are recorded, with the quote that supports each, in the [ledger](cloudflare/README.md). They are re-checked whenever the code that depends on them changes (rule V5).
 
 ## 1. What Podbay is
 
@@ -52,7 +52,7 @@ It is for a person or a small team with a domain on Cloudflare who wants real ad
 | Worker | One Worker, four handlers: `fetch` (UI assets, API, MCP, agent WebSocket), `email` (inbound), `queue` (consumers), `scheduled` (cleanup, exports) | One deployable unit; simple to install by hand |
 | Central index | D1: users, sessions, domains, mailboxes, addresses and aliases, memberships, audit. Batches only, compare-and-set on a revision column | Listing and authorisation need one queryable place; Durable Objects cannot be listed or joined |
 | Mailbox | One `MailboxDO` per mailbox: message metadata, threads, folders, labels and an FTS5 index ([SQLite storage API](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/)) | A mailbox is the unit of isolation, export and deletion |
-| Storage | R2 holds the raw message, attachments and exports under a per-mailbox prefix. The Durable Object holds metadata and extracted text only | A Durable Object stores at most 10 GB and a row at most 8 MB ([limits](https://developers.cloudflare.com/durable-objects/platform/limits/)); inbound mail can be 25 MiB ([limits](https://developers.cloudflare.com/email-service/platform/limits/)) |
+| Storage | R2 holds the raw message, attachments and exports under a per-mailbox prefix. The Durable Object holds metadata and extracted text only | A Durable Object stores at most 10 GB on Workers Paid (1 GB on the Free plan) and a row at most 8 MB ([limits](https://developers.cloudflare.com/durable-objects/platform/limits/)); inbound mail can be 25 MiB ([limits](https://developers.cloudflare.com/email-service/platform/limits/)) |
 | Inbound | The `email` handler resolves the **envelope** recipient in D1, rejects unknown addresses, streams the raw message to R2 and enqueues a pointer. A consumer parses, files, applies rules and wakes the agent | A queue message is at most 128 KB ([Queues limits](https://developers.cloudflare.com/queues/platform/limits/)); an isolate has 128 MB ([Workers limits](https://developers.cloudflare.com/workers/platform/limits/)) |
 | Outbound | A send is a row plus a queue message with an idempotency key. The consumer calls `send_email`, retries retryable errors and records the result | No duplicate and no lost sends; a visible state |
 | Delivery events | Email Sending publishes delivered, bounced and complained events to a Queue ([event subscriptions](https://developers.cloudflare.com/email-service/reference/event-subscriptions/)); a consumer attaches them to the message | Delivery status without a webhook endpoint |

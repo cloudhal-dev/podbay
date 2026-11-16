@@ -1,0 +1,45 @@
+# V2: updates arrive as weekly pull requests and go through the full check.
+# The cooldown matches the three-day minimum release age in pnpm-workspace.yaml (V6).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      cloudflare:
+        patterns: ["wrangler", "@cloudflare/*"]
+      agent:
+        patterns: ["agents", "ai", "@ai-sdk/*", "@modelcontextprotocol/*", "workers-ai-provider"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      tanstack:
+        patterns: ["@tanstack/*"]
+      editor:
+        patterns: ["@tiptap/*"]
+      tooling:
+        patterns:
+          [
+            "typescript",
+            "vite",
+            "vitest",
+            "@vitejs/*",
+            "@biomejs/*",
+            "tailwindcss",
+            "@tailwindcss/*",
+          ]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: "chore(ci)"

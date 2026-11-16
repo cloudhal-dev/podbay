@@ -313,7 +313,7 @@
 				{
 					"path": "workers/email-sender.ts",
 					"upstream": "workers/email-sender.ts",
-					"status": "verbatim"
+					"status": "modified"
 				},
 				{
 					"path": "workers/index.ts",
