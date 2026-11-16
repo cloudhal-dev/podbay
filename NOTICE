@@ -9,5 +9,10 @@ imported at commit 48039bb6785af34e592c2966f87cde2b255c4c80. The files that came
 from it keep their copyright headers and are listed in copies.json. Files changed
 by the Podbay contributors carry a notice of the change, as the licence requires.
 
+The directory .claude/skills/security-audit/ is Cloudflare's "security-audit" skill
+(https://github.com/cloudflare/security-audit-skill), Copyright (c) Cloudflare, Inc.,
+under the MIT License, vendored unmodified at the commit recorded in its vendored.json.
+Its licence text is in that directory.
+
 "Cloudflare" is a trademark of Cloudflare, Inc. Podbay is not affiliated with,
 endorsed by or sponsored by Cloudflare, Inc.
