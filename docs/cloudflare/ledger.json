@@ -1,0 +1,604 @@
+{
+	"version": 1,
+	"entries": [
+		{
+			"id": "wrangler.name",
+			"kind": "config",
+			"relies": "The Worker is deployed under the name in the configuration file.",
+			"source": "https://developers.cloudflare.com/workers/wrangler/configuration/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "The name of your Worker. Alphanumeric characters ( `a`, `b`, `c`, etc.) and dashes ( `-`) only.",
+			"code": ["wrangler.jsonc"]
+		},
+		{
+			"id": "wrangler.main",
+			"kind": "config",
+			"relies": "`main` names the Worker entry file that exports the `fetch` and `email` handlers.",
+			"source": "https://developers.cloudflare.com/workers/wrangler/configuration/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "The path to the entrypoint of your Worker that will be executed.",
+			"code": ["wrangler.jsonc", "workers/app.ts"]
+		},
+		{
+			"id": "wrangler.compatibility_date",
+			"kind": "config",
+			"relies": "The date selects the runtime behaviour: every compatibility flag with a default date up to it is on.",
+			"source": "https://developers.cloudflare.com/workers/configuration/compatibility-dates/",
+			"pageUpdated": "2026-04-23",
+			"verifiedAt": "2026-11-17",
+			"evidence": "by specifying a `compatibility_date` for your Worker, you can quickly enable all of these various compatibility flags up to, and including, that date.",
+			"code": ["wrangler.jsonc"]
+		},
+		{
+			"id": "runtime.nodejs_compat.default",
+			"kind": "runtime",
+			"relies": "Node.js built-in modules and polyfills are available to the Worker and its dependencies without a compatibility flag, because the compatibility date is 2026-08-04 or later.",
+			"source": "https://developers.cloudflare.com/workers/runtime-apis/nodejs/",
+			"pageUpdated": "2026-08-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "For compatibility dates of `2026-08-04` or later, Workers enables both `nodejs_compat` and `nodejs_compat_v2` by default.",
+			"code": ["wrangler.jsonc"],
+			"note": "`wrangler.jsonc` sets no `nodejs_compat` flag. Moving the compatibility date below 2026-08-04 would need the flag back."
+		},
+		{
+			"id": "wrangler.observability",
+			"kind": "config",
+			"relies": "`observability.enabled` makes the Worker write its logs to Workers Logs.",
+			"source": "https://developers.cloudflare.com/workers/observability/logs/workers-logs/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "You must add the observability setting for your Worker to write logs to Workers Logs.",
+			"code": ["wrangler.jsonc"]
+		},
+		{
+			"id": "wrangler.assets.not_found_handling",
+			"kind": "config",
+			"relies": "A request that matches no asset is answered with `/index.html`, so the single-page app handles its own routes.",
+			"source": "https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/",
+			"pageUpdated": "2026-10-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "When an incoming request does not match a file in the `assets.directory`, Workers will serve the contents of the `/index.html` file with a `200 OK` status.",
+			"code": ["wrangler.jsonc"]
+		},
+		{
+			"id": "wrangler.assets.run_worker_first",
+			"kind": "config",
+			"relies": "Only the listed route patterns (`/api/*`, `/mcp`, `/mcp/*`, `/agents/*`) reach the Worker before the assets.",
+			"source": "https://developers.cloudflare.com/workers/static-assets/binding/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "You can also specify `run_worker_first` as an array of route patterns to selectively run the Worker script first only for specific routes.",
+			"code": ["wrangler.jsonc", "workers/app.ts"]
+		},
+		{
+			"id": "wrangler.vars",
+			"kind": "config",
+			"relies": "`vars` sets plain environment variables (the domains, the address allow-list, the feature switches).",
+			"source": "https://developers.cloudflare.com/workers/wrangler/configuration/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "A map of environment variables to set when deploying your Worker.",
+			"code": ["wrangler.jsonc", "workers/lib/features.ts"]
+		},
+		{
+			"id": "wrangler.send_email",
+			"kind": "config",
+			"relies": "A `send_email` entry with only a `name` gives the Worker the `EMAIL` send binding.",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Configure a `send_email` binding in your Wrangler configuration file to enable email sending:",
+			"code": ["wrangler.jsonc", "workers/email-sender.ts"],
+			"note": "The send bindings page describes an entry without a restriction attribute as able to send to any verified destination address. The pricing page says arbitrary recipients need Workers Paid."
+		},
+		{
+			"id": "wrangler.r2_buckets",
+			"kind": "config",
+			"relies": "An `r2_buckets` entry binds the bucket as `BUCKET`.",
+			"source": "https://developers.cloudflare.com/workers/wrangler/configuration/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "To bind R2 buckets to your Worker, assign an array of the below object to the `r2_buckets` key.",
+			"code": ["wrangler.jsonc"]
+		},
+		{
+			"id": "wrangler.ai",
+			"kind": "config",
+			"relies": "The `ai` key binds Workers AI as `AI`. Only the optional agent features use it.",
+			"source": "https://developers.cloudflare.com/workers/wrangler/configuration/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Unlike other bindings, this binding is limited to one AI binding per Worker project.",
+			"code": ["wrangler.jsonc", "workers/lib/ai.ts"]
+		},
+		{
+			"id": "wrangler.durable_objects",
+			"kind": "config",
+			"relies": "`durable_objects.bindings` binds each Durable Object class by `name` and `class_name`.",
+			"source": "https://developers.cloudflare.com/workers/wrangler/configuration/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "To bind Durable Objects to your Worker, assign an array of the below object to the `durable_objects.bindings` key.",
+			"code": ["wrangler.jsonc"]
+		},
+		{
+			"id": "wrangler.migrations.new_sqlite_classes",
+			"kind": "config",
+			"relies": "Each Durable Object class is created with the SQLite storage backend by a `new_sqlite_classes` migration.",
+			"source": "https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/",
+			"pageUpdated": "2026-09-28",
+			"verifiedAt": "2026-11-17",
+			"evidence": "The `migrations` array remains fully supported for existing Workers and continues to work as documented here.",
+			"code": ["wrangler.jsonc"],
+			"note": "The page calls `migrations` legacy and prefers the declarative `exports` field for new Workers. The two cannot be mixed for Durable Objects."
+		},
+		{
+			"id": "runtime.email.handler",
+			"kind": "runtime",
+			"relies": "Inbound mail reaches the Worker through the exported `email(message, env, ctx)` handler.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Add the `email` handler function to your Worker's exported handlers:",
+			"code": ["workers/app.ts"]
+		},
+		{
+			"id": "runtime.email.message.from",
+			"kind": "runtime",
+			"relies": "`message.from` is the envelope sender, not the `From:` header.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "readonly from: string; // Sender email address (envelope MAIL FROM)",
+			"code": ["workers/lib/inbound.ts"]
+		},
+		{
+			"id": "runtime.email.message.to",
+			"kind": "runtime",
+			"relies": "`message.to` is the envelope recipient. Podbay files a message by it and never by the `To:` header.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "readonly to: string; // Recipient email address (envelope RCPT TO)",
+			"code": ["workers/index.ts", "workers/lib/inbound.ts"]
+		},
+		{
+			"id": "runtime.email.message.raw",
+			"kind": "runtime",
+			"relies": "`message.raw` is a stream of the raw MIME message.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "readonly raw: ReadableStream; // Raw MIME email content stream",
+			"code": ["workers/index.ts", "workers/lib/inbound.ts"]
+		},
+		{
+			"id": "runtime.email.message.rawSize",
+			"kind": "runtime",
+			"relies": "`message.rawSize` is the size of the raw message in bytes. Podbay sizes its read buffer from it.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "readonly rawSize: number; // Size of raw email in bytes",
+			"code": ["workers/index.ts", "workers/lib/inbound.ts"]
+		},
+		{
+			"id": "runtime.email.message.setReject",
+			"kind": "runtime",
+			"relies": "`message.setReject(reason)` refuses the message with a permanent SMTP error. Podbay calls it for an unknown recipient.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Reject emails with a permanent SMTP error:",
+			"code": ["workers/index.ts", "workers/lib/inbound.ts"]
+		},
+		{
+			"id": "runtime.email.authentication_results",
+			"kind": "runtime",
+			"relies": "Only the first `Authentication-Results` header, written by `mx.cloudflare.net`, can be trusted for SPF, DKIM and DMARC results.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Other `Authentication-Results` headers may have been supplied by the sender and should not be trusted.",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "runtime.send_email.send",
+			"kind": "runtime",
+			"relies": "`env.EMAIL.send(message)` takes a structured message and resolves to a result.",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "send(message: EmailMessage | EmailMessageBuilder): Promise<EmailSendResult>;",
+			"code": ["workers/email-sender.ts"]
+		},
+		{
+			"id": "runtime.send_email.message",
+			"kind": "runtime",
+			"relies": "The message takes `to`, `from`, `subject`, `html`, `text`, `cc`, `bcc` and `replyTo`. An address is a string or `{ email, name }`.",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "to: string | EmailAddress | (string | EmailAddress)[]; // Max 50 recipients",
+			"code": ["workers/email-sender.ts"]
+		},
+		{
+			"id": "runtime.send_email.attachments",
+			"kind": "runtime",
+			"relies": "An attachment is `{ content, filename, type, disposition, contentId? }`. Podbay passes `content` as a base64 string.",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "content: string | ArrayBuffer | ArrayBufferView; // Base64 string or binary content",
+			"code": ["workers/email-sender.ts"]
+		},
+		{
+			"id": "runtime.send_email.headers",
+			"kind": "runtime",
+			"relies": "Custom headers are passed as a `headers` map of strings.",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "headers?: { [key: string]: string };",
+			"code": ["workers/email-sender.ts"]
+		},
+		{
+			"id": "runtime.send_email.result",
+			"kind": "runtime",
+			"relies": "A successful send returns `{ messageId }`. A failed send throws an `Error` with a `code` property.",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "// Errors are thrown as standard Error objects with a `code` property",
+			"code": ["workers/email-sender.ts"]
+		},
+		{
+			"id": "runtime.r2.head",
+			"kind": "runtime",
+			"relies": "`bucket.head(key)` returns the object's metadata, or `null` when the key does not exist. Podbay uses it as an existence test.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Retrieves the `R2Object` for the given key containing only object metadata, if the key exists, and `null` if the key does not exist.",
+			"code": ["workers/index.ts", "workers/lib/mailbox.ts", "workers/mcp/index.ts"]
+		},
+		{
+			"id": "runtime.r2.get",
+			"kind": "runtime",
+			"relies": "`bucket.get(key)` returns the object with its body, or `null` when the key does not exist.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "`get` `(key: string, options?: R2GetOptions): Promise<R2ObjectBody | R2Object | null>`",
+			"code": ["workers/index.ts", "workers/agent/index.ts"]
+		},
+		{
+			"id": "runtime.r2.put",
+			"kind": "runtime",
+			"relies": "`bucket.put(key, value)` stores a string or bytes under the key.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Stores the given `value` and metadata under the associated `key`. Once the write succeeds, returns an `R2Object` containing metadata about the stored Object.",
+			"code": ["workers/index.ts", "workers/lib/attachments.ts"]
+		},
+		{
+			"id": "runtime.r2.list",
+			"kind": "runtime",
+			"relies": "`bucket.list({ prefix })` returns the objects whose keys start with the prefix. Podbay lists the mailbox registry with it.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Returns up to 1000 entries, but may return less in order to minimize memory pressure within the Worker.",
+			"code": ["workers/lib/email-helpers.ts"],
+			"note": "The page says to use the `truncated` property to see whether more results exist. The mailbox listing reads one page only."
+		},
+		{
+			"id": "runtime.r2.delete",
+			"kind": "runtime",
+			"relies": "`bucket.delete(key)` removes an object, and later reads no longer see it.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "R2 deletes are strongly consistent. Once the Promise resolves, all subsequent read operations will no longer see the provided key value pairs globally.",
+			"code": ["workers/index.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.namespace",
+			"kind": "runtime",
+			"relies": "`namespace.idFromName(name)` always gives the same id for a name, and `namespace.get(id)` gives a stub. One Durable Object per mailbox address.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/namespace/",
+			"pageUpdated": "2026-11-05",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Named Durable Objects are the most common method of referring to Durable Objects.",
+			"code": ["workers/index.ts", "workers/lib/mailbox.ts", "workers/lib/email-helpers.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.sql.exec",
+			"kind": "runtime",
+			"relies": "`ctx.storage.sql.exec(query, ...bindings)` runs SQL with `?` placeholders and returns an iterable cursor of rows.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-17",
+			"evidence": "`exec(query: string, ...bindings: any[])`: `SqlStorageCursor`",
+			"code": ["workers/durableObject/index.ts", "workers/durableObject/migrations.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.transactionSync",
+			"kind": "runtime",
+			"relies": "`ctx.storage.transactionSync(callback)` runs synchronous SQL in one transaction and rolls back when the callback throws. Migrations use it because `sql.exec` cannot run `BEGIN TRANSACTION`.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Note that `sql.exec()` cannot execute transaction-related statements like `BEGIN TRANSACTION` or `SAVEPOINT`.",
+			"code": ["workers/durableObject/migrations.ts", "workers/durableObject/index.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.fts5",
+			"kind": "runtime",
+			"relies": "SQLite in a Durable Object includes the FTS5 module. The planned mailbox search index is built on it.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-17",
+			"evidence": "for full-text search (including `fts5vocab`).",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "runtime.ctx.waitUntil",
+			"kind": "runtime",
+			"relies": "`ctx.waitUntil(promise)` lets work continue after the handler has returned. Podbay sends mail and wakes the agent this way.",
+			"source": "https://developers.cloudflare.com/workers/runtime-apis/context/",
+			"pageUpdated": "2026-10-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "`ctx.waitUntil()` extends the lifetime of your Worker, allowing you to perform work without blocking returning a response, and that may continue after a response is returned.",
+			"code": ["workers/index.ts", "workers/routes/reply-forward.ts"]
+		},
+		{
+			"id": "runtime.access.jwt_header",
+			"kind": "runtime",
+			"relies": "Cloudflare Access puts the application token in the `Cf-Access-Jwt-Assertion` request header. The Worker checks its signature, issuer and audience.",
+			"source": "https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/",
+			"pageUpdated": "2026-11-02",
+			"verifiedAt": "2026-11-17",
+			"evidence": "If you need to validate the JWT manually, read it from the `Cf-Access-Jwt-Assertion` header.",
+			"code": ["workers/app.ts"]
+		},
+		{
+			"id": "runtime.access.certs",
+			"kind": "runtime",
+			"relies": "The signing keys of an Access team are served at `/cdn-cgi/access/certs` on the team domain.",
+			"source": "https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/",
+			"pageUpdated": "2026-11-02",
+			"verifiedAt": "2026-11-17",
+			"evidence": "The public key for the signing key pair is located at `https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/certs`",
+			"code": ["workers/app.ts"]
+		},
+		{
+			"id": "runtime.ai.run",
+			"kind": "runtime",
+			"relies": "`ai.run(model, input)` runs a Workers AI model. Only the optional agent features call it.",
+			"source": "https://developers.cloudflare.com/workers-ai/configuration/bindings/",
+			"pageUpdated": "2026-04-21",
+			"verifiedAt": "2026-11-17",
+			"evidence": "`async env.AI.run()` runs a model. Takes a model as the first parameter, and an object as the second parameter.",
+			"code": ["workers/lib/ai.ts"]
+		},
+		{
+			"id": "runtime.ai.model.llama-4-scout-17b-16e-instruct",
+			"kind": "runtime",
+			"relies": "`@cf/meta/llama-4-scout-17b-16e-instruct` is a Workers AI model id that accepts chat messages.",
+			"source": "https://developers.cloudflare.com/workers-ai/models/llama-4-scout-17b-16e-instruct/",
+			"pageUpdated": null,
+			"verifiedAt": "2026-11-17",
+			"evidence": "const response = await env.AI.run(\"@cf/meta/llama-4-scout-17b-16e-instruct\", { messages });",
+			"code": ["workers/lib/ai.ts"]
+		},
+		{
+			"id": "runtime.ai.model.llama-3.1-8b-instruct-fast",
+			"kind": "runtime",
+			"relies": "`@cf/meta/llama-3.1-8b-instruct-fast` is a Workers AI model id that accepts chat messages.",
+			"source": "https://developers.cloudflare.com/workers-ai/changelog/",
+			"pageUpdated": "2026-04-21",
+			"verifiedAt": null,
+			"evidence": "needs verification: the model page returns 404 and the model index does not list this id. The 2026-05-08 changelog only says the `-fast` variants remain active.",
+			"code": ["workers/lib/ai.ts"]
+		},
+		{
+			"id": "runtime.ai.model.kimi-k2.5",
+			"kind": "runtime",
+			"relies": "`@cf/moonshotai/kimi-k2.5` is a Workers AI model id the agent can run.",
+			"source": "https://developers.cloudflare.com/workers-ai/changelog/",
+			"pageUpdated": "2026-04-21",
+			"verifiedAt": null,
+			"evidence": "needs verification: the 2026-05-08 changelog says the id is deprecated and aliased to kimi-k2.6, at a higher price, from May 30, 2026. The model page returns 404.",
+			"code": ["workers/agent/index.ts"]
+		},
+		{
+			"id": "tooling.local_bindings",
+			"kind": "tooling",
+			"relies": "In local development and in tests every binding is a local simulation, so no real mail is sent. Workers AI is the exception and stays off.",
+			"source": "https://developers.cloudflare.com/workers/local-development/",
+			"pageUpdated": "2026-10-28",
+			"verifiedAt": "2026-11-17",
+			"evidence": "By default, bindings connect to **local resource simulations** (except for [AI bindings](https://developers.cloudflare.com/workers-ai/configuration/bindings/), as AI models always run remotely).",
+			"code": ["wrangler.jsonc", "vite.config.ts"]
+		},
+		{
+			"id": "tooling.local_send_email",
+			"kind": "tooling",
+			"relies": "The local `send_email` binding logs a message and does not send it.",
+			"source": "https://developers.cloudflare.com/email-service/observability/local-development/sending/",
+			"pageUpdated": "2026-10-15",
+			"verifiedAt": "2026-11-17",
+			"evidence": "By default, `wrangler dev` simulates the email binding locally. It logs emails to the console but does not send them.",
+			"code": ["wrangler.jsonc"],
+			"note": "The page names `wrangler dev`. Podbay runs the Vite plugin, and the page does not mention it."
+		},
+		{
+			"id": "tooling.local_email_endpoint",
+			"kind": "tooling",
+			"relies": "A raw message posted to `/cdn-cgi/local/email?from=…&to=…` on the local server is delivered to the `email` handler.",
+			"source": "https://developers.cloudflare.com/email-service/observability/local-development/routing/",
+			"pageUpdated": "2026-10-15",
+			"verifiedAt": "2026-11-17",
+			"evidence": "curl --request POST 'http://localhost:8787/cdn-cgi/local/email' \\",
+			"code": ["AGENTS.md"],
+			"note": "An older path, `/cdn-cgi/handler/email`, still works in the installed Vite plugin as a legacy route; Podbay's docs use the documented one."
+		},
+		{
+			"id": "tooling.vite.viteEnvironment",
+			"kind": "tooling",
+			"relies": "The Vite plugin's `viteEnvironment.name` option names the Vite environment the Worker runs in.",
+			"source": "https://developers.cloudflare.com/workers/vite-plugin/reference/api/",
+			"pageUpdated": "2026-06-25",
+			"verifiedAt": "2026-11-17",
+			"evidence": "By default, the environment name is the Worker name with `-` characters replaced with `_`. Setting the name here will override this.",
+			"code": ["vite.config.ts"]
+		},
+		{
+			"id": "tooling.vitest.wrangler",
+			"kind": "tooling",
+			"relies": "`cloudflareTest({ wrangler: { configPath } })` loads the entry point, the compatibility settings and the bindings from `wrangler.jsonc`.",
+			"source": "https://developers.cloudflare.com/workers/testing/vitest-integration/configuration/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "`wrangler`: `{ configPath?: string; environment?: string; }` optional",
+			"code": ["test/workerd/vitest.config.ts"]
+		},
+		{
+			"id": "tooling.vitest.remoteBindings",
+			"kind": "tooling",
+			"relies": "`cloudflareTest({ remoteBindings: false })` keeps every binding local. The option is on by default.",
+			"source": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/vitest-plugin/src/pool/config.ts",
+			"pageUpdated": null,
+			"verifiedAt": "2026-11-17",
+			"evidence": "remoteBindings: z.boolean().default(true),",
+			"code": ["test/workerd/vitest.config.ts"],
+			"note": "The docs page for the Vitest integration does not list this option, so the source is the plugin's own code."
+		},
+		{
+			"id": "limit.email.inbound_size",
+			"kind": "limit",
+			"relies": "An inbound message is at most 25 MiB. Larger mail never reaches the Worker.",
+			"source": "https://developers.cloudflare.com/email-service/platform/limits/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| **Inbound message size** | 25 MiB | Messages larger than this are rejected |",
+			"code": ["docs/architecture.md", "workers/index.ts"]
+		},
+		{
+			"id": "limit.durable_objects.storage",
+			"kind": "limit",
+			"relies": "One Durable Object stores at most 10 GB, so raw messages and attachments live in R2.",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "10 GB on Workers Paid, or 1 GB on the Free plan",
+			"code": ["docs/architecture.md"],
+			"note": "10 GB holds on Workers Paid only. On the Free plan one Durable Object stores 1 GB and the account 5 GB in total."
+		},
+		{
+			"id": "limit.durable_objects.row_size",
+			"kind": "limit",
+			"relies": "A string, a blob or a table row in a Durable Object is at most 8 MB.",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| Maximum string, `BLOB` or table row size | 8 MB |",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "limit.durable_objects.like_pattern",
+			"kind": "limit",
+			"relies": "A `LIKE` pattern is at most 50 bytes. The mailbox search builds `LIKE` patterns from the search text.",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| Maximum characters (bytes) in a `LIKE` or `GLOB` pattern | 50 bytes |",
+			"code": ["workers/durableObject/index.ts"]
+		},
+		{
+			"id": "limit.durable_objects.point_in_time_recovery",
+			"kind": "limit",
+			"relies": "A SQLite-backed Durable Object can be restored to any point in the past 30 days.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-17",
+			"evidence": "restore a Durable Object's embedded SQLite database to any point in time in the past 30 days.",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "limit.queues.message_size",
+			"kind": "limit",
+			"relies": "A queue message is at most 128 KB, so the planned inbound queue carries a pointer and not the message.",
+			"source": "https://developers.cloudflare.com/queues/platform/limits/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| Message size | 128 KB <sup>1</sup> |",
+			"code": ["docs/architecture.md"],
+			"note": "The page counts 1 KB as 1000 bytes, and up to about 100 bytes of internal metadata count towards the limit."
+		},
+		{
+			"id": "limit.workers.memory",
+			"kind": "limit",
+			"relies": "An isolate has 128 MB of memory, on every plan.",
+			"source": "https://developers.cloudflare.com/workers/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| Memory per isolate | 128 MB |",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "plan.email_sending.beta",
+			"kind": "plan",
+			"relies": "Cloudflare documents Email Sending as a beta.",
+			"source": "https://developers.cloudflare.com/email-service/",
+			"pageUpdated": "2026-10-15",
+			"verifiedAt": "2026-11-17",
+			"evidence": "**Email Sending** Beta sends outbound transactional emails. Available on Workers Paid plan",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "plan.email_sending.workers_paid",
+			"kind": "plan",
+			"relies": "Sending to any recipient needs the Workers Paid plan.",
+			"source": "https://developers.cloudflare.com/email-service/platform/pricing/",
+			"pageUpdated": "2026-06-09",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Sending to arbitrary recipients requires the Workers Paid plan.",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "plan.email_sending.price",
+			"kind": "plan",
+			"relies": "Workers Paid includes 3,000 outbound mails a month. After that the price is $0.35 per 1,000.",
+			"source": "https://developers.cloudflare.com/email-service/platform/pricing/",
+			"pageUpdated": "2026-06-09",
+			"verifiedAt": "2026-11-17",
+			"evidence": "3,000 included per month, then $0.35 per 1,000 emails",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "plan.email_sending.verified_destinations",
+			"kind": "plan",
+			"relies": "On Workers Free, Podbay can still send to the account's verified destination addresses, at no charge.",
+			"source": "https://developers.cloudflare.com/email-service/platform/pricing/",
+			"pageUpdated": "2026-06-09",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Sends to verified destination addresses are free and do not count toward the included quota.",
+			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "plan.email_routing.free",
+			"kind": "plan",
+			"relies": "Receiving mail works on Workers Free and on Workers Paid.",
+			"source": "https://developers.cloudflare.com/email-service/platform/pricing/",
+			"pageUpdated": "2026-06-09",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Email Routing is available on both the Workers Free and Workers Paid plans.",
+			"code": ["docs/architecture.md"]
+		}
+	]
+}
