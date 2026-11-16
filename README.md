@@ -24,6 +24,10 @@ See [`AGENTS.md`](AGENTS.md) for the layout, the commands and the rules, and [`C
 - [Engineering rules](docs/engineering-rules.md): the version policy, the security rules and the developer rules, each with its automated check.
 - [Decisions](docs/adr/README.md).
 
+## Home
+
+The project's home is `podbay.cloudhal.com` ([ADR-0002](docs/adr/0002-project-home.md)). Nothing is published there yet.
+
 ## Origin
 
 Podbay starts from Cloudflare's [`agentic-inbox`](https://github.com/cloudflare/agentic-inbox) reference app. See [`NOTICE`](NOTICE).
