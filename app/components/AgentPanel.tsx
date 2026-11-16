@@ -24,6 +24,7 @@ import type { UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { errorFields, log } from "shared/log";
 import { useUIStore } from "~/hooks/useUIStore";
 
 const TOOL_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
@@ -472,7 +473,7 @@ export default function AgentPanel() {
 				}),
 			)
 			.catch((err) => {
-				console.error("Failed to load agent modules:", err);
+				log.error("ui.agent_modules_failed", errorFields(err));
 				setLoadError("Failed to connect to agent. Reload to retry.");
 			});
 	}, []);

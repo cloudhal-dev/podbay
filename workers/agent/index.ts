@@ -4,14 +4,15 @@
 // Modified by the Podbay contributors.
 
 import { AIChatAgent } from "@cloudflare/ai-chat";
+import { createAI } from "agents/models/ai-sdk";
 import { convertToModelMessages, generateText, stepCountIs, streamText } from "ai";
-import { createWorkersAI } from "workers-ai-provider";
 import { z } from "zod";
 import {
 	FOLDER_TOOL_DESCRIPTION,
 	Folders,
 	MOVE_FOLDER_TOOL_DESCRIPTION,
 } from "../../shared/folders";
+import { errorFields, log } from "../../shared/log";
 import { isPromptInjection, verifyDraft } from "../lib/ai";
 import { getMailboxStub, stripHtmlToText, textToHtml } from "../lib/email-helpers";
 import type { EmailFull, EmailMetadata } from "../lib/schemas";
@@ -240,7 +241,7 @@ export class EmailAgent extends AIChatAgent<any> {
 	async onChatMessage(onFinish: any) {
 		const env = this.env as Env;
 		const mailboxId = this.name;
-		const workersai = createWorkersAI({ binding: env.AI });
+		const workersai = createAI({ binding: env.AI });
 		const tools = createEmailTools(env, mailboxId);
 		const systemPrompt = await getSystemPrompt(env, mailboxId);
 
@@ -276,7 +277,7 @@ export class EmailAgent extends AIChatAgent<any> {
 					headers: { "Content-Type": "application/json" },
 				});
 			} catch (e) {
-				console.error("onNewEmail handler failed:", (e as Error).message);
+				log.error("agent.on_new_email_failed", errorFields(e));
 				return new Response(JSON.stringify({ error: (e as Error).message }), {
 					status: 500,
 					headers: { "Content-Type": "application/json" },
@@ -298,7 +299,7 @@ export class EmailAgent extends AIChatAgent<any> {
 		threadId: string;
 	}) {
 		const env = this.env as Env;
-		const workersai = createWorkersAI({ binding: env.AI });
+		const workersai = createAI({ binding: env.AI });
 		const tools = createEmailTools(env, emailData.mailboxId);
 		const systemPrompt = await getSystemPrompt(env, emailData.mailboxId);
 
@@ -313,7 +314,7 @@ export class EmailAgent extends AIChatAgent<any> {
 			if (email?.body) {
 				const isInjection = await isPromptInjection(env.AI, email.body);
 				if (isInjection) {
-					console.warn("Skipping auto-draft due to detected prompt injection:", emailData.emailId);
+					log.warn("agent.autodraft_skipped_injection", { emailId: emailData.emailId });
 
 					// Log to agent chat so the user knows why it skipped
 					const newMessages = [
@@ -385,10 +386,9 @@ export class EmailAgent extends AIChatAgent<any> {
 				if (threadContext) {
 					const threadInjection = await isPromptInjection(env.AI, threadContext);
 					if (threadInjection) {
-						console.warn(
-							"Skipping auto-draft due to prompt injection in thread context:",
-							emailData.threadId,
-						);
+						log.warn("agent.autodraft_skipped_thread_injection", {
+							threadId: emailData.threadId,
+						});
 						const newMessages = [
 							{
 								id: crypto.randomUUID(),
@@ -422,7 +422,7 @@ export class EmailAgent extends AIChatAgent<any> {
 				}
 			}
 		} catch (e) {
-			console.warn("Pre-read failed, agent will use tools:", (e as Error).message);
+			log.warn("agent.pre_read_failed", errorFields(e));
 		}
 
 		let autoPrompt = `A new email just arrived. Draft an appropriate response using draft_reply.
@@ -550,7 +550,7 @@ Based on the email content and thread context above, draft a reply using draft_r
 
 			return { status: "draft_generated", text: result.text };
 		} catch (e) {
-			console.error("Auto-draft failed:", (e as Error).message);
+			log.error("agent.autodraft_failed", errorFields(e));
 			return { status: "error", error: (e as Error).message };
 		}
 	}

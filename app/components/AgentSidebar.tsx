@@ -6,6 +6,7 @@
 import { Loader } from "@cloudflare/kumo";
 import { PlugsIcon, RobotIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { errorFields, log } from "shared/log";
 import { useFeatures } from "~/queries/config";
 import MCPPanel from "./MCPPanel";
 
@@ -19,7 +20,7 @@ function LazyAgentPanel() {
 				setAgentChat(() => mod.default);
 			})
 			.catch((err) => {
-				console.error("Failed to load AgentPanel:", err);
+				log.error("ui.agent_panel_failed", errorFields(err));
 				setLoadError("Failed to load agent panel");
 			});
 	}, []);

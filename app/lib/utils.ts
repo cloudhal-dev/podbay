@@ -11,6 +11,7 @@
  */
 import DOMPurify from "dompurify";
 import { formatQuotedDate } from "shared/dates";
+import { htmlToText } from "shared/html-text";
 import type { Attachment } from "~/types";
 
 export {
@@ -53,33 +54,18 @@ export function toEmailListValue(addresses: string[]): string | string[] | undef
 }
 
 /**
- * Convert HTML content to plain text.
- * Uses DOM APIs so must only be called client-side.
+ * Convert HTML content to plain text, keeping line breaks between blocks.
  */
 export function htmlToPlainText(html: string): string {
-	// Sanitize with DOMPurify before DOM parsing to prevent XSS during innerHTML assignment.
-	// DOMPurify strips all dangerous content (scripts, event handlers, etc.)
-	// while preserving structural HTML for text extraction.
-	const sanitized = DOMPurify.sanitize(html);
-	const div = document.createElement("div");
-	div.innerHTML = sanitized
-		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-		.replace(/<br\s*\/?>/gi, "\n")
-		.replace(/<\/p>/gi, "\n\n")
-		.replace(/<p[^>]*>/gi, "")
-		.replace(/<div[^>]*>/gi, "")
-		.replace(/<\/div>/gi, "\n");
-	return (div.textContent || div.innerText || "").trim();
+	// No DOM and no HTML injection: script and style content is never text (shared/html-text).
+	return decodeHtmlEntities(htmlToText(html, { keepLineBreaks: true }));
 }
 
 /**
  * Strip all HTML tags from a string.
  */
 export function stripHtml(html: string): string {
-	return html
-		.replace(/<[^>]*>/g, "")
-		.replace(/\s+/g, " ")
-		.trim();
+	return htmlToText(html);
 }
 
 function decodeHtmlEntities(text: string): string {
@@ -100,15 +86,8 @@ function decodeHtmlEntities(text: string): string {
 export function getSnippetText(snippet?: string | null, maxLength = 100): string {
 	if (!snippet) return "";
 
-	const clean = decodeHtmlEntities(
-		snippet
-			.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-			.replace(/<style[^>]*>[\s\S]*/gi, "")
-			.replace(/<[^>]*>/g, " ")
-			.replace(/<[^>]*$/g, ""),
-	)
-		.replace(/\s+/g, " ")
-		.trim();
+	// htmlToText never shows script or style content, even when the snippet is cut mid-element.
+	const clean = decodeHtmlEntities(htmlToText(snippet)).replace(/\s+/g, " ").trim();
 
 	if (!clean) return "";
 	return clean.length > maxLength ? `${clean.slice(0, maxLength)}...` : clean;

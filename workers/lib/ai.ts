@@ -10,6 +10,7 @@
  * - verifyDraft: reviews draft email bodies and removes agent/system artifacts.
  */
 
+import { errorFields, log } from "../../shared/log";
 import { escapeHtml, stripHtmlToText, textToHtml } from "./email-helpers";
 
 // ── Prompt Injection Scanner ───────────────────────────────────────
@@ -44,13 +45,13 @@ export async function isPromptInjection(
 		const result = (response?.response || "NO").trim().toUpperCase();
 
 		if (result.includes("YES")) {
-			console.warn("Prompt injection detected in incoming email, blocking auto-draft");
+			log.warn("agent.injection_detected");
 			return true;
 		}
 
 		return false;
 	} catch (e) {
-		console.error("Prompt injection scanner failed, skipping auto-draft:", (e as Error).message);
+		log.error("agent.injection_scan_failed", errorFields(e));
 		// Fail closed: treat scanner failures as potential injection to avoid
 		// auto-drafting replies to emails we couldn't verify.
 		// The email is still stored in the inbox — only auto-draft is skipped.
@@ -161,10 +162,10 @@ export async function verifyDraft(ai: Ai, body: string): Promise<string> {
 		// This threshold balances between catching real artifacts and
 		// preventing the verifier from gutting legitimate emails.
 		if (cleanedTrimmed.length < replyText.trim().length * 0.5) {
-			console.warn(
-				"Draft verifier removed >50% of content, falling back to original.",
-				`Original: ${replyText.trim().length} chars, Cleaned: ${cleanedTrimmed.length} chars`,
-			);
+			log.warn("agent.draft_verifier_fallback", {
+				originalChars: replyText.trim().length,
+				cleanedChars: cleanedTrimmed.length,
+			});
 			return body;
 		}
 
@@ -176,10 +177,7 @@ export async function verifyDraft(ai: Ai, body: string): Promise<string> {
 		// Plain text: reattach quoted block if any
 		return quotedBlock ? `${cleanedTrimmed}\n\n${quotedBlock}` : cleanedTrimmed;
 	} catch (e) {
-		console.error(
-			"AI failed — returns empty body, callers may save blank draft:",
-			(e as Error).message,
-		);
+		log.error("agent.draft_verifier_failed", errorFields(e));
 		return "";
 	}
 }

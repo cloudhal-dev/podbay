@@ -5,6 +5,7 @@
 
 import type { Context } from "hono";
 import { Folders } from "../../shared/folders";
+import { errorFields, log } from "../../shared/log";
 import { sendEmail } from "../email-sender";
 import { storeAttachments } from "../lib/attachments";
 import {
@@ -107,7 +108,7 @@ export async function handleReplyEmail(c: AppContext) {
 			})),
 			headers: buildThreadingHeaders(originalMsgId, references),
 		}).catch((e) => {
-			console.error("Deferred reply delivery failed:", (e as Error).message);
+			log.error("send.deferred_reply_failed", errorFields(e));
 		}),
 	);
 
@@ -191,7 +192,7 @@ export async function handleForwardEmail(c: AppContext) {
 				contentId: att.contentId,
 			})),
 		}).catch((e) => {
-			console.error("Deferred forward delivery failed:", (e as Error).message);
+			log.error("send.deferred_forward_failed", errorFields(e));
 		}),
 	);
 

@@ -9,6 +9,7 @@ import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/durable-sqlite";
 import { Folders } from "../../shared/folders";
 import * as schema from "../db/schema";
+import { parseSortColumn, type SearchFilterOptions, type SortColumn } from "../lib/list-options";
 import type { Env } from "../types";
 import { applyMigrations, mailboxMigrations } from "./migrations";
 
@@ -24,18 +25,6 @@ const NORMALIZED_SUBJECT_SQL = `LOWER(TRIM(
 		're: ', ''), 'fwd: ', ''), 'fw: ', '')
 ))`;
 
-const ALLOWED_SORT_COLUMNS = [
-	"id",
-	"subject",
-	"sender",
-	"recipient",
-	"date",
-	"read",
-	"starred",
-] as const;
-
-type SortColumn = (typeof ALLOWED_SORT_COLUMNS)[number];
-
 /**
  * Map SortColumn string names to Drizzle column references for safe
  * ORDER BY construction (no string interpolation into SQL).
@@ -49,19 +38,6 @@ const SORT_COLUMN_MAP = {
 	read: schema.emails.read,
 	starred: schema.emails.starred,
 } satisfies Record<SortColumn, (typeof schema.emails)[keyof typeof schema.emails]>;
-
-interface SearchFilterOptions {
-	query: string;
-	folder?: string;
-	from?: string;
-	to?: string;
-	subject?: string;
-	date_start?: string;
-	date_end?: string;
-	is_read?: boolean;
-	is_starred?: boolean;
-	has_attachment?: boolean;
-}
 
 interface GetEmailsOptions {
 	folder?: string;
@@ -125,9 +101,7 @@ export class MailboxDO extends DurableObject<Env> {
 		// Cap pagination limit to prevent unbounded queries
 		const limit = Math.min(Math.max(rawLimit, 1), 100);
 
-		const sortColumn: SortColumn = ALLOWED_SORT_COLUMNS.includes(rawSortColumn as SortColumn)
-			? rawSortColumn
-			: "date";
+		const sortColumn: SortColumn = parseSortColumn(rawSortColumn) ?? "date";
 
 		const offset = (page - 1) * limit;
 
@@ -269,7 +243,7 @@ export class MailboxDO extends DurableObject<Env> {
 			);
 
 			const rows = [...result];
-			return rows.map((row: any) => ({
+			return rows.map((row) => ({
 				...row,
 				read: !!row.read,
 				starred: !!row.starred,
@@ -366,7 +340,7 @@ export class MailboxDO extends DurableObject<Env> {
 		);
 
 		const rows = [...result];
-		return rows.map((row: any) => ({
+		return rows.map((row) => ({
 			...row,
 			read: !!row.read,
 			starred: !!row.starred,
@@ -459,7 +433,7 @@ export class MailboxDO extends DurableObject<Env> {
 				`SELECT * FROM emails WHERE thread_id = ?1 ORDER BY date ASC`,
 				threadId,
 			),
-		] as any[];
+		];
 
 		if (emailRows.length === 0) return [];
 
@@ -472,21 +446,22 @@ export class MailboxDO extends DurableObject<Env> {
 				`SELECT * FROM attachments WHERE email_id IN (${placeholders})`,
 				...emailIds,
 			),
-		] as any[];
+		];
 
 		// Group attachments by email_id
-		const attachmentsByEmail = new Map<string, any[]>();
+		const attachmentsByEmail = new Map<string, Record<string, SqlStorageValue>[]>();
 		for (const att of attachmentRows) {
-			const list = attachmentsByEmail.get(att.email_id) || [];
+			const emailId = String(att.email_id);
+			const list = attachmentsByEmail.get(emailId) || [];
 			list.push(att);
-			attachmentsByEmail.set(att.email_id, list);
+			attachmentsByEmail.set(emailId, list);
 		}
 
 		return emailRows.map((email) => ({
 			...email,
 			read: !!email.read,
 			starred: !!email.starred,
-			attachments: attachmentsByEmail.get(email.id) || [],
+			attachments: attachmentsByEmail.get(String(email.id)) || [],
 		}));
 	}
 
@@ -730,7 +705,7 @@ export class MailboxDO extends DurableObject<Env> {
 		params.push(limit, offset);
 
 		const result = this.ctx.storage.sql.exec(query, ...params);
-		return [...result].map((row: any) => ({
+		return [...result].map((row) => ({
 			...row,
 			read: !!row.read,
 			starred: !!row.starred,
@@ -778,22 +753,22 @@ export class MailboxDO extends DurableObject<Env> {
 		const normalizedSender = senderAddress?.toLowerCase().trim();
 
 		for (const row of result) {
-			const rowSubject = String((row as any).subject || "")
+			const rowSubject = String(row.subject || "")
 				.replace(/^(?:(?:re|fwd?|fw|aw|wg|r[eé]f|sv)\s*:\s*)+/i, "")
 				.trim()
 				.toLowerCase();
 			if (rowSubject !== normalized) continue;
 
 			if (normalizedSender) {
-				const threadSenders = String((row as any).senders || "");
-				const threadRecipients = String((row as any).recipients || "");
+				const threadSenders = String(row.senders || "");
+				const threadRecipients = String(row.recipients || "");
 				const allParticipants = `${threadSenders},${threadRecipients}`;
 				if (!allParticipants.includes(normalizedSender)) {
 					continue;
 				}
 			}
 
-			return String((row as any).thread_id);
+			return String(row.thread_id);
 		}
 		return null;
 	}

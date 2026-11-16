@@ -14,7 +14,8 @@
 			"!**/worker-configuration.d.ts",
 			"!pnpm-lock.yaml",
 			"!public",
-			"!**/*.md"
+			"!**/*.md",
+			"!.claude"
 		]
 	},
 	"formatter": {
@@ -27,7 +28,8 @@
 		"rules": {
 			"preset": "recommended",
 			"suspicious": {
-				"noExplicitAny": "error"
+				"noExplicitAny": "error",
+				"noConsole": "error"
 			},
 			"style": {
 				"noNonNullAssertion": "error"

@@ -8,6 +8,7 @@ import { cors } from "hono/cors";
 import PostalMime from "postal-mime";
 import { z } from "zod";
 import { Folders } from "../shared/folders";
+import { errorFields, log } from "../shared/log";
 import { sendEmail } from "./email-sender";
 import { type StoredAttachment, storeAttachments } from "./lib/attachments";
 import {
@@ -20,7 +21,9 @@ import {
 import { features } from "./lib/features";
 import { headerFilename, storageFilename } from "./lib/filenames";
 import { type InboundEnvelope, routeInbound } from "./lib/inbound";
+import { parseSortColumn, parseSortDirection, type SearchFilterOptions } from "./lib/list-options";
 import { type MailboxContext, requireMailbox } from "./lib/mailbox";
+import { mailboxQueries } from "./lib/mailbox-rpc";
 import { SendEmailRequestSchema } from "./lib/schemas";
 import { handleForwardEmail, handleReplyEmail } from "./routes/reply-forward";
 import type { Env } from "./types";
@@ -174,13 +177,13 @@ app.get("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 	const threaded = boolQuery(c, "threaded");
 	const page = intQuery(c, "page");
 	const limit = intQuery(c, "limit");
-	const sortColumn = c.req.query("sortColumn") as any;
-	const sortDirection = c.req.query("sortDirection") as "ASC" | "DESC" | undefined;
+	const sortColumn = parseSortColumn(c.req.query("sortColumn"));
+	const sortDirection = parseSortDirection(c.req.query("sortDirection"));
 	const stub = c.var.mailboxStub;
 
 	if (threaded && folder) {
-		const emails = await (stub as any).getThreadedEmails({ folder, page, limit });
-		const totalCount = await (stub as any).countThreadedEmails(folder);
+		const emails = await mailboxQueries(stub).getThreadedEmails({ folder, page, limit });
+		const totalCount = await mailboxQueries(stub).countThreadedEmails(folder);
 		return c.json({ emails, totalCount });
 	}
 	const emails = await stub.getEmails({
@@ -225,7 +228,7 @@ app.post("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 
 	const { messageId, outgoingMessageId } = generateMessageId(fromDomain);
 	const stub = c.var.mailboxStub;
-	const rateLimitError = await (stub as any).checkSendRateLimit();
+	const rateLimitError = await mailboxQueries(stub).checkSendRateLimit();
 	if (rateLimitError) return c.json({ error: rateLimitError }, 429);
 	const attachmentData = await storeAttachments(c.env.BUCKET, messageId, attachments);
 
@@ -274,7 +277,7 @@ app.post("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 				contentId: att.contentId,
 			})),
 			...(in_reply_to ? { headers: buildThreadingHeaders(in_reply_to, references || []) } : {}),
-		}).catch((e) => console.error("Deferred email delivery failed:", (e as Error).message)),
+		}).catch((e) => log.error("send.deferred_failed", errorFields(e))),
 	);
 	return c.json({ id: messageId, status: "sent" }, 202);
 });
@@ -331,7 +334,7 @@ app.delete("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
 	if (attachments === null) return c.json({ error: "Not found" }, 404);
 	if (attachments.length > 0)
 		await c.env.BUCKET.delete(
-			attachments.map((att: any) => `attachments/${id}/${att.id}/${att.filename}`),
+			attachments.map((att) => `attachments/${id}/${att.id}/${att.filename}`),
 		);
 	return c.body(null, 204);
 });
@@ -345,7 +348,7 @@ app.post("/api/v1/mailboxes/:mailboxId/emails/:id/move", async (c: AppContext) =
 // -- Threads --------------------------------------------------------
 
 app.get("/api/v1/mailboxes/:mailboxId/threads/:threadId", async (c: AppContext) => {
-	return c.json(await (c.var.mailboxStub as any).getThreadEmails(c.req.param("threadId")!));
+	return c.json(await mailboxQueries(c.var.mailboxStub).getThreadEmails(c.req.param("threadId")!));
 });
 
 app.post("/api/v1/mailboxes/:mailboxId/threads/:threadId/read", async (c: AppContext) => {
@@ -386,7 +389,7 @@ app.delete("/api/v1/mailboxes/:mailboxId/folders/:id", async (c: AppContext) => 
 // -- Search ---------------------------------------------------------
 
 app.get("/api/v1/mailboxes/:mailboxId/search", async (c: AppContext) => {
-	const searchOpts: Record<string, unknown> = {
+	const searchOpts: SearchFilterOptions = {
 		query: c.req.query("query") || "",
 		folder: c.req.query("folder"),
 		from: c.req.query("from"),
@@ -398,7 +401,7 @@ app.get("/api/v1/mailboxes/:mailboxId/search", async (c: AppContext) => {
 		is_starred: boolQuery(c, "is_starred"),
 		has_attachment: boolQuery(c, "has_attachment"),
 	};
-	const stub = c.var.mailboxStub as any;
+	const stub = mailboxQueries(c.var.mailboxStub);
 	const emails = await stub.searchEmails({
 		...searchOpts,
 		page: intQuery(c, "page"),
@@ -516,7 +519,7 @@ async function receiveEmail(event: InboundEnvelope, env: Env, ctx: ExecutionCont
 	let threadId = emailReferences[0] || inReplyTo || messageId;
 
 	if (!inReplyTo && emailReferences.length === 0) {
-		const subjectThread = await (stub as any).findThreadBySubject(
+		const subjectThread = await mailboxQueries(stub).findThreadBySubject(
 			parsedEmail.subject || "",
 			parsedEmail.from?.address || undefined,
 		);
@@ -563,7 +566,7 @@ async function receiveEmail(event: InboundEnvelope, env: Env, ctx: ExecutionCont
 					}),
 				}),
 			)
-			.catch((e) => console.error("Auto-draft trigger failed:", (e as Error).message)),
+			.catch((e) => log.error("agent.autodraft_trigger_failed", errorFields(e))),
 	);
 }
 

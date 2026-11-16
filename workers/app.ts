@@ -6,6 +6,7 @@
 import { routeAgentRequest } from "agents";
 import { Hono } from "hono";
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { errorFields, log } from "../shared/log";
 import { app as apiApp, receiveEmail } from "./index";
 import { features } from "./lib/features";
 import { EmailMCP } from "./mcp";
@@ -104,7 +105,7 @@ export default {
 		try {
 			await receiveEmail(event, env, ctx);
 		} catch (e) {
-			console.error("Failed to process incoming email:", (e as Error).message, (e as Error).stack);
+			log.error("inbound.failed", errorFields(e));
 			// Re-throw so Cloudflare's email routing can retry delivery or bounce the message.
 			// Swallowing the error would silently drop the email.
 			throw e;

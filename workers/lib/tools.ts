@@ -16,6 +16,7 @@
  */
 
 import { Folders } from "../../shared/folders";
+import { errorFields, log } from "../../shared/log";
 import { sendEmail } from "../email-sender";
 import type { Env } from "../types";
 import { verifyDraft } from "./ai";
@@ -430,7 +431,7 @@ export async function toolSendReply(
 			headers: buildThreadingHeaders(originalMsgId, references),
 		});
 	} catch (e) {
-		console.error("Email send failed:", (e as Error).message);
+		log.error("send.failed", errorFields(e));
 		return { error: `Failed to send reply: ${(e as Error).message}` };
 	}
 
@@ -492,7 +493,7 @@ export async function toolSendEmail(
 			html: sanitizedBody,
 		});
 	} catch (e) {
-		console.error("Email send failed:", (e as Error).message);
+		log.error("send.failed", errorFields(e));
 		return { error: `Failed to send email: ${(e as Error).message}` };
 	}
 

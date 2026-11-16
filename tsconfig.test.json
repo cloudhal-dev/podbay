@@ -1,6 +1,7 @@
 {
 	"include": [
 		"test/**/*",
+		"app/lib/mail-html.ts",
 		"workers/**/*",
 		"shared/**/*",
 		"scripts/**/*",
@@ -20,6 +21,8 @@
 		"target": "ES2023",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
-		"paths": { "shared/*": ["./shared/*"] }
+		"paths": {
+			"shared/*": ["./shared/*"]
+		}
 	}
 }

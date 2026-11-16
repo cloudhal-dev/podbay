@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 /**
  * Email sending via Cloudflare Email Service binding.
@@ -30,6 +31,17 @@ export interface SendEmailParams {
 }
 
 /**
+ * An inline part must carry a content id, and a regular attachment must not. An inline part
+ * that arrives without one is sent as a regular attachment rather than refused.
+ */
+function toAttachment(att: NonNullable<SendEmailParams["attachments"]>[number]): EmailAttachment {
+	const base = { filename: att.filename, type: att.type, content: att.content };
+	return att.disposition === "inline" && att.contentId
+		? { ...base, disposition: "inline", contentId: att.contentId }
+		: { ...base, disposition: "attachment" };
+}
+
+/**
  * Send an email using the Cloudflare Email Service binding.
  *
  * @param binding  - The `EMAIL` SendEmail binding from env
@@ -41,32 +53,25 @@ export async function sendEmail(
 	binding: SendEmail,
 	params: SendEmailParams,
 ): Promise<{ messageId: string }> {
-	const message: Record<string, unknown> = {
+	const message: EmailMessageBuilder = {
 		to: params.to,
 		from: params.from,
 		subject: params.subject,
+		...(params.html ? { html: params.html } : {}),
+		...(params.text ? { text: params.text } : {}),
+		...(params.cc ? { cc: params.cc } : {}),
+		...(params.bcc ? { bcc: params.bcc } : {}),
+		...(params.replyTo ? { replyTo: params.replyTo } : {}),
+		...(params.headers && Object.keys(params.headers).length > 0
+			? { headers: params.headers }
+			: {}),
+		...(params.attachments && params.attachments.length > 0
+			? {
+					attachments: params.attachments.map(toAttachment),
+				}
+			: {}),
 	};
 
-	if (params.html) message.html = params.html;
-	if (params.text) message.text = params.text;
-	if (params.cc) message.cc = params.cc;
-	if (params.bcc) message.bcc = params.bcc;
-	if (params.replyTo) message.replyTo = params.replyTo;
-
-	if (params.headers && Object.keys(params.headers).length > 0) {
-		message.headers = params.headers;
-	}
-
-	if (params.attachments && params.attachments.length > 0) {
-		message.attachments = params.attachments.map((att) => ({
-			content: att.content,
-			filename: att.filename,
-			type: att.type,
-			disposition: att.disposition,
-			...(att.contentId ? { contentId: att.contentId } : {}),
-		}));
-	}
-
-	const result = await binding.send(message as any);
+	const result = await binding.send(message);
 	return { messageId: result.messageId };
 }

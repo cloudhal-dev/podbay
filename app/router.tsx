@@ -17,6 +17,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { forwardRef } from "react";
+import { errorFields, log } from "shared/log";
 import EmailListRoute from "~/routes/email-list";
 import HomeRoute from "~/routes/home";
 import MailboxRoute from "~/routes/mailbox";
@@ -42,7 +43,7 @@ const queryClient = new QueryClient({
 	mutationCache: new MutationCache({
 		onError: (error) => {
 			// Fallback for mutations that do not handle their own errors.
-			console.error("Mutation failed:", error);
+			log.error("ui.mutation_failed", errorFields(error));
 		},
 	}),
 });

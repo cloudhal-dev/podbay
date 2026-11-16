@@ -3,8 +3,10 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { Button } from "@cloudflare/kumo";
 import DOMPurify from "dompurify";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { freshNonce, mailDocument, type Purifier, sanitizeMailHtml } from "~/lib/mail-html";
 
 interface EmailIframeProps {
 	body: string;
@@ -13,26 +15,20 @@ interface EmailIframeProps {
 }
 
 /**
- * Renders email HTML inside a sandboxed iframe.
+ * Shows a message body. All the safety is in `~/lib/mail-html` (rule S4): the body is
+ * sanitised, wrapped in a document with a strict content policy, and shown here in a sandboxed
+ * frame without same-origin access. Remote content stays out until the reader asks for it.
  *
- * Security model:
- * - DOMPurify sanitises the HTML before injection.
- * - The iframe sandbox does NOT include `allow-same-origin`, so even if
- *   DOMPurify has a bypass the attacker's code runs in an opaque origin
- *   with no access to the parent page's cookies, DOM, or API.
- * - Because the iframe is cross-origin we cannot read `contentDocument`
- *   for auto-sizing. Instead, the injected HTML includes a tiny inline
- *   script that posts its body height to the parent via `postMessage`.
- *   The `allow-scripts` flag is required for this, but scripts inside
- *   the opaque-origin sandbox cannot access anything useful.
- * - A strict CSP meta tag blocks external resource loads inside the
- *   iframe as a defense-in-depth layer.
+ * The frame is cross-origin, so its height cannot be read; the one script the policy allows
+ * posts it to this component.
  */
 export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [height, setHeight] = useState(autoSize ? 100 : 0);
+	// Asked for per message: a new body starts with remote content hidden again.
+	const [allowedFor, setAllowedFor] = useState<string | null>(null);
+	const allowRemote = allowedFor === body;
 
-	// Listen for height reports from the sandboxed iframe
 	const handleMessage = useCallback(
 		(event: MessageEvent) => {
 			if (!autoSize) return;
@@ -56,97 +52,46 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 		return () => window.removeEventListener("message", handleMessage);
 	}, [handleMessage]);
 
-	useEffect(() => {
-		const iframe = iframeRef.current;
-		if (!iframe || !body) return;
+	const sanitized = useMemo(
+		() => sanitizeMailHtml(body, { allowRemote, purify: DOMPurify as unknown as Purifier }),
+		[body, allowRemote],
+	);
 
-		const cleanBody = DOMPurify.sanitize(body, {
-			USE_PROFILES: { html: true },
-			FORBID_TAGS: ["style"],
-			ADD_ATTR: ["target"],
-			FORCE_BODY: true,
-		});
-
-		const padding = autoSize ? "0" : "24px";
-
-		// Height-reporting script: sends body.scrollHeight to the parent.
-		// Runs inside the opaque-origin sandbox so it has zero access to
-		// the parent page — it can only postMessage.
-		const heightScript = autoSize
-			? `<script>
-				function reportHeight() {
-					var h = document.body.scrollHeight;
-					if (h > 0) parent.postMessage({ __emailIframeHeight: true, height: h }, "*");
-				}
-				reportHeight();
-				setTimeout(reportHeight, 50);
-				setTimeout(reportHeight, 150);
-				setTimeout(reportHeight, 400);
-			</script>`
-			: "";
-
-		// Use srcdoc so the iframe is truly sandboxed (no same-origin access).
-		// We can't use doc.write() because that requires allow-same-origin.
-		iframe.srcdoc = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: cid: https:; script-src 'unsafe-inline';">
-<style>
-* { box-sizing: border-box; }
-html {
-	background: #ffffff;
-	color-scheme: light;
-}
-body {
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-	font-size: 14px;
-	line-height: 1.6;
-	color: #1a1a1a;
-	background: #ffffff;
-	padding: ${padding};
-	margin: 0;
-	word-wrap: break-word;
-	overflow-wrap: break-word;
-	${autoSize ? "overflow: hidden;" : ""}
-}
-[style*="position: fixed"], [style*="position:fixed"], [style*="position: absolute"], [style*="position:absolute"] {
-	position: relative !important;
-}
-a { color: #2563eb; }
-img { max-width: 100%; height: auto; }
-blockquote {
-	border-left: 3px solid #d1d5db;
-	padding-left: 1em;
-	margin-left: 0;
-	color: #6b7280;
-}
-pre {
-	background: #f3f4f6;
-	padding: 12px;
-	border-radius: 6px;
-	overflow-x: auto;
-	font-size: 13px;
-}
-table { border-collapse: collapse; max-width: 100%; }
-td, th { padding: 4px 8px; }
-p { margin: 4px 0; }
-h1, h2, h3 { margin: 8px 0 4px; }
-ul, ol { padding-left: 20px; margin: 4px 0; }
-</style>
-</head>
-<body>${cleanBody}${heightScript}</body>
-</html>`;
-	}, [body, autoSize]);
+	// One document per body. It is given to the frame once, as an attribute, and every document
+	// gets its own frame element: assigning a second document to a frame that is still loading
+	// the first leaves the frame blank.
+	const frameDocument = useMemo(
+		() =>
+			body
+				? mailDocument({
+						sanitizedBody: sanitized.html,
+						autoSize: autoSize === true,
+						allowRemote,
+						nonce: freshNonce(),
+					})
+				: "",
+		[body, autoSize, allowRemote, sanitized],
+	);
 
 	return (
-		<iframe
-			ref={iframeRef}
-			className="block w-full border-0"
-			style={autoSize ? { height: `${height}px` } : { height: "100%" }}
-			sandbox="allow-scripts allow-popups allow-top-navigation-by-user-activation"
-			title="Email content"
-		/>
+		<>
+			{sanitized.blockedRemote > 0 && (
+				<div className="flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-md bg-kumo-tint text-xs text-kumo-strong">
+					<span>Remote images are hidden to protect your privacy.</span>
+					<Button variant="secondary" size="sm" onClick={() => setAllowedFor(body)}>
+						Show images
+					</Button>
+				</div>
+			)}
+			<iframe
+				key={frameDocument}
+				ref={iframeRef}
+				srcDoc={frameDocument}
+				className="block w-full border-0"
+				style={autoSize ? { height: `${height}px` } : { height: "100%" }}
+				sandbox="allow-scripts allow-popups allow-top-navigation-by-user-activation"
+				title="Email content"
+			/>
+		</>
 	);
 }

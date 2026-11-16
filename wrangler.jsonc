@@ -3,8 +3,8 @@
 	"name": "podbay",
 	"main": "./workers/app.ts",
 	// V4: moved forward every month with the full test run.
+	// Node.js compatibility is on by default from 2026-08-04 (docs/cloudflare/ledger.json).
 	"compatibility_date": "2026-11-16",
-	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
 		"enabled": true
 	},
