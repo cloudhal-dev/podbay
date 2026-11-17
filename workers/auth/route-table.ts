@@ -46,6 +46,8 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "GET", path: "/api/v1/config", right: "session" },
 	{ method: "GET", path: "/api/v1/mailboxes", right: "session" },
 	{ method: "POST", path: "/api/v1/mailboxes", right: "instance.manage" },
+	// Every mailbox on the instance, for owners and administrators: who owns it, never its mail.
+	{ method: "GET", path: "/api/v1/registry/mailboxes", right: "instance.manage" },
 
 	// The signed-in person's own keys for programs
 	{ method: "GET", path: "/api/v1/keys", right: "session" },
@@ -63,9 +65,12 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "GET", path: M, right: "mailbox.read" },
 	{ method: "PUT", path: M, right: "mailbox.manage" },
 	{ method: "DELETE", path: M, right: "mailbox.manage", fresh: true },
-	{ method: "GET", path: `${M}/members`, right: "mailbox.read" },
-	{ method: "PUT", path: `${M}/members/:userId`, right: "mailbox.manage", fresh: true },
-	{ method: "DELETE", path: `${M}/members/:userId`, right: "mailbox.manage", fresh: true },
+	// Members: a mailbox owner, and whoever manages the instance (workers/auth/authorize.ts).
+	{ method: "GET", path: `${M}/members`, right: "mailbox.members.read" },
+	{ method: "GET", path: `${M}/members/history`, right: "mailbox.members.manage" },
+	{ method: "POST", path: `${M}/members`, right: "mailbox.members.manage", fresh: true },
+	{ method: "PUT", path: `${M}/members/:userId`, right: "mailbox.members.manage", fresh: true },
+	{ method: "DELETE", path: `${M}/members/:userId`, right: "mailbox.members.manage", fresh: true },
 
 	{ method: "GET", path: `${M}/emails`, right: "mailbox.read" },
 	{ method: "POST", path: `${M}/emails`, right: "mailbox.send" },

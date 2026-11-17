@@ -18,11 +18,24 @@ import { errorFields, log } from "../../shared/log";
 import type { MailboxDO } from "../durableObject";
 import { mailboxAddressFor } from "../lib/inbound";
 import type { Env } from "../types";
-import { type Action, type Actor, authorize, type Decision, type InstanceRole } from "./authorize";
+import {
+	type Action,
+	type Actor,
+	authorize,
+	type Decision,
+	type InstanceRole,
+	type MailboxRole,
+} from "./authorize";
 import { isFresh, NOT_FRESH } from "./fresh";
 import { AuthNotConfigured, authFor } from "./instance";
 import { entryFor, rightFor } from "./route-table";
-import { instanceRoleOf, type MailboxAccess, mailboxAccess } from "./store";
+import {
+	instanceRoleOf,
+	type MailboxAccess,
+	type MailboxRow,
+	mailboxAccess,
+	mailboxFor,
+} from "./store";
 
 export interface SessionUser {
 	readonly id: string;
@@ -40,8 +53,16 @@ export type ApiContext = {
 		 * sensitive only for some requests; routes marked `fresh` in the table never run without it.
 		 */
 		fresh: boolean;
-		/** Set on mailbox routes: the mailbox from the index, with the caller's role. */
+		/**
+		 * Set on mailbox routes: the mailbox from the index. On the member routes the caller may be
+		 * someone who manages the instance and has no membership, so this carries no role.
+		 */
+		mailboxRow: MailboxRow;
+		/** The caller's membership, or null (member routes only; every other route has one). */
+		mailboxRole: MailboxRole | null;
+		/** Set on mailbox routes when the caller is a member: the mailbox with their role. */
 		mailbox: MailboxAccess;
+		/** The mailbox's storage. Set only when the caller is a member (rule S2). */
 		mailboxStub: DurableObjectStub<MailboxDO>;
 	};
 };
@@ -171,11 +192,16 @@ export const guard = createMiddleware<ApiContext>(async (c, next) => {
 		// named after the address stored there, never after the request.
 		const rawMailbox = pathParam(pattern, new URL(c.req.url).pathname, "mailboxId");
 		const address = rawMailbox === undefined ? null : mailboxAddressFor(rawMailbox);
-		const access = address === null ? null : await mailboxAccess(c.env.DB, user.id, address);
-		if (access === null) return c.json({ error: "Not found" }, 404);
-		actor = { ...actor, mailboxRole: access.role };
-		c.set("mailbox", access);
-		c.set("mailboxStub", c.env.MAILBOX.get(c.env.MAILBOX.idFromName(access.address)));
+		const found = address === null ? null : await mailboxFor(c.env.DB, user.id, address);
+		if (found === null) return c.json({ error: "Not found" }, 404);
+		actor = { ...actor, mailboxRole: found.role };
+		c.set("mailboxRow", found.row);
+		c.set("mailboxRole", found.role);
+		// Without a membership there is no storage to reach, whatever the route.
+		if (found.role !== null) {
+			c.set("mailbox", { ...found.row, role: found.role });
+			c.set("mailboxStub", c.env.MAILBOX.get(c.env.MAILBOX.idFromName(found.row.address)));
+		}
 	}
 
 	const decision = authorize(actor, right);

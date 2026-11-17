@@ -47,7 +47,7 @@ function parseSettings(text: string): Record<string, unknown> {
 	}
 }
 
-function toRow(raw: RawMailbox): MailboxRow {
+function toRow(raw: Omit<RawMailbox, "role">): MailboxRow {
 	return {
 		id: raw.id,
 		address: raw.address,
@@ -151,6 +151,68 @@ export async function mailboxAccess(
 		.first<RawMailbox>();
 	if (!raw || !isMailboxRole(raw.role)) return null;
 	return { ...toRow(raw), role: raw.role };
+}
+
+/**
+ * A mailbox by address, with the user's membership or null when they have none. For the guard
+ * only: what a person without a membership may do with the result is decided by `authorize`,
+ * and for everything but the member list that is nothing.
+ */
+export async function mailboxFor(
+	db: D1Database,
+	userId: string,
+	address: string,
+): Promise<{ readonly row: MailboxRow; readonly role: MailboxRole | null } | null> {
+	const raw = await db
+		.prepare(
+			`select m."id", m."address", m."display_name", m."settings", s."role"
+			 from "mailboxes" m left join "memberships" s on s."mailbox_id" = m."id" and s."user_id" = ?2
+			 where m."address" = ?1`,
+		)
+		.bind(address, userId)
+		.first<Omit<RawMailbox, "role"> & { role: string | null }>();
+	if (!raw) return null;
+	return { row: toRow(raw), role: isMailboxRole(raw.role) ? raw.role : null };
+}
+
+export interface RegistryEntry {
+	readonly address: string;
+	readonly name: string;
+	readonly members: number;
+	readonly owners: string[];
+	/** The asking person's own membership, or null. */
+	readonly role: MailboxRole | null;
+}
+
+/**
+ * Every mailbox on the instance, for owners and administrators: its address, who owns it and
+ * how many members it has. No settings and nothing about its mail.
+ */
+export async function listAllMailboxes(db: D1Database, userId: string): Promise<RegistryEntry[]> {
+	const result = await db
+		.prepare(
+			`select m."address", m."display_name",
+			        (select count(*) from "memberships" s where s."mailbox_id" = m."id") as "members",
+			        (select s."role" from "memberships" s where s."mailbox_id" = m."id" and s."user_id" = ?1) as "role",
+			        (select group_concat(u."email", char(10)) from "memberships" s join "user" u on u."id" = s."user_id"
+			          where s."mailbox_id" = m."id" and s."role" = 'owner') as "owners"
+			 from "mailboxes" m order by m."address" limit 500`,
+		)
+		.bind(userId)
+		.all<{
+			address: string;
+			display_name: string;
+			members: number;
+			role: string | null;
+			owners: string | null;
+		}>();
+	return result.results.map((raw) => ({
+		address: raw.address,
+		name: raw.display_name,
+		members: raw.members,
+		owners: raw.owners ? raw.owners.split("\n").sort() : [],
+		role: isMailboxRole(raw.role) ? raw.role : null,
+	}));
 }
 
 /** The mailboxes the user is a member of. Nobody gets a list of all mailboxes from here. */

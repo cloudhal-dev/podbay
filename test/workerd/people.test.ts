@@ -267,9 +267,7 @@ describe("mailbox members", () => {
 		expect((await setMember("owner", "no-such-user", "reader")).status).toBe(400);
 	});
 
-	it("an administrator cannot give themselves a mailbox they are not a member of", async () => {
-		expect((await setMember("admin", ids.admin ?? "", "owner")).status).toBe(404);
-		expect((await members("admin")).status).toBe(404);
+	it("an administrator without a membership cannot open the mailbox (members.test.ts has the rest)", async () => {
 		expect((await folders("admin")).status).toBe(404);
 	});
 

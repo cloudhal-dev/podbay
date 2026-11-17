@@ -40,6 +40,7 @@ function concrete(path: string): string {
 		.replace(":emailId", "e-1")
 		.replace(":attachmentId", "a-1")
 		.replace(":threadId", "t-1")
+		.replace(":userId", "user-1")
 		.replace(":id", "x-1");
 }
 
@@ -221,7 +222,11 @@ describe("per-mailbox access", () => {
 		},
 	);
 
-	it.each(mailboxRoutes)(
+	// Who the members are is the one thing about a mailbox that managing the instance reaches.
+	const memberRoutes = mailboxRoutes.filter(([, , right]) => right.startsWith("mailbox.members"));
+	const mailRoutes = mailboxRoutes.filter(([, , right]) => !right.startsWith("mailbox.members"));
+
+	it.each(mailRoutes)(
 		"%s %s answers 404 to an administrator without a membership (managing is not reading)",
 		async (method, path) => {
 			const res = await request(path, {
@@ -230,6 +235,34 @@ describe("per-mailbox access", () => {
 				...(method === "GET" ? {} : { body: "{}" }),
 			});
 			expect(res.status).toBe(404);
+		},
+	);
+
+	it("leaves an administrator without a membership the member routes, and nothing else", () => {
+		expect(
+			memberRoutes.map(([method, path]) => `${method} ${path.split("/").slice(5).join("/")}`),
+		).toEqual([
+			"GET members",
+			"GET members/history",
+			"POST members",
+			"PUT members/user-1",
+			"DELETE members/user-1",
+		]);
+		expect(mailRoutes.length).toBe(mailboxRoutes.length - 5);
+	});
+
+	// Removing a member is in test/workerd/members.test.ts: its own answer for nobody to remove
+	// is a 404 too, which says nothing about the guard here.
+	it.each(memberRoutes.filter(([method]) => method !== "DELETE"))(
+		"%s %s is not hidden from an administrator without a membership",
+		async (method, path) => {
+			const res = await request(path, {
+				method,
+				cookie: cookies.admin,
+				...(method === "GET" ? {} : { body: "{}" }),
+			});
+			// Past the guard: the handler answers, with a list or with its own refusal of an empty body.
+			expect([200, 400]).toContain(res.status);
 		},
 	);
 
@@ -245,10 +278,16 @@ describe("per-mailbox access", () => {
 		expect(res.status).toBe(404);
 	});
 
-	it.each(mailboxRoutes.filter(([, , right]) => right !== "mailbox.read"))(
+	// A reader reads the mail and sees who the members are; everything else is refused.
+	const READER_MAY = ["mailbox.read", "mailbox.members.read"];
+	it.each(mailboxRoutes.filter(([, , right]) => !READER_MAY.includes(right)))(
 		"%s %s answers 403 to a reader",
 		async (method, path) => {
-			const res = await request(path, { method, cookie: cookies.reader, body: "{}" });
+			const res = await request(path, {
+				method,
+				cookie: cookies.reader,
+				...(method === "GET" ? {} : { body: "{}" }),
+			});
 			expect(res.status).toBe(403);
 		},
 	);
@@ -267,10 +306,15 @@ describe("per-mailbox access", () => {
 		expect(me.mailboxes).toEqual([{ address: MAILBOX, name: "team", role: "reader" }]);
 	});
 
-	it.each(mailboxRoutes.filter(([, , right]) => right === "mailbox.manage"))(
+	const OWNERS_ONLY = ["mailbox.manage", "mailbox.members.manage"];
+	it.each(mailboxRoutes.filter(([, , right]) => OWNERS_ONLY.includes(right)))(
 		"%s %s answers 403 to a sender",
 		async (method, path) => {
-			const res = await request(path, { method, cookie: cookies.sender, body: "{}" });
+			const res = await request(path, {
+				method,
+				cookie: cookies.sender,
+				...(method === "GET" ? {} : { body: "{}" }),
+			});
 			expect(res.status).toBe(403);
 		},
 	);

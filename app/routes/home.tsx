@@ -11,6 +11,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useFreshProof } from "~/components/FreshProof";
 import InvitePerson from "~/components/InvitePerson";
 import People from "~/components/People";
+import Registry from "~/components/Registry";
 import { signOut, useMe } from "~/lib/session";
 import { queryKeys } from "~/queries/keys";
 import { useCreateMailbox, useDeleteMailbox, useMailboxes } from "~/queries/mailboxes";
@@ -259,6 +260,7 @@ export default function HomeRoute() {
 			{/* Create Dialog */}
 			{canManage && (
 				<div className="mx-auto max-w-2xl px-4 pb-16 md:px-6">
+					<Registry />
 					{me && <People me={me} />}
 					<InvitePerson canInviteAdmin={me?.role === "owner"} />
 				</div>

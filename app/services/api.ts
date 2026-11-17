@@ -3,7 +3,17 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import type { AccessKey, CreatedAccessKey, Email, Folder, Mailbox } from "~/types";
+import type {
+	AccessKey,
+	CreatedAccessKey,
+	Email,
+	Folder,
+	Mailbox,
+	MailboxRole,
+	Member,
+	MemberChange,
+	RegistryMailbox,
+} from "~/types";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -113,6 +123,25 @@ const api = {
 		expiresInDays?: number;
 	}) => post<CreatedAccessKey>("/api/v1/keys", key),
 	revokeKey: (keyId: string) => del<void>(`/api/v1/keys/${encodeURIComponent(keyId)}`),
+
+	// Members of a mailbox
+	listMembers: (mailboxId: string) =>
+		get<Member[]>(`/api/v1/mailboxes/${encodeURIComponent(mailboxId)}/members`),
+	memberHistory: (mailboxId: string) =>
+		get<MemberChange[]>(`/api/v1/mailboxes/${encodeURIComponent(mailboxId)}/members/history`),
+	addMember: (mailboxId: string, email: string, role: MailboxRole) =>
+		post<Member[]>(`/api/v1/mailboxes/${encodeURIComponent(mailboxId)}/members`, { email, role }),
+	setMemberRole: (mailboxId: string, userId: string, role: MailboxRole) =>
+		put<Member[]>(
+			`/api/v1/mailboxes/${encodeURIComponent(mailboxId)}/members/${encodeURIComponent(userId)}`,
+			{ role },
+		),
+	removeMember: (mailboxId: string, userId: string) =>
+		del<void>(
+			`/api/v1/mailboxes/${encodeURIComponent(mailboxId)}/members/${encodeURIComponent(userId)}`,
+		),
+	/** Every mailbox on the instance. For owners and administrators. */
+	listRegistry: () => get<RegistryMailbox[]>("/api/v1/registry/mailboxes"),
 
 	// Mailboxes
 	listMailboxes: () => get<Mailbox[]>("/api/v1/mailboxes"),

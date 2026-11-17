@@ -8,6 +8,10 @@
  * membership of a mailbox says which mail they may READ and SEND. They are separate on purpose:
  * managing is not reading. An owner or administrator without a membership cannot open a mailbox,
  * and is told it does not exist, like anyone else.
+ *
+ * What an owner or administrator may manage includes who the members of a mailbox are. That is
+ * the one thing about a mailbox they reach without a membership, and it is how they give
+ * themselves one: a sensitive change, recorded, and shown to the mailbox's owners afterwards.
  */
 
 export const INSTANCE_ROLES = ["owner", "admin", "member"] as const;
@@ -27,8 +31,12 @@ export const ACTIONS = [
 	"mailbox.write",
 	/** Send as the mailbox: new mail, replies and forwards. */
 	"mailbox.send",
-	/** Change the mailbox's settings and members, or delete it. */
+	/** Change the mailbox's settings, or delete it. */
 	"mailbox.manage",
+	/** See who the members of a mailbox are: any member, and whoever manages the instance. */
+	"mailbox.members.read",
+	/** Change who the members are, and see how that changed: a mailbox owner, and whoever manages the instance. */
+	"mailbox.members.manage",
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -53,8 +61,14 @@ const MAILBOX_RIGHTS: Record<MailboxRole, ReadonlySet<Action>> = {
 
 export function authorize(actor: Actor, action: Action): Decision {
 	if (action === "session") return "allow";
-	if (action === "instance.manage") {
-		return actor.instanceRole === "owner" || actor.instanceRole === "admin" ? "allow" : "forbidden";
+	const manager = actor.instanceRole === "owner" || actor.instanceRole === "admin";
+	if (action === "instance.manage") return manager ? "allow" : "forbidden";
+	if (action === "mailbox.members.read") {
+		return manager || actor.mailboxRole !== null ? "allow" : "not_found";
+	}
+	if (action === "mailbox.members.manage") {
+		if (manager || actor.mailboxRole === "owner") return "allow";
+		return actor.mailboxRole === null ? "not_found" : "forbidden";
 	}
 	if (actor.mailboxRole === null) return "not_found";
 	return MAILBOX_RIGHTS[actor.mailboxRole].has(action) ? "allow" : "forbidden";

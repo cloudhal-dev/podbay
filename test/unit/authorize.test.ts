@@ -45,6 +45,27 @@ describe("authorize", () => {
 		}
 	});
 
+	it("lets whoever manages the instance see and change members without a membership, and nothing else", () => {
+		for (const role of ["owner", "admin"] as const) {
+			expect(authorize(actor(role, null), "mailbox.members.read")).toBe("allow");
+			expect(authorize(actor(role, null), "mailbox.members.manage")).toBe("allow");
+			for (const action of MAILBOX_ACTIONS) {
+				expect(authorize(actor(role, null), action), `${role} ${action}`).toBe("not_found");
+			}
+		}
+		expect(authorize(actor("member", null), "mailbox.members.read")).toBe("not_found");
+		expect(authorize(actor("member", null), "mailbox.members.manage")).toBe("not_found");
+	});
+
+	it("lets every member see the members, and only an owner of the mailbox change them", () => {
+		for (const role of MAILBOX_ROLES) {
+			expect(authorize(actor("member", role), "mailbox.members.read")).toBe("allow");
+			expect(authorize(actor("member", role), "mailbox.members.manage")).toBe(
+				role === "owner" ? "allow" : "forbidden",
+			);
+		}
+	});
+
 	it("a membership is not changed by the instance role", () => {
 		expect(authorize(actor("owner", "reader"), "mailbox.send")).toBe("forbidden");
 		expect(authorize(actor("admin", "reader"), "mailbox.manage")).toBe("forbidden");

@@ -5,7 +5,7 @@
 
 import { Badge, Button, Input, Loader, useKumoToastManager } from "@cloudflare/kumo";
 import { ArrowCounterClockwiseIcon, RobotIcon } from "@phosphor-icons/react";
-import { useParams } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMailbox, useUpdateMailbox } from "~/queries/mailboxes";
 
@@ -81,6 +81,19 @@ export default function SettingsRoute() {
 						/>
 						<Input label="Email" type="email" value={mailbox.email} disabled />
 					</div>
+				</div>
+
+				{/* Members */}
+				<div className="rounded-lg border border-kumo-line bg-kumo-base p-5">
+					<div className="text-sm font-medium text-kumo-default mb-1">Members</div>
+					<p className="text-xs text-kumo-subtle mb-3">Who may read this mailbox and send as it.</p>
+					<Link
+						to="/members/$mailboxId"
+						params={{ mailboxId: mailbox.email }}
+						className="text-sm underline text-kumo-default"
+					>
+						{mailbox.role === "owner" ? "Manage members" : "See the members"}
+					</Link>
 				</div>
 
 				{/* Agent System Prompt */}

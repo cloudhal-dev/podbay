@@ -26,6 +26,7 @@ import AcceptRoute from "~/routes/accept";
 import EmailListRoute from "~/routes/email-list";
 import HomeRoute from "~/routes/home";
 import MailboxRoute from "~/routes/mailbox";
+import MembersRoute from "~/routes/members";
 import NotFoundRoute from "~/routes/not-found";
 import OwnerRecoveryRoute from "~/routes/owner-recovery";
 import RecoverRoute from "~/routes/recover";
@@ -189,6 +190,12 @@ const ownerRecoveryRoute = createRoute({
 	component: OwnerRecoveryRoute,
 });
 
+const membersRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/members/$mailboxId",
+	component: MembersRoute,
+});
+
 const securityRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/account/security",
@@ -242,6 +249,7 @@ const routeTree = rootRoute.addChildren([
 	recoverRoute,
 	ownerRecoveryRoute,
 	securityRoute,
+	membersRoute,
 	mailboxRoute.addChildren([mailboxIndexRoute, emailListRoute, settingsRoute, searchRoute]),
 ]);
 

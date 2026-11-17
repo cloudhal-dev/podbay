@@ -219,25 +219,140 @@ export interface MemberView {
 	readonly name: string;
 	readonly email: string;
 	readonly role: MailboxRole;
+	readonly addedAt: string;
+	/** Who gave the membership: an address, or null when that account is gone. */
+	readonly addedBy: string | null;
 }
 
 export async function listMembers(db: D1Database, mailboxId: string): Promise<MemberView[]> {
 	const result = await db
 		.prepare(
-			`select u."id", u."name", u."email", s."role" from "memberships" s
-			 join "user" u on u."id" = s."user_id" where s."mailbox_id" = ?1 order by u."email"`,
+			`select u."id", u."name", u."email", s."role", s."created_at", b."email" as "added_by"
+			 from "memberships" s join "user" u on u."id" = s."user_id"
+			 left join "user" b on b."id" = s."created_by"
+			 where s."mailbox_id" = ?1 order by u."email"`,
 		)
 		.bind(mailboxId)
-		.all<{ id: string; name: string; email: string; role: string }>();
+		.all<{
+			id: string;
+			name: string;
+			email: string;
+			role: string;
+			created_at: string;
+			added_by: string | null;
+		}>();
 	const out: MemberView[] = [];
 	for (const row of result.results) {
 		if (isMailboxRole(row.role))
-			out.push({ userId: row.id, name: row.name, email: row.email, role: row.role });
+			out.push({
+				userId: row.id,
+				name: row.name,
+				email: row.email,
+				role: row.role,
+				addedAt: row.created_at,
+				addedBy: row.added_by,
+			});
 	}
 	return out;
 }
 
-export type MemberChange = "ok" | "no_such_user" | "last_owner";
+/**
+ * In what capacity a person changes the members of a mailbox: as one of its owners, or as
+ * someone who manages the instance and is not an owner of this mailbox. Recorded with every
+ * change, so the mailbox's owners can tell the two apart afterwards.
+ */
+export type MemberActorKind = "owner" | "manager";
+
+/** The detail text of a membership audit row. `parseMembershipDetail` reads it back. */
+export function membershipDetail(input: {
+	readonly userId: string;
+	readonly actorUserId: string;
+	readonly role?: MailboxRole;
+	readonly as: MemberActorKind;
+}): string {
+	const who = input.userId === input.actorUserId ? "self" : "user";
+	const role = input.role === undefined ? "" : `, role: ${input.role}`;
+	return `${who}: ${input.userId}${role}, as: ${input.as}`;
+}
+
+export interface MembershipDetail {
+	readonly userId: string;
+	readonly self: boolean;
+	readonly role: MailboxRole | null;
+	readonly as: MemberActorKind;
+}
+
+export function parseMembershipDetail(detail: string | null): MembershipDetail | null {
+	const match = /^(self|user): ([^,\s]+)(?:, role: (\w+))?(?:, as: (owner|manager))?$/.exec(
+		detail ?? "",
+	);
+	if (match === null) return null;
+	const role = match[3];
+	return {
+		userId: match[2] ?? "",
+		self: match[1] === "self",
+		role: isMailboxRole(role) ? role : null,
+		// Rows written before the capacity was recorded were all made by mailbox owners.
+		as: match[4] === "manager" ? "manager" : "owner",
+	};
+}
+
+export interface MemberChangeView {
+	readonly at: string;
+	readonly change: "set" | "removed";
+	/** Who made the change: an address, or null when that account is gone. */
+	readonly by: string | null;
+	/** Whose membership changed. */
+	readonly person: string | null;
+	readonly role: MailboxRole | null;
+	/** The person changed their own membership. */
+	readonly self: boolean;
+	/** Made by someone who manages the instance and was not an owner of the mailbox. */
+	readonly asManager: boolean;
+}
+
+/**
+ * How the members of a mailbox changed, newest first: the record a mailbox's owners read to see
+ * who was given access, by whom, and whether someone gave it to themselves.
+ */
+export async function memberHistory(
+	db: D1Database,
+	mailboxId: string,
+): Promise<MemberChangeView[]> {
+	const rows = await db
+		.prepare(
+			`select a."at", a."action", a."detail", b."email" as "by" from "audit" a
+			 join "mailboxes" m on m."address" = a."target" and a."at" >= m."created_at"
+			 left join "user" b on b."id" = a."actor_user_id"
+			 where m."id" = ?1 and a."action" in ('membership.set', 'membership.removed')
+			 order by a."at" desc limit 100`,
+		)
+		.bind(mailboxId)
+		.all<{ at: string; action: string; detail: string | null; by: string | null }>();
+	const parsed = rows.results.map((row) => ({ row, detail: parseMembershipDetail(row.detail) }));
+	const ids = [...new Set(parsed.flatMap((p) => (p.detail ? [p.detail.userId] : [])))];
+	const emails = new Map<string, string>();
+	if (ids.length > 0) {
+		const people = await db
+			.prepare(
+				`select "id", "email" from "user" where "id" in (${ids.map((_, i) => `?${i + 1}`).join(", ")})`,
+			)
+			.bind(...ids)
+			.all<{ id: string; email: string }>();
+		for (const person of people.results) emails.set(person.id, person.email);
+	}
+	return parsed.map(({ row, detail }) => ({
+		at: row.at,
+		change: row.action === "membership.removed" ? "removed" : "set",
+		by: row.by,
+		person: detail ? (emails.get(detail.userId) ?? null) : null,
+		role: detail?.role ?? null,
+		self: detail?.self ?? false,
+		asManager: detail?.as === "manager",
+	}));
+}
+
+export type MemberChange = "ok" | "no_such_user" | "last_owner" | "not_a_member";
 
 async function ownerCount(
 	db: D1Database,
@@ -262,6 +377,7 @@ export async function setMember(
 		readonly userId: string;
 		readonly role: MailboxRole;
 		readonly actorUserId: string;
+		readonly as: MemberActorKind;
 	},
 ): Promise<MemberChange> {
 	const admitted = await db
@@ -285,13 +401,7 @@ export async function setMember(
 			.prepare(
 				`insert into "audit" ("id", "at", "actor_user_id", "action", "target", "detail") values (?1, ?2, ?3, 'membership.set', ?4, ?5)`,
 			)
-			.bind(
-				crypto.randomUUID(),
-				now,
-				input.actorUserId,
-				input.address,
-				`${input.userId === input.actorUserId ? "self" : "user"}: ${input.userId}, role: ${input.role}`,
-			),
+			.bind(crypto.randomUUID(), now, input.actorUserId, input.address, membershipDetail(input)),
 	]);
 	return "ok";
 }
@@ -303,8 +413,14 @@ export async function removeMember(
 		readonly address: string;
 		readonly userId: string;
 		readonly actorUserId: string;
+		readonly as: MemberActorKind;
 	},
 ): Promise<MemberChange> {
+	const member = await db
+		.prepare(`select 1 as "present" from "memberships" where "mailbox_id" = ?1 and "user_id" = ?2`)
+		.bind(input.mailboxId, input.userId)
+		.first<{ present: number }>();
+	if (member === null) return "not_a_member";
 	if ((await ownerCount(db, input.mailboxId, input.userId)) === 0) return "last_owner";
 	const now = new Date().toISOString();
 	await db.batch([
@@ -315,7 +431,7 @@ export async function removeMember(
 			.prepare(
 				`insert into "audit" ("id", "at", "actor_user_id", "action", "target", "detail") values (?1, ?2, ?3, 'membership.removed', ?4, ?5)`,
 			)
-			.bind(crypto.randomUUID(), now, input.actorUserId, input.address, `user: ${input.userId}`),
+			.bind(crypto.randomUUID(), now, input.actorUserId, input.address, membershipDetail(input)),
 	]);
 	return "ok";
 }

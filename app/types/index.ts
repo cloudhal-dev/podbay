@@ -26,6 +26,40 @@ export interface Mailbox {
 	role?: "owner" | "sender" | "reader";
 }
 
+export type MailboxRole = "owner" | "sender" | "reader";
+
+export interface Member {
+	userId: string;
+	name: string;
+	email: string;
+	role: MailboxRole;
+	addedAt: string;
+	/** Who gave the membership: an address, or null when that account is gone. */
+	addedBy: string | null;
+}
+
+/** One change to the members of a mailbox, as its owners read it afterwards. */
+export interface MemberChange {
+	at: string;
+	change: "set" | "removed";
+	by: string | null;
+	person: string | null;
+	role: MailboxRole | null;
+	self: boolean;
+	/** Made by someone who manages the instance and was not an owner of the mailbox. */
+	asManager: boolean;
+}
+
+/** A mailbox as whoever manages the instance sees it: who owns it, never its mail. */
+export interface RegistryMailbox {
+	address: string;
+	name: string;
+	members: number;
+	owners: string[];
+	/** The signed-in person's own membership, or null. */
+	role: MailboxRole | null;
+}
+
 /** A key for a program (an AI client). The token itself is shown once, when the key is made. */
 export interface AccessKey {
 	id: string;

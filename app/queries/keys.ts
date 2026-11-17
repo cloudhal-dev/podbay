@@ -25,4 +25,9 @@ export const queryKeys = {
 	},
 	config: ["config"] as const,
 	accessKeys: ["access-keys"] as const,
+	members: {
+		list: (mailboxId: string) => ["members", mailboxId] as const,
+		history: (mailboxId: string) => ["members", mailboxId, "history"] as const,
+	},
+	registry: ["registry"] as const,
 };
