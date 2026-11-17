@@ -5,6 +5,7 @@
 
 import { useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "shared/sending-limits";
 import { useUIStore } from "~/hooks/useUIStore";
 import {
 	buildQuotedReplyBlock,
@@ -39,6 +40,22 @@ function appendUniqueAddress(
 
 	seen.add(normalized);
 	addresses.push(trimmed);
+}
+
+/** A file as the send request carries it: its bytes as base64, and what it is. */
+async function asAttachment(file: File) {
+	const bytes = new Uint8Array(await file.arrayBuffer());
+	let binary = "";
+	// In pieces: one call with every byte as an argument overflows the stack on a large file.
+	for (let start = 0; start < bytes.length; start += 0x8000) {
+		binary += String.fromCharCode(...bytes.subarray(start, start + 0x8000));
+	}
+	return {
+		content: btoa(binary),
+		filename: file.name,
+		type: file.type || "application/octet-stream",
+		disposition: "attachment" as const,
+	};
 }
 
 interface ComposeFormFields {
@@ -188,6 +205,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const [savedDraftId, setSavedDraftId] = useState<string | null>(null);
 	/** Whether the person wrote anything since the window opened or the draft was last saved. */
 	const [touched, setTouched] = useState(false);
+	/** The files to send with the message. They live in this window only: a draft does not keep them. */
+	const [files, setFiles] = useState<File[]>([]);
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
 	const isDraftEdit = !!composeOptions.draftEmail;
 
@@ -219,6 +238,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		setError(null);
 		setSavedDraftId(null);
 		setTouched(false);
+		setFiles([]);
 		setTo(initialFields.to);
 		setCc(initialFields.cc);
 		setBcc(initialFields.bcc);
@@ -277,6 +297,22 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		closeCompose();
 	};
 
+	/** Adds files, unless together they would be more than a message can carry. */
+	const addFiles = (added: Iterable<File>) => {
+		const next = [...files, ...added];
+		const total = next.reduce((sum, file) => sum + file.size, 0);
+		if (total > MAX_ATTACHMENTS_BYTES) {
+			setError(
+				`Attached files can be ${Math.floor(MAX_ATTACHMENTS_BYTES / (1024 * 1024))} MB together. These would be ${Math.ceil(total / (1024 * 1024))} MB.`,
+			);
+			return;
+		}
+		setError(null);
+		setFiles(next);
+		setTouched(true);
+	};
+	const removeFile = (index: number) => setFiles(files.filter((_file, at) => at !== index));
+
 	const handleSend = async (e: FormEvent, onClose: () => void) => {
 		e.preventDefault();
 		if (isSending) return;
@@ -292,12 +328,18 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		}
 		const ccRecipients = splitEmailList(cc);
 		const bccRecipients = splitEmailList(bcc);
+		if (toRecipients.length + ccRecipients.length + bccRecipients.length > MAX_RECIPIENTS) {
+			setError(`A message can go to ${MAX_RECIPIENTS} recipients at most.`);
+			return;
+		}
 		const fromName = currentMailbox.settings?.fromName || currentMailbox.name;
 		const from =
 			fromName && fromName !== currentMailbox.email
 				? { email: currentMailbox.email, name: fromName }
 				: currentMailbox.email;
+		const attachments = await Promise.all(files.map(asAttachment));
 		const emailData = {
+			...(attachments.length > 0 ? { attachments } : {}),
 			to: toEmailListValue(toRecipients),
 			cc: toEmailListValue(ccRecipients),
 			bcc: toEmailListValue(bccRecipients),
@@ -348,6 +390,9 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		formTitle,
 		handleSaveDraft,
 		handleSend,
+		files,
+		addFiles,
+		removeFile,
 		saveAndClose,
 		discard,
 		touch: () => setTouched(true),

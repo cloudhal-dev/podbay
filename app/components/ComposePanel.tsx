@@ -4,9 +4,10 @@
 // Modified by the Podbay contributors.
 
 import { Banner, Button, Tooltip } from "@cloudflare/kumo";
-import { FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react";
-import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
+import { FileIcon, FloppyDiskIcon, PaperclipIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
+import { type DragEvent, type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
 import type { ComposeForm } from "~/hooks/useComposeForm";
+import { formatBytes } from "~/lib/utils";
 import RichTextEditor from "./RichTextEditor";
 
 const FIELD =
@@ -30,6 +31,14 @@ function Line({ label, id, children }: { label: string; id: string; children: Re
  */
 export default function ComposePanel({ form }: { form: ComposeForm }) {
 	const toField = useRef<HTMLInputElement>(null);
+	const filePicker = useRef<HTMLInputElement>(null);
+
+	/** Files dropped anywhere on the message are attached to it. */
+	function onDrop(event: DragEvent<HTMLFormElement>) {
+		if (event.dataTransfer.files.length === 0) return;
+		event.preventDefault();
+		form.addFiles(event.dataTransfer.files);
+	}
 	const { mode, isDraftEdit } = form;
 
 	// A new message starts at "To"; a reply starts in the text, above what it answers.
@@ -50,6 +59,10 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 			onSubmit={(event) => form.handleSend(event, form.closeCompose)}
 			onInput={form.touch}
 			onKeyDown={onKeyDown}
+			onDragOver={(event) => {
+				if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+			}}
+			onDrop={onDrop}
 			className="flex min-h-0 flex-1 flex-col bg-kumo-base"
 		>
 			{form.error && (
@@ -123,6 +136,34 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 				<RichTextEditor value={form.body} onChange={form.setBody} focusOnLoad={startsInText} />
 			</div>
 
+			{form.files.length > 0 && (
+				<div className="shrink-0 border-t border-kumo-line px-3 pt-2">
+					<ul aria-label="Attached files" className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+						{form.files.map((file, index) => (
+							<li
+								key={`${file.name}-${file.size}-${file.lastModified}`}
+								className="flex max-w-full items-center gap-1.5 rounded-md border border-kumo-line bg-kumo-recessed py-1 pl-2 pr-1 text-xs text-kumo-default"
+							>
+								<FileIcon size={14} className="shrink-0 text-kumo-subtle" />
+								<span className="truncate">{file.name}</span>
+								<span className="shrink-0 text-kumo-subtle">{formatBytes(file.size)}</span>
+								<button
+									type="button"
+									onClick={() => form.removeFile(index)}
+									aria-label={`Remove ${file.name}`}
+									className="shrink-0 cursor-pointer rounded border-0 bg-transparent p-0.5 text-kumo-subtle hover:bg-kumo-fill hover:text-kumo-default"
+								>
+									<XIcon size={12} />
+								</button>
+							</li>
+						))}
+					</ul>
+					<p className="m-0 mt-1 text-xs text-kumo-subtle">
+						Files are sent with the message. A draft does not keep them.
+					</p>
+				</div>
+			)}
+
 			<div className="flex shrink-0 items-center gap-1 border-t border-kumo-line px-3 py-2.5">
 				<Tooltip content="Send (Ctrl or ⌘ with Enter)" side="top" asChild>
 					<Button
@@ -134,6 +175,31 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 					>
 						{form.isSending ? "Sending" : "Send"}
 					</Button>
+				</Tooltip>
+				<input
+					ref={filePicker}
+					type="file"
+					multiple
+					className="sr-only"
+					tabIndex={-1}
+					aria-label="Files to attach"
+					onChange={(event) => {
+						if (event.target.files) form.addFiles(event.target.files);
+						// The same file can be picked again after it was removed.
+						event.target.value = "";
+					}}
+				/>
+				<Tooltip content="Attach files" side="top" asChild>
+					<Button
+						type="button"
+						variant="ghost"
+						shape="square"
+						size="sm"
+						icon={<PaperclipIcon size={18} />}
+						disabled={form.isSending}
+						onClick={() => filePicker.current?.click()}
+						aria-label="Attach files"
+					/>
 				</Tooltip>
 				<Tooltip content="Save draft" side="top" asChild>
 					<Button
