@@ -5,6 +5,8 @@ import { Button, Input } from "@cloudflare/kumo";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import CopyButton from "~/components/CopyButton";
+import { t } from "~/i18n";
+import { rich } from "~/i18n/rich";
 import { issueOwnerRecovery, type RecoveryLink } from "~/lib/session";
 import { ApiError } from "~/services/api";
 
@@ -30,7 +32,7 @@ export default function OwnerRecoveryRoute() {
 			setToken("");
 		} catch (caught) {
 			setError(
-				caught instanceof ApiError ? caught.message : "The recovery link could not be created.",
+				caught instanceof ApiError ? caught.message : t("The recovery link could not be created."),
 			);
 		} finally {
 			setBusy(false);
@@ -44,15 +46,16 @@ export default function OwnerRecoveryRoute() {
 				className="w-full max-w-sm rounded-xl border border-kumo-line bg-kumo-base p-6 space-y-4"
 			>
 				<div>
-					<h1 className="text-xl font-bold text-kumo-default">Recover an owner</h1>
+					<h1 className="text-xl font-bold text-kumo-default">{t("Recover an owner")}</h1>
 					<p className="text-sm text-kumo-subtle mt-1">
-						For the person who deployed this instance. It needs the setup token, the secret named{" "}
-						<code>SETUP_TOKEN</code> on the deployment, and makes a one-time link that lets an owner
-						choose a new password.
+						{rich(
+							"For the person who deployed this instance. It needs the setup token, the secret named {secret} on the deployment, and makes a one-time link that lets an owner choose a new password.",
+							{ secret: <code>SETUP_TOKEN</code> },
+						)}
 					</p>
 				</div>
 				<Input
-					label="Setup token"
+					label={t("Setup token")}
 					className="w-full"
 					id="owner-recovery-token"
 					type="password"
@@ -62,7 +65,7 @@ export default function OwnerRecoveryRoute() {
 					required
 				/>
 				<Input
-					label="The owner's email"
+					label={t("The owner's email")}
 					className="w-full"
 					id="owner-recovery-email"
 					type="email"
@@ -77,21 +80,23 @@ export default function OwnerRecoveryRoute() {
 					</p>
 				)}
 				<Button type="submit" variant="primary" loading={busy} className="w-full justify-center">
-					Create a recovery link
+					{t("Create a recovery link")}
 				</Button>
 				{issued && (
 					<div className="rounded-md bg-kumo-tint px-3 py-2 space-y-1">
 						<p className="text-sm text-kumo-strong">
-							Open this link, or give it to {issued.email}. It works once and is shown only now.
+							{t("Open this link, or give it to {email}. It works once and is shown only now.", {
+								email: issued.email,
+							})}
 						</p>
 						<div className="flex items-start gap-1">
 							<code className="flex-1 break-all text-xs text-kumo-default">{issued.link}</code>
-							<CopyButton text={issued.link} label="Copy the recovery link" />
+							<CopyButton text={issued.link} label={t("Copy the recovery link")} />
 						</div>
 					</div>
 				)}
 				<Link to="/sign-in" className="block text-sm underline text-kumo-subtle">
-					Back to sign in
+					{t("Back to sign in")}
 				</Link>
 			</form>
 		</div>

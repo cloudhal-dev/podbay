@@ -17,6 +17,7 @@ import {
 import { Link, useLocation, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { type KeyboardEvent, useEffect, useState } from "react";
 import { useUIStore } from "~/hooks/useUIStore";
+import { t } from "~/i18n";
 import { useFeatures } from "~/queries/config";
 import DisplayMenu from "./DisplayMenu";
 import SearchOptions from "./SearchOptions";
@@ -81,7 +82,7 @@ export default function Header() {
 	return (
 		<header className="flex h-16 shrink-0 print:hidden items-center gap-2 bg-kumo-recessed px-2 md:gap-3 md:px-3">
 			{/* One button: slides the rail in on a phone, collapses it on a wide screen */}
-			<Tooltip content="Main menu" side="bottom" asChild>
+			<Tooltip content={t("Main menu")} side="bottom" asChild>
 				<Button
 					variant="ghost"
 					shape="square"
@@ -90,7 +91,7 @@ export default function Header() {
 						if (window.matchMedia("(min-width: 768px)").matches) toggleRail();
 						else toggleSidebar();
 					}}
-					aria-label="Main menu"
+					aria-label={t("Main menu")}
 					className="shrink-0"
 				/>
 			</Tooltip>
@@ -109,8 +110,8 @@ export default function Header() {
 				<input
 					id={SEARCH_INPUT_ID}
 					type="search"
-					aria-label="Search emails"
-					placeholder="Search mail"
+					aria-label={t("Search emails")}
+					placeholder={t("Search mail")}
 					autoComplete="off"
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
@@ -122,7 +123,7 @@ export default function Header() {
 						type="button"
 						onClick={clearSearch}
 						className="absolute right-11 rounded-full p-1 bg-transparent border-0 text-kumo-subtle hover:bg-kumo-tint hover:text-kumo-default cursor-pointer"
-						aria-label="Clear search"
+						aria-label={t("Clear search")}
 					>
 						<XIcon size={16} />
 					</button>
@@ -131,8 +132,8 @@ export default function Header() {
 					type="button"
 					onClick={() => setOptionsOpen(true)}
 					className="absolute right-3 rounded-full p-1.5 bg-transparent border-0 text-kumo-subtle hover:bg-kumo-tint hover:text-kumo-default cursor-pointer"
-					aria-label="Search options"
-					title="Search options"
+					aria-label={t("Search options")}
+					title={t("Search options")}
 				>
 					<SlidersIcon size={16} />
 				</button>
@@ -149,20 +150,20 @@ export default function Header() {
 			</div>
 
 			<div className="ml-auto flex shrink-0 items-center gap-0.5">
-				<Tooltip content="Keyboard shortcuts" side="bottom" asChild>
+				<Tooltip content={t("Keyboard shortcuts")} side="bottom" asChild>
 					<Button
 						variant="ghost"
 						shape="square"
 						icon={<KeyboardIcon size={20} />}
 						onClick={() => setShortcutHelpOpen(true)}
-						aria-label="Keyboard shortcuts"
+						aria-label={t("Keyboard shortcuts")}
 						className="hidden md:inline-flex"
 					/>
 				</Tooltip>
 				<DisplayMenu />
 				{hasAssistant && (
 					<Tooltip
-						content={isAgentPanelOpen ? "Hide agent panel" : "Show agent panel"}
+						content={isAgentPanelOpen ? t("Hide agent panel") : t("Show agent panel")}
 						side="bottom"
 						asChild
 					>
@@ -171,12 +172,12 @@ export default function Header() {
 							shape="square"
 							icon={<RobotIcon size={20} />}
 							onClick={toggleAgentPanel}
-							aria-label="Toggle agent panel"
+							aria-label={t("Toggle agent panel")}
 							className="hidden lg:inline-flex"
 						/>
 					</Tooltip>
 				)}
-				<Tooltip content="Settings" side="bottom" asChild>
+				<Tooltip content={t("Settings")} side="bottom" asChild>
 					<Button
 						variant={isSettingsActive ? "secondary" : "ghost"}
 						shape="square"
@@ -186,16 +187,16 @@ export default function Header() {
 							if (isSettingsActive) toInbox();
 							else void navigate({ to: "/mailbox/$mailboxId/settings", params: { mailboxId } });
 						}}
-						aria-label="Settings"
+						aria-label={t("Settings")}
 					/>
 				</Tooltip>
-				<Tooltip content="Sign-in and security" side="bottom" asChild>
+				<Tooltip content={t("Sign-in and security")} side="bottom" asChild>
 					<Button
 						variant="ghost"
 						shape="square"
 						icon={<ShieldCheckIcon size={20} />}
 						onClick={() => void navigate({ to: "/account/security" })}
-						aria-label="Sign-in and security"
+						aria-label={t("Sign-in and security")}
 					/>
 				</Tooltip>
 			</div>

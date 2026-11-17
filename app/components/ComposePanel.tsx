@@ -8,6 +8,7 @@ import { FileIcon, FloppyDiskIcon, PaperclipIcon, TrashIcon, XIcon } from "@phos
 import { type DragEvent, type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
 import type { ComposeForm } from "~/hooks/useComposeForm";
 import { useDisplay } from "~/hooks/useDisplay";
+import { t } from "~/i18n";
 import { formatBytes } from "~/lib/utils";
 import AddressField from "./AddressField";
 import RichTextEditor from "./RichTextEditor";
@@ -74,7 +75,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 				</div>
 			)}
 
-			<Line label="To" id="compose-to">
+			<Line label={t("To")} id="compose-to">
 				<AddressField
 					inputRef={toField}
 					id="compose-to"
@@ -90,12 +91,12 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						onClick={() => form.setShowCcBcc(true)}
 						className="shrink-0 cursor-pointer border-0 bg-transparent p-0 text-sm text-kumo-subtle hover:text-kumo-default hover:underline"
 					>
-						Cc Bcc
+						{t("Cc Bcc")}
 					</button>
 				)}
 			</Line>
 			{form.showCcBcc && (
-				<Line label="Cc" id="compose-cc">
+				<Line label={t("Cc")} id="compose-cc">
 					<AddressField
 						id="compose-cc"
 						className={FIELD}
@@ -106,7 +107,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 				</Line>
 			)}
 			{form.showCcBcc && (
-				<Line label="Bcc" id="compose-bcc">
+				<Line label={t("Bcc")} id="compose-bcc">
 					<AddressField
 						id="compose-bcc"
 						className={FIELD}
@@ -118,12 +119,12 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 			)}
 			<div className="flex items-center border-b border-kumo-line px-4">
 				<label htmlFor="compose-subject" className="sr-only">
-					Subject
+					{t("Subject")}
 				</label>
 				<input
 					id="compose-subject"
 					type="text"
-					placeholder="Subject"
+					placeholder={t("Subject")}
 					autoComplete="off"
 					className={FIELD}
 					value={form.subject}
@@ -141,12 +142,12 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 					role="status"
 					className="m-0 shrink-0 border-t border-kumo-line px-3 pt-2 text-xs text-kumo-warning"
 				>
-					Not forwarded: {form.leftBehind.join(", ")}.
+					{t("Not forwarded: {files}.", { files: form.leftBehind.join(", ") })}
 				</p>
 			)}
 			{form.files.length > 0 && (
 				<div className="shrink-0 border-t border-kumo-line px-3 pt-2">
-					<ul aria-label="Attached files" className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+					<ul aria-label={t("Attached files")} className="m-0 flex list-none flex-wrap gap-1.5 p-0">
 						{form.files.map((file, index) => (
 							<li
 								key={`${file.name}-${file.size}-${file.lastModified}`}
@@ -158,7 +159,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 								<button
 									type="button"
 									onClick={() => form.removeFile(index)}
-									aria-label={`Remove ${file.name}`}
+									aria-label={t("Remove {name}", { name: file.name })}
 									className="shrink-0 cursor-pointer rounded border-0 bg-transparent p-0.5 text-kumo-subtle hover:bg-kumo-fill hover:text-kumo-default"
 								>
 									<XIcon size={12} />
@@ -167,13 +168,13 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						))}
 					</ul>
 					<p className="m-0 mt-1 text-xs text-kumo-subtle">
-						Files are sent with the message. A draft does not keep them.
+						{t("Files are sent with the message. A draft does not keep them.")}
 					</p>
 				</div>
 			)}
 
 			<div className="flex shrink-0 items-center gap-1 border-t border-kumo-line px-3 py-2.5">
-				<Tooltip content="Send (Ctrl or ⌘ with Enter)" side="top" asChild>
+				<Tooltip content={t("Send (Ctrl or ⌘ with Enter)")} side="top" asChild>
 					<Button
 						type="submit"
 						variant="primary"
@@ -181,7 +182,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						loading={form.isSending}
 						disabled={form.isSavingDraft || form.isSending}
 					>
-						{form.isSending ? "Sending" : "Send"}
+						{form.isSending ? t("Sending") : t("Send")}
 					</Button>
 				</Tooltip>
 				{sendAndArchive && (mode === "reply" || mode === "reply-all") && (
@@ -192,7 +193,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						disabled={form.isSavingDraft || form.isSending}
 						onClick={(event) => void form.handleSend(event, form.closeCompose, true)}
 					>
-						Send and archive
+						{t("Send and archive")}
 					</Button>
 				)}
 				<input
@@ -201,14 +202,14 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 					multiple
 					className="sr-only"
 					tabIndex={-1}
-					aria-label="Files to attach"
+					aria-label={t("Files to attach")}
 					onChange={(event) => {
 						if (event.target.files) form.addFiles(event.target.files);
 						// The same file can be picked again after it was removed.
 						event.target.value = "";
 					}}
 				/>
-				<Tooltip content="Attach files" side="top" asChild>
+				<Tooltip content={t("Attach files")} side="top" asChild>
 					<Button
 						type="button"
 						variant="ghost"
@@ -217,10 +218,10 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						icon={<PaperclipIcon size={18} />}
 						disabled={form.isSending}
 						onClick={() => filePicker.current?.click()}
-						aria-label="Attach files"
+						aria-label={t("Attach files")}
 					/>
 				</Tooltip>
-				<Tooltip content="Save draft" side="top" asChild>
+				<Tooltip content={t("Save draft")} side="top" asChild>
 					<Button
 						type="button"
 						variant="ghost"
@@ -230,12 +231,12 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						loading={form.isSavingDraft}
 						disabled={form.isSending}
 						onClick={() => void form.handleSaveDraft()}
-						aria-label="Save draft"
+						aria-label={t("Save draft")}
 					/>
 				</Tooltip>
-				{form.isSaved && <span className="ml-1 text-xs text-kumo-subtle">Saved</span>}
+				{form.isSaved && <span className="ml-1 text-xs text-kumo-subtle">{t("Saved")}</span>}
 				<span className="ml-auto" />
-				<Tooltip content="Discard" side="top" asChild>
+				<Tooltip content={t("Discard")} side="top" asChild>
 					<Button
 						type="button"
 						variant="ghost"
@@ -244,7 +245,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						icon={<TrashIcon size={18} />}
 						disabled={form.isSending}
 						onClick={form.discard}
-						aria-label="Discard"
+						aria-label={t("Discard")}
 					/>
 				</Tooltip>
 			</div>

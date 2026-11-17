@@ -10,15 +10,16 @@ import GeneralSettings from "~/components/settings/GeneralSettings";
 import LabelSettings from "~/components/settings/LabelSettings";
 import MailboxDetails from "~/components/settings/MailboxDetails";
 import SignatureSettings from "~/components/settings/SignatureSettings";
+import { m, t } from "~/i18n";
 import { useFeatures } from "~/queries/config";
 import { useMailbox } from "~/queries/mailboxes";
 
 const TABS = [
-	{ id: "general", name: "General" },
-	{ id: "signature", name: "Signature" },
-	{ id: "labels", name: "Labels" },
-	{ id: "mailbox", name: "Mailbox" },
-	{ id: "assistant", name: "Assistant" },
+	{ id: "general", name: m("General") },
+	{ id: "signature", name: m("Signature") },
+	{ id: "labels", name: m("Labels") },
+	{ id: "mailbox", name: m("Mailbox") },
+	{ id: "assistant", name: m("Assistant") },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -45,9 +46,9 @@ export default function SettingsRoute() {
 	return (
 		<div className="h-full overflow-y-auto">
 			<div className="px-4 pt-5 md:px-8">
-				<h1 className="m-0 text-[22px] font-normal leading-7 text-kumo-default">Settings</h1>
+				<h1 className="m-0 text-[22px] font-normal leading-7 text-kumo-default">{t("Settings")}</h1>
 				<nav
-					aria-label="Settings"
+					aria-label={t("Settings")}
 					className="mt-4 flex gap-1 overflow-x-auto border-b border-kumo-line"
 				>
 					{tabs.map((tab) => (
@@ -63,13 +64,13 @@ export default function SettingsRoute() {
 									: "border-transparent text-kumo-subtle hover:text-kumo-default"
 							}`}
 						>
-							{tab.name}
+							{t(tab.name)}
 						</Link>
 					))}
 				</nav>
 			</div>
 			<div className="max-w-3xl px-4 py-5 md:px-8">
-				<h2 className="sr-only">{tabs.find((tab) => tab.id === current)?.name}</h2>
+				<h2 className="sr-only">{t(tabs.find((tab) => tab.id === current)?.name ?? "")}</h2>
 				{current === "general" && <GeneralSettings />}
 				{current === "signature" && <SignatureSettings mailbox={mailbox} />}
 				{current === "labels" && (

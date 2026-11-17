@@ -13,13 +13,15 @@ import {
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { formatListDate } from "shared/dates";
-import { Folders, getFolderDisplayName } from "shared/folders";
+import { Folders } from "shared/folders";
 import { type ConversationActions, useConversationActions } from "~/hooks/useConversationActions";
 import { type Density, useDisplay, useSplit } from "~/hooks/useDisplay";
 import { DRAG_TYPE } from "~/hooks/useDropTarget";
 import { hasUnread, useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
+import { dateLanguage, t } from "~/i18n";
+import { placeName } from "~/lib/places";
 import { getSnippetText } from "~/lib/utils";
 import api from "~/services/api";
 import type { Email } from "~/types";
@@ -121,7 +123,7 @@ export default function MessageList({
 	};
 	const actions: ConversationActions = {
 		...base,
-		moveTo: (list, target, said) => closeIfOpen(list, base.moveTo(list, target, said)),
+		moveTo: (list, target) => closeIfOpen(list, base.moveTo(list, target)),
 		moveToLabel: (list, label) => closeIfOpen(list, base.moveToLabel(list, label)),
 		archive: (list) => closeIfOpen(list, base.archive(list)),
 		reportSpam: (list) => closeIfOpen(list, base.reportSpam(list)),
@@ -267,7 +269,9 @@ export default function MessageList({
 							>
 								<input
 									type="checkbox"
-									aria-label={`Select the conversation "${email.subject || "No subject"}"`}
+									aria-label={t('Select the conversation "{subject}"', {
+										subject: email.subject || t("(no subject)"),
+									})}
 									className="mx-1 h-4 w-4 shrink-0 cursor-pointer"
 									checked={isSelected}
 									onClick={(event) => {
@@ -277,7 +281,7 @@ export default function MessageList({
 								/>
 								<button
 									type="button"
-									aria-label={email.starred ? "Unstar" : "Star"}
+									aria-label={email.starred ? t("Unstar") : t("Star")}
 									aria-pressed={email.starred}
 									className="shrink-0 rounded bg-transparent border-0 p-0.5 cursor-pointer"
 									onClick={() => actions.star(email)}
@@ -313,13 +317,15 @@ export default function MessageList({
 											</span>
 										)}
 										{email.has_draft && (
-											<span className="shrink-0 text-xs font-medium text-kumo-danger">Draft</span>
+											<span className="shrink-0 text-xs font-medium text-kumo-danger">
+												{t("Draft")}
+											</span>
 										)}
 									</span>
 									<span className="block truncate @2xl:flex-1">
 										{showFolder && place && (
 											<Badge variant="outline" className="mr-2 align-middle">
-												{getFolderDisplayName(place)}
+												{placeName(place)}
 											</Badge>
 										)}
 										<span className="mr-1.5 inline-flex gap-1 align-middle empty:hidden">
@@ -328,7 +334,7 @@ export default function MessageList({
 										<span
 											className={unread ? "font-semibold text-kumo-default" : "text-kumo-default"}
 										>
-											{mark(email.subject || "(no subject)")}
+											{mark(email.subject || t("(no subject)"))}
 										</span>
 										{showSnippets && snippet && (
 											<span className="text-kumo-subtle"> — {mark(snippet)}</span>
@@ -337,7 +343,7 @@ export default function MessageList({
 								</button>
 
 								{email.needs_reply && !email.has_draft && (
-									<Tooltip content="Needs a reply" asChild>
+									<Tooltip content={t("Needs a reply")} asChild>
 										<span className="shrink-0 text-kumo-warning">
 											<ArrowBendUpLeftIcon size={14} weight="bold" />
 										</span>
@@ -348,7 +354,7 @@ export default function MessageList({
 										showActions ? "group-hover:hidden group-focus-within:hidden" : ""
 									} ${unread ? "font-semibold text-kumo-default" : "text-kumo-subtle"}`}
 								>
-									{formatListDate(email.date)}
+									{formatListDate(email.date, dateLanguage())}
 								</span>
 								<span
 									className={`hidden shrink-0 items-center ${
@@ -357,18 +363,18 @@ export default function MessageList({
 								>
 									{folder !== Folders.ARCHIVE && (
 										<IconButton
-											label="Archive"
+											label={t("Archive")}
 											icon={<ArchiveIcon size={16} />}
 											onClick={() => actions.archive([email])}
 										/>
 									)}
 									<IconButton
-										label={actions.inTrash ? "Delete forever" : "Delete"}
+										label={actions.inTrash ? t("Delete forever") : t("Delete")}
 										icon={<TrashIcon size={16} />}
 										onClick={() => void actions.remove([email])}
 									/>
 									<IconButton
-										label={unread ? "Mark as read" : "Mark as unread"}
+										label={unread ? t("Mark as read") : t("Mark as unread")}
 										icon={
 											unread ? <EnvelopeOpenIcon size={16} /> : <EnvelopeSimpleIcon size={16} />
 										}

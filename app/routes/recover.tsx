@@ -5,6 +5,8 @@ import { Button, Input } from "@cloudflare/kumo";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { t } from "~/i18n";
+import { rich } from "~/i18n/rich";
 import { recoveryFor, redeemRecovery } from "~/lib/session";
 import { ApiError } from "~/services/api";
 
@@ -29,7 +31,7 @@ export default function RecoverRoute() {
 	async function submit(event: FormEvent) {
 		event.preventDefault();
 		if (password !== again) {
-			setError("The two passwords are not the same.");
+			setError(t("The two passwords are not the same."));
 			return;
 		}
 		setBusy(true);
@@ -40,7 +42,7 @@ export default function RecoverRoute() {
 			setAgain("");
 			setDone(true);
 		} catch (caught) {
-			setError(caught instanceof ApiError ? caught.message : "The password could not be set.");
+			setError(caught instanceof ApiError ? caught.message : t("The password could not be set."));
 		} finally {
 			setBusy(false);
 		}
@@ -51,13 +53,14 @@ export default function RecoverRoute() {
 		return (
 			<div className={PAGE}>
 				<div className={CARD}>
-					<h1 className="text-xl font-bold text-kumo-default">Your password is set</h1>
+					<h1 className="text-xl font-bold text-kumo-default">{t("Your password is set")}</h1>
 					<p className="text-sm text-kumo-subtle">
-						Sign in with it. Your authenticator app, passkeys and keys were removed; set them up
-						again on the sign-in and security page.
+						{t(
+							"Sign in with it. Your authenticator app, passkeys and keys were removed; set them up again on the sign-in and security page.",
+						)}
 					</p>
 					<Link to="/sign-in" className="text-sm underline text-kumo-default">
-						Go to sign in
+						{t("Go to sign in")}
 					</Link>
 				</div>
 			</div>
@@ -67,13 +70,16 @@ export default function RecoverRoute() {
 		return (
 			<div className={PAGE}>
 				<div className={CARD}>
-					<h1 className="text-xl font-bold text-kumo-default">This link is not valid any more</h1>
+					<h1 className="text-xl font-bold text-kumo-default">
+						{t("This link is not valid any more")}
+					</h1>
 					<p className="text-sm text-kumo-subtle">
-						A recovery link works once and for a limited time. Ask the person who gave it to you for
-						a new one.
+						{t(
+							"A recovery link works once and for a limited time. Ask the person who gave it to you for a new one.",
+						)}
 					</p>
 					<Link to="/sign-in" className="text-sm underline text-kumo-default">
-						Go to sign in
+						{t("Go to sign in")}
 					</Link>
 				</div>
 			</div>
@@ -83,16 +89,17 @@ export default function RecoverRoute() {
 		<div className={PAGE}>
 			<form onSubmit={submit} className={CARD}>
 				<div>
-					<h1 className="text-xl font-bold text-kumo-default">Choose a new password</h1>
+					<h1 className="text-xl font-bold text-kumo-default">{t("Choose a new password")}</h1>
 					<p className="text-sm text-kumo-subtle mt-1">
-						For <strong className="text-kumo-default">{recovery.email}</strong>. This signs you out
-						everywhere and removes your authenticator app, passkeys and keys, so only the new
-						password opens the account.
+						{rich(
+							"For {email}. This signs you out everywhere and removes your authenticator app, passkeys and keys, so only the new password opens the account.",
+							{ email: <strong className="text-kumo-default">{recovery.email}</strong> },
+						)}
 					</p>
 				</div>
 				<div>
 					<Input
-						label="New password"
+						label={t("New password")}
 						className="w-full"
 						id="recover-password"
 						type="password"
@@ -103,11 +110,11 @@ export default function RecoverRoute() {
 						required
 					/>
 					<p className="text-xs text-kumo-subtle mt-1">
-						At least {MIN_PASSWORD_LENGTH} characters.
+						{t("At least {count} characters.", { count: MIN_PASSWORD_LENGTH })}
 					</p>
 				</div>
 				<Input
-					label="The same password again"
+					label={t("The same password again")}
 					className="w-full"
 					id="recover-password-again"
 					type="password"
@@ -122,7 +129,7 @@ export default function RecoverRoute() {
 					</p>
 				)}
 				<Button type="submit" variant="primary" loading={busy} className="w-full justify-center">
-					Set the password
+					{t("Set the password")}
 				</Button>
 			</form>
 		</div>

@@ -3,6 +3,7 @@
 
 import { XIcon } from "@phosphor-icons/react";
 import { type KeyboardEvent, type Ref, useEffect, useId, useState } from "react";
+import { t } from "~/i18n";
 import {
 	joinTyped,
 	looksLikeAddress,
@@ -90,7 +91,7 @@ export default function AddressField({
 			{done.map((address, index) => (
 				<span
 					key={address.toLowerCase()}
-					title={looksLikeAddress(address) ? undefined : "This does not look like an address"}
+					title={looksLikeAddress(address) ? undefined : t("This does not look like an address")}
 					className={`flex max-w-full items-center gap-1 rounded-full border py-0.5 pl-2.5 pr-1 text-xs ${
 						looksLikeAddress(address)
 							? "border-kumo-line bg-kumo-recessed text-kumo-default"
@@ -108,7 +109,7 @@ export default function AddressField({
 								),
 							)
 						}
-						aria-label={`Remove ${address}`}
+						aria-label={t("Remove {name}", { name: address })}
 						className="shrink-0 cursor-pointer rounded-full border-0 bg-transparent p-0.5 text-kumo-subtle hover:bg-kumo-fill hover:text-kumo-default"
 					>
 						<XIcon size={10} />
@@ -140,7 +141,7 @@ export default function AddressField({
 				<div
 					id={listId}
 					role="listbox"
-					aria-label="Addresses"
+					aria-label={t("Addresses")}
 					className="absolute left-0 top-full z-10 mt-1 max-h-60 min-w-64 overflow-auto rounded-lg border border-kumo-line bg-kumo-elevated p-1 shadow-lg"
 				>
 					{offered.map((address, index) => (

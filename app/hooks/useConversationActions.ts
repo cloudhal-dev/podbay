@@ -2,9 +2,11 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { useKumoToastManager } from "@cloudflare/kumo";
-import { Folders, getFolderDisplayName } from "shared/folders";
+import { Folders } from "shared/folders";
 import { useConfirm } from "~/components/Confirm";
 import { useUIStore } from "~/hooks/useUIStore";
+import { m, t } from "~/i18n";
+import { placeName } from "~/lib/places";
 import { useDeleteEmail, useMoveEmail, useUpdateEmail } from "~/queries/emails";
 import { useFolders } from "~/queries/folders";
 import { useLabelConversation, useLabels } from "~/queries/labels";
@@ -16,7 +18,42 @@ const NOT_A_MOVE_TARGET: readonly string[] = [Folders.SENT, Folders.DRAFT];
 /** How long `z` can still take back the last move: about as long as its note is on screen. */
 const UNDO_FOR_MS = 8000;
 
-const plural = (count: number) => (count === 1 ? "Conversation" : `${count} conversations`);
+/** What was done to conversations, as the note says it. */
+type Deed = "archived" | "trash" | "spam" | "inbox" | "moved" | "deleted";
+
+/**
+ * The note of a deed. Each is a whole sentence, so a language can order it its own way; `one`
+ * and `many` are for conversations, `message` for one message of a conversation.
+ */
+const NOTES: Record<Deed, { one: string; many: string; message?: string }> = {
+	archived: { one: m("Conversation archived"), many: m("{count} conversations archived") },
+	trash: {
+		one: m("Conversation moved to Trash"),
+		many: m("{count} conversations moved to Trash"),
+		message: m("Message moved to Trash"),
+	},
+	spam: {
+		one: m("Conversation marked as spam"),
+		many: m("{count} conversations marked as spam"),
+		message: m("Message marked as spam"),
+	},
+	inbox: { one: m("Conversation moved to Inbox"), many: m("{count} conversations moved to Inbox") },
+	moved: {
+		one: m("Conversation moved to {name}"),
+		many: m("{count} conversations moved to {name}"),
+	},
+	deleted: {
+		one: m("Conversation deleted forever"),
+		many: m("{count} conversations deleted forever"),
+	},
+};
+
+function note(deed: Deed, count: number, what?: "message", name = ""): string {
+	const said = NOTES[deed];
+	const text =
+		what === "message" && said.message ? said.message : count === 1 ? said.one : said.many;
+	return t(text, { count, name });
+}
 
 /**
  * What can be done to conversations, the same from the list and from an open conversation.
@@ -54,18 +91,17 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 		};
 		const toast: string = toasts.add({
 			title,
-			actions: [{ children: "Undo", variant: "ghost", onClick: run }],
+			actions: [{ children: t("Undo"), variant: "ghost", onClick: run }],
 		});
 		useUIStore.setState({ lastUndo: run });
 		setTimeout(forget, UNDO_FOR_MS);
 	}
 
-	function moveTo(list: Email[], target: string, said?: string, what?: string): boolean {
+	function moveTo(list: Email[], target: string, deed: Deed = "moved", what?: "message"): boolean {
 		if (!mailboxId || list.length === 0) return false;
 		const before = list.map((email) => ({ id: email.id, folderId: email.folder_id || folder }));
 		for (const email of list) moveEmail.mutate({ mailboxId, id: email.id, folderId: target });
-		const name = folders.find((f) => f.id === target)?.name ?? getFolderDisplayName(target);
-		offerUndo(`${what ?? plural(list.length)} ${said ?? `moved to ${name}`}`, () => {
+		offerUndo(note(deed, list.length, what, placeName(target)), () => {
 			for (const was of before) {
 				if (was.folderId) moveEmail.mutate({ mailboxId, id: was.id, folderId: was.folderId });
 			}
@@ -74,26 +110,26 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 	}
 
 	/** Moves to Trash, or inside Trash deletes for good after asking. Resolves to whether it did. */
-	async function remove(list: Email[], what?: string): Promise<boolean> {
+	async function remove(list: Email[], what?: "message"): Promise<boolean> {
 		if (!mailboxId || list.length === 0) return false;
 		// What decides is where each message is, so one message of a conversation read elsewhere
 		// goes to Trash, and one already in Trash is deleted for good.
 		const inTrash = list.every((email) => (email.folder_id || folder) === Folders.TRASH);
-		if (!inTrash) return moveTo(list, Folders.TRASH, "moved to Trash", what);
+		if (!inTrash) return moveTo(list, Folders.TRASH, "trash", what);
 		const one = list.length === 1;
 		const sure = await confirm({
 			title: one
-				? "Delete this conversation forever?"
-				: `Delete ${list.length} conversations forever?`,
+				? t("Delete this conversation forever?")
+				: t("Delete {count} conversations forever?", { count: list.length }),
 			body: one
-				? "It will be gone from this mailbox for good. This cannot be undone."
-				: "They will be gone from this mailbox for good. This cannot be undone.",
-			action: "Delete forever",
+				? t("It will be gone from this mailbox for good. This cannot be undone.")
+				: t("They will be gone from this mailbox for good. This cannot be undone."),
+			action: t("Delete forever"),
 			destructive: true,
 		});
 		if (!sure) return false;
 		for (const email of list) deleteEmail.mutate({ mailboxId, id: email.id });
-		toasts.add({ title: `${plural(list.length)} deleted forever` });
+		toasts.add({ title: note("deleted", list.length) });
 		return true;
 	}
 
@@ -124,7 +160,7 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 				moveEmail.mutate({ mailboxId, id: email.id, folderId: Folders.ARCHIVE });
 			}
 		}
-		offerUndo(`${plural(list.length)} moved to ${target.name}`, () => {
+		offerUndo(note("moved", list.length, undefined, target.name), () => {
 			for (const { email, had, folderId } of before) {
 				if (!had) {
 					labelConversation.mutate({ mailboxId, emailId: email.id, add: [], remove: [target.id] });
@@ -148,9 +184,8 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 		moveTo,
 		remove,
 		archive: (list: Email[]) => moveTo(list, Folders.ARCHIVE, "archived"),
-		reportSpam: (list: Email[], what?: string) =>
-			moveTo(list, Folders.SPAM, "marked as spam", what),
-		notSpam: (list: Email[]) => moveTo(list, Folders.INBOX, "moved to Inbox"),
+		reportSpam: (list: Email[], what?: "message") => moveTo(list, Folders.SPAM, "spam", what),
+		notSpam: (list: Email[]) => moveTo(list, Folders.INBOX, "inbox"),
 		setRead(list: Email[], read: boolean) {
 			if (!mailboxId) return;
 			for (const email of list) updateEmail.mutate({ mailboxId, id: email.id, data: { read } });

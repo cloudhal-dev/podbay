@@ -4,6 +4,7 @@
 // Modified by the Podbay contributors.
 
 import { LayerDialog } from "@cloudflare/kumo";
+import { t } from "~/i18n";
 import { downloadFile } from "~/lib/utils";
 import type { Email } from "~/types";
 
@@ -73,9 +74,9 @@ export default function EmailPanelDialogs({
 				}}
 			>
 				<LayerDialog.Content size="xl">
-					<LayerDialog.Title>Message headers</LayerDialog.Title>
+					<LayerDialog.Title>{t("Message headers")}</LayerDialog.Title>
 					<LayerDialog.Description>
-						{sourceViewEmail?.subject || "(no subject)"}
+						{sourceViewEmail?.subject || t("(no subject)")}
 					</LayerDialog.Description>
 					<LayerDialog.Body>
 						<table className="w-full text-sm border-collapse">
@@ -100,7 +101,7 @@ export default function EmailPanelDialogs({
 						</table>
 						{sourceHeaders.length === 0 && (
 							<p className="text-sm text-kumo-subtle text-center py-8">
-								This message has no header data.
+								{t("This message has no header data.")}
 							</p>
 						)}
 					</LayerDialog.Body>
@@ -114,7 +115,7 @@ export default function EmailPanelDialogs({
 				}}
 			>
 				<LayerDialog.Content size="xl">
-					<LayerDialog.Title>{previewImage?.filename ?? "Image"}</LayerDialog.Title>
+					<LayerDialog.Title>{previewImage?.filename ?? t("Image")}</LayerDialog.Title>
 					<LayerDialog.Body>
 						{previewImage && (
 							<div className="flex min-h-[200px] items-center justify-center rounded-lg bg-kumo-tint/30 p-4">
@@ -126,13 +127,13 @@ export default function EmailPanelDialogs({
 							</div>
 						)}
 					</LayerDialog.Body>
-					<LayerDialog.Actions dismissLabel="Close">
+					<LayerDialog.Actions dismissLabel={t("Close")}>
 						<LayerDialog.Action
 							onClick={() => {
 								if (previewImage) downloadFile(previewImage.url, previewImage.filename);
 							}}
 						>
-							Download
+							{t("Download")}
 						</LayerDialog.Action>
 					</LayerDialog.Actions>
 				</LayerDialog.Content>

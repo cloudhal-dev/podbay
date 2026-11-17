@@ -10,6 +10,7 @@ import { Folders } from "shared/folders";
 import { MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "shared/sending-limits";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { useUIStore } from "~/hooks/useUIStore";
+import { quoteLanguage, t } from "~/i18n";
 import {
 	buildQuotedReplyBlock,
 	escapeHtml,
@@ -65,16 +66,16 @@ async function carryFiles(
 		// A picture shown inside the message is part of its text, not a file of it.
 		if (attachment.disposition === "inline") continue;
 		if (attachmentRisk(attachment) !== null) {
-			left.push(`${attachment.filename} (can do harm when opened)`);
+			left.push(t("{name} (can do harm when opened)", { name: attachment.filename }));
 		} else if (total + attachment.size > MAX_ATTACHMENTS_BYTES) {
-			left.push(`${attachment.filename} (too large to send with the rest)`);
+			left.push(t("{name} (too large to send with the rest)", { name: attachment.filename }));
 		} else {
 			try {
 				const blob = await api.getAttachment(mailboxId, emailId, attachment.id);
 				files.push(new File([blob], attachment.filename, { type: attachment.mimetype }));
 				total += attachment.size;
 			} catch {
-				left.push(`${attachment.filename} (could not be fetched)`);
+				left.push(t("{name} (could not be fetched)", { name: attachment.filename }));
 			}
 		}
 	}
@@ -131,7 +132,7 @@ function buildForwardBody(
 	const safeSubject = escapeHtml(original.subject);
 	const safeBody = escapeHtml(stripHtml(original.body || "")).replace(/\n/g, "<br>");
 
-	return `<p><br></p>${sigBlock ? `${sigBlock}<br>` : ""}<div style="border: 1px solid #ddd; padding: 1em; background-color: #f9f9f9; margin: 1em 0;"><strong>Forwarded message:</strong><br><strong>From:</strong> ${safeSender}<br><strong>Date:</strong> ${formatComposeDate(original.date)}<br><strong>Subject:</strong> ${safeSubject}<br><br>${safeBody}</div>`;
+	return `<p><br></p>${sigBlock ? `${sigBlock}<br>` : ""}<div style="border: 1px solid #ddd; padding: 1em; background-color: #f9f9f9; margin: 1em 0;"><strong>${escapeHtml(t("Forwarded message:"))}</strong><br><strong>${escapeHtml(t("From:"))}</strong> ${safeSender}<br><strong>${escapeHtml(t("Date:"))}</strong> ${formatComposeDate(original.date, quoteLanguage())}<br><strong>${escapeHtml(t("Subject:"))}</strong> ${safeSubject}<br><br>${safeBody}</div>`;
 }
 
 function buildReplyAllFields(
@@ -265,20 +266,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
 	const isDraftEdit = !!composeOptions.draftEmail;
 
-	const formTitle = useMemo(() => {
-		if (isDraftEdit) return "Edit Draft";
-		switch (composeOptions.mode) {
-			case "reply":
-				return "Reply";
-			case "reply-all":
-				return "Reply All";
-			case "forward":
-				return "Forward";
-			default:
-				return "New Message";
-		}
-	}, [composeOptions.mode, isDraftEdit]);
-
 	const sigBlock = useMemo(() => getSignatureBlock(currentMailbox?.settings), [currentMailbox]);
 
 	useEffect(() => {
@@ -352,11 +339,11 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			// Only what was there when the save began is saved.
 			if (version.current === saving) setTouched(false);
 			setSavedAt(Date.now());
-			if (!quiet) toastManager.add({ title: "Draft saved" });
+			if (!quiet) toastManager.add({ title: t("Draft saved") });
 			return true;
 		} catch (err: unknown) {
 			if (quiet) return false;
-			const message = (err instanceof Error ? err.message : null) || "Failed to save draft.";
+			const message = (err instanceof Error ? err.message : null) || t("Failed to save draft.");
 			setError(message);
 			toastManager.add({ title: message, variant: "error" });
 			return false;
@@ -390,7 +377,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		} else {
 			// Already saved while it was written: wait for a save on its way, and say it is kept.
 			await pendingSave.current;
-			if (draftId.current) toastManager.add({ title: "Draft saved" });
+			if (draftId.current) toastManager.add({ title: t("Draft saved") });
 		}
 		closeCompose();
 	};
@@ -421,7 +408,10 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		const total = next.reduce((sum, file) => sum + file.size, 0);
 		if (total > MAX_ATTACHMENTS_BYTES) {
 			setError(
-				`Attached files can be ${Math.floor(MAX_ATTACHMENTS_BYTES / (1024 * 1024))} MB together. These would be ${Math.ceil(total / (1024 * 1024))} MB.`,
+				t("Attached files can be {limit} MB together. These would be {size} MB.", {
+					limit: Math.floor(MAX_ATTACHMENTS_BYTES / (1024 * 1024)),
+					size: Math.ceil(total / (1024 * 1024)),
+				}),
 			);
 			return;
 		}
@@ -444,18 +434,18 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		if (isSending) return;
 		setError(null);
 		if (!currentMailbox || !mailboxId) {
-			setError("No mailbox selected.");
+			setError(t("No mailbox selected."));
 			return;
 		}
 		const toRecipients = splitEmailList(to);
 		if (toRecipients.length === 0) {
-			setError("Add at least one recipient.");
+			setError(t("Add at least one recipient."));
 			return;
 		}
 		const ccRecipients = splitEmailList(cc);
 		const bccRecipients = splitEmailList(bcc);
 		if (toRecipients.length + ccRecipients.length + bccRecipients.length > MAX_RECIPIENTS) {
-			setError(`A message can go to ${MAX_RECIPIENTS} recipients at most.`);
+			setError(t("A message can go to {count} recipients at most.", { count: MAX_RECIPIENTS }));
 			return;
 		}
 		const fromName = currentMailbox.settings?.fromName || currentMailbox.name;
@@ -491,13 +481,13 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			if (archive && answered && answered.folder_id === Folders.INBOX) {
 				moveEmailMutation.mutate({ mailboxId, id: answered.id, folderId: Folders.ARCHIVE });
 				closePanel();
-				toastManager.add({ title: "Message sent and conversation archived" });
+				toastManager.add({ title: t("Message sent and conversation archived") });
 			} else {
-				toastManager.add({ title: "Message sent" });
+				toastManager.add({ title: t("Message sent") });
 			}
 			onClose();
 		} catch (err: unknown) {
-			const message = (err instanceof Error ? err.message : null) || "Failed to send email.";
+			const message = (err instanceof Error ? err.message : null) || t("Failed to send email.");
 			setError(message);
 			toastManager.add({ title: message, variant: "error" });
 		} finally {
@@ -522,7 +512,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		setError,
 		isSavingDraft,
 		isSending,
-		formTitle,
 		handleSaveDraft,
 		handleSend,
 		knownAddresses,

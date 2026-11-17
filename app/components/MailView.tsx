@@ -10,6 +10,7 @@ import EmailPanel from "~/components/EmailPanel";
 import { useSplit } from "~/hooks/useDisplay";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
+import { t } from "~/i18n";
 import type { Email } from "~/types";
 
 /**
@@ -71,7 +72,7 @@ export default function MailView({
 					) : (
 						<div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
 							<EnvelopeSimpleOpenIcon size={48} weight="thin" className="text-kumo-subtle" />
-							<p className="text-sm text-kumo-subtle">No conversation is open.</p>
+							<p className="text-sm text-kumo-subtle">{t("No conversation is open.")}</p>
 						</div>
 					)}
 				</div>

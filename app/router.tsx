@@ -22,6 +22,8 @@ import { forwardRef, useEffect } from "react";
 import { errorFields, log } from "shared/log";
 import { ConfirmProvider } from "~/components/Confirm";
 import { FreshProofProvider } from "~/components/FreshProof";
+import { useDisplay } from "~/hooks/useDisplay";
+import { currentLanguage, t } from "~/i18n";
 import { useMe } from "~/lib/session";
 import AcceptRoute from "~/routes/accept";
 import EmailListRoute from "~/routes/email-list";
@@ -108,12 +110,14 @@ function SessionGate() {
 }
 
 function RootLayout() {
+	// The words are read when a screen is drawn, so a change of language draws everything again.
+	useDisplay((state) => state.language);
 	return (
 		<QueryClientProvider client={queryClient}>
 			<LinkProvider component={KumoLink}>
 				<TooltipProvider>
 					<Toasty>
-						<FreshProofProvider>
+						<FreshProofProvider key={currentLanguage()}>
 							<ConfirmProvider>
 								<SessionGate />
 							</ConfirmProvider>
@@ -129,12 +133,12 @@ function RootError({ error }: { error: unknown }) {
 	const description =
 		error instanceof Error && import.meta.env.DEV
 			? error.message
-			: "An unexpected error occurred. Please try again.";
+			: t("An unexpected error occurred. Please try again.");
 	return (
 		<div className="flex items-center justify-center min-h-screen p-8">
 			<Empty
 				icon={<WarningIcon size={48} className="text-kumo-inactive" />}
-				title="Something went wrong"
+				title={t("Something went wrong")}
 				description={description}
 				contents={
 					<Button
@@ -143,7 +147,7 @@ function RootError({ error }: { error: unknown }) {
 							window.location.href = "/";
 						}}
 					>
-						Go Home
+						{t("Go Home")}
 					</Button>
 				}
 			/>

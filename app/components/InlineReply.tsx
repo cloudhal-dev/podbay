@@ -4,14 +4,15 @@
 import { ArrowSquareOutIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 import { useUIStore } from "~/hooks/useUIStore";
+import { m, t } from "~/i18n";
 import ComposePanel from "./ComposePanel";
 import { useCompose } from "./ComposeSession";
 
 const TITLES = {
-	new: "New message",
-	reply: "Reply",
-	"reply-all": "Reply to all",
-	forward: "Forward",
+	new: m("New message"),
+	reply: m("Reply"),
+	"reply-all": m("Reply to all"),
+	forward: m("Forward"),
 };
 
 /**
@@ -38,18 +39,18 @@ export default function InlineReply() {
 	return (
 		<section
 			ref={card}
-			aria-label="Compose"
+			aria-label={t("Compose")}
 			className="mx-4 my-5 flex h-[440px] flex-col overflow-hidden rounded-2xl border border-kumo-line shadow-sm md:mx-6 print:hidden"
 		>
 			<div className="flex h-10 shrink-0 items-center gap-0.5 bg-kumo-tint pl-4 pr-2">
 				<h2 className="m-0 min-w-0 flex-1 truncate text-sm font-medium text-kumo-default">
-					{TITLES[mode]}
+					{t(TITLES[mode])}
 				</h2>
 				<button
 					type="button"
 					onClick={() => useUIStore.setState({ composePlacement: "window" })}
-					aria-label="Open in a window"
-					title="Open in a window"
+					aria-label={t("Open in a window")}
+					title={t("Open in a window")}
 					className="cursor-pointer rounded border-0 bg-transparent p-1.5 text-kumo-strong hover:bg-kumo-fill"
 				>
 					<ArrowSquareOutIcon size={16} />
@@ -57,8 +58,8 @@ export default function InlineReply() {
 				<button
 					type="button"
 					onClick={() => void form.saveAndClose()}
-					aria-label="Save and close"
-					title="Save and close"
+					aria-label={t("Save and close")}
+					title={t("Save and close")}
 					className="cursor-pointer rounded border-0 bg-transparent p-1.5 text-kumo-strong hover:bg-kumo-fill"
 				>
 					<XIcon size={16} />

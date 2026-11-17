@@ -4,6 +4,7 @@
 import { LayerDialog } from "@cloudflare/kumo";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from "react";
+import { t } from "~/i18n";
 import { needsFreshProof } from "~/lib/auth-client";
 import { sessionKeys, useMe } from "~/lib/session";
 import SignInSteps from "./SignInSteps";
@@ -53,9 +54,9 @@ export function FreshProofProvider({ children }: { children: ReactNode }) {
 				}}
 			>
 				<LayerDialog.Content size="sm">
-					<LayerDialog.Title>Confirm it is you</LayerDialog.Title>
+					<LayerDialog.Title>{t("Confirm it is you")}</LayerDialog.Title>
 					<LayerDialog.Description>
-						This change needs you to sign in again. It is asked once every few minutes.
+						{t("This change needs you to sign in again. It is asked once every few minutes.")}
 					</LayerDialog.Description>
 					<LayerDialog.Body>
 						{open && (

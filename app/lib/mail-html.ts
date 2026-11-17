@@ -24,6 +24,7 @@
  */
 
 import { MAIL_FRAME_SCRIPT } from "shared/mail-frame";
+import { m, t } from "../i18n";
 
 /** The part of DOMPurify this module uses. Tests pass an instance bound to their own DOM. */
 export interface Purifier {
@@ -92,7 +93,7 @@ function resourceKind(attribute: string, value: string): "embedded" | "remote" |
 }
 
 /** The words on the line that stands for folded quoted text. */
-export const QUOTE_SUMMARY = "Show quoted text";
+export const QUOTE_SUMMARY = m("Show quoted text");
 const QUOTE_CLASS = "podbay-quote";
 
 /** Whether a node has something to read or to look at. */
@@ -127,7 +128,7 @@ function foldQuote(node: Element): void {
 	const details = document.createElement("details");
 	details.setAttribute("class", QUOTE_CLASS);
 	const summary = document.createElement("summary");
-	summary.textContent = QUOTE_SUMMARY;
+	summary.textContent = t(QUOTE_SUMMARY);
 	node.parentNode?.insertBefore(details, node);
 	details.appendChild(summary);
 	details.appendChild(node);

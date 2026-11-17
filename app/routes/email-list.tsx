@@ -16,11 +16,13 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Folders, getFolderDisplayName } from "shared/folders";
+import { Folders } from "shared/folders";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
 import { useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";
+import { m, t } from "~/i18n";
+import { placeName } from "~/lib/places";
 import { useEmails } from "~/queries/emails";
 import { useFolders } from "~/queries/folders";
 import { queryKeys } from "~/queries/keys";
@@ -36,48 +38,50 @@ const FOLDER_EMPTY_STATES: Record<
 > = {
 	[Folders.INBOX]: {
 		icon: <TrayIcon size={48} weight="thin" className="text-kumo-subtle" />,
-		title: "Your inbox is empty",
-		description:
+		title: m("Your inbox is empty"),
+		description: m(
 			"New emails will appear here when they arrive. Send an email to get the conversation started.",
+		),
 		showCompose: true,
 	},
 	[Folders.SENT]: {
 		icon: <PaperPlaneTiltIcon size={48} weight="thin" className="text-kumo-subtle" />,
-		title: "No sent emails",
-		description: "Emails you send will show up here.",
+		title: m("No sent emails"),
+		description: m("Emails you send will show up here."),
 		showCompose: true,
 	},
 	[Folders.DRAFT]: {
 		icon: <FileIcon size={48} weight="thin" className="text-kumo-subtle" />,
-		title: "No drafts",
-		description: "Emails you're still working on will be saved here.",
+		title: m("No drafts"),
+		description: m("Emails you're still working on will be saved here."),
 		showCompose: true,
 	},
 	[Folders.ARCHIVE]: {
 		icon: <ArchiveIcon size={48} weight="thin" className="text-kumo-subtle" />,
-		title: "Archive is empty",
-		description: "Move emails here to keep your inbox clean without deleting them.",
+		title: m("Archive is empty"),
+		description: m("Move emails here to keep your inbox clean without deleting them."),
 	},
 	[Folders.TRASH]: {
 		icon: <TrashIcon size={48} weight="thin" className="text-kumo-subtle" />,
-		title: "Trash is empty",
-		description:
+		title: m("Trash is empty"),
+		description: m(
 			"Deleted emails will appear here. You can restore them or permanently delete them.",
+		),
 	},
 };
 
 function FolderEmptyState({ folder, onCompose }: { folder?: string; onCompose: () => void }) {
 	const config = (folder && FOLDER_EMPTY_STATES[folder]) || {
 		icon: <EnvelopeSimpleIcon size={48} weight="thin" className="text-kumo-subtle" />,
-		title: "No emails",
-		description: "This folder is empty.",
+		title: m("No emails"),
+		description: m("This folder is empty."),
 	};
 
 	return (
 		<div className="flex flex-col items-center justify-center py-24 px-6 text-center">
 			<div className="mb-4">{config.icon}</div>
-			<h3 className="text-base font-semibold text-kumo-default mb-1.5">{config.title}</h3>
-			<p className="text-sm text-kumo-subtle max-w-xs mb-5">{config.description}</p>
+			<h3 className="text-base font-semibold text-kumo-default mb-1.5">{t(config.title)}</h3>
+			<p className="text-sm text-kumo-subtle max-w-xs mb-5">{t(config.description)}</p>
 			{"showCompose" in config && config.showCompose && (
 				<Button
 					variant="primary"
@@ -85,7 +89,7 @@ function FolderEmptyState({ folder, onCompose }: { folder?: string; onCompose: (
 					icon={<PencilSimpleIcon size={16} />}
 					onClick={onCompose}
 				>
-					Compose
+					{t("Compose")}
 				</Button>
 			)}
 		</div>
@@ -116,7 +120,7 @@ export default function EmailListRoute() {
 
 	const folderName = useMemo(() => {
 		const found = folders.find((f) => f.id === folder);
-		return found ? found.name : getFolderDisplayName(folder || Folders.INBOX);
+		return found ? placeName(found.id) : placeName(folder || Folders.INBOX);
 	}, [folders, folder]);
 
 	// A different folder starts on its first page.

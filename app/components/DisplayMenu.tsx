@@ -4,15 +4,16 @@
 import { Button, DropdownMenu } from "@cloudflare/kumo";
 import { SlidersHorizontalIcon } from "@phosphor-icons/react";
 import { type Density, type ReadingPane, useDisplay } from "~/hooks/useDisplay";
+import { m, t } from "~/i18n";
 
 const DENSITY: [Density, string][] = [
-	["default", "Default"],
-	["comfortable", "Comfortable"],
-	["compact", "Compact"],
+	["default", m("Default")],
+	["comfortable", m("Comfortable")],
+	["compact", m("Compact")],
 ];
 const PANE: [ReadingPane, string][] = [
-	["none", "No split"],
-	["right", "Right of the list"],
+	["none", m("No split")],
+	["right", m("Right of the list")],
 ];
 
 /** How the mail screens are laid out: the height of a line, and where a conversation opens. */
@@ -26,22 +27,22 @@ export default function DisplayMenu() {
 						variant="ghost"
 						shape="square"
 						icon={<SlidersHorizontalIcon size={20} />}
-						aria-label="Display"
-						title="Display"
+						aria-label={t("Display")}
+						title={t("Display")}
 						className="hidden md:inline-flex"
 					/>
 				}
 			/>
 			<DropdownMenu.Content>
 				<DropdownMenu.Group>
-					<DropdownMenu.Label>Density</DropdownMenu.Label>
+					<DropdownMenu.Label>{t("Density")}</DropdownMenu.Label>
 					<DropdownMenu.RadioGroup
 						value={density}
 						onValueChange={(value) => setDensity(value as Density)}
 					>
 						{DENSITY.map(([value, label]) => (
 							<DropdownMenu.RadioItem key={value} value={value}>
-								{label}
+								{t(label)}
 								<DropdownMenu.RadioItemIndicator />
 							</DropdownMenu.RadioItem>
 						))}
@@ -49,14 +50,14 @@ export default function DisplayMenu() {
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Label>Reading pane</DropdownMenu.Label>
+					<DropdownMenu.Label>{t("Reading pane")}</DropdownMenu.Label>
 					<DropdownMenu.RadioGroup
 						value={readingPane}
 						onValueChange={(value) => setReadingPane(value as ReadingPane)}
 					>
 						{PANE.map(([value, label]) => (
 							<DropdownMenu.RadioItem key={value} value={value}>
-								{label}
+								{t(label)}
 								<DropdownMenu.RadioItemIndicator />
 							</DropdownMenu.RadioItem>
 						))}

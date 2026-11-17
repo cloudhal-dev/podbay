@@ -3,7 +3,9 @@
 
 import { Button, DropdownMenu } from "@cloudflare/kumo";
 import { FolderSimpleIcon } from "@phosphor-icons/react";
+import { t } from "~/i18n";
 import { labelDot } from "~/lib/labels";
+import { placeName } from "~/lib/places";
 import type { Folder, Label } from "~/types";
 
 /**
@@ -32,18 +34,18 @@ export default function MoveMenu({
 						shape="square"
 						size="sm"
 						icon={<FolderSimpleIcon size={iconSize} />}
-						aria-label="Move to"
-						title="Move to"
+						aria-label={t("Move to")}
+						title={t("Move to")}
 						disabled={folders.length === 0}
 					/>
 				}
 			/>
 			<DropdownMenu.Content>
 				<DropdownMenu.Group>
-					<DropdownMenu.Label>Move to</DropdownMenu.Label>
+					<DropdownMenu.Label>{t("Move to")}</DropdownMenu.Label>
 					{folders.map((folder) => (
 						<DropdownMenu.Item key={folder.id} onClick={() => onMove(folder.id)}>
-							{folder.name}
+							{placeName(folder.id)}
 						</DropdownMenu.Item>
 					))}
 				</DropdownMenu.Group>
@@ -51,7 +53,7 @@ export default function MoveMenu({
 					<>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Group>
-							<DropdownMenu.Label>Labels</DropdownMenu.Label>
+							<DropdownMenu.Label>{t("Labels")}</DropdownMenu.Label>
 							{labels.map((label) => (
 								<DropdownMenu.Item key={label.id} onClick={() => onMoveToLabel(label)}>
 									<span

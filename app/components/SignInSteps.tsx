@@ -4,6 +4,7 @@
 import { Button, Input } from "@cloudflare/kumo";
 import { KeyIcon } from "@phosphor-icons/react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { t } from "~/i18n";
 import { authClient, passkeysSupported, unwrap } from "~/lib/auth-client";
 
 /**
@@ -55,18 +56,22 @@ export default function SignInSteps({
 
 	function submitPassword(event: FormEvent) {
 		event.preventDefault();
-		void attempt("password", "That email and password do not match an account here.", async () => {
-			const answer = unwrap(
-				await authClient.signIn.email({ email: (fixedEmail ?? email).trim(), password }),
-			) as { twoFactorRedirect?: boolean };
-			setPassword("");
-			if (answer.twoFactorRedirect) setStep("code");
-			else await onDone();
-		});
+		void attempt(
+			"password",
+			t("That email and password do not match an account here."),
+			async () => {
+				const answer = unwrap(
+					await authClient.signIn.email({ email: (fixedEmail ?? email).trim(), password }),
+				) as { twoFactorRedirect?: boolean };
+				setPassword("");
+				if (answer.twoFactorRedirect) setStep("code");
+				else await onDone();
+			},
+		);
 	}
 
 	function signInWithPasskey() {
-		void attempt("passkey", "That passkey could not be used here.", async () => {
+		void attempt("passkey", t("That passkey could not be used here."), async () => {
 			unwrap(await authClient.signIn.passkey());
 			await onDone();
 		});
@@ -74,7 +79,7 @@ export default function SignInSteps({
 
 	function submitCode(event: FormEvent) {
 		event.preventDefault();
-		void attempt("code", "That code is not right, or it has run out. Try again.", async () => {
+		void attempt("code", t("That code is not right, or it has run out. Try again."), async () => {
 			const value = code.trim();
 			unwrap(
 				recovery
@@ -89,7 +94,7 @@ export default function SignInSteps({
 		return (
 			<form ref={codeForm} onSubmit={submitCode} className="space-y-4">
 				<Input
-					label={recovery ? "Recovery code" : "Code from your authenticator app"}
+					label={recovery ? t("Recovery code") : t("Code from your authenticator app")}
 					className="w-full"
 					id="sign-in-code"
 					autoComplete="one-time-code"
@@ -109,7 +114,7 @@ export default function SignInSteps({
 					loading={busy === "code"}
 					className="w-full justify-center"
 				>
-					Continue
+					{t("Continue")}
 				</Button>
 				<button
 					type="button"
@@ -120,7 +125,7 @@ export default function SignInSteps({
 						setError(null);
 					}}
 				>
-					{recovery ? "Use a code from the app instead" : "Use a recovery code instead"}
+					{recovery ? t("Use a code from the app instead") : t("Use a recovery code instead")}
 				</button>
 			</form>
 		);
@@ -130,7 +135,7 @@ export default function SignInSteps({
 		<form onSubmit={submitPassword} className="space-y-4">
 			{fixedEmail === undefined ? (
 				<Input
-					label="Email"
+					label={t("Email")}
 					className="w-full"
 					id="sign-in-email"
 					type="email"
@@ -143,7 +148,7 @@ export default function SignInSteps({
 				<p className="text-sm text-kumo-strong break-all">{fixedEmail}</p>
 			)}
 			<Input
-				label="Password"
+				label={t("Password")}
 				className="w-full"
 				id="sign-in-password"
 				type="password"
@@ -163,7 +168,7 @@ export default function SignInSteps({
 				loading={busy === "password"}
 				className="w-full justify-center"
 			>
-				{fixedEmail === undefined ? "Sign in" : "Continue"}
+				{fixedEmail === undefined ? t("Sign in") : t("Continue")}
 			</Button>
 			{passkeysSupported() && (
 				<Button
@@ -174,7 +179,7 @@ export default function SignInSteps({
 					className="w-full justify-center"
 					onClick={signInWithPasskey}
 				>
-					Use a passkey
+					{t("Use a passkey")}
 				</Button>
 			)}
 		</form>

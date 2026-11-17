@@ -4,6 +4,7 @@
 import { Button, Input, useKumoToastManager } from "@cloudflare/kumo";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useState } from "react";
+import { t } from "~/i18n";
 import { useUpdateMailbox } from "~/queries/mailboxes";
 import type { Mailbox } from "~/types";
 import Row from "./Row";
@@ -27,22 +28,22 @@ export default function MailboxDetails({ mailbox }: { mailbox: Mailbox }) {
 				mailboxId: mailbox.id,
 				settings: { ...mailbox.settings, fromName: name.trim() },
 			});
-			toasts.add({ title: "Name saved" });
+			toasts.add({ title: t("Name saved") });
 		} catch {
-			toasts.add({ title: "The name could not be saved", variant: "error" });
+			toasts.add({ title: t("The name could not be saved"), variant: "error" });
 		}
 	}
 
 	return (
 		<div>
-			<Row name="Address" about="Mail sent to this address arrives here.">
+			<Row name={t("Address")} about={t("Mail sent to this address arrives here.")}>
 				<span className="font-mono text-sm">{mailbox.email}</span>
 			</Row>
-			<Row name="Name" about="The name people see on mail sent from this mailbox.">
+			<Row name={t("Name")} about={t("The name people see on mail sent from this mailbox.")}>
 				<form onSubmit={save} className="flex max-w-md items-end gap-2">
 					<div className="min-w-0 flex-1">
 						<Input
-							aria-label="Name"
+							aria-label={t("Name")}
 							size="sm"
 							value={name}
 							disabled={!isOwner}
@@ -51,23 +52,23 @@ export default function MailboxDetails({ mailbox }: { mailbox: Mailbox }) {
 					</div>
 					{isOwner && (
 						<Button type="submit" variant="primary" size="sm" loading={updateMailbox.isPending}>
-							Save
+							{t("Save")}
 						</Button>
 					)}
 				</form>
 				{!isOwner && (
 					<p className="m-0 mt-2 text-xs text-kumo-subtle">
-						An owner of this mailbox can change it.
+						{t("An owner of this mailbox can change it.")}
 					</p>
 				)}
 			</Row>
-			<Row name="Members" about="Who may read this mailbox and send as it.">
+			<Row name={t("Members")} about={t("Who may read this mailbox and send as it.")}>
 				<Link
 					to="/members/$mailboxId"
 					params={{ mailboxId: mailbox.email }}
 					className="text-sm text-kumo-default underline"
 				>
-					{isOwner ? "Manage members" : "See the members"}
+					{isOwner ? t("Manage members") : t("See the members")}
 				</Link>
 			</Row>
 		</div>

@@ -14,6 +14,7 @@ import ShortcutHelp from "~/components/ShortcutHelp";
 import Sidebar from "~/components/Sidebar";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
+import { t } from "~/i18n";
 import { useFeatures } from "~/queries/config";
 import { useFolders } from "~/queries/folders";
 import { useMailbox } from "~/queries/mailboxes";
@@ -55,7 +56,7 @@ export default function MailboxRoute() {
 	const { data: places = [] } = useFolders(mailboxId);
 	const unread = places.find((place) => place.id === "inbox")?.unreadCount ?? 0;
 	useEffect(() => {
-		document.title = `${unread > 0 ? `(${unread}) ` : ""}${mailboxId ?? "Mail"} - Podbay`;
+		document.title = `${unread > 0 ? `(${unread}) ` : ""}${mailboxId ?? t("Mail")} - Podbay`;
 		return () => {
 			document.title = "Podbay";
 		};
@@ -99,7 +100,7 @@ export default function MailboxRoute() {
 							onKeyDown={(e) => e.key === "Escape" && closeSidebar()}
 							role="button"
 							tabIndex={-1}
-							aria-label="Close sidebar"
+							aria-label={t("Close sidebar")}
 						/>
 					)}
 					<div

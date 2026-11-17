@@ -1,6 +1,7 @@
 {
 	"include": [
 		"test/**/*",
+		"app/i18n/*.ts",
 		"app/lib/mail-html.ts",
 		"app/lib/inline-images.ts",
 		"app/lib/search-parser.ts",

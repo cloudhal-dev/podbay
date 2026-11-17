@@ -9,6 +9,7 @@ import { type FormEvent, type ReactNode, useState } from "react";
 import CopyButton from "~/components/CopyButton";
 import { useFreshProof } from "~/components/FreshProof";
 import QrCode from "~/components/QrCode";
+import { dateLanguage, t } from "~/i18n";
 import { authClient, passkeysSupported, unwrap } from "~/lib/auth-client";
 import { sessionKeys, useMe } from "~/lib/session";
 import { ApiError } from "~/services/api";
@@ -79,31 +80,34 @@ function Passkeys() {
 
 	function add(event: FormEvent) {
 		event.preventDefault();
-		void change("add", "The passkey could not be added.", async () => {
-			unwrap(await authClient.passkey.addPasskey({ name: name.trim() || "Passkey" }));
+		void change("add", t("The passkey could not be added."), async () => {
+			unwrap(await authClient.passkey.addPasskey({ name: name.trim() || t("Passkey") }));
 			setName("");
 		});
 	}
 
 	return (
 		<Section
-			title="Passkeys"
-			about="A passkey signs you in with your device's fingerprint, face or PIN. It works only on this site, so it cannot be given away to a look-alike page, and it needs no code afterwards."
+			title={t("Passkeys")}
+			about={t(
+				"A passkey signs you in with your device's fingerprint, face or PIN. It works only on this site, so it cannot be given away to a look-alike page, and it needs no code afterwards.",
+			)}
 		>
 			{passkeys.length === 0 ? (
-				<p className="text-sm text-kumo-subtle">You have no passkeys yet.</p>
+				<p className="text-sm text-kumo-subtle">{t("You have no passkeys yet.")}</p>
 			) : (
 				<ul className="rounded-lg border border-kumo-line divide-y divide-kumo-line">
 					{passkeys.map((passkey) => (
 						<li key={passkey.id} className="flex items-center gap-3 px-3 py-2">
 							<span className="min-w-0 flex-1 truncate text-sm text-kumo-default">
-								{passkey.name || "Passkey"}
+								{passkey.name || t("Passkey")}
 							</span>
 							{passkey.createdAt && (
 								<span className="text-xs text-kumo-subtle">
-									Added{" "}
-									{new Date(passkey.createdAt).toLocaleDateString(undefined, {
-										dateStyle: "medium",
+									{t("Added {date}", {
+										date: new Date(passkey.createdAt).toLocaleDateString(dateLanguage(), {
+											dateStyle: "medium",
+										}),
 									})}
 								</span>
 							)}
@@ -112,12 +116,12 @@ function Passkeys() {
 								size="sm"
 								loading={busy === passkey.id}
 								onClick={() =>
-									change(passkey.id, "The passkey could not be removed.", async () => {
+									change(passkey.id, t("The passkey could not be removed."), async () => {
 										unwrap(await authClient.passkey.deletePasskey({ id: passkey.id }));
 									})
 								}
 							>
-								Remove
+								{t("Remove")}
 							</Button>
 						</li>
 					))}
@@ -127,22 +131,22 @@ function Passkeys() {
 				<form onSubmit={add} className="flex flex-wrap items-end gap-2">
 					<div className="flex-1 min-w-48">
 						<Input
-							label="Name for a new passkey"
+							label={t("Name for a new passkey")}
 							className="w-full"
 							id="passkey-name"
 							size="sm"
-							placeholder="For example: laptop"
+							placeholder={t("For example: laptop")}
 							maxLength={60}
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 						/>
 					</div>
 					<Button type="submit" variant="secondary" size="sm" loading={busy === "add"}>
-						Add a passkey
+						{t("Add a passkey")}
 					</Button>
 				</form>
 			) : (
-				<p className="text-sm text-kumo-subtle">This browser cannot use passkeys.</p>
+				<p className="text-sm text-kumo-subtle">{t("This browser cannot use passkeys.")}</p>
 			)}
 			<Problem text={error} />
 		</Section>
@@ -154,8 +158,9 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
 	return (
 		<div className="rounded-lg border border-kumo-line bg-kumo-tint p-3 space-y-2">
 			<p className="text-sm font-medium text-kumo-default">
-				Save these recovery codes somewhere safe. Each one signs you in once if you lose your
-				authenticator app. They are shown only now.
+				{t(
+					"Save these recovery codes somewhere safe. Each one signs you in once if you lose your authenticator app. They are shown only now.",
+				)}
 			</p>
 			<div className="flex items-start gap-1">
 				<code className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1 rounded-md bg-kumo-base px-3 py-2 text-xs text-kumo-default">
@@ -163,10 +168,10 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
 						<span key={code}>{code}</span>
 					))}
 				</code>
-				<CopyButton text={codes.join("\n")} label="Copy the recovery codes" />
+				<CopyButton text={codes.join("\n")} label={t("Copy the recovery codes")} />
 			</div>
 			<Button variant="secondary" size="sm" onClick={onDone}>
-				I have saved them
+				{t("I have saved them")}
 			</Button>
 		</div>
 	);
@@ -195,7 +200,7 @@ function PasswordForm({
 		>
 			<div className="flex-1 min-w-48">
 				<Input
-					label="Your password"
+					label={t("Your password")}
 					className="w-full"
 					type="password"
 					size="sm"
@@ -252,17 +257,17 @@ function AuthenticatorApp({ enabled }: { enabled: boolean }) {
 		return (
 			<div className="space-y-3">
 				<p className="text-sm text-kumo-default">
-					Scan this with your authenticator app, then enter the code it shows.
+					{t("Scan this with your authenticator app, then enter the code it shows.")}
 				</p>
-				<QrCode text={setup.uri} label="QR code for your authenticator app" />
+				<QrCode text={setup.uri} label={t("QR code for your authenticator app")} />
 				<p className="text-xs text-kumo-subtle break-all">
-					Or enter this key by hand: <code className="text-kumo-default">{secret}</code>
+					{t("Or enter this key by hand:")} <code className="text-kumo-default">{secret}</code>
 				</p>
 				<form
 					className="flex flex-wrap items-end gap-2"
 					onSubmit={(event) => {
 						event.preventDefault();
-						void change("That code is not right. Try the next one.", async () => {
+						void change(t("That code is not right. Try the next one."), async () => {
 							unwrap(await authClient.twoFactor.verifyTotp({ code: code.replace(/\s/g, "") }));
 							setCodes(setup.codes);
 							setSetup(null);
@@ -273,7 +278,7 @@ function AuthenticatorApp({ enabled }: { enabled: boolean }) {
 				>
 					<div className="flex-1 min-w-40">
 						<Input
-							label="Code from the app"
+							label={t("Code from the app")}
 							className="w-full"
 							size="sm"
 							inputMode="numeric"
@@ -284,10 +289,10 @@ function AuthenticatorApp({ enabled }: { enabled: boolean }) {
 						/>
 					</div>
 					<Button type="submit" variant="primary" size="sm" loading={busy}>
-						Turn on
+						{t("Turn on")}
 					</Button>
 					<Button type="button" variant="ghost" size="sm" onClick={() => setSetup(null)}>
-						Cancel
+						{t("Cancel")}
 					</Button>
 				</form>
 				<Problem text={error} />
@@ -299,10 +304,10 @@ function AuthenticatorApp({ enabled }: { enabled: boolean }) {
 		return (
 			<>
 				<PasswordForm
-					label="Set up an authenticator app"
+					label={t("Set up an authenticator app")}
 					busy={busy}
 					onSubmit={(password) =>
-						change("The authenticator app could not be set up.", async () => {
+						change(t("The authenticator app could not be set up."), async () => {
 							const answer = unwrap(await authClient.twoFactor.enable({ password })) as {
 								totpURI: string;
 								backupCodes: string[];
@@ -319,24 +324,24 @@ function AuthenticatorApp({ enabled }: { enabled: boolean }) {
 	return (
 		<>
 			<div className="flex flex-wrap items-center gap-2">
-				<Badge variant="secondary">On</Badge>
+				<Badge variant="secondary">{t("On")}</Badge>
 				<Button
 					variant="ghost"
 					size="sm"
 					onClick={() => setMode(mode === "codes" ? "idle" : "codes")}
 				>
-					New recovery codes
+					{t("New recovery codes")}
 				</Button>
 				<Button variant="ghost" size="sm" onClick={() => setMode(mode === "off" ? "idle" : "off")}>
-					Turn off
+					{t("Turn off")}
 				</Button>
 			</div>
 			{mode === "codes" && (
 				<PasswordForm
-					label="Replace my recovery codes"
+					label={t("Replace my recovery codes")}
 					busy={busy}
 					onSubmit={(password) =>
-						change("New recovery codes could not be made.", async () => {
+						change(t("New recovery codes could not be made."), async () => {
 							const answer = unwrap(
 								await authClient.twoFactor.generateBackupCodes({ password }),
 							) as { backupCodes: string[] };
@@ -347,11 +352,11 @@ function AuthenticatorApp({ enabled }: { enabled: boolean }) {
 			)}
 			{mode === "off" && (
 				<PasswordForm
-					label="Turn off the second step"
+					label={t("Turn off the second step")}
 					variant="destructive"
 					busy={busy}
 					onSubmit={(password) =>
-						change("The second step could not be turned off.", async () => {
+						change(t("The second step could not be turned off."), async () => {
 							unwrap(await authClient.twoFactor.disable({ password }));
 							setMode("idle");
 							await refresh();
@@ -374,15 +379,17 @@ export default function SecurityRoute() {
 						to="/"
 						className="inline-flex items-center gap-1 text-sm text-kumo-subtle underline"
 					>
-						<ArrowLeftIcon size={14} /> Mailboxes
+						<ArrowLeftIcon size={14} /> {t("Mailboxes")}
 					</Link>
-					<h1 className="text-2xl font-bold text-kumo-default mt-2">Sign-in and security</h1>
+					<h1 className="text-2xl font-bold text-kumo-default mt-2">{t("Sign-in and security")}</h1>
 					{me && <p className="text-sm text-kumo-subtle mt-1">{me.user.email}</p>}
 				</div>
 				<Passkeys />
 				<Section
-					title="Authenticator app"
-					about="After your password, Podbay asks for a six-digit code from an app on your phone. Recovery codes are the way back in if you lose the phone."
+					title={t("Authenticator app")}
+					about={t(
+						"After your password, Podbay asks for a six-digit code from an app on your phone. Recovery codes are the way back in if you lose the phone.",
+					)}
 				>
 					<AuthenticatorApp enabled={me?.security.authenticatorApp === true} />
 				</Section>

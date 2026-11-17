@@ -9,6 +9,8 @@ import { type ReactNode, useEffect, useState } from "react";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
 import { useDisplay } from "~/hooks/useDisplay";
+import { m, t } from "~/i18n";
+import { rich } from "~/i18n/rich";
 import { hasOperator, parseSearchQuery, toggleOperator } from "~/lib/search-parser";
 import { useSearchEmails } from "~/queries/search";
 
@@ -43,9 +45,9 @@ function highlightTerms(text: string, query: string): React.ReactNode {
 
 /** One press narrows the search on screen: each adds an operator to the query, or takes it out. */
 const QUICK_FILTERS: readonly (readonly [string, string])[] = [
-	["has:attachment", "Has an attachment"],
-	["is:unread", "Unread"],
-	["in:inbox", "In the inbox"],
+	["has:attachment", m("Has an attachment")],
+	["is:unread", m("Unread")],
+	["in:inbox", m("In the inbox")],
 ];
 
 export default function SearchResultsRoute() {
@@ -75,7 +77,7 @@ export default function SearchResultsRoute() {
 		<MailView emails={searchData?.results ?? []}>
 			{!starred && (
 				<div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-kumo-line px-4 py-2">
-					<span className="text-xs text-kumo-subtle">Narrow it down:</span>
+					<span className="text-xs text-kumo-subtle">{t("Narrow it down:")}</span>
 					{QUICK_FILTERS.map(([operator, label]) => {
 						const on = hasOperator(urlQuery, operator);
 						return (
@@ -97,7 +99,7 @@ export default function SearchResultsRoute() {
 										: "border-kumo-line bg-transparent text-kumo-strong hover:bg-kumo-tint"
 								}`}
 							>
-								{label}
+								{t(label)}
 							</button>
 						);
 					})}
@@ -105,7 +107,11 @@ export default function SearchResultsRoute() {
 			)}
 			<MessageList
 				title={
-					starred ? "Starred" : labelOnly ? `Label ${labelOnly}` : `Search results for ${urlQuery}`
+					starred
+						? t("Starred")
+						: labelOnly
+							? t("Label {name}", { name: labelOnly })
+							: t("Search results for {query}", { query: urlQuery })
 				}
 				emails={searchData?.results ?? []}
 				totalCount={searchData?.totalCount ?? 0}
@@ -125,22 +131,23 @@ export default function SearchResultsRoute() {
 							)}
 						</div>
 						<h2 className="text-base font-semibold text-kumo-default mb-1.5">
-							{starred ? "Nothing is starred" : "No results found"}
+							{starred ? t("Nothing is starred") : t("No results found")}
 						</h2>
 						<p className="text-sm text-kumo-subtle max-w-xs">
 							{starred
-								? "Star a conversation to find it here again."
+								? t("Star a conversation to find it here again.")
 								: urlQuery
-									? `Nothing matched "${urlQuery}". Try different words.`
-									: "Type something to search by subject, sender or content."}
+									? t('Nothing matched "{query}". Try different words.', { query: urlQuery })
+									: t("Type something to search by subject, sender or content.")}
 						</p>
 						{!starred && urlQuery && (
 							<p className="text-xs text-kumo-subtle mt-3 max-w-sm">
-								You can narrow a search with{" "}
-								<code className="bg-kumo-tint px-1 rounded">from:name</code>,{" "}
-								<code className="bg-kumo-tint px-1 rounded">is:unread</code>,{" "}
-								<code className="bg-kumo-tint px-1 rounded">has:attachment</code> or{" "}
-								<code className="bg-kumo-tint px-1 rounded">before:2026-01-01</code>.
+								{rich("You can narrow a search with {from}, {unread}, {attachment} or {before}.", {
+									from: <code className="bg-kumo-tint px-1 rounded">from:name</code>,
+									unread: <code className="bg-kumo-tint px-1 rounded">is:unread</code>,
+									attachment: <code className="bg-kumo-tint px-1 rounded">has:attachment</code>,
+									before: <code className="bg-kumo-tint px-1 rounded">before:2026-01-01</code>,
+								})}
 							</p>
 						)}
 					</div>

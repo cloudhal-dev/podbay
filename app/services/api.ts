@@ -3,6 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { t } from "~/i18n";
 import type {
 	AccessKey,
 	CreatedAccessKey,
@@ -23,7 +24,7 @@ export class ApiError extends Error {
 	body: Record<string, unknown>;
 
 	constructor(status: number, body: Record<string, unknown>) {
-		super((body.error as string) || `Request failed: ${status}`);
+		super((body.error as string) || t("Request failed: {status}", { status }));
 		this.name = "ApiError";
 		this.status = status;
 		this.body = body;

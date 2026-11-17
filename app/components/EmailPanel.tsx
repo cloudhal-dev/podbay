@@ -22,6 +22,7 @@ import { useDisplay } from "~/hooks/useDisplay";
 import { useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
+import { plural, t } from "~/i18n";
 import { unsubscribeOf } from "~/lib/unsubscribe";
 import { splitEmailList, toEmailListValue } from "~/lib/utils";
 import {
@@ -259,14 +260,14 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		const target = draftMsg || email;
 		if (!mailboxId) return;
 		const sure = await confirm({
-			title: "Discard this draft?",
-			body: "The draft will be deleted. This cannot be undone.",
-			action: "Discard",
+			title: t("Discard this draft?"),
+			body: t("The draft will be deleted. This cannot be undone."),
+			action: t("Discard"),
 			destructive: true,
 		});
 		if (!sure) return;
 		deleteEmailMut.mutate({ mailboxId, id: target.id });
-		toastManager.add({ title: "Draft discarded" });
+		toastManager.add({ title: t("Draft discarded") });
 		if (target.id === emailId) closePanel();
 	};
 
@@ -283,7 +284,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 			}
 			if (!target.recipient) {
 				toastManager.add({
-					title: "Cannot send: no recipient set on this draft.",
+					title: t("Cannot send: no recipient set on this draft."),
 					variant: "error",
 				});
 				return;
@@ -291,7 +292,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 			const toRecipients = splitEmailList(target.recipient);
 			if (toRecipients.length === 0) {
 				toastManager.add({
-					title: "Cannot send: no valid recipient set on this draft.",
+					title: t("Cannot send: no valid recipient set on this draft."),
 					variant: "error",
 				});
 				return;
@@ -309,7 +310,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				cc: toEmailListValue(splitEmailList(target.cc)),
 				bcc: toEmailListValue(splitEmailList(target.bcc)),
 				from,
-				subject: target.subject || "(no subject)",
+				subject: target.subject || t("(no subject)"),
 				html: target.body || "",
 				text: target.body ? target.body.replace(/<[^>]*>/g, "").trim() : "",
 			};
@@ -317,10 +318,10 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				await replyMut.mutateAsync({ mailboxId, emailId: originalEmail.id, email: emailData });
 			else await sendEmailMut.mutateAsync({ mailboxId, email: emailData });
 			await deleteEmailMut.mutateAsync({ mailboxId, id: target.id });
-			toastManager.add({ title: "Message sent" });
+			toastManager.add({ title: t("Message sent") });
 			if (isDraftFolder) closePanel();
 		} catch (err) {
-			const message = (err instanceof Error ? err.message : null) || "Failed to send email.";
+			const message = (err instanceof Error ? err.message : null) || t("Failed to send email.");
 			toastManager.add({ title: message, variant: "error" });
 		} finally {
 			setIsSending(false);
@@ -358,9 +359,12 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				return;
 			}
 			const sure = await confirm({
-				title: "Unsubscribe from this list?",
-				body: `This opens ${way.host} in a new tab, where the list takes you off. Podbay sends nothing by itself.`,
-				action: "Open the page",
+				title: t("Unsubscribe from this list?"),
+				body: t(
+					"This opens {host} in a new tab, where the list takes you off. Podbay sends nothing by itself.",
+					{ host: way.host },
+				),
+				action: t("Open the page"),
 			});
 			if (sure) window.open(way.url, "_blank", "noopener,noreferrer");
 		};
@@ -369,7 +373,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		onReply: () => startCompose({ mode: "reply", originalEmail: msg }, "inline"),
 		onReplyAll: () => startCompose({ mode: "reply-all", originalEmail: msg }, "inline"),
 		onForward: () => startCompose({ mode: "forward", originalEmail: msg }, "inline"),
-		onDelete: () => void actions.remove([msg], "Message").then(afterLeaving(msg)),
+		onDelete: () => void actions.remove([msg], "message").then(afterLeaving(msg)),
 		onMarkUnread: () => {
 			actions.setRead([msg], false);
 			closePanel();
@@ -377,7 +381,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		onSpam:
 			msg.folder_id === Folders.SPAM
 				? undefined
-				: () => afterLeaving(msg)(actions.reportSpam([msg], "Message")),
+				: () => afterLeaving(msg)(actions.reportSpam([msg], "message")),
 		onStar: () => actions.star(msg),
 		onPrint: () => {
 			setExpanded((open) => new Set([...open, msg.id]));
@@ -467,7 +471,11 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 									<span className="flex h-6 w-10 items-center justify-center rounded-full border border-kumo-line bg-kumo-base font-semibold text-kumo-default">
 										{middle.length}
 									</span>
-									Show {middle.length} older messages
+									{plural(
+										middle.length,
+										"Show {count} older message",
+										"Show {count} older messages",
+									)}
 								</button>
 							) : null;
 						}
@@ -512,7 +520,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 							icon={<ArrowBendUpLeftIcon size={16} />}
 							onClick={() => reply("reply")}
 						>
-							Reply
+							{t("Reply")}
 						</Button>
 						<Button
 							variant="outline"
@@ -520,7 +528,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 							icon={<ChatCircleIcon size={16} />}
 							onClick={() => reply("reply-all")}
 						>
-							Reply all
+							{t("Reply all")}
 						</Button>
 						<Button
 							variant="outline"
@@ -528,7 +536,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 							icon={<ArrowBendUpRightIcon size={16} />}
 							onClick={() => reply("forward")}
 						>
-							Forward
+							{t("Forward")}
 						</Button>
 					</div>
 				)}

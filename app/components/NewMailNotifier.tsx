@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { Folders } from "shared/folders";
 import { useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";
+import { t } from "~/i18n";
 import { useEmails } from "~/queries/emails";
 
 /**
@@ -39,7 +40,7 @@ export default function NewMailNotifier({ mailboxId }: { mailboxId: string | und
 		for (const email of data.emails) {
 			if (known.has(email.id) || email.read) continue;
 			const note = new Notification(email.sender, {
-				body: email.subject || "(no subject)",
+				body: email.subject || t("(no subject)"),
 				tag: email.id,
 			});
 			note.onclick = () => {

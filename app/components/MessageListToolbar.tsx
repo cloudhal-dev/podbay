@@ -18,6 +18,7 @@ import {
 import { useEffect, useRef } from "react";
 import { Folders } from "shared/folders";
 import type { ConversationActions } from "~/hooks/useConversationActions";
+import { t } from "~/i18n";
 import type { Email } from "~/types";
 import IconButton from "./IconButton";
 import LabelMenu from "./LabelMenu";
@@ -72,7 +73,7 @@ export default function MessageListToolbar({
 			<input
 				ref={selectAll}
 				type="checkbox"
-				aria-label="Select all conversations on this page"
+				aria-label={t("Select all conversations on this page")}
 				className="ml-1.5 h-4 w-4 cursor-pointer"
 				checked={allSelected}
 				disabled={emails.length === 0}
@@ -86,19 +87,25 @@ export default function MessageListToolbar({
 							shape="square"
 							size="xs"
 							icon={<CaretDownIcon size={12} />}
-							aria-label="Select by kind"
-							title="Select"
+							aria-label={t("Select by kind")}
+							title={t("Select")}
 							disabled={emails.length === 0}
 						/>
 					}
 				/>
 				<DropdownMenu.Content>
-					<DropdownMenu.Item onClick={() => pick(() => true)}>All</DropdownMenu.Item>
-					<DropdownMenu.Item onClick={() => pick(() => false)}>None</DropdownMenu.Item>
-					<DropdownMenu.Item onClick={() => pick((e) => !isUnread(e))}>Read</DropdownMenu.Item>
-					<DropdownMenu.Item onClick={() => pick(isUnread)}>Unread</DropdownMenu.Item>
-					<DropdownMenu.Item onClick={() => pick((e) => e.starred)}>Starred</DropdownMenu.Item>
-					<DropdownMenu.Item onClick={() => pick((e) => !e.starred)}>Unstarred</DropdownMenu.Item>
+					<DropdownMenu.Item onClick={() => pick(() => true)}>{t("All")}</DropdownMenu.Item>
+					<DropdownMenu.Item onClick={() => pick(() => false)}>{t("None")}</DropdownMenu.Item>
+					<DropdownMenu.Item onClick={() => pick((e) => !isUnread(e))}>
+						{t("Read")}
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onClick={() => pick(isUnread)}>{t("Unread")}</DropdownMenu.Item>
+					<DropdownMenu.Item onClick={() => pick((e) => e.starred)}>
+						{t("Starred")}
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onClick={() => pick((e) => !e.starred)}>
+						{t("Unstarred")}
+					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu>
 
@@ -106,7 +113,7 @@ export default function MessageListToolbar({
 				<>
 					{onRefresh && (
 						<IconButton
-							label={isRefreshing ? "Refreshing" : "Refresh"}
+							label={isRefreshing ? t("Refreshing") : t("Refresh")}
 							icon={
 								<ArrowsClockwiseIcon size={18} className={isRefreshing ? "animate-spin" : ""} />
 							}
@@ -122,8 +129,8 @@ export default function MessageListToolbar({
 									shape="square"
 									size="sm"
 									icon={<DotsThreeVerticalIcon size={18} weight="bold" />}
-									aria-label="More"
-									title="More"
+									aria-label={t("More")}
+									title={t("More")}
 									disabled={emails.length === 0}
 								/>
 							}
@@ -133,7 +140,7 @@ export default function MessageListToolbar({
 								icon={EnvelopeOpenIcon}
 								onClick={() => actions.setRead(emails.filter(isUnread), true)}
 							>
-								Mark this page as read
+								{t("Mark this page as read")}
 							</DropdownMenu.Item>
 						</DropdownMenu.Content>
 					</DropdownMenu>
@@ -142,32 +149,32 @@ export default function MessageListToolbar({
 				<>
 					{folder !== Folders.ARCHIVE && (
 						<IconButton
-							label="Archive"
+							label={t("Archive")}
 							icon={<ArchiveIcon size={18} />}
 							onClick={() => actions.archive(chosen)}
 						/>
 					)}
 					{folder === Folders.SPAM ? (
 						<IconButton
-							label="Not spam"
+							label={t("Not spam")}
 							icon={<TrayIcon size={18} />}
 							onClick={() => actions.notSpam(chosen)}
 						/>
 					) : (
 						<IconButton
-							label="Report spam"
+							label={t("Report spam")}
 							icon={<WarningOctagonIcon size={18} />}
 							onClick={() => actions.reportSpam(chosen)}
 						/>
 					)}
 					<IconButton
-						label={actions.inTrash ? "Delete forever" : "Delete"}
+						label={actions.inTrash ? t("Delete forever") : t("Delete")}
 						icon={<TrashIcon size={18} />}
 						onClick={() => void actions.remove(chosen)}
 					/>
 					<span className="mx-1 h-5 w-px bg-kumo-line" aria-hidden="true" />
 					<IconButton
-						label={anyUnread ? "Mark as read" : "Mark as unread"}
+						label={anyUnread ? t("Mark as read") : t("Mark as unread")}
 						icon={anyUnread ? <EnvelopeOpenIcon size={18} /> : <EnvelopeSimpleIcon size={18} />}
 						onClick={() => actions.setRead(chosen, anyUnread)}
 					/>
@@ -186,7 +193,7 @@ export default function MessageListToolbar({
 						className="sr-only ml-2 text-sm text-kumo-subtle @xl:not-sr-only"
 						aria-live="polite"
 					>
-						{chosen.length} selected
+						{t("{count} selected", { count: chosen.length })}
 					</span>
 				</>
 			)}
@@ -194,17 +201,17 @@ export default function MessageListToolbar({
 			<div className="ml-auto flex items-center gap-1">
 				{totalCount > 0 && (
 					<span className="mr-1 text-xs text-kumo-subtle whitespace-nowrap">
-						{first}–{last} of {totalCount}
+						{t("{first}–{last} of {total}", { first, last, total: totalCount })}
 					</span>
 				)}
 				<IconButton
-					label="Newer"
+					label={t("Newer")}
 					icon={<CaretLeftIcon size={16} />}
 					onClick={() => setPage(page - 1)}
 					disabled={page <= 1}
 				/>
 				<IconButton
-					label="Older"
+					label={t("Older")}
 					icon={<CaretRightIcon size={16} />}
 					onClick={() => setPage(page + 1)}
 					disabled={last >= totalCount}

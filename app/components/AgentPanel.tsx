@@ -27,44 +27,45 @@ import remarkGfm from "remark-gfm";
 import { errorFields, log } from "shared/log";
 import { useConfirm } from "~/components/Confirm";
 import { useUIStore } from "~/hooks/useUIStore";
+import { m, t } from "~/i18n";
 import { escapeHtml } from "~/lib/utils";
 import type { Email } from "~/types";
 
 const TOOL_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
 	list_emails: {
-		label: "Fetching emails",
+		label: m("Fetching emails"),
 		icon: <EnvelopeSimpleIcon size={14} weight="bold" />,
 	},
 	get_email: {
-		label: "Reading email",
+		label: m("Reading email"),
 		icon: <EyeIcon size={14} weight="bold" />,
 	},
 	get_thread: {
-		label: "Loading thread",
+		label: m("Loading thread"),
 		icon: <ArrowBendUpLeftIcon size={14} weight="bold" />,
 	},
 	search_emails: {
-		label: "Searching",
+		label: m("Searching"),
 		icon: <MagnifyingGlassIcon size={14} weight="bold" />,
 	},
 	draft_email: {
-		label: "Drafting email",
+		label: m("Drafting email"),
 		icon: <PaperPlaneTiltIcon size={14} weight="bold" />,
 	},
 	draft_reply: {
-		label: "Drafting reply",
+		label: m("Drafting reply"),
 		icon: <PaperPlaneTiltIcon size={14} weight="bold" />,
 	},
 	discard_draft: {
-		label: "Discarding draft",
+		label: m("Discarding draft"),
 		icon: <TrashIcon size={14} weight="bold" />,
 	},
 	mark_email_read: {
-		label: "Updating status",
+		label: m("Updating status"),
 		icon: <CheckCircleIcon size={14} weight="bold" />,
 	},
 	move_email: {
-		label: "Moving email",
+		label: m("Moving email"),
 		icon: <EnvelopeSimpleIcon size={14} weight="bold" />,
 	},
 };
@@ -156,7 +157,7 @@ function DraftActions({ onEdit, disabled }: { onEdit: () => void; disabled: bool
 				onClick={onEdit}
 				disabled={disabled}
 			>
-				Edit & send in composer
+				{t("Edit & send in composer")}
 			</Button>
 		</div>
 	);
@@ -328,9 +329,9 @@ function AgentChatConnected({
 	};
 
 	const suggestedPrompts = [
-		"Show me the latest inbox emails",
-		"Any unread emails?",
-		"Draft a response to the latest email",
+		t("Show me the latest inbox emails"),
+		t("Any unread emails?"),
+		t("Draft a response to the latest email"),
 	];
 
 	return (
@@ -338,13 +339,13 @@ function AgentChatConnected({
 			{/* Header */}
 			<div className="flex items-center justify-between px-3 py-1.5 border-b border-kumo-line shrink-0">
 				<div className="flex items-center gap-2">
-					<Badge variant="beta">AI</Badge>
-					<span className="text-xs text-kumo-subtle">Email Agent</span>
+					<Badge variant="beta">{t("AI")}</Badge>
+					<span className="text-xs text-kumo-subtle">{t("Email Agent")}</span>
 				</div>
 				<div className="flex items-center gap-1">
 					{isStreaming && <Loader size="sm" />}
 					{messages.length > 0 && (
-						<Tooltip content="Clear chat" asChild>
+						<Tooltip content={t("Clear chat")} asChild>
 							<Button
 								variant="ghost"
 								shape="square"
@@ -352,14 +353,16 @@ function AgentChatConnected({
 								icon={<TrashIcon size={14} />}
 								onClick={async () => {
 									const sure = await confirm({
-										title: "Clear this chat?",
-										body: "The conversation with the assistant will be removed. Your mail is not touched.",
-										action: "Clear",
+										title: t("Clear this chat?"),
+										body: t(
+											"The conversation with the assistant will be removed. Your mail is not touched.",
+										),
+										action: t("Clear"),
 										destructive: true,
 									});
 									if (sure) setMessages([]);
 								}}
-								aria-label="Clear chat"
+								aria-label={t("Clear chat")}
 							/>
 						</Tooltip>
 					)}
@@ -374,7 +377,7 @@ function AgentChatConnected({
 							<RobotIcon size={24} weight="duotone" className="text-kumo-brand" />
 						</div>
 						<p className="text-xs text-kumo-subtle text-center leading-relaxed px-4">
-							I can read emails, search conversations, and draft replies.
+							{t("I can read emails, search conversations, and draft replies.")}
 						</p>
 						<div className="flex flex-col gap-1.5 w-full">
 							{suggestedPrompts.map((prompt) => (
@@ -404,7 +407,9 @@ function AgentChatConnected({
 											startCompose({ mode: "reply", originalEmail: null, draftEmail });
 										} else {
 											sendMessage({
-												text: "Let me edit this draft first. Show me what you have so I can modify it.",
+												text: t(
+													"Let me edit this draft first. Show me what you have so I can modify it.",
+												),
 											});
 										}
 									}
@@ -418,7 +423,7 @@ function AgentChatConnected({
 								</div>
 								<div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-kumo-elevated border border-kumo-line rounded-bl-sm">
 									<Loader size="sm" />
-									<span className="text-xs text-kumo-subtle">Thinking...</span>
+									<span className="text-xs text-kumo-subtle">{t("Thinking...")}</span>
 								</div>
 							</div>
 						)}
@@ -436,7 +441,7 @@ function AgentChatConnected({
 							icon={<StopIcon size={14} weight="fill" />}
 							onClick={() => stop()}
 						>
-							Stop generating
+							{t("Stop generating")}
 						</Button>
 					</div>
 				) : (
@@ -448,9 +453,9 @@ function AgentChatConnected({
 							value={inputValue}
 							onChange={(e) => setInputValue(e.target.value)}
 							onKeyDown={handleKeyDown}
-							placeholder="Ask your email agent..."
+							placeholder={t("Ask your email agent...")}
 							rows={1}
-							aria-label="Chat message input"
+							aria-label={t("Chat message input")}
 							className="flex-1 resize-none rounded-lg border border-kumo-line bg-kumo-control px-3 py-2 text-xs text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring min-h-[36px] max-h-[100px]"
 							style={{ height: "auto", overflow: "hidden" }}
 							onInput={(e) => {
@@ -467,7 +472,7 @@ function AgentChatConnected({
 							disabled={!inputValue.trim()}
 							icon={<ArrowUpIcon size={14} weight="bold" />}
 							onClick={handleSend}
-							aria-label="Send message"
+							aria-label={t("Send message")}
 						/>
 					</div>
 				)}
@@ -495,7 +500,7 @@ export default function AgentPanel() {
 			)
 			.catch((err) => {
 				log.error("ui.agent_modules_failed", errorFields(err));
-				setLoadError("Failed to connect to agent. Reload to retry.");
+				setLoadError(t("Failed to connect to agent. Reload to retry."));
 			});
 	}, []);
 
@@ -511,7 +516,7 @@ export default function AgentPanel() {
 		return (
 			<div className="flex flex-col items-center justify-center h-full gap-2">
 				<Loader size="base" />
-				<span className="text-xs text-kumo-subtle">Connecting...</span>
+				<span className="text-xs text-kumo-subtle">{t("Connecting...")}</span>
 			</div>
 		);
 	}

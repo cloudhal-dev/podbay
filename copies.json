@@ -266,7 +266,7 @@
 				{
 					"path": "shared/dates.ts",
 					"upstream": "shared/dates.ts",
-					"status": "verbatim"
+					"status": "modified"
 				},
 				{
 					"path": "shared/folders.ts",

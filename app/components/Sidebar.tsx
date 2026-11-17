@@ -21,6 +21,8 @@ import { Folders } from "shared/folders";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useDropTarget } from "~/hooks/useDropTarget";
 import { useUIStore } from "~/hooks/useUIStore";
+import { t } from "~/i18n";
+import { placeName } from "~/lib/places";
 import { useFolders } from "~/queries/folders";
 import { useMailbox } from "~/queries/mailboxes";
 import RailLabels from "./RailLabels";
@@ -30,13 +32,13 @@ const ACTIVE = "bg-kumo-fill font-semibold text-kumo-default";
 const INACTIVE = "text-kumo-strong hover:bg-kumo-tint";
 
 /** The folders every mailbox has, in the order of the rail. Starred is a search, not a folder. */
-const SYSTEM_FOLDERS: { id: string; label: string; icon: ReactNode }[] = [
-	{ id: Folders.INBOX, label: "Inbox", icon: <TrayIcon size={18} /> },
-	{ id: Folders.SENT, label: "Sent", icon: <PaperPlaneTiltIcon size={18} /> },
-	{ id: Folders.DRAFT, label: "Drafts", icon: <FileIcon size={18} /> },
-	{ id: Folders.ARCHIVE, label: "Archive", icon: <ArchiveIcon size={18} /> },
-	{ id: Folders.SPAM, label: "Spam", icon: <WarningOctagonIcon size={18} /> },
-	{ id: Folders.TRASH, label: "Trash", icon: <TrashIcon size={18} /> },
+const SYSTEM_FOLDERS: { id: string; icon: ReactNode }[] = [
+	{ id: Folders.INBOX, icon: <TrayIcon size={18} /> },
+	{ id: Folders.SENT, icon: <PaperPlaneTiltIcon size={18} /> },
+	{ id: Folders.DRAFT, icon: <FileIcon size={18} /> },
+	{ id: Folders.ARCHIVE, icon: <ArchiveIcon size={18} /> },
+	{ id: Folders.SPAM, icon: <WarningOctagonIcon size={18} /> },
+	{ id: Folders.TRASH, icon: <TrashIcon size={18} /> },
 ];
 
 function Item({
@@ -67,7 +69,11 @@ function Item({
 	const className = `${ITEM} ${collapsed ? "w-9 justify-center mx-auto" : "pl-4 pr-3"}`;
 	const node = children(className, content);
 	return collapsed ? (
-		<Tooltip content={count ? `${label} (${count} unread)` : label} side="right" asChild>
+		<Tooltip
+			content={count ? t("{name} ({count} unread)", { name: label, count }) : label}
+			side="right"
+			asChild
+		>
 			{node}
 		</Tooltip>
 	) : (
@@ -155,13 +161,13 @@ export default function Sidebar() {
 		>
 			<div className={collapsed ? "px-2 pt-3 pb-3" : "px-3 pt-3 pb-3"}>
 				{collapsed ? (
-					<Tooltip content="Compose" side="right" asChild>
+					<Tooltip content={t("Compose")} side="right" asChild>
 						<Button
 							variant="primary"
 							shape="square"
 							icon={<PencilSimpleIcon size={18} />}
 							onClick={() => startCompose()}
-							aria-label="Compose"
+							aria-label={t("Compose")}
 							className="mx-auto flex"
 						/>
 					</Tooltip>
@@ -172,21 +178,26 @@ export default function Sidebar() {
 						icon={<PencilSimpleIcon size={18} />}
 						onClick={() => startCompose()}
 					>
-						Compose
+						{t("Compose")}
 					</Button>
 				)}
 			</div>
 
-			<nav aria-label="Folders" className="flex-1 overflow-y-auto px-2 space-y-0.5">
-				{folderLink(Folders.INBOX, "Inbox", SYSTEM_FOLDERS[0]?.icon, unread(Folders.INBOX))}
-				<Item collapsed={collapsed} icon={<StarIcon size={18} />} label="Starred">
+			<nav aria-label={t("Folders")} className="flex-1 overflow-y-auto px-2 space-y-0.5">
+				{folderLink(
+					Folders.INBOX,
+					placeName(Folders.INBOX),
+					SYSTEM_FOLDERS[0]?.icon,
+					unread(Folders.INBOX),
+				)}
+				<Item collapsed={collapsed} icon={<StarIcon size={18} />} label={t("Starred")}>
 					{(className, content) => (
 						<Link
 							to="/mailbox/$mailboxId/search"
 							params={{ mailboxId }}
 							search={{ q: "is:starred" }}
 							onClick={closeSidebar}
-							aria-label={collapsed ? "Starred" : undefined}
+							aria-label={collapsed ? t("Starred") : undefined}
 							className={className}
 							activeProps={{ className: ACTIVE }}
 							inactiveProps={{ className: INACTIVE }}
@@ -196,19 +207,19 @@ export default function Sidebar() {
 					)}
 				</Item>
 				{SYSTEM_FOLDERS.slice(1).map((folder) =>
-					folderLink(folder.id, folder.label, folder.icon, unread(folder.id)),
+					folderLink(folder.id, placeName(folder.id), folder.icon, unread(folder.id)),
 				)}
 
 				{!collapsed && <RailLabels mailboxId={mailboxId} onNavigate={closeSidebar} />}
 			</nav>
 
 			<div className={`border-t border-kumo-line ${collapsed ? "p-2" : "p-3"}`}>
-				<Item collapsed={collapsed} icon={<SquaresFourIcon size={18} />} label="All mailboxes">
+				<Item collapsed={collapsed} icon={<SquaresFourIcon size={18} />} label={t("All mailboxes")}>
 					{(className, content) => (
 						<Link
 							to="/"
 							onClick={closeSidebar}
-							aria-label={collapsed ? "All mailboxes" : undefined}
+							aria-label={collapsed ? t("All mailboxes") : undefined}
 							className={`${className} ${INACTIVE}`}
 						>
 							{content}

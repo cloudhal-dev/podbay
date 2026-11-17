@@ -21,7 +21,9 @@ import {
 import { useMemo } from "react";
 import { Folders } from "shared/folders";
 import type { ConversationActions } from "~/hooks/useConversationActions";
+import { t } from "~/i18n";
 import { labelDot } from "~/lib/labels";
+import { placeName } from "~/lib/places";
 import type { Email } from "~/types";
 
 export interface MenuPoint {
@@ -81,54 +83,54 @@ export default function ConversationMenu({
 			<DropdownMenu.Content anchor={anchor} side="bottom" align="start" sideOffset={2}>
 				{one && (
 					<>
-						<DropdownMenu.Item onClick={onOpen}>Open</DropdownMenu.Item>
+						<DropdownMenu.Item onClick={onOpen}>{t("Open")}</DropdownMenu.Item>
 						<DropdownMenu.Item icon={ArrowBendUpLeftIcon} onClick={() => onAnswer("reply")}>
-							Reply
+							{t("Reply")}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item icon={ChatCircleIcon} onClick={() => onAnswer("reply-all")}>
-							Reply to all
+							{t("Reply to all")}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item icon={ArrowBendUpRightIcon} onClick={() => onAnswer("forward")}>
-							Forward
+							{t("Forward")}
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
 					</>
 				)}
 				{folder !== Folders.ARCHIVE && (
 					<DropdownMenu.Item icon={ArchiveIcon} onClick={() => actions.archive(targets)}>
-						Archive
+						{t("Archive")}
 					</DropdownMenu.Item>
 				)}
 				<DropdownMenu.Item icon={TrashIcon} onClick={() => void actions.remove(targets)}>
-					{actions.inTrash ? "Delete forever" : "Delete"}
+					{actions.inTrash ? t("Delete forever") : t("Delete")}
 				</DropdownMenu.Item>
 				<DropdownMenu.Item
 					icon={unread ? EnvelopeOpenIcon : EnvelopeSimpleIcon}
 					onClick={() => actions.setRead(targets, unread)}
 				>
-					{unread ? "Mark as read" : "Mark as unread"}
+					{unread ? t("Mark as read") : t("Mark as unread")}
 				</DropdownMenu.Item>
 				{one && (
 					<DropdownMenu.Item icon={StarIcon} onClick={() => actions.star(email)}>
-						{email.starred ? "Remove the star" : "Add a star"}
+						{email.starred ? t("Remove the star") : t("Add a star")}
 					</DropdownMenu.Item>
 				)}
 				{folder === Folders.SPAM ? (
 					<DropdownMenu.Item icon={TrayIcon} onClick={() => actions.notSpam(targets)}>
-						Not spam
+						{t("Not spam")}
 					</DropdownMenu.Item>
 				) : (
 					<DropdownMenu.Item icon={WarningOctagonIcon} onClick={() => actions.reportSpam(targets)}>
-						Report spam
+						{t("Report spam")}
 					</DropdownMenu.Item>
 				)}
 				<DropdownMenu.Separator />
 				<DropdownMenu.Sub>
-					<DropdownMenu.SubTrigger icon={FolderSimpleIcon}>Move to</DropdownMenu.SubTrigger>
+					<DropdownMenu.SubTrigger icon={FolderSimpleIcon}>{t("Move to")}</DropdownMenu.SubTrigger>
 					<DropdownMenu.SubContent>
 						{actions.moveTargets.map((place) => (
 							<DropdownMenu.Item key={place.id} onClick={() => actions.moveTo(targets, place.id)}>
-								{place.name}
+								{placeName(place.id)}
 							</DropdownMenu.Item>
 						))}
 						{actions.labels.length > 0 && <DropdownMenu.Separator />}
@@ -144,10 +146,12 @@ export default function ConversationMenu({
 					</DropdownMenu.SubContent>
 				</DropdownMenu.Sub>
 				<DropdownMenu.Sub>
-					<DropdownMenu.SubTrigger icon={TagIcon}>Label as</DropdownMenu.SubTrigger>
+					<DropdownMenu.SubTrigger icon={TagIcon}>{t("Label as")}</DropdownMenu.SubTrigger>
 					<DropdownMenu.SubContent>
 						{actions.labels.length === 0 && (
-							<DropdownMenu.Item disabled>No labels yet. Make one in the rail.</DropdownMenu.Item>
+							<DropdownMenu.Item disabled>
+								{t("No labels yet. Make one in the rail.")}
+							</DropdownMenu.Item>
 						)}
 						{actions.labels.map((label) => (
 							<DropdownMenu.CheckboxItem
@@ -168,7 +172,7 @@ export default function ConversationMenu({
 					<>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item icon={MagnifyingGlassIcon} onClick={onFindFromSender}>
-							Find messages from this sender
+							{t("Find messages from this sender")}
 						</DropdownMenu.Item>
 						<DropdownMenu.LinkItem
 							icon={ArrowSquareOutIcon}
@@ -176,7 +180,7 @@ export default function ConversationMenu({
 							target="_blank"
 							rel="noopener"
 						>
-							Open in a new tab
+							{t("Open in a new tab")}
 						</DropdownMenu.LinkItem>
 					</>
 				)}

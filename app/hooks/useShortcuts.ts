@@ -3,34 +3,35 @@
 
 import { useEffect, useRef } from "react";
 import { useDisplay } from "~/hooks/useDisplay";
+import { m } from "~/i18n";
 
 /** A key (`c`, `#`, `Shift+I`) or two keys pressed one after the other (`g i`), and what it does. */
 export type Shortcuts = Record<string, () => void>;
 
 /** The shortcuts shown in the help dialog, in the order a reader looks for them. */
 export const SHORTCUT_HELP: { keys: string; does: string }[] = [
-	{ keys: "c", does: "Write a new message" },
-	{ keys: "/", does: "Search" },
-	{ keys: "j  /  k", does: "Next or previous conversation in the list" },
-	{ keys: "o  or  Enter", does: "Open the conversation" },
-	{ keys: "u", does: "Back to the list" },
-	{ keys: "k  /  j", does: "Newer or older conversation, when one is open" },
-	{ keys: "r  /  a  /  f", does: "Reply, reply to all or forward the open conversation" },
-	{ keys: "x", does: "Select the conversation" },
-	{ keys: "*  then  a  /  n", does: "Select all or none" },
-	{ keys: "e", does: "Archive" },
-	{ keys: "]  /  [", does: "Archive the open conversation and go to the older or newer one" },
-	{ keys: "z", does: "Undo the last move, while its note is on screen" },
-	{ keys: ";  /  :", does: "Open or fold every message of the open conversation" },
-	{ keys: "#", does: "Move to Trash" },
-	{ keys: "!", does: "Report spam" },
-	{ keys: "s", does: "Star or unstar" },
-	{ keys: "Shift+I  /  Shift+U", does: "Mark as read or unread" },
-	{ keys: "g  then  i", does: "Go to Inbox" },
-	{ keys: "g  then  s", does: "Go to Starred" },
-	{ keys: "g  then  t", does: "Go to Sent" },
-	{ keys: "g  then  d", does: "Go to Drafts" },
-	{ keys: "?", does: "Show this list" },
+	{ keys: "c", does: m("Write a new message") },
+	{ keys: "/", does: m("Search") },
+	{ keys: "j  /  k", does: m("Next or previous conversation in the list") },
+	{ keys: m("o  or  Enter"), does: m("Open the conversation") },
+	{ keys: "u", does: m("Back to the list") },
+	{ keys: "k  /  j", does: m("Newer or older conversation, when one is open") },
+	{ keys: "r  /  a  /  f", does: m("Reply, reply to all or forward the open conversation") },
+	{ keys: "x", does: m("Select the conversation") },
+	{ keys: m("*  then  a  /  n"), does: m("Select all or none") },
+	{ keys: "e", does: m("Archive") },
+	{ keys: "]  /  [", does: m("Archive the open conversation and go to the older or newer one") },
+	{ keys: "z", does: m("Undo the last move, while its note is on screen") },
+	{ keys: ";  /  :", does: m("Open or fold every message of the open conversation") },
+	{ keys: "#", does: m("Move to Trash") },
+	{ keys: "!", does: m("Report spam") },
+	{ keys: "s", does: m("Star or unstar") },
+	{ keys: "Shift+I  /  Shift+U", does: m("Mark as read or unread") },
+	{ keys: m("g  then  i"), does: m("Go to Inbox") },
+	{ keys: m("g  then  s"), does: m("Go to Starred") },
+	{ keys: m("g  then  t"), does: m("Go to Sent") },
+	{ keys: m("g  then  d"), does: m("Go to Drafts") },
+	{ keys: "?", does: m("Show this list") },
 ];
 
 /**

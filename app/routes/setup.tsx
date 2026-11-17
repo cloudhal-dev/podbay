@@ -5,6 +5,7 @@ import { Button, Input } from "@cloudflare/kumo";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { t } from "~/i18n";
 import { createFirstOwner, signIn, useSetupStatus } from "~/lib/session";
 import { ApiError } from "~/services/api";
 
@@ -41,7 +42,7 @@ export default function SetupRoute() {
 			await navigate({ to: "/" });
 		} catch (caught) {
 			setError(
-				caught instanceof ApiError ? caught.message : "The owner account could not be created.",
+				caught instanceof ApiError ? caught.message : t("The owner account could not be created."),
 			);
 		} finally {
 			setBusy(false);
@@ -52,10 +53,10 @@ export default function SetupRoute() {
 		return (
 			<div className="min-h-screen bg-kumo-recessed flex items-center justify-center p-4">
 				<div className="w-full max-w-sm rounded-xl border border-kumo-line bg-kumo-base p-6 space-y-3">
-					<h1 className="text-xl font-bold text-kumo-default">Already set up</h1>
-					<p className="text-sm text-kumo-subtle">This instance has an owner.</p>
+					<h1 className="text-xl font-bold text-kumo-default">{t("Already set up")}</h1>
+					<p className="text-sm text-kumo-subtle">{t("This instance has an owner.")}</p>
 					<Link to="/sign-in" className="text-sm underline text-kumo-default">
-						Go to sign in
+						{t("Go to sign in")}
 					</Link>
 				</div>
 			</div>
@@ -69,15 +70,16 @@ export default function SetupRoute() {
 				className="w-full max-w-sm rounded-xl border border-kumo-line bg-kumo-base p-6 space-y-4"
 			>
 				<div>
-					<h1 className="text-xl font-bold text-kumo-default">Set up Podbay</h1>
+					<h1 className="text-xl font-bold text-kumo-default">{t("Set up Podbay")}</h1>
 					<p className="text-sm text-kumo-subtle mt-1">
-						Create the first owner. You need the setup token that was set when this instance was
-						deployed.
+						{t(
+							"Create the first owner. You need the setup token that was set when this instance was deployed.",
+						)}
 					</p>
 				</div>
 				<div>
 					<Input
-						label="Setup token"
+						label={t("Setup token")}
 						className="w-full"
 						id="setup-token"
 						type="password"
@@ -89,7 +91,7 @@ export default function SetupRoute() {
 				</div>
 				<div>
 					<Input
-						label="Your name"
+						label={t("Your name")}
 						className="w-full"
 						id="setup-name"
 						autoComplete="name"
@@ -100,7 +102,7 @@ export default function SetupRoute() {
 				</div>
 				<div>
 					<Input
-						label="Email"
+						label={t("Email")}
 						className="w-full"
 						id="setup-email"
 						type="email"
@@ -110,12 +112,14 @@ export default function SetupRoute() {
 						required
 					/>
 					<p className="text-xs text-kumo-subtle mt-1">
-						Use an address outside this instance, so you can still be reached if mail here stops.
+						{t(
+							"Use an address outside this instance, so you can still be reached if mail here stops.",
+						)}
 					</p>
 				</div>
 				<div>
 					<Input
-						label="Password"
+						label={t("Password")}
 						className="w-full"
 						id="setup-password"
 						type="password"
@@ -126,7 +130,7 @@ export default function SetupRoute() {
 						required
 					/>
 					<p className="text-xs text-kumo-subtle mt-1">
-						At least {MIN_PASSWORD_LENGTH} characters.
+						{t("At least {count} characters.", { count: MIN_PASSWORD_LENGTH })}
 					</p>
 				</div>
 				{error && (
@@ -135,7 +139,7 @@ export default function SetupRoute() {
 					</p>
 				)}
 				<Button type="submit" variant="primary" loading={busy} className="w-full justify-center">
-					Create owner
+					{t("Create owner")}
 				</Button>
 			</form>
 		</div>

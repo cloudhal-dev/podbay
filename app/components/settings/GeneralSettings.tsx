@@ -5,6 +5,7 @@ import { Button } from "@cloudflare/kumo";
 import { useState } from "react";
 import { PAGE_SIZES, type PageSize, useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";
+import { LANGUAGE_NAMES, LANGUAGES, m, t } from "~/i18n";
 import Row, { Choice } from "./Row";
 
 /**
@@ -29,13 +30,17 @@ export default function GeneralSettings() {
 	return (
 		<div>
 			<p className="m-0 border-b border-kumo-line pb-4 text-xs text-kumo-subtle">
-				These choices take effect at once and are kept in this browser. Another browser, or another
-				person of this mailbox, has their own.
+				{t(
+					"These choices take effect at once and are kept in this browser. Another browser, or another person of this mailbox, has their own.",
+				)}
 			</p>
 
-			<Row name="Conversations on a page" about="How many lines a list shows before it pages.">
+			<Row
+				name={t("Conversations on a page")}
+				about={t("How many lines a list shows before it pages.")}
+			>
 				<label className="flex items-center gap-2">
-					<span className="sr-only">Conversations on a page</span>
+					<span className="sr-only">{t("Conversations on a page")}</span>
 					<select
 						className="h-9 rounded-lg border border-kumo-line bg-kumo-control px-3 text-sm text-kumo-default"
 						value={choices.pageSize}
@@ -52,144 +57,152 @@ export default function GeneralSettings() {
 				</label>
 			</Row>
 
-			<Row name="Density" about="How tall a line of a list is.">
+			<Row name={t("Density")} about={t("How tall a line of a list is.")}>
 				<Choice
-					legend="Density"
+					legend={t("Density")}
 					value={choices.density}
 					options={[
-						["default", "Default"],
-						["comfortable", "Comfortable"],
-						["compact", "Compact"],
+						["default", m("Default")],
+						["comfortable", m("Comfortable")],
+						["compact", m("Compact")],
 					]}
 					onChange={(density) => choices.choose({ density })}
 				/>
 			</Row>
 
-			<Row name="Reading pane" about="Where a conversation opens on a wide screen.">
+			<Row name={t("Reading pane")} about={t("Where a conversation opens on a wide screen.")}>
 				<Choice
-					legend="Reading pane"
+					legend={t("Reading pane")}
 					value={choices.readingPane}
 					options={[
-						["none", "In place of the list"],
-						["right", "Beside the list, on its right"],
+						["none", m("In place of the list")],
+						["right", m("Beside the list, on its right")],
 					]}
 					onChange={(readingPane) => choices.choose({ readingPane })}
 				/>
 			</Row>
 
 			<Row
-				name="Conversation view"
-				about="Whether a message and the answers to it are one line and one screen."
+				name={t("Conversation view")}
+				about={t("Whether a message and the answers to it are one line and one screen.")}
 			>
 				<Choice
-					legend="Conversation view"
+					legend={t("Conversation view")}
 					value={choices.conversationView ? "on" : "off"}
 					options={[
-						["on", "On: messages of a conversation together"],
-						["off", "Off: each message by itself"],
+						["on", m("On: messages of a conversation together")],
+						["off", m("Off: each message by itself")],
 					]}
 					onChange={(value) => choices.choose({ conversationView: value === "on" })}
 				/>
 			</Row>
 
-			<Row name="Snippets" about="The start of a message after its subject, in a list.">
+			<Row name={t("Snippets")} about={t("The start of a message after its subject, in a list.")}>
 				<Choice
-					legend="Snippets"
+					legend={t("Snippets")}
 					value={choices.snippets ? "on" : "off"}
 					options={[
-						["on", "Show them"],
-						["off", "Subject only"],
+						["on", m("Show them")],
+						["off", m("Subject only")],
 					]}
 					onChange={(value) => choices.choose({ snippets: value === "on" })}
 				/>
 			</Row>
 
 			<Row
-				name="Actions on a line"
-				about="Archive, delete and read on the line under the pointer, in place of its date."
+				name={t("Actions on a line")}
+				about={t("Archive, delete and read on the line under the pointer, in place of its date.")}
 			>
 				<Choice
-					legend="Actions on a line"
+					legend={t("Actions on a line")}
 					value={choices.hoverActions ? "on" : "off"}
 					options={[
-						["on", "Show them"],
-						["off", "Keep the date"],
+						["on", m("Show them")],
+						["off", m("Keep the date")],
 					]}
 					onChange={(value) => choices.choose({ hoverActions: value === "on" })}
 				/>
 			</Row>
 
-			<Row name="Reply button" about="What the Reply button on a message does.">
+			<Row name={t("Reply button")} about={t("What the Reply button on a message does.")}>
 				<Choice
-					legend="Reply button"
+					legend={t("Reply button")}
 					value={choices.defaultReply}
 					options={[
-						["reply", "Reply to the sender"],
-						["reply-all", "Reply to all"],
+						["reply", m("Reply to the sender")],
+						["reply-all", m("Reply to all")],
 					]}
 					onChange={(defaultReply) => choices.choose({ defaultReply })}
 				/>
 			</Row>
 
 			<Row
-				name="After filing a conversation"
-				about="Where to go after the open conversation is archived, deleted, moved or reported."
+				name={t("After filing a conversation")}
+				about={t(
+					"Where to go after the open conversation is archived, deleted, moved or reported.",
+				)}
 			>
 				<Choice
-					legend="After filing a conversation"
+					legend={t("After filing a conversation")}
 					value={choices.afterFiling}
 					options={[
-						["list", "Back to the list"],
-						["newer", "The newer conversation"],
-						["older", "The older conversation"],
+						["list", m("Back to the list")],
+						["newer", m("The newer conversation")],
+						["older", m("The older conversation")],
 					]}
 					onChange={(afterFiling) => choices.choose({ afterFiling })}
 				/>
 			</Row>
 
 			<Row
-				name="Send and archive"
-				about="A second button on an answer: send it and file its conversation in one press."
+				name={t("Send and archive")}
+				about={t("A second button on an answer: send it and file its conversation in one press.")}
 			>
 				<Choice
-					legend="Send and archive"
+					legend={t("Send and archive")}
 					value={choices.sendAndArchive ? "on" : "off"}
 					options={[
-						["on", "Show the button"],
-						["off", "Hide it"],
+						["on", m("Show the button")],
+						["off", m("Hide it")],
 					]}
 					onChange={(value) => choices.choose({ sendAndArchive: value === "on" })}
 				/>
 			</Row>
 
 			<Row
-				name="Notifications"
-				about="A notification of this device when mail arrives while Podbay is open in a tab. It shows who wrote and the subject."
+				name={t("Notifications")}
+				about={t(
+					"A notification of this device when mail arrives while Podbay is open in a tab. It shows who wrote and the subject.",
+				)}
 			>
 				<Choice
-					legend="Notifications"
+					legend={t("Notifications")}
 					value={choices.notifications ? "on" : "off"}
 					options={[
-						["on", "For new mail"],
-						["off", "None"],
+						["on", m("For new mail")],
+						["off", m("None")],
 					]}
 					onChange={(value) => void notify(value === "on")}
 				/>
 				{refused && (
 					<p role="alert" className="m-0 mt-2 text-xs text-kumo-danger">
-						This browser does not allow notifications for Podbay. Allow them in the browser's
-						settings for this site, then choose again.
+						{t(
+							"This browser does not allow notifications for Podbay. Allow them in the browser's settings for this site, then choose again.",
+						)}
 					</p>
 				)}
 			</Row>
 
-			<Row name="Keyboard shortcuts" about="Single keys that act on mail, such as c to write.">
+			<Row
+				name={t("Keyboard shortcuts")}
+				about={t("Single keys that act on mail, such as c to write.")}
+			>
 				<Choice
-					legend="Keyboard shortcuts"
+					legend={t("Keyboard shortcuts")}
 					value={choices.shortcuts ? "on" : "off"}
 					options={[
-						["on", "On"],
-						["off", "Off"],
+						["on", m("On")],
+						["off", m("Off")],
 					]}
 					onChange={(value) => choices.choose({ shortcuts: value === "on" })}
 				/>
@@ -199,18 +212,35 @@ export default function GeneralSettings() {
 					className="mt-3"
 					onClick={() => setShortcutHelpOpen(true)}
 				>
-					Show the shortcuts
+					{t("Show the shortcuts")}
 				</Button>
 			</Row>
 
-			<Row name="Appearance" about="Light, dark, or whatever this device uses.">
+			<Row
+				name={t("Language")}
+				about={t(
+					"The language of Podbay's own words. Mail stays in the language it was written in.",
+				)}
+			>
 				<Choice
-					legend="Appearance"
+					legend={t("Language")}
+					value={choices.language}
+					options={[
+						["system", m("As this device")],
+						...LANGUAGES.map((language) => [language, LANGUAGE_NAMES[language]] as const),
+					]}
+					onChange={(language) => choices.choose({ language })}
+				/>
+			</Row>
+
+			<Row name={t("Appearance")} about={t("Light, dark, or whatever this device uses.")}>
+				<Choice
+					legend={t("Appearance")}
 					value={choices.appearance}
 					options={[
-						["system", "As this device"],
-						["light", "Light"],
-						["dark", "Dark"],
+						["system", m("As this device")],
+						["light", m("Light")],
+						["dark", m("Dark")],
 					]}
 					onChange={(appearance) => choices.choose({ appearance })}
 				/>

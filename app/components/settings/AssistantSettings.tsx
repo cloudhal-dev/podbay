@@ -4,6 +4,7 @@
 import { Badge, Button, useKumoToastManager } from "@cloudflare/kumo";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { t } from "~/i18n";
 import { useUpdateMailbox } from "~/queries/mailboxes";
 import type { Mailbox } from "~/types";
 
@@ -30,9 +31,9 @@ export default function AssistantSettings({ mailbox }: { mailbox: Mailbox }) {
 				mailboxId: mailbox.id,
 				settings: { ...mailbox.settings, agentSystemPrompt: prompt.trim() || undefined },
 			});
-			toasts.add({ title: "Prompt saved" });
+			toasts.add({ title: t("Prompt saved") });
 		} catch {
-			toasts.add({ title: "The prompt could not be saved", variant: "error" });
+			toasts.add({ title: t("The prompt could not be saved"), variant: "error" });
 		}
 	}
 
@@ -40,8 +41,10 @@ export default function AssistantSettings({ mailbox }: { mailbox: Mailbox }) {
 		<div className="space-y-3">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium text-kumo-default">Prompt</span>
-					<Badge variant={custom ? "primary" : "secondary"}>{custom ? "Custom" : "Built in"}</Badge>
+					<span className="text-sm font-medium text-kumo-default">{t("Prompt")}</span>
+					<Badge variant={custom ? "primary" : "secondary"}>
+						{custom ? t("Custom") : t("Built in")}
+					</Badge>
 				</div>
 				{custom && isOwner && (
 					<Button
@@ -50,16 +53,17 @@ export default function AssistantSettings({ mailbox }: { mailbox: Mailbox }) {
 						icon={<ArrowCounterClockwiseIcon size={14} />}
 						onClick={() => setPrompt("")}
 					>
-						Back to the built-in prompt
+						{t("Back to the built-in prompt")}
 					</Button>
 				)}
 			</div>
 			<p className="m-0 text-xs text-kumo-subtle">
-				The prompt is what the assistant is told before it reads any mail of this mailbox: how to
-				write and what to mind. The assistant never sends; it saves drafts for a person to send.
+				{t(
+					"The prompt is what the assistant is told before it reads any mail of this mailbox: how to write and what to mind. The assistant never sends; it saves drafts for a person to send.",
+				)}
 			</p>
 			<textarea
-				aria-label="Prompt"
+				aria-label={t("Prompt")}
 				value={prompt}
 				disabled={!isOwner}
 				onChange={(event) => setPrompt(event.target.value)}
@@ -69,10 +73,12 @@ export default function AssistantSettings({ mailbox }: { mailbox: Mailbox }) {
 			/>
 			{isOwner ? (
 				<Button variant="primary" size="sm" loading={updateMailbox.isPending} onClick={save}>
-					Save prompt
+					{t("Save prompt")}
 				</Button>
 			) : (
-				<p className="m-0 text-xs text-kumo-subtle">An owner of this mailbox can change it.</p>
+				<p className="m-0 text-xs text-kumo-subtle">
+					{t("An owner of this mailbox can change it.")}
+				</p>
 			)}
 		</div>
 	);

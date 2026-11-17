@@ -3,6 +3,7 @@
 
 import { LayerDialog, useKumoToastManager } from "@cloudflare/kumo";
 import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from "react";
+import { t } from "~/i18n";
 
 export interface Question {
 	title: string;
@@ -63,12 +64,12 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 					<LayerDialog.Body>
 						<div className="text-sm text-kumo-strong">{question?.body}</div>
 					</LayerDialog.Body>
-					<LayerDialog.Actions dismissLabel="Cancel">
+					<LayerDialog.Actions dismissLabel={t("Cancel")}>
 						<LayerDialog.Action
 							variant={question?.destructive ? "destructive" : "primary"}
 							onClick={() => finish(true)}
 						>
-							{question?.action ?? "Continue"}
+							{question?.action ?? t("Continue")}
 						</LayerDialog.Action>
 					</LayerDialog.Actions>
 				</LayerDialog.Content>

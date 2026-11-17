@@ -8,6 +8,7 @@ import { useState } from "react";
 import { LABEL_LIMITS } from "shared/labels";
 import { useConfirm } from "~/components/Confirm";
 import LabelDialog from "~/components/LabelDialog";
+import { plural, t } from "~/i18n";
 import { labelDot, labelSearch } from "~/lib/labels";
 import { useDeleteLabel, useLabels } from "~/queries/labels";
 import type { Label } from "~/types";
@@ -28,12 +29,16 @@ export default function LabelSettings({
 
 	async function remove(label: Label) {
 		const sure = await confirm({
-			title: `Delete the label "${label.name}"?`,
+			title: t('Delete the label "{name}"?', { name: label.name }),
 			body:
 				label.total === 0
-					? "No message carries it. Nothing else changes."
-					: `It is taken off ${label.total === 1 ? "one message" : `${label.total} messages`}. No message is deleted or moved.`,
-			action: "Delete label",
+					? t("No message carries it. Nothing else changes.")
+					: plural(
+							label.total,
+							"It is taken off one message. No message is deleted or moved.",
+							"It is taken off {count} messages. No message is deleted or moved.",
+						),
+			action: t("Delete label"),
 			destructive: true,
 		});
 		if (sure) deleteLabel.mutate({ mailboxId, id: label.id });
@@ -43,8 +48,10 @@ export default function LabelSettings({
 		<div>
 			<div className="flex items-center justify-between gap-4 border-b border-kumo-line pb-4">
 				<p className="m-0 text-xs text-kumo-subtle">
-					A conversation can carry several labels, and everyone with access to this mailbox sees the
-					same ones. {labels.length} of {LABEL_LIMITS.perMailbox}.
+					{t(
+						"A conversation can carry several labels, and everyone with access to this mailbox sees the same ones. {count} of {limit}.",
+						{ count: labels.length, limit: LABEL_LIMITS.perMailbox },
+					)}
 				</p>
 				{canChange && (
 					<Button
@@ -53,29 +60,29 @@ export default function LabelSettings({
 						icon={<PlusIcon size={14} />}
 						onClick={() => setEditing("new")}
 					>
-						New label
+						{t("New label")}
 					</Button>
 				)}
 			</div>
 			{labels.length === 0 ? (
 				<p className="py-10 text-center text-sm text-kumo-subtle">
-					This mailbox has no labels yet.
+					{t("This mailbox has no labels yet.")}
 				</p>
 			) : (
 				<table className="w-full border-collapse text-sm">
 					<thead>
 						<tr className="text-left text-xs text-kumo-subtle">
 							<th scope="col" className="py-2 font-medium">
-								Label
+								{t("Label")}
 							</th>
 							<th scope="col" className="w-24 py-2 font-medium">
-								Messages
+								{t("Messages")}
 							</th>
 							<th scope="col" className="w-24 py-2 font-medium">
-								Unread
+								{t("Unread")}
 							</th>
 							<th scope="col" className="w-40 py-2">
-								<span className="sr-only">Actions</span>
+								<span className="sr-only">{t("Actions")}</span>
 							</th>
 						</tr>
 					</thead>
@@ -99,10 +106,10 @@ export default function LabelSettings({
 									{canChange && (
 										<>
 											<Button variant="ghost" size="sm" onClick={() => setEditing(label)}>
-												Edit
+												{t("Edit")}
 											</Button>
 											<Button variant="ghost" size="sm" onClick={() => void remove(label)}>
-												Delete
+												{t("Delete")}
 											</Button>
 										</>
 									)}

@@ -6,8 +6,9 @@
 import { Button, Tooltip } from "@cloudflare/kumo";
 import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
 import { useState } from "react";
+import { t } from "~/i18n";
 
-export default function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+export default function CopyButton({ text, label }: { text: string; label?: string }) {
 	const [copied, setCopied] = useState(false);
 
 	const handleCopy = async () => {
@@ -21,7 +22,7 @@ export default function CopyButton({ text, label = "Copy" }: { text: string; lab
 	};
 
 	return (
-		<Tooltip content={copied ? "Copied!" : label} asChild>
+		<Tooltip content={copied ? t("Copied!") : (label ?? t("Copy"))} asChild>
 			<Button
 				variant="ghost"
 				shape="square"
@@ -34,7 +35,7 @@ export default function CopyButton({ text, label = "Copy" }: { text: string; lab
 					)
 				}
 				onClick={handleCopy}
-				aria-label={label}
+				aria-label={label ?? t("Copy")}
 			/>
 		</Tooltip>
 	);

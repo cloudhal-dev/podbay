@@ -4,6 +4,7 @@
 // Modified by the Podbay contributors.
 
 import type { ReactNode } from "react";
+import { plural, t } from "~/i18n";
 
 interface EmailPanelHeaderProps {
 	subject: string;
@@ -23,13 +24,17 @@ export default function EmailPanelHeader({
 		<div className="shrink-0 px-4 pt-4 pb-2 md:px-6">
 			<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
 				<h2 className="text-[22px] leading-7 font-normal text-kumo-default">
-					{subject || "(no subject)"}
+					{subject || t("(no subject)")}
 				</h2>
 				{labels}
 			</div>
 			{showThreadCount && (
 				<span className="text-xs text-kumo-subtle mt-0.5 block">
-					{messageCount} messages in this conversation
+					{plural(
+						messageCount,
+						"{count} message in this conversation",
+						"{count} messages in this conversation",
+					)}
 				</span>
 			)}
 		</div>

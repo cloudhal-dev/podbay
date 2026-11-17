@@ -3,6 +3,7 @@
 
 import { Button, DropdownMenu } from "@cloudflare/kumo";
 import { TagIcon } from "@phosphor-icons/react";
+import { t } from "~/i18n";
 import { labelDot } from "~/lib/labels";
 import type { Email, Label } from "~/types";
 
@@ -34,17 +35,19 @@ export default function LabelMenu({
 						shape="square"
 						size="sm"
 						icon={<TagIcon size={iconSize} />}
-						aria-label="Label as"
-						title="Label as"
+						aria-label={t("Label as")}
+						title={t("Label as")}
 						disabled={targets.length === 0}
 					/>
 				}
 			/>
 			<DropdownMenu.Content>
 				<DropdownMenu.Group>
-					<DropdownMenu.Label>Label as</DropdownMenu.Label>
+					<DropdownMenu.Label>{t("Label as")}</DropdownMenu.Label>
 					{labels.length === 0 && (
-						<DropdownMenu.Item disabled>No labels yet. Make one in the rail.</DropdownMenu.Item>
+						<DropdownMenu.Item disabled>
+							{t("No labels yet. Make one in the rail.")}
+						</DropdownMenu.Item>
 					)}
 					{labels.map((label) => (
 						<DropdownMenu.CheckboxItem

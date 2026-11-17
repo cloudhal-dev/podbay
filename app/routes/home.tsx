@@ -20,13 +20,15 @@ import { useFreshProof } from "~/components/FreshProof";
 import InvitePerson from "~/components/InvitePerson";
 import People from "~/components/People";
 import Registry from "~/components/Registry";
+import { t } from "~/i18n";
+import { rich } from "~/i18n/rich";
 import { signOut, useMe } from "~/lib/session";
 import { queryKeys } from "~/queries/keys";
 import { useCreateMailbox, useDeleteMailbox, useMailboxes } from "~/queries/mailboxes";
 import api from "~/services/api";
 
 export function meta() {
-	return [{ title: "Agentic Inbox" }];
+	return [{ title: "Podbay" }];
 }
 
 export default function HomeRoute() {
@@ -102,7 +104,7 @@ export default function HomeRoute() {
 		e.preventDefault();
 		setCreateError(null);
 		if (!newPrefix || !selectedDomain) {
-			setCreateError("Please fill in all fields");
+			setCreateError(t("Please fill in all fields"));
 			return;
 		}
 		const email = `${newPrefix}@${selectedDomain}`;
@@ -110,12 +112,12 @@ export default function HomeRoute() {
 		setIsCreating(true);
 		try {
 			await createMailbox.mutateAsync({ email, name });
-			toastManager.add({ title: "Mailbox created successfully!" });
+			toastManager.add({ title: t("Mailbox created successfully!") });
 			setIsCreateOpen(false);
 			setNewPrefix("");
 			setNewName("");
 		} catch (err: unknown) {
-			const message = (err instanceof Error ? err.message : null) || "Failed to create mailbox";
+			const message = (err instanceof Error ? err.message : null) || t("Failed to create mailbox");
 			setCreateError(message);
 		} finally {
 			setIsCreating(false);
@@ -128,11 +130,11 @@ export default function HomeRoute() {
 		try {
 			const id = mailboxToDelete.id;
 			await withFreshProof(() => deleteMailbox.mutateAsync(id));
-			toastManager.add({ title: "Mailbox deleted" });
+			toastManager.add({ title: t("Mailbox deleted") });
 			setIsDeleteOpen(false);
 			setMailboxToDelete(null);
 		} catch {
-			toastManager.add({ title: "Failed to delete mailbox", variant: "error" });
+			toastManager.add({ title: t("Failed to delete mailbox"), variant: "error" });
 		} finally {
 			setIsDeleting(false);
 		}
@@ -156,20 +158,20 @@ export default function HomeRoute() {
 			<div className="mx-auto max-w-2xl px-4 py-8 md:px-6 md:py-16">
 				<div className="mb-8">
 					<div className="flex items-center justify-between">
-						<h1 className="text-2xl font-bold text-kumo-default">Mailboxes</h1>
+						<h1 className="text-2xl font-bold text-kumo-default">{t("Mailboxes")}</h1>
 						{!isConfigured && canManage && (
 							<Button
 								variant="primary"
 								icon={<PlusIcon size={16} />}
 								onClick={() => setIsCreateOpen(true)}
 							>
-								New Mailbox
+								{t("New Mailbox")}
 							</Button>
 						)}
 					</div>
 					{me && (
 						<p className="text-sm text-kumo-subtle mt-1">
-							Signed in as {me.user.email}.{" "}
+							{t("Signed in as {email}.", { email: me.user.email })}{" "}
 							<button
 								type="button"
 								className="underline cursor-pointer bg-transparent border-0 p-0 text-kumo-subtle"
@@ -179,11 +181,11 @@ export default function HomeRoute() {
 									await navigate({ to: "/sign-in" });
 								}}
 							>
-								Sign out
+								{t("Sign out")}
 							</button>
 							{" · "}
 							<RouterLink to="/account/security" className="underline">
-								Sign-in and security
+								{t("Sign-in and security")}
 							</RouterLink>
 						</p>
 					)}
@@ -222,7 +224,7 @@ export default function HomeRoute() {
 										size="sm"
 										shape="square"
 										icon={<TrashIcon size={16} />}
-										aria-label={`Delete mailbox ${account.email}`}
+										aria-label={t("Delete mailbox {name}", { name: account.email })}
 										onClick={(e) => {
 											e.preventDefault();
 											e.stopPropagation();
@@ -243,13 +245,17 @@ export default function HomeRoute() {
 							<div className="mb-4">
 								<EnvelopeIcon size={48} weight="thin" className="text-kumo-subtle" />
 							</div>
-							<h3 className="text-base font-semibold text-kumo-default mb-1.5">No mailboxes yet</h3>
+							<h3 className="text-base font-semibold text-kumo-default mb-1.5">
+								{t("No mailboxes yet")}
+							</h3>
 							<p className="text-sm text-kumo-subtle max-w-sm mb-5">
 								{isConfigured
-									? "Your email routing is configured but no mailboxes have been created yet. They will appear here automatically."
+									? t(
+											"Your email routing is configured but no mailboxes have been created yet. They will appear here automatically.",
+										)
 									: canManage
-										? "Create a mailbox to start sending and receiving emails with your domain."
-										: "You are not a member of any mailbox yet. A mailbox owner can add you."}
+										? t("Create a mailbox to start sending and receiving emails with your domain.")
+										: t("You are not a member of any mailbox yet. A mailbox owner can add you.")}
 							</p>
 							{!isConfigured && canManage && (
 								<Button
@@ -257,7 +263,7 @@ export default function HomeRoute() {
 									icon={<PlusIcon size={16} />}
 									onClick={() => setIsCreateOpen(true)}
 								>
-									Create Mailbox
+									{t("Create Mailbox")}
 								</Button>
 							)}
 						</div>
@@ -275,7 +281,7 @@ export default function HomeRoute() {
 
 			<LayerDialog.Root open={isCreateOpen} onOpenChange={setIsCreateOpen}>
 				<LayerDialog.Content size="sm">
-					<LayerDialog.Title>Create a mailbox</LayerDialog.Title>
+					<LayerDialog.Title>{t("Create a mailbox")}</LayerDialog.Title>
 					<LayerDialog.Body>
 						<form id="create-mailbox" onSubmit={handleCreate} className="space-y-4">
 							{createError && (
@@ -285,13 +291,13 @@ export default function HomeRoute() {
 							)}
 							<div>
 								<span className="text-sm font-medium text-kumo-default mb-1.5 block">
-									Email Address
+									{t("Email Address")}
 								</span>
 								<div className="flex items-center gap-2">
 									<div className="flex-1">
 										<Input
-											aria-label="Address prefix"
-											placeholder="info"
+											aria-label={t("Address prefix")}
+											placeholder={t("info")}
 											size="sm"
 											value={newPrefix}
 											onChange={(e) => setNewPrefix(e.target.value)}
@@ -302,7 +308,7 @@ export default function HomeRoute() {
 									{domains.length > 1 ? (
 										<div className="flex-1">
 											<Select
-												aria-label="Domain"
+												aria-label={t("Domain")}
 												value={selectedDomain}
 												onValueChange={(value) => {
 													if (value) setSelectedDomain(value);
@@ -317,28 +323,28 @@ export default function HomeRoute() {
 										</div>
 									) : (
 										<span className="text-sm text-kumo-subtle">
-											{selectedDomain || "no domain"}
+											{selectedDomain || t("no domain")}
 										</span>
 									)}
 								</div>
 							</div>
 							<Input
-								label="Display Name (optional)"
-								placeholder="Info"
+								label={t("Display Name (optional)")}
+								placeholder={t("Info")}
 								size="sm"
 								value={newName}
 								onChange={(e) => setNewName(e.target.value)}
 							/>
 						</form>
 					</LayerDialog.Body>
-					<LayerDialog.Actions dismissLabel="Cancel">
+					<LayerDialog.Actions dismissLabel={t("Cancel")}>
 						<LayerDialog.Action
 							type="submit"
 							form="create-mailbox"
 							loading={isCreating}
 							disabled={!selectedDomain}
 						>
-							Create
+							{t("Create")}
 						</LayerDialog.Action>
 					</LayerDialog.Actions>
 				</LayerDialog.Content>
@@ -352,16 +358,17 @@ export default function HomeRoute() {
 				}}
 			>
 				<LayerDialog.Content size="sm">
-					<LayerDialog.Title>Delete this mailbox?</LayerDialog.Title>
+					<LayerDialog.Title>{t("Delete this mailbox?")}</LayerDialog.Title>
 					<LayerDialog.Body>
 						<p className="text-sm text-kumo-strong">
-							<strong className="text-kumo-default">{mailboxToDelete?.email}</strong> and every
-							message in it will be deleted. This cannot be undone.
+							{rich("{mailbox} and every message in it will be deleted. This cannot be undone.", {
+								mailbox: <strong className="text-kumo-default">{mailboxToDelete?.email}</strong>,
+							})}
 						</p>
 					</LayerDialog.Body>
-					<LayerDialog.Actions dismissLabel="Cancel">
+					<LayerDialog.Actions dismissLabel={t("Cancel")}>
 						<LayerDialog.Action variant="destructive" loading={isDeleting} onClick={handleDelete}>
-							Delete
+							{t("Delete")}
 						</LayerDialog.Action>
 					</LayerDialog.Actions>
 				</LayerDialog.Content>

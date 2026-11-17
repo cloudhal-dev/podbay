@@ -4,6 +4,7 @@
 import { Input, LayerDialog } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useState } from "react";
 import { LABEL_LIMITS } from "shared/labels";
+import { t } from "~/i18n";
 import { LABEL_PALETTE } from "~/lib/labels";
 import { useCreateLabel, useUpdateLabel } from "~/queries/labels";
 import type { Label } from "~/types";
@@ -44,28 +45,32 @@ export default function LabelDialog({
 			else await createLabel.mutateAsync({ mailboxId, name, color });
 			onOpenChange(false);
 		} catch (failure) {
-			setError(failure instanceof Error ? failure.message : "The label could not be saved.");
+			setError(failure instanceof Error ? failure.message : t("The label could not be saved."));
 		}
 	}
 
 	return (
 		<LayerDialog.Root open={open} onOpenChange={onOpenChange}>
 			<LayerDialog.Content size="sm">
-				<LayerDialog.Title>{label ? "Edit label" : "New label"}</LayerDialog.Title>
+				<LayerDialog.Title>{label ? t("Edit label") : t("New label")}</LayerDialog.Title>
 				<LayerDialog.Description>
-					A conversation can carry several labels. A slash in the name nests it, as in Clients/Acme.
+					{t(
+						"A conversation can carry several labels. A slash in the name nests it, as in Clients/Acme.",
+					)}
 				</LayerDialog.Description>
 				<LayerDialog.Body>
 					<form id="label-form" onSubmit={submit} className="space-y-4">
 						<Input
-							label="Name"
+							label={t("Name")}
 							value={name}
 							maxLength={LABEL_LIMITS.nameLength}
 							onChange={(event) => setName(event.target.value)}
 							required
 						/>
 						<fieldset className="m-0 border-0 p-0">
-							<legend className="mb-1.5 text-sm font-medium text-kumo-default">Colour</legend>
+							<legend className="mb-1.5 text-sm font-medium text-kumo-default">
+								{t("Colour")}
+							</legend>
 							<div className="flex flex-wrap gap-2">
 								{LABEL_PALETTE.map((tone, index) => (
 									<label key={tone.name} className="cursor-pointer">
@@ -79,7 +84,7 @@ export default function LabelDialog({
 										<span
 											className={`block h-6 w-6 rounded-full ring-offset-2 ring-offset-kumo-base peer-checked:ring-2 peer-checked:ring-kumo-brand peer-focus-visible:ring-2 peer-focus-visible:ring-kumo-ring ${tone.dot}`}
 										/>
-										<span className="sr-only">{tone.name}</span>
+										<span className="sr-only">{t(tone.name)}</span>
 									</label>
 								))}
 							</div>
@@ -91,14 +96,14 @@ export default function LabelDialog({
 						)}
 					</form>
 				</LayerDialog.Body>
-				<LayerDialog.Actions dismissLabel="Cancel">
+				<LayerDialog.Actions dismissLabel={t("Cancel")}>
 					<LayerDialog.Action
 						type="submit"
 						form="label-form"
 						loading={busy}
 						disabled={name.trim() === ""}
 					>
-						{label ? "Save" : "Create"}
+						{label ? t("Save") : t("Create")}
 					</LayerDialog.Action>
 				</LayerDialog.Actions>
 			</LayerDialog.Content>

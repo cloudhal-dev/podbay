@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import type { ReactNode } from "react";
+import { t } from "~/i18n";
 
 /** One setting: its name and a line about it on the left, the control on the right. */
 export default function Row({
@@ -48,7 +49,7 @@ export function Choice<T extends string | number>({
 						checked={value === option}
 						onChange={() => onChange(option)}
 					/>
-					{label}
+					{t(label)}
 				</label>
 			))}
 		</div>

@@ -10,14 +10,15 @@ import {
 } from "@phosphor-icons/react";
 import { type ReactNode, useEffect, useState } from "react";
 import { useUIStore } from "~/hooks/useUIStore";
+import { m, t } from "~/i18n";
 import ComposePanel from "./ComposePanel";
 import { useCompose } from "./ComposeSession";
 
 const TITLES = {
-	new: "New message",
-	reply: "Reply",
-	"reply-all": "Reply to all",
-	forward: "Forward",
+	new: m("New message"),
+	reply: m("Reply"),
+	"reply-all": m("Reply to all"),
+	forward: m("Forward"),
 };
 
 const FRAME =
@@ -71,26 +72,26 @@ function OpenComposeWindow() {
 	const form = useCompose();
 	const [size, setSize] = useState<keyof typeof SIZES>("normal");
 	const minimised = size === "minimised";
-	const title = form.isDraftEdit ? "Draft" : TITLES[composeOptions.mode];
+	const title = form.isDraftEdit ? t("Draft") : t(TITLES[composeOptions.mode]);
 
 	// A new message or reply always opens at its usual size.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: what is being written is the trigger
 	useEffect(() => setSize("normal"), [composeOptions]);
 
 	return (
-		<section aria-label="Compose" className={`${FRAME} ${SIZES[size]}`}>
+		<section aria-label={t("Compose")} className={`${FRAME} ${SIZES[size]}`}>
 			<div className="flex h-10 shrink-0 items-center gap-0.5 bg-kumo-tint pl-4 pr-2">
 				<h2 className="m-0 min-w-0 flex-1 truncate text-sm font-medium text-kumo-default">
 					{form.subject.trim() || title}
 				</h2>
 				{minimised ? (
-					<TitleButton label="Restore the compose window" onClick={() => setSize("normal")}>
+					<TitleButton label={t("Restore the compose window")} onClick={() => setSize("normal")}>
 						<CaretUpIcon size={16} />
 					</TitleButton>
 				) : (
 					<>
 						<TitleButton
-							label="Minimise the compose window"
+							label={t("Minimise the compose window")}
 							onClick={() => setSize("minimised")}
 							className="hidden md:block"
 						>
@@ -99,8 +100,8 @@ function OpenComposeWindow() {
 						<TitleButton
 							label={
 								size === "large"
-									? "Make the compose window smaller"
-									: "Make the compose window larger"
+									? t("Make the compose window smaller")
+									: t("Make the compose window larger")
 							}
 							onClick={() => setSize(size === "large" ? "normal" : "large")}
 							className="hidden md:block"
@@ -113,7 +114,7 @@ function OpenComposeWindow() {
 						</TitleButton>
 					</>
 				)}
-				<TitleButton label="Save and close" onClick={() => void form.saveAndClose()}>
+				<TitleButton label={t("Save and close")} onClick={() => void form.saveAndClose()}>
 					<XIcon size={16} />
 				</TitleButton>
 			</div>

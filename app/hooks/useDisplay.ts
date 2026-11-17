@@ -3,6 +3,7 @@
 
 import { useSyncExternalStore } from "react";
 import { create } from "zustand";
+import { deviceLanguage, LANGUAGES, setLanguage } from "~/i18n";
 
 export const DENSITIES = ["default", "comfortable", "compact"] as const;
 export type Density = (typeof DENSITIES)[number];
@@ -16,6 +17,9 @@ export const AFTER_FILING = ["list", "newer", "older"] as const;
 export type AfterFiling = (typeof AFTER_FILING)[number];
 export const APPEARANCES = ["system", "light", "dark"] as const;
 export type Appearance = (typeof APPEARANCES)[number];
+/** The language of the app's own words: this device's, or one chosen. */
+export const LANGUAGE_CHOICES = ["system", ...LANGUAGES] as const;
+export type LanguageChoice = (typeof LANGUAGE_CHOICES)[number];
 
 const KEY = "podbay.display";
 /** The reading pane needs room: below this width a conversation always replaces the list. */
@@ -40,6 +44,7 @@ export interface Choices {
 	/** Whether single keys act as shortcuts. */
 	shortcuts: boolean;
 	appearance: Appearance;
+	language: LanguageChoice;
 	/** Whether the messages of a conversation are one line and one screen, or each its own. */
 	conversationView: boolean;
 	/** Whether a line shows the start of the message after the subject. */
@@ -60,6 +65,7 @@ export const DEFAULT_CHOICES: Choices = {
 	afterFiling: "list",
 	shortcuts: true,
 	appearance: "system",
+	language: "system",
 	conversationView: true,
 	snippets: true,
 	hoverActions: true,
@@ -82,6 +88,7 @@ export function readChoices(saved: Partial<Record<keyof Choices, unknown>>): Cho
 		afterFiling: oneOf(AFTER_FILING, saved.afterFiling, DEFAULT_CHOICES.afterFiling),
 		shortcuts: yesOrNo(saved.shortcuts, DEFAULT_CHOICES.shortcuts),
 		appearance: oneOf(APPEARANCES, saved.appearance, DEFAULT_CHOICES.appearance),
+		language: oneOf(LANGUAGE_CHOICES, saved.language, DEFAULT_CHOICES.language),
 		conversationView: yesOrNo(saved.conversationView, DEFAULT_CHOICES.conversationView),
 		snippets: yesOrNo(saved.snippets, DEFAULT_CHOICES.snippets),
 		hoverActions: yesOrNo(saved.hoverActions, DEFAULT_CHOICES.hoverActions),
@@ -113,6 +120,11 @@ function showAppearance(appearance: Appearance): void {
 	document.documentElement.setAttribute("data-mode", dark ? "dark" : "light");
 }
 
+/** Puts the app's words in the chosen language, or this device's. */
+function speak(choice: LanguageChoice): void {
+	setLanguage(choice === "system" ? deviceLanguage() : choice);
+}
+
 interface DisplayState extends Choices {
 	choose: (change: Partial<Choices>) => void;
 	setDensity: (density: Density) => void;
@@ -127,11 +139,15 @@ export const useDisplay = create<DisplayState>((set, get) => ({
 		const next = { ...choicesOf(get()), ...change };
 		remember(next);
 		showAppearance(next.appearance);
+		speak(next.language);
 		set(change);
 	},
 	setDensity: (density) => get().choose({ density }),
 	setReadingPane: (readingPane) => get().choose({ readingPane }),
 }));
+
+// The words are in the reader's language before anything is drawn.
+speak(useDisplay.getState().language);
 
 // The appearance holds from the first paint, and "system" follows the system while the app is open.
 showAppearance(useDisplay.getState().appearance);

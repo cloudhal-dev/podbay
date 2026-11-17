@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useConfirm } from "~/components/Confirm";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useDropTarget } from "~/hooks/useDropTarget";
+import { plural, t } from "~/i18n";
 import { labelTree } from "~/lib/label-tree";
 import { labelDot, labelSearch } from "~/lib/labels";
 import { useDeleteLabel, useLabels } from "~/queries/labels";
@@ -33,12 +34,16 @@ export default function RailLabels({
 
 	async function remove(label: Label) {
 		const sure = await confirm({
-			title: `Delete the label "${label.name}"?`,
+			title: t('Delete the label "{name}"?', { name: label.name }),
 			body:
 				label.total === 0
-					? "No message carries it. Nothing else changes."
-					: `It is taken off ${label.total === 1 ? "one message" : `${label.total} messages`}. No message is deleted or moved.`,
-			action: "Delete label",
+					? t("No message carries it. Nothing else changes.")
+					: plural(
+							label.total,
+							"It is taken off one message. No message is deleted or moved.",
+							"It is taken off {count} messages. No message is deleted or moved.",
+						),
+			action: t("Delete label"),
 			destructive: true,
 		});
 		if (sure) deleteLabel.mutate({ mailboxId, id: label.id });
@@ -47,15 +52,15 @@ export default function RailLabels({
 	return (
 		<div className="pt-4">
 			<div className="mb-1 flex items-center justify-between pl-4 pr-1">
-				<h2 className="m-0 text-xs font-semibold text-kumo-subtle">Labels</h2>
-				<Tooltip content="New label" asChild>
+				<h2 className="m-0 text-xs font-semibold text-kumo-subtle">{t("Labels")}</h2>
+				<Tooltip content={t("New label")} asChild>
 					<Button
 						variant="ghost"
 						shape="square"
 						size="sm"
 						icon={<PlusIcon size={16} />}
 						onClick={() => setEditing("new")}
-						aria-label="Create a label"
+						aria-label={t("Create a label")}
 					/>
 				</Tooltip>
 			</div>
@@ -138,15 +143,15 @@ function RailLabel({
 							shape="square"
 							size="sm"
 							icon={<DotsThreeIcon size={16} weight="bold" />}
-							aria-label={`Options for the label ${label.name}`}
+							aria-label={t("Options for the label {name}", { name: label.name })}
 							className="mr-1 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 data-[popup-open]:opacity-100"
 						/>
 					}
 				/>
 				<DropdownMenu.Content>
-					<DropdownMenu.Item onClick={onEdit}>Edit</DropdownMenu.Item>
+					<DropdownMenu.Item onClick={onEdit}>{t("Edit")}</DropdownMenu.Item>
 					<DropdownMenu.Item variant="danger" onClick={onDelete}>
-						Delete
+						{t("Delete")}
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu>

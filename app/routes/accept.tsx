@@ -5,6 +5,8 @@ import { Button, Input } from "@cloudflare/kumo";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { t } from "~/i18n";
+import { rich } from "~/i18n/rich";
 import { acceptInvitation, invitationFor, signIn } from "~/lib/session";
 import { ApiError } from "~/services/api";
 
@@ -36,7 +38,9 @@ export default function AcceptRoute() {
 			await queryClient.invalidateQueries();
 			await navigate({ to: "/" });
 		} catch (caught) {
-			setError(caught instanceof ApiError ? caught.message : "The account could not be created.");
+			setError(
+				caught instanceof ApiError ? caught.message : t("The account could not be created."),
+			);
 		} finally {
 			setBusy(false);
 		}
@@ -48,13 +52,16 @@ export default function AcceptRoute() {
 		return (
 			<div className="min-h-screen bg-kumo-recessed flex items-center justify-center p-4">
 				<div className={card}>
-					<h1 className="text-xl font-bold text-kumo-default">This link is not valid any more</h1>
+					<h1 className="text-xl font-bold text-kumo-default">
+						{t("This link is not valid any more")}
+					</h1>
 					<p className="text-sm text-kumo-subtle">
-						An invitation works once and for a limited time. Ask the person who invited you for a
-						new one.
+						{t(
+							"An invitation works once and for a limited time. Ask the person who invited you for a new one.",
+						)}
 					</p>
 					<Link to="/sign-in" className="text-sm underline text-kumo-default">
-						Go to sign in
+						{t("Go to sign in")}
 					</Link>
 				</div>
 			</div>
@@ -64,14 +71,16 @@ export default function AcceptRoute() {
 		<div className="min-h-screen bg-kumo-recessed flex items-center justify-center p-4">
 			<form onSubmit={submit} className={card}>
 				<div>
-					<h1 className="text-xl font-bold text-kumo-default">Join Podbay</h1>
+					<h1 className="text-xl font-bold text-kumo-default">{t("Join Podbay")}</h1>
 					<p className="text-sm text-kumo-subtle mt-1">
-						You were invited as <strong className="text-kumo-default">{invitation.email}</strong>.
+						{rich("You were invited as {email}.", {
+							email: <strong className="text-kumo-default">{invitation.email}</strong>,
+						})}
 					</p>
 				</div>
 				<div>
 					<Input
-						label="Your name"
+						label={t("Your name")}
 						className="w-full"
 						id="accept-name"
 						autoComplete="name"
@@ -82,7 +91,7 @@ export default function AcceptRoute() {
 				</div>
 				<div>
 					<Input
-						label="Password"
+						label={t("Password")}
 						className="w-full"
 						id="accept-password"
 						type="password"
@@ -93,7 +102,7 @@ export default function AcceptRoute() {
 						required
 					/>
 					<p className="text-xs text-kumo-subtle mt-1">
-						At least {MIN_PASSWORD_LENGTH} characters.
+						{t("At least {count} characters.", { count: MIN_PASSWORD_LENGTH })}
 					</p>
 				</div>
 				{error && (
@@ -102,7 +111,7 @@ export default function AcceptRoute() {
 					</p>
 				)}
 				<Button type="submit" variant="primary" loading={busy} className="w-full justify-center">
-					Create account
+					{t("Create account")}
 				</Button>
 			</form>
 		</div>

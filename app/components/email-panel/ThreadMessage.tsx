@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import EmailAttachmentList from "~/components/EmailAttachmentList";
 import MessageBody from "~/components/MessageBody";
+import { dateLanguage, t } from "~/i18n";
 import { formatDetailDate, stripHtml } from "~/lib/utils";
 import type { Email } from "~/types";
 import MessageHeader, { type MessageActions } from "./MessageHeader";
@@ -55,7 +56,7 @@ function Avatar({
 						: "bg-kumo-fill text-kumo-default"
 			}`}
 		>
-			{isDraft ? "D" : sender.charAt(0).toUpperCase()}
+			{isDraft ? t("Draft").charAt(0) : sender.charAt(0).toUpperCase()}
 		</div>
 	);
 }
@@ -79,7 +80,7 @@ export default function ThreadMessage({
 }: ThreadMessageProps) {
 	const isSelf = email.sender === mailboxEmail;
 	const containerClassName = `${!isLast ? "border-b border-kumo-line" : ""} ${isDraft ? "border-l-2 border-l-kumo-warning bg-kumo-warning/[0.02]" : ""} ${hiddenInPrint ? "print:hidden" : ""}`;
-	const senderLabel = isDraft ? "Draft reply" : isSelf ? "You" : email.sender;
+	const senderLabel = isDraft ? t("Draft reply") : isSelf ? t("You") : email.sender;
 
 	if (!isExpanded) {
 		return (
@@ -94,7 +95,7 @@ export default function ThreadMessage({
 						<div className="flex items-center justify-between">
 							<span className="text-sm font-medium text-kumo-default truncate">{senderLabel}</span>
 							<span className="text-xs text-kumo-subtle shrink-0">
-								{formatDetailDate(email.date)}
+								{formatDetailDate(email.date, dateLanguage())}
 							</span>
 						</div>
 						<p className="text-xs text-kumo-subtle truncate">
@@ -136,7 +137,7 @@ export default function ThreadMessage({
 								loading={isSending}
 								disabled={isSending}
 							>
-								{isSending ? "Sending..." : "Send"}
+								{isSending ? t("Sending...") : t("Send")}
 							</Button>
 						)}
 						{onEditDraft && (
@@ -147,7 +148,7 @@ export default function ThreadMessage({
 								onClick={onEditDraft}
 								disabled={isSending}
 							>
-								Edit
+								{t("Edit")}
 							</Button>
 						)}
 						{onDeleteDraft && (
@@ -158,7 +159,7 @@ export default function ThreadMessage({
 								onClick={onDeleteDraft}
 								disabled={isSending}
 							>
-								Discard
+								{t("Discard")}
 							</Button>
 						)}
 					</div>

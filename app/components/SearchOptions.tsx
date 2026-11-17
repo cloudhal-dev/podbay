@@ -3,6 +3,8 @@
 
 import { Input, LayerDialog } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useState } from "react";
+import { t } from "~/i18n";
+import { placeName } from "~/lib/places";
 import {
 	buildSearchQuery,
 	NO_SEARCH_OPTIONS,
@@ -55,30 +57,30 @@ export default function SearchOptions({
 	return (
 		<LayerDialog.Root open={open} onOpenChange={onOpenChange}>
 			<LayerDialog.Content verticalAlign="top">
-				<LayerDialog.Title>Search options</LayerDialog.Title>
+				<LayerDialog.Title>{t("Search options")}</LayerDialog.Title>
 				<LayerDialog.Body>
 					<form id="search-options" onSubmit={submit} className="space-y-3">
 						<Input
 							size="sm"
-							label="From"
+							label={t("From")}
 							value={options.from}
 							onChange={(event) => set({ from: event.target.value })}
 						/>
 						<Input
 							size="sm"
-							label="To"
+							label={t("To")}
 							value={options.to}
 							onChange={(event) => set({ to: event.target.value })}
 						/>
 						<Input
 							size="sm"
-							label="Subject"
+							label={t("Subject")}
 							value={options.subject}
 							onChange={(event) => set({ subject: event.target.value })}
 						/>
 						<Input
 							size="sm"
-							label="Has the words"
+							label={t("Has the words")}
 							value={options.words}
 							onChange={(event) => set({ words: event.target.value })}
 						/>
@@ -87,7 +89,7 @@ export default function SearchOptions({
 								htmlFor="search-label"
 								className="mb-1.5 block text-sm font-medium text-kumo-default"
 							>
-								Label
+								{t("Label")}
 							</label>
 							<select
 								id="search-label"
@@ -95,7 +97,7 @@ export default function SearchOptions({
 								value={options.label}
 								onChange={(event) => set({ label: event.target.value })}
 							>
-								<option value="">Any</option>
+								<option value="">{t("Any")}</option>
 								{/* A label the box names that no longer exists is still shown, so it is not lost silently */}
 								{options.label !== "" && !labels.some((l) => l.name === options.label) && (
 									<option value={options.label}>{options.label}</option>
@@ -113,7 +115,7 @@ export default function SearchOptions({
 									htmlFor="search-in"
 									className="mb-1.5 block text-sm font-medium text-kumo-default"
 								>
-									Search in
+									{t("Search in")}
 								</label>
 								<select
 									id="search-in"
@@ -121,10 +123,10 @@ export default function SearchOptions({
 									value={options.folder}
 									onChange={(event) => set({ folder: event.target.value })}
 								>
-									<option value="">All mail</option>
+									<option value="">{t("All mail")}</option>
 									{folders.map((folder) => (
 										<option key={folder.id} value={folder.id}>
-											{folder.name}
+											{placeName(folder.id)}
 										</option>
 									))}
 								</select>
@@ -134,7 +136,7 @@ export default function SearchOptions({
 									htmlFor="search-after"
 									className="mb-1.5 block text-sm font-medium text-kumo-default"
 								>
-									After
+									{t("After")}
 								</label>
 								<input
 									id="search-after"
@@ -149,7 +151,7 @@ export default function SearchOptions({
 									htmlFor="search-before"
 									className="mb-1.5 block text-sm font-medium text-kumo-default"
 								>
-									Before
+									{t("Before")}
 								</label>
 								<input
 									id="search-before"
@@ -168,7 +170,7 @@ export default function SearchOptions({
 									checked={options.hasAttachment}
 									onChange={(event) => set({ hasAttachment: event.target.checked })}
 								/>
-								Has an attachment
+								{t("Has an attachment")}
 							</label>
 							<label className="flex items-center gap-2 text-sm text-kumo-default">
 								<input
@@ -177,18 +179,18 @@ export default function SearchOptions({
 									checked={options.unreadOnly}
 									onChange={(event) => set({ unreadOnly: event.target.checked })}
 								/>
-								Unread only
+								{t("Unread only")}
 							</label>
 						</div>
 					</form>
 				</LayerDialog.Body>
-				<LayerDialog.Actions dismissLabel="Cancel">
+				<LayerDialog.Actions dismissLabel={t("Cancel")}>
 					<LayerDialog.Action
 						type="submit"
 						form="search-options"
 						disabled={buildSearchQuery(options) === ""}
 					>
-						Search
+						{t("Search")}
 					</LayerDialog.Action>
 				</LayerDialog.Actions>
 			</LayerDialog.Content>

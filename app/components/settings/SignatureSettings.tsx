@@ -4,6 +4,7 @@
 import { Button, useKumoToastManager } from "@cloudflare/kumo";
 import { useEffect, useState } from "react";
 import RichTextEditor from "~/components/RichTextEditor";
+import { t } from "~/i18n";
 import { htmlToPlainText } from "~/lib/utils";
 import { useUpdateMailbox } from "~/queries/mailboxes";
 import type { Mailbox } from "~/types";
@@ -32,17 +33,18 @@ export default function SignatureSettings({ mailbox }: { mailbox: Mailbox }) {
 					signature: { enabled, html, text: htmlToPlainText(html) },
 				},
 			});
-			toasts.add({ title: "Signature saved" });
+			toasts.add({ title: t("Signature saved") });
 		} catch {
-			toasts.add({ title: "The signature could not be saved", variant: "error" });
+			toasts.add({ title: t("The signature could not be saved"), variant: "error" });
 		}
 	}
 
 	return (
 		<div>
 			<p className="m-0 border-b border-kumo-line pb-4 text-xs text-kumo-subtle">
-				The signature belongs to the mailbox: everyone who writes from it gets the same one, and a
-				message already written keeps what it has.
+				{t(
+					"The signature belongs to the mailbox: everyone who writes from it gets the same one, and a message already written keeps what it has.",
+				)}
 			</p>
 			<fieldset disabled={!isOwner} className="m-0 space-y-4 border-0 p-0 pt-4">
 				<label className="flex cursor-pointer items-center gap-2 text-sm text-kumo-default">
@@ -52,17 +54,19 @@ export default function SignatureSettings({ mailbox }: { mailbox: Mailbox }) {
 						checked={enabled}
 						onChange={(event) => setEnabled(event.target.checked)}
 					/>
-					Add a signature to new messages
+					{t("Add a signature to new messages")}
 				</label>
 				<div className="h-64">
 					<RichTextEditor value={html} onChange={setHtml} focusOnLoad={false} />
 				</div>
 				{isOwner ? (
 					<Button variant="primary" size="sm" loading={updateMailbox.isPending} onClick={save}>
-						Save signature
+						{t("Save signature")}
 					</Button>
 				) : (
-					<p className="m-0 text-xs text-kumo-subtle">An owner of this mailbox can change it.</p>
+					<p className="m-0 text-xs text-kumo-subtle">
+						{t("An owner of this mailbox can change it.")}
+					</p>
 				)}
 			</fieldset>
 		</div>

@@ -29,6 +29,7 @@ import { Folders } from "shared/folders";
 import IconButton from "~/components/IconButton";
 import LabelMenu from "~/components/LabelMenu";
 import MoveMenu from "~/components/MoveMenu";
+import { t } from "~/i18n";
 import type { Email, Folder, Label } from "~/types";
 
 interface EmailPanelToolbarProps {
@@ -101,9 +102,13 @@ export default function EmailPanelToolbar({
 	return (
 		<div className="flex h-12 shrink-0 items-center gap-1 border-b border-kumo-line px-3 print:hidden">
 			{inPane ? (
-				<IconButton label="Close the conversation" icon={<XIcon size={18} />} onClick={onBack} />
+				<IconButton
+					label={t("Close the conversation")}
+					icon={<XIcon size={18} />}
+					onClick={onBack}
+				/>
 			) : (
-				<IconButton label="Back to list" icon={<ArrowLeftIcon size={18} />} onClick={onBack} />
+				<IconButton label={t("Back to list")} icon={<ArrowLeftIcon size={18} />} onClick={onBack} />
 			)}
 			<span className="w-2" aria-hidden="true" />
 
@@ -116,7 +121,7 @@ export default function EmailPanelToolbar({
 						onClick={onSendDraft}
 						loading={isSending}
 					>
-						{isSending ? "Sending" : "Send"}
+						{isSending ? t("Sending") : t("Send")}
 					</Button>
 					<Button
 						variant="secondary"
@@ -124,19 +129,19 @@ export default function EmailPanelToolbar({
 						icon={<PencilSimpleIcon size={16} />}
 						onClick={onEditDraft}
 					>
-						Edit
+						{t("Edit")}
 					</Button>
 				</>
 			) : (
 				<>
 					{folder !== Folders.ARCHIVE && (
-						<IconButton label="Archive" icon={<ArchiveIcon size={18} />} onClick={onArchive} />
+						<IconButton label={t("Archive")} icon={<ArchiveIcon size={18} />} onClick={onArchive} />
 					)}
 					{folder === Folders.SPAM ? (
-						<IconButton label="Not spam" icon={<TrayIcon size={18} />} onClick={onNotSpam} />
+						<IconButton label={t("Not spam")} icon={<TrayIcon size={18} />} onClick={onNotSpam} />
 					) : (
 						<IconButton
-							label="Report spam"
+							label={t("Report spam")}
 							icon={<WarningOctagonIcon size={18} />}
 							onClick={onSpam}
 						/>
@@ -144,14 +149,14 @@ export default function EmailPanelToolbar({
 				</>
 			)}
 			<IconButton
-				label={folder === Folders.TRASH ? "Delete forever" : "Delete"}
+				label={folder === Folders.TRASH ? t("Delete forever") : t("Delete")}
 				icon={<TrashIcon size={18} />}
 				onClick={onDelete}
 			/>
 			<span className="mx-1 h-5 w-px bg-kumo-line" aria-hidden="true" />
 			{!isDraftFolder && (
 				<IconButton
-					label="Mark as unread"
+					label={t("Mark as unread")}
 					icon={<EnvelopeSimpleIcon size={18} />}
 					onClick={onMarkUnread}
 				/>
@@ -164,7 +169,7 @@ export default function EmailPanelToolbar({
 			/>
 			{!isDraftFolder && <LabelMenu labels={labels} targets={[email]} onChange={onLabel} />}
 			<IconButton
-				label={email.starred ? "Unstar" : "Star"}
+				label={email.starred ? t("Unstar") : t("Star")}
 				icon={
 					<StarIcon
 						size={18}
@@ -179,13 +184,13 @@ export default function EmailPanelToolbar({
 				{showSteps && (
 					<>
 						<IconButton
-							label="Newer"
+							label={t("Newer")}
 							icon={<CaretLeftIcon size={16} />}
 							onClick={() => onNewer?.()}
 							disabled={!onNewer}
 						/>
 						<IconButton
-							label="Older"
+							label={t("Older")}
 							icon={<CaretRightIcon size={16} />}
 							onClick={() => onOlder?.()}
 							disabled={!onOlder}
@@ -200,8 +205,8 @@ export default function EmailPanelToolbar({
 								shape="square"
 								size="sm"
 								icon={<DotsThreeVerticalIcon size={18} weight="bold" />}
-								aria-label="More"
-								title="More"
+								aria-label={t("More")}
+								title={t("More")}
 							/>
 						}
 					/>
@@ -211,11 +216,11 @@ export default function EmailPanelToolbar({
 								icon={allExpanded ? ArrowsInLineVerticalIcon : ArrowsOutLineVerticalIcon}
 								onClick={onToggleAll}
 							>
-								{allExpanded ? "Collapse all" : "Expand all"}
+								{allExpanded ? t("Collapse all") : t("Expand all")}
 							</DropdownMenu.Item>
 						)}
 						<DropdownMenu.Item icon={PrinterIcon} onClick={onPrintAll}>
-							Print all
+							{t("Print all")}
 						</DropdownMenu.Item>
 						<DropdownMenu.LinkItem
 							icon={ArrowSquareOutIcon}
@@ -223,14 +228,14 @@ export default function EmailPanelToolbar({
 							target="_blank"
 							rel="noopener"
 						>
-							Open in a new tab
+							{t("Open in a new tab")}
 						</DropdownMenu.LinkItem>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item icon={MagnifyingGlassIcon} onClick={onFindFromSender}>
-							Find messages from this sender
+							{t("Find messages from this sender")}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item icon={CodeIcon} onClick={onViewSource}>
-							Show message headers
+							{t("Show message headers")}
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu>

@@ -17,6 +17,7 @@ import { check as imports } from "./checks/imports.ts";
 import { check as ledger } from "./checks/ledger.ts";
 import type { Check } from "./checks/lib.ts";
 import { check as licences } from "./checks/licences.ts";
+import { check as messages } from "./checks/messages.ts";
 import { check as names } from "./checks/names.ts";
 import { check as ratchets } from "./checks/ratchets.ts";
 import { check as secrets } from "./checks/secrets.ts";
@@ -34,6 +35,7 @@ const ALL: Check[] = [
 	imports,
 	html,
 	dialogs,
+	messages,
 	hosts,
 	headers,
 	compat,

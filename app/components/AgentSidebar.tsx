@@ -7,6 +7,7 @@ import { Loader } from "@cloudflare/kumo";
 import { PlugsIcon, RobotIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { errorFields, log } from "shared/log";
+import { t } from "~/i18n";
 import { useFeatures } from "~/queries/config";
 import MCPPanel from "./MCPPanel";
 
@@ -21,7 +22,7 @@ function LazyAgentPanel() {
 			})
 			.catch((err) => {
 				log.error("ui.agent_panel_failed", errorFields(err));
-				setLoadError("Failed to load agent panel");
+				setLoadError(t("Failed to load agent panel"));
 			});
 	}, []);
 
@@ -36,7 +37,7 @@ function LazyAgentPanel() {
 		return (
 			<div className="flex flex-col items-center justify-center h-full gap-2">
 				<Loader size="base" />
-				<span className="text-xs text-kumo-subtle">Loading agent...</span>
+				<span className="text-xs text-kumo-subtle">{t("Loading agent...")}</span>
 			</div>
 		);
 	}
@@ -69,7 +70,7 @@ export default function AgentSidebar() {
 						}`}
 					>
 						<RobotIcon size={14} weight={activeTab === "agent" ? "fill" : "regular"} />
-						Agent
+						{t("Agent")}
 					</button>
 				)}
 				{enabled.mcp && (

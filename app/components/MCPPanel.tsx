@@ -6,6 +6,7 @@
 import { PencilSimpleIcon, PlugsIcon, WrenchIcon } from "@phosphor-icons/react";
 import { useParams } from "@tanstack/react-router";
 import { MCP_TOOLS } from "shared/mcp-tools";
+import { t } from "~/i18n";
 import AccessKeys from "./AccessKeys";
 import CopyButton from "./CopyButton";
 
@@ -22,22 +23,24 @@ export default function MCPPanel() {
 							<PlugsIcon size={20} weight="duotone" className="text-kumo-brand" />
 						</div>
 						<div>
-							<h3 className="text-sm font-semibold text-kumo-default">Connect an AI client</h3>
+							<h3 className="text-sm font-semibold text-kumo-default">
+								{t("Connect an AI client")}
+							</h3>
 							<p className="text-xs text-kumo-subtle">Model Context Protocol</p>
 						</div>
 					</div>
 					<p className="text-xs text-kumo-subtle leading-relaxed">
-						An AI client can read the mailboxes you choose, organise them and prepare drafts. It can
-						never send: a person opens the draft here and sends it. Each client gets its own key,
-						and a key stops working the moment you revoke it or lose access to a mailbox.
+						{t(
+							"An AI client can read the mailboxes you choose, organise them and prepare drafts. It can never send: a person opens the draft here and sends it. Each client gets its own key, and a key stops working the moment you revoke it or lose access to a mailbox.",
+						)}
 					</p>
 				</div>
 
 				<div className="space-y-1.5">
-					<p className="text-xs font-medium text-kumo-strong">Server URL</p>
+					<p className="text-xs font-medium text-kumo-strong">{t("Server URL")}</p>
 					<div className="relative">
 						<div className="absolute right-1.5 top-1/2 -translate-y-1/2">
-							<CopyButton text={mcpUrl} label="Copy the server URL" />
+							<CopyButton text={mcpUrl} label={t("Copy the server URL")} />
 						</div>
 						<div className="bg-kumo-recessed text-kumo-default font-mono text-[11px] px-3 py-2.5 pr-10 rounded-lg border border-kumo-line break-all leading-relaxed">
 							{mcpUrl}
@@ -49,7 +52,7 @@ export default function MCPPanel() {
 
 				<div className="space-y-2">
 					<h4 className="text-xs uppercase tracking-wider font-semibold text-kumo-subtle">
-						What a client can do
+						{t("What a client can do")}
 					</h4>
 					<ul className="border border-kumo-line rounded-lg divide-y divide-kumo-line">
 						{MCP_TOOLS.map((tool) => (
@@ -65,8 +68,9 @@ export default function MCPPanel() {
 						))}
 					</ul>
 					<p className="text-[11px] text-kumo-subtle">
-						The marked actions need a key with "Read, organise, draft" and a mailbox you can write
-						in.
+						{t(
+							'The marked actions need a key with "Read, organise, draft" and a mailbox you can write in.',
+						)}
 					</p>
 				</div>
 			</div>

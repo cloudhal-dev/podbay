@@ -12,6 +12,7 @@
 import DOMPurify from "dompurify";
 import { formatQuotedDate } from "shared/dates";
 import { htmlToText } from "shared/html-text";
+import { quoteLanguage, t } from "../i18n";
 
 export {
 	formatDetailDate,
@@ -132,7 +133,7 @@ export function buildQuotedReplyBlock(
 	body: string,
 ): string {
 	if (!body) return "";
-	const formattedDate = formatComposeDate(dateStr);
+	const formattedDate = formatComposeDate(dateStr, quoteLanguage());
 
 	// HTML-escape sender to prevent <john@example.com> from disappearing as a tag
 	const escapedSender = escapeHtml(sender);
@@ -143,7 +144,7 @@ export function buildQuotedReplyBlock(
 	// execute. Convert to escaped plain text instead.
 	const bodyToQuote = escapeHtml(stripHtml(body)).replace(/\n/g, "<br>");
 
-	return `<br><blockquote style="border-left: 2px solid #ccc; margin: 0; padding-left: 1em; color: #666;">On ${formattedDate}, ${escapedSender} wrote:<br><br>${bodyToQuote}</blockquote>`;
+	return `<br><blockquote style="border-left: 2px solid #ccc; margin: 0; padding-left: 1em; color: #666;">${t("On {date}, {sender} wrote:", { date: formattedDate, sender: escapedSender })}<br><br>${bodyToQuote}</blockquote>`;
 }
 
 export function downloadFile(url: string, filename: string) {

@@ -7,6 +7,7 @@ import { LayerDialog } from "@cloudflare/kumo";
 import { FileIcon, ImageIcon, PaperclipIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { type AttachmentRisk, attachmentRisk, isShowableImage } from "shared/attachment-risk";
+import { plural, t } from "~/i18n";
 import { attachmentUrl, downloadAcknowledged } from "~/lib/attachments";
 import { inlineImages } from "~/lib/inline-images";
 import { formatBytes } from "~/lib/utils";
@@ -68,7 +69,7 @@ export default function EmailAttachmentList({
 			await downloadAcknowledged(mailboxId, emailId, asking.attachment);
 			setAsking(null);
 		} catch {
-			setError("The file could not be downloaded.");
+			setError(t("The file could not be downloaded."));
 		} finally {
 			setBusy(false);
 		}
@@ -80,7 +81,7 @@ export default function EmailAttachmentList({
 				<div className="flex items-center gap-2 mb-2">
 					<PaperclipIcon size={14} className="text-kumo-subtle" />
 					<span className="text-sm font-medium text-kumo-default">
-						{files.length} attachment{files.length !== 1 ? "s" : ""}
+						{plural(files.length, "{count} attachment", "{count} attachments")}
 					</span>
 				</div>
 			)}
@@ -103,7 +104,7 @@ export default function EmailAttachmentList({
 							>
 								<WarningIcon size={16} weight="fill" className="text-kumo-danger shrink-0" />
 								<Label attachment={attachment} />
-								<span className="sr-only">Can do harm when opened</span>
+								<span className="sr-only">{t("Can do harm when opened")}</span>
 							</button>
 						);
 					}
@@ -143,7 +144,7 @@ export default function EmailAttachmentList({
 				}}
 			>
 				<LayerDialog.Content size="sm">
-					<LayerDialog.Title>This file can do harm</LayerDialog.Title>
+					<LayerDialog.Title>{t("This file can do harm")}</LayerDialog.Title>
 					<LayerDialog.Body>
 						<div className="space-y-3">
 							<p className="text-sm font-medium text-kumo-default break-all">
@@ -151,8 +152,9 @@ export default function EmailAttachmentList({
 							</p>
 							<p className="text-sm text-kumo-strong">{asking?.risk.reason}</p>
 							<p className="text-sm text-kumo-subtle">
-								Download it only if you were expecting it from this sender. A familiar name on a
-								message is not proof of who sent it.
+								{t(
+									"Download it only if you were expecting it from this sender. A familiar name on a message is not proof of who sent it.",
+								)}
 							</p>
 							{error && (
 								<p role="alert" className="text-sm text-kumo-danger">
@@ -161,9 +163,9 @@ export default function EmailAttachmentList({
 							)}
 						</div>
 					</LayerDialog.Body>
-					<LayerDialog.Actions dismissLabel="Cancel">
+					<LayerDialog.Actions dismissLabel={t("Cancel")}>
 						<LayerDialog.Action variant="destructive" loading={busy} onClick={download}>
-							Download anyway
+							{t("Download anyway")}
 						</LayerDialog.Action>
 					</LayerDialog.Actions>
 				</LayerDialog.Content>

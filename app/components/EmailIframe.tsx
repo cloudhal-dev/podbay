@@ -7,6 +7,7 @@ import { Button } from "@cloudflare/kumo";
 import DOMPurify from "dompurify";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MAIL_FRAME_SANDBOX } from "shared/mail-frame";
+import { t } from "~/i18n";
 import { freshNonce, mailDocument, type Purifier, sanitizeMailHtml } from "~/lib/mail-html";
 
 interface EmailIframeProps {
@@ -78,9 +79,9 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 		<>
 			{sanitized.blockedRemote > 0 && (
 				<div className="flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-md bg-kumo-tint text-xs text-kumo-strong">
-					<span>Remote images are hidden to protect your privacy.</span>
+					<span>{t("Remote images are hidden to protect your privacy.")}</span>
 					<Button variant="secondary" size="sm" onClick={() => setAllowedFor(body)}>
-						Show images
+						{t("Show images")}
 					</Button>
 				</div>
 			)}
@@ -91,7 +92,7 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 				className="block w-full border-0"
 				style={autoSize ? { height: `${height}px` } : { height: "100%" }}
 				sandbox={MAIL_FRAME_SANDBOX}
-				title="Email content"
+				title={t("Email content")}
 			/>
 		</>
 	);

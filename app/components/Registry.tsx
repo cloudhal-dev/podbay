@@ -4,6 +4,7 @@
 import { Badge } from "@cloudflare/kumo";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { plural, t } from "~/i18n";
 import { queryKeys } from "~/queries/keys";
 import api from "~/services/api";
 
@@ -20,17 +21,18 @@ export default function Registry() {
 
 	return (
 		<section className="mt-8 rounded-xl border border-kumo-line bg-kumo-base p-5">
-			<h2 className="text-base font-semibold text-kumo-default">All mailboxes</h2>
+			<h2 className="text-base font-semibold text-kumo-default">{t("All mailboxes")}</h2>
 			<p className="text-sm text-kumo-subtle mt-1">
-				You manage who the members of every mailbox are. You read only the mailboxes you are a
-				member of.
+				{t(
+					"You manage who the members of every mailbox are. You read only the mailboxes you are a member of.",
+				)}
 			</p>
 			{isError ? (
 				<p role="alert" className="text-sm text-kumo-danger mt-3">
-					The mailboxes could not be loaded.
+					{t("The mailboxes could not be loaded.")}
 				</p>
 			) : mailboxes.length === 0 ? (
-				<p className="text-sm text-kumo-subtle mt-3">There are no mailboxes yet.</p>
+				<p className="text-sm text-kumo-subtle mt-3">{t("There are no mailboxes yet.")}</p>
 			) : (
 				<ul className="mt-4 rounded-lg border border-kumo-line divide-y divide-kumo-line">
 					{mailboxes.map((mailbox) => (
@@ -41,19 +43,20 @@ export default function Registry() {
 							<div className="min-w-0 flex-1">
 								<p className="truncate text-sm text-kumo-default">{mailbox.address}</p>
 								<p className="truncate text-xs text-kumo-subtle">
-									{mailbox.members} {mailbox.members === 1 ? "member" : "members"} · owned by{" "}
-									{mailbox.owners.join(", ") || "nobody"}
+									{plural(mailbox.members, "{count} member", "{count} members")}
+									{" · "}
+									{t("owned by {owners}", { owners: mailbox.owners.join(", ") || t("nobody") })}
 								</p>
 							</div>
 							<Badge variant={mailbox.role === null ? "outline" : "secondary"}>
-								{mailbox.role === null ? "Not a member" : "You are a member"}
+								{mailbox.role === null ? t("Not a member") : t("You are a member")}
 							</Badge>
 							<Link
 								to="/members/$mailboxId"
 								params={{ mailboxId: mailbox.address }}
 								className="text-sm underline text-kumo-default"
 							>
-								Members
+								{t("Members")}
 							</Link>
 						</li>
 					))}
