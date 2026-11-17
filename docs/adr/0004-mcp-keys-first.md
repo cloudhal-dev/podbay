@@ -1,7 +1,8 @@
 # ADR-0004: MCP clients use keys first; OAuth follows
 
-- Status: **Proposed** (the code is built this way; the order of the two steps awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead
 - Amends: [ADR-0001](0001-founding-decisions.md), where OAuth for MCP clients was part of phase A
 
 ## Context
