@@ -8,6 +8,7 @@ import { useMailboxes } from "~/queries/mailboxes";
 import { ApiError } from "~/services/api";
 import type { AccessKey, CreatedAccessKey } from "~/types";
 import CopyButton from "./CopyButton";
+import { useFreshProof } from "./FreshProof";
 
 const LIFETIMES = [
 	{ days: 30, label: "30 days" },
@@ -50,6 +51,7 @@ function NewKey({ created, onDone }: { created: CreatedAccessKey; onDone: () => 
 function CreateKey({ currentMailbox }: { currentMailbox: string | undefined }) {
 	const { data: mailboxes = [] } = useMailboxes();
 	const create = useCreateAccessKey();
+	const withFreshProof = useFreshProof();
 	const [name, setName] = useState("");
 	const [access, setAccess] = useState<"read" | "write">("read");
 	const [lifetime, setLifetime] = useState(90);
@@ -71,12 +73,14 @@ function CreateKey({ currentMailbox }: { currentMailbox: string | undefined }) {
 		setCreated(null);
 		try {
 			setCreated(
-				await create.mutateAsync({
-					name: name.trim(),
-					access,
-					mailboxes: selected,
-					...(lifetime > 0 ? { expiresInDays: lifetime } : {}),
-				}),
+				await withFreshProof(() =>
+					create.mutateAsync({
+						name: name.trim(),
+						access,
+						mailboxes: selected,
+						...(lifetime > 0 ? { expiresInDays: lifetime } : {}),
+					}),
+				),
 			);
 			setName("");
 		} catch (caught) {

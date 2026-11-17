@@ -98,9 +98,17 @@ account.post("/api/setup/owner", async (c) => {
 
 account.get("/api/v1/me", async (c) => {
 	const mailboxes = await mailboxesOf(c.env.DB, c.var.user.id);
+	const security = await c.env.DB.prepare(
+		`select (select coalesce("twoFactorEnabled", 0) from "user" where "id" = ?1) as "app",
+		        (select count(*) from "passkey" where "userId" = ?1) as "passkeys"`,
+	)
+		.bind(c.var.user.id)
+		.first<{ app: number; passkeys: number }>();
 	return c.json({
 		user: c.var.user,
 		role: c.var.instanceRole,
+		// How this person signs in, for their own security page. Nothing secret.
+		security: { authenticatorApp: security?.app === 1, passkeys: security?.passkeys ?? 0 },
 		mailboxes: mailboxes.map((m) => ({ address: m.address, name: m.displayName, role: m.role })),
 	});
 });

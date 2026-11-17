@@ -28,6 +28,7 @@
 	"dependencies": {
 		"@ai-sdk/provider": "4.0.38",
 		"@ai-sdk/react": "4.0.177",
+		"@better-auth/passkey": "1.7.23",
 		"@cloudflare/ai-chat": "0.12.2",
 		"@cloudflare/kumo": "2.18.1",
 		"@modelcontextprotocol/sdk": "1.32.2",
@@ -57,6 +58,7 @@
 		"react-dom": "19.3.1",
 		"react-markdown": "10.1.0",
 		"remark-gfm": "4.0.1",
+		"uqr": "0.1.3",
 		"zod": "4.6.7",
 		"zustand": "5.1.0"
 	},
@@ -81,6 +83,7 @@
 		"@cloudflare/ai-chat": "2026-11-17: 0.x, no stable release exists; the agent is optional and off by default",
 		"agents": "2026-11-17: 0.x, no stable release exists; the agent is optional and off by default",
 		"drizzle-orm": "2026-11-17: 0.x, no stable release exists",
+		"uqr": "2026-11-17: 0.x, no stable release exists; no dependencies; draws the authenticator QR code in the browser",
 		"@types/node": "2026-11-17: follows the lowest supported Node (24), not the newest"
 	}
 }

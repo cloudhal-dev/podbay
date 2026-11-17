@@ -88,6 +88,70 @@ export async function signIn(email: string, password = PASSWORD): Promise<string
 	return cookies.join("; ");
 }
 
+/**
+ * A browser, as far as cookies go: it keeps what a response sets and sends it back. Every
+ * browser has its own client address, so the per-address limits of the sign-in endpoints do not
+ * couple one test to another.
+ */
+export class Browser {
+	private static next = 0;
+	readonly jar = new Map<string, string>();
+	readonly address: string;
+
+	constructor() {
+		Browser.next += 1;
+		this.address = `203.0.113.${(Browser.next % 250) + 1}`;
+	}
+
+	get cookie(): string {
+		return [...this.jar].map(([name, value]) => `${name}=${value}`).join("; ");
+	}
+
+	/** Drop the cookies whose name contains `part` (for example the cached copy of the session). */
+	forget(part: string): void {
+		for (const name of [...this.jar.keys()]) if (name.includes(part)) this.jar.delete(name);
+	}
+
+	async fetch(path: string, init: RequestInit = {}): Promise<Response> {
+		const headers = new Headers(init.headers);
+		headers.set("cf-connecting-ip", this.address);
+		const res = await request(path, { ...init, headers, cookie: this.cookie || undefined });
+		for (const line of res.headers.getSetCookie()) {
+			const [pair = "", ...attributes] = line.split(";");
+			const at = pair.indexOf("=");
+			const name = pair.slice(0, at).trim();
+			const value = pair.slice(at + 1);
+			const gone = value === "" || attributes.some((a) => /^\s*max-age=0\s*$/i.test(a));
+			if (gone) this.jar.delete(name);
+			else this.jar.set(name, value);
+		}
+		return res;
+	}
+
+	post(path: string, body: unknown = {}): Promise<Response> {
+		return this.fetch(path, { method: "POST", body: JSON.stringify(body) });
+	}
+
+	/** Password sign-in. Returns the response: with a second step it holds no session yet. */
+	signIn(email: string, password = PASSWORD): Promise<Response> {
+		return this.post("/api/auth/sign-in/email", { email, password });
+	}
+
+	async me(): Promise<{ status: number; id?: string; email?: string }> {
+		const res = await this.fetch("/api/v1/me");
+		if (res.status !== 200) return { status: res.status };
+		const body = (await res.json()) as { user: { id: string; email: string } };
+		return { status: 200, id: body.user.id, email: body.user.email };
+	}
+}
+
+/** Make every session of a person look as if it was created `minutes` ago. */
+export async function ageSessions(userId: string, minutes: number): Promise<void> {
+	await testEnv.DB.prepare(`update "session" set "createdAt" = ?1 where "userId" = ?2`)
+		.bind(new Date(Date.now() - minutes * 60_000).toISOString(), userId)
+		.run();
+}
+
 export async function createMailbox(
 	cookie: string,
 	email: string,

@@ -10,6 +10,10 @@ import type { Action } from "./authorize";
  * missing here or an entry here matches no route. `public` routes need no session; they are the
  * sign-in endpoints, the health and setup status, the guarded first-owner call (which checks its
  * own token) and the two invitation calls (where the token in the path is the proof).
+ *
+ * `fresh` marks a sensitive change: the caller must have signed in within the last few minutes
+ * (workers/auth/fresh.ts). Better Auth's own sensitive endpoints are held to the same rule in
+ * workers/auth/options.ts.
  */
 export type RouteRight = Action | "public";
 
@@ -17,6 +21,7 @@ export interface RouteEntry {
 	readonly method: "GET" | "POST" | "PUT" | "DELETE" | "ALL";
 	readonly path: string;
 	readonly right: RouteRight;
+	readonly fresh?: true;
 }
 
 const M = "/api/v1/mailboxes/:mailboxId";
@@ -39,22 +44,22 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 
 	// The signed-in person's own keys for programs
 	{ method: "GET", path: "/api/v1/keys", right: "session" },
-	{ method: "POST", path: "/api/v1/keys", right: "session" },
+	{ method: "POST", path: "/api/v1/keys", right: "session", fresh: true },
 	{ method: "DELETE", path: "/api/v1/keys/:keyId", right: "session" },
 
 	// People: owners and administrators
 	{ method: "GET", path: "/api/v1/users", right: "instance.manage" },
 	{ method: "GET", path: "/api/v1/invitations", right: "instance.manage" },
-	{ method: "POST", path: "/api/v1/invitations", right: "instance.manage" },
+	{ method: "POST", path: "/api/v1/invitations", right: "instance.manage", fresh: true },
 	{ method: "DELETE", path: "/api/v1/invitations/:invitationId", right: "instance.manage" },
 
 	// One mailbox
 	{ method: "GET", path: M, right: "mailbox.read" },
 	{ method: "PUT", path: M, right: "mailbox.manage" },
-	{ method: "DELETE", path: M, right: "mailbox.manage" },
+	{ method: "DELETE", path: M, right: "mailbox.manage", fresh: true },
 	{ method: "GET", path: `${M}/members`, right: "mailbox.read" },
-	{ method: "PUT", path: `${M}/members/:userId`, right: "mailbox.manage" },
-	{ method: "DELETE", path: `${M}/members/:userId`, right: "mailbox.manage" },
+	{ method: "PUT", path: `${M}/members/:userId`, right: "mailbox.manage", fresh: true },
+	{ method: "DELETE", path: `${M}/members/:userId`, right: "mailbox.manage", fresh: true },
 
 	{ method: "GET", path: `${M}/emails`, right: "mailbox.read" },
 	{ method: "POST", path: `${M}/emails`, right: "mailbox.send" },
@@ -78,9 +83,15 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "GET", path: `${M}/search`, right: "mailbox.read" },
 ];
 
+/** The table entry of a matched route, or undefined when the route is not in the table. */
+export function entryFor(method: string, routePath: string): RouteEntry | undefined {
+	return (
+		ROUTE_TABLE.find((r) => r.method === method && r.path === routePath) ??
+		ROUTE_TABLE.find((r) => r.method === "ALL" && r.path === routePath)
+	);
+}
+
 /** The right a matched route needs, or undefined when the route is not in the table. */
 export function rightFor(method: string, routePath: string): RouteRight | undefined {
-	const exact = ROUTE_TABLE.find((r) => r.method === method && r.path === routePath);
-	if (exact) return exact.right;
-	return ROUTE_TABLE.find((r) => r.method === "ALL" && r.path === routePath)?.right;
+	return entryFor(method, routePath)?.right;
 }

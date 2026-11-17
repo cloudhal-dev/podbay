@@ -675,6 +675,17 @@
 			"evidence": "The Workers wrapper validates every present browser Origin. It rejects malformed, opaque, and non-HTTP Origins with `403`. Origin-less non-browser MCP clients remain valid.",
 			"code": ["workers/mcp/server.ts"],
 			"note": "The page says a custom domain with wildcard CORS must set `allowedHostnames` and `allowedOriginHostnames` itself; Podbay sets the Origin list on every request and sends no CORS headers."
+		},
+		{
+			"id": "runtime.headers.cf_connecting_ip",
+			"kind": "runtime",
+			"relies": "The sign-in rate limits count attempts per client address, read from `cf-connecting-ip`, which Cloudflare sets on the request to the Worker; a client cannot choose it the way it can prepend to `x-forwarded-for`.",
+			"source": "https://developers.cloudflare.com/fundamentals/reference/http-headers/",
+			"pageUpdated": "2026-11-15",
+			"verifiedAt": "2026-11-17",
+			"evidence": "When no Worker subrequest is triggered, `cf-connecting-ip` reflects the client's IP address and the `x-real-ip` header is stripped.",
+			"code": ["workers/auth/options.ts"],
+			"note": "The page also says that another Worker in front, on the same zone, can alter `x-real-ip` and with it this header. An instance placed behind such a Worker must trust it."
 		}
 	]
 }

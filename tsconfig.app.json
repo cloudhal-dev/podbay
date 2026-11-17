@@ -3,6 +3,9 @@
 	"compilerOptions": {
 		"composite": true,
 		"noEmit": true,
+		// The Better Auth configuration is also loaded by Node (scripts/auth-ddl.ts), which needs
+		// the extension on a relative import.
+		"allowImportingTsExtensions": true,
 		"tsBuildInfoFile": "./node_modules/.cache/tsconfig.app.tsbuildinfo",
 		"strict": true,
 		"skipLibCheck": true,

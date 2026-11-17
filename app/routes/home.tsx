@@ -8,6 +8,7 @@ import { EnvelopeIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useFreshProof } from "~/components/FreshProof";
 import InvitePerson from "~/components/InvitePerson";
 import { signOut, useMe } from "~/lib/session";
 import { queryKeys } from "~/queries/keys";
@@ -27,6 +28,7 @@ export default function HomeRoute() {
 	} = useMailboxes();
 	const createMailbox = useCreateMailbox();
 	const deleteMailbox = useDeleteMailbox();
+	const withFreshProof = useFreshProof();
 
 	const { data: configData } = useQuery({
 		queryKey: queryKeys.config,
@@ -114,7 +116,8 @@ export default function HomeRoute() {
 		if (!mailboxToDelete) return;
 		setIsDeleting(true);
 		try {
-			await deleteMailbox.mutateAsync(mailboxToDelete.id);
+			const id = mailboxToDelete.id;
+			await withFreshProof(() => deleteMailbox.mutateAsync(id));
 			toastManager.add({ title: "Mailbox deleted" });
 			setIsDeleteOpen(false);
 			setMailboxToDelete(null);
@@ -168,6 +171,10 @@ export default function HomeRoute() {
 							>
 								Sign out
 							</button>
+							{" · "}
+							<RouterLink to="/account/security" className="underline">
+								Sign-in and security
+							</RouterLink>
 						</p>
 					)}
 					{domains.length > 0 && (

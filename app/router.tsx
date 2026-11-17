@@ -20,6 +20,7 @@ import {
 } from "@tanstack/react-router";
 import { forwardRef, useEffect } from "react";
 import { errorFields, log } from "shared/log";
+import { FreshProofProvider } from "~/components/FreshProof";
 import { useMe } from "~/lib/session";
 import AcceptRoute from "~/routes/accept";
 import EmailListRoute from "~/routes/email-list";
@@ -27,6 +28,7 @@ import HomeRoute from "~/routes/home";
 import MailboxRoute from "~/routes/mailbox";
 import NotFoundRoute from "~/routes/not-found";
 import SearchResultsRoute from "~/routes/search-results";
+import SecurityRoute from "~/routes/security";
 import SettingsRoute from "~/routes/settings";
 import SetupRoute from "~/routes/setup";
 import SignInRoute from "~/routes/sign-in";
@@ -107,7 +109,9 @@ function RootLayout() {
 			<LinkProvider component={KumoLink}>
 				<TooltipProvider>
 					<Toasty>
-						<SessionGate />
+						<FreshProofProvider>
+							<SessionGate />
+						</FreshProofProvider>
 					</Toasty>
 				</TooltipProvider>
 			</LinkProvider>
@@ -171,6 +175,12 @@ const acceptRoute = createRoute({
 	component: AcceptRoute,
 });
 
+const securityRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/account/security",
+	component: SecurityRoute,
+});
+
 const mailboxRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/mailbox/$mailboxId",
@@ -215,6 +225,7 @@ const routeTree = rootRoute.addChildren([
 	signInRoute,
 	setupRoute,
 	acceptRoute,
+	securityRoute,
 	mailboxRoute.addChildren([mailboxIndexRoute, emailListRoute, settingsRoute, searchRoute]),
 ]);
 

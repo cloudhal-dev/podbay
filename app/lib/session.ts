@@ -11,6 +11,7 @@ import { ApiError } from "~/services/api";
 export interface Me {
 	user: { id: string; name: string; email: string };
 	role: "owner" | "admin" | "member";
+	security: { authenticatorApp: boolean; passkeys: number };
 	mailboxes: { address: string; name: string; role: "owner" | "sender" | "reader" }[];
 }
 

@@ -5,6 +5,7 @@ import { Button, Input } from "@cloudflare/kumo";
 import { type FormEvent, useState } from "react";
 import { type CreatedInvitation, invite } from "~/lib/session";
 import { ApiError } from "~/services/api";
+import { useFreshProof } from "./FreshProof";
 
 /**
  * Invite a person. The result is a link to pass on by any channel: Podbay does not have to be
@@ -16,6 +17,7 @@ export default function InvitePerson({ canInviteAdmin }: { canInviteAdmin: boole
 	const [created, setCreated] = useState<CreatedInvitation | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
+	const withFreshProof = useFreshProof();
 
 	async function submit(event: FormEvent) {
 		event.preventDefault();
@@ -23,7 +25,7 @@ export default function InvitePerson({ canInviteAdmin }: { canInviteAdmin: boole
 		setError(null);
 		setCreated(null);
 		try {
-			setCreated(await invite(email.trim(), role));
+			setCreated(await withFreshProof(() => invite(email.trim(), role)));
 			setEmail("");
 		} catch (caught) {
 			setError(

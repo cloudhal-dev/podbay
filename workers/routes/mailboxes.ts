@@ -4,6 +4,7 @@
 /** The mailbox registry: list, create, read, change settings, delete. The index is D1. */
 import { Hono } from "hono";
 import { z } from "zod";
+import { NOT_FRESH } from "../auth/fresh";
 import type { ApiContext } from "../auth/middleware";
 import {
 	createMailbox,
@@ -33,6 +34,16 @@ function view(mailbox: MailboxRow, role?: string) {
 		name: mailbox.displayName,
 		settings: mailbox.settings,
 		...(role ? { role } : {}),
+	};
+}
+
+/** The forwarding part of a mailbox's settings, in one shape whatever is stored. */
+function forwardingOf(settings: unknown): { enabled: boolean; email: string } {
+	const forwarding = (settings as { forwarding?: { enabled?: unknown; email?: unknown } } | null)
+		?.forwarding;
+	return {
+		enabled: forwarding?.enabled === true,
+		email: typeof forwarding?.email === "string" ? forwarding.email.trim().toLowerCase() : "",
 	};
 }
 
@@ -103,6 +114,13 @@ mailboxes.put("/api/v1/mailboxes/:mailboxId", async (c) => {
 		return c.json({ error: "Settings are too large" }, 400);
 	}
 	const mailbox = c.var.mailbox;
+	// Changing where a mailbox forwards its mail is how mail is quietly taken: it needs fresh
+	// proof. The other settings do not.
+	const before = forwardingOf(mailbox.settings);
+	const after = forwardingOf(parsed.data.settings);
+	if ((before.enabled !== after.enabled || before.email !== after.email) && !c.var.fresh) {
+		return c.json(NOT_FRESH, 403);
+	}
 	await updateMailboxSettings(
 		c.env.DB,
 		mailbox.id,
