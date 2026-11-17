@@ -121,13 +121,9 @@ test("new mail is announced by the device, only when asked for and with the send
 			text: "The body stays private.",
 		}),
 	);
-	// Refreshing the list makes the app look again, as waiting half a minute would.
-	await expect
-		.poll(async () => {
-			await page.getByRole("button", { name: "Refresh" }).click();
-			return notes();
-		})
-		.toEqual([["ada@sender.test", "Choices: announce me"]]);
+	// The mailbox says that mail arrived, and the app looks once (ADR-0013, decision 17):
+	// nobody refreshes anything and nobody waits half a minute.
+	await expect.poll(notes).toEqual([["ada@sender.test", "Choices: announce me"]]);
 });
 
 test("the keyboard takes back a move, and archives a conversation on the way to the next", async ({

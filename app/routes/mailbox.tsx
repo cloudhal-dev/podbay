@@ -12,6 +12,7 @@ import Header, { SEARCH_INPUT_ID } from "~/components/Header";
 import NewMailNotifier from "~/components/NewMailNotifier";
 import ShortcutHelp from "~/components/ShortcutHelp";
 import Sidebar from "~/components/Sidebar";
+import { useLive } from "~/hooks/useLive";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { t } from "~/i18n";
@@ -29,6 +30,8 @@ export default function MailboxRoute() {
 	const navigate = useNavigate();
 	// Prefetch mailbox data for child components
 	useMailbox(mailboxId);
+	// One connection for each tab, to the mailbox on screen: it says when something changed.
+	useLive(mailboxId);
 	const enabled = useFeatures();
 	const hasAssistant = enabled.agent || enabled.mcp;
 	const prevMailboxIdRef = useRef<string | undefined>(undefined);

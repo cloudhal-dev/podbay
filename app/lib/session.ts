@@ -7,6 +7,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import type { ChoicesAnswer, ChoicesChange } from "shared/choices";
+import { closeLive } from "~/lib/live";
 import { ApiError } from "~/services/api";
 
 export interface Me {
@@ -84,6 +85,9 @@ export function signIn(email: string, password: string): Promise<unknown> {
 }
 
 export function signOut(): Promise<unknown> {
+	// Nothing goes on listening for a person who left (ADR-0013, decision 13). The server does
+	// not rely on this: a connection is told nothing five minutes after it was allowed.
+	closeLive();
 	return call("/api/auth/sign-out", { method: "POST", body: "{}" });
 }
 

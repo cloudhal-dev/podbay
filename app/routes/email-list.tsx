@@ -21,6 +21,7 @@ import EmptyPlace from "~/components/EmptyPlace";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
 import { useDisplay } from "~/hooks/useDisplay";
+import { useAskEvery } from "~/hooks/useLive";
 import { useUIStore } from "~/hooks/useUIStore";
 import { m, t } from "~/i18n";
 import { placeName } from "~/lib/places";
@@ -117,8 +118,11 @@ export default function EmailListRoute() {
 		}),
 		[folder, page, pageSize, conversations, order],
 	);
+	// The mailbox says when something changed (ADR-0013); the list still asks by itself, every
+	// half minute while nothing is telling it and every five minutes while something is.
+	const askEvery = useAskEvery(mailboxId);
 	const { data: emailData, isFetching: isRefreshing } = useEmails(mailboxId, params, {
-		refetchInterval: 30_000,
+		refetchInterval: askEvery,
 	});
 	const { data: folders = [] } = useFolders(mailboxId);
 
