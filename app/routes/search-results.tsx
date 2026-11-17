@@ -5,7 +5,7 @@
 
 import { MagnifyingGlassIcon, StarIcon } from "@phosphor-icons/react";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
 import { useDisplay } from "~/hooks/useDisplay";

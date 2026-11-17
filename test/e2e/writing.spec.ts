@@ -17,7 +17,7 @@ test.beforeEach(async ({ page, app }) => {
 	await page.setViewportSize({ width: 1280, height: 800 });
 });
 
-test("files are attached to a message, held to what a message can carry, and sent with it", async ({
+test("files are attached to a message, kept by its draft, held to what a message can carry, and sent with it", async ({
 	page,
 	app,
 }) => {
@@ -49,6 +49,20 @@ test("files are attached to a message, held to what a message can carry, and sen
 	]);
 	await expect(compose.getByText(/Attached files can be 18 MB together/)).toBeVisible();
 	await expect(attached.getByRole("listitem")).toHaveCount(1);
+	// The file is stored once its size stands where the progress stood.
+	await expect(attached.getByRole("listitem")).toContainText("10 B");
+
+	// The draft keeps the file: the window is closed, and the draft opened again has it.
+	await compose.getByRole("button", { name: "Save and close" }).click();
+	await expect(compose).toHaveCount(0);
+	await page
+		.getByRole("navigation", { name: "Folders" })
+		.getByRole("link", { name: /Drafts/ })
+		.click();
+	await row(page, "Behaviour: with a file").click();
+	await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+	await expect(attached.getByRole("listitem")).toHaveCount(1);
+	await expect(attached).toContainText("report.txt");
 
 	await compose.getByRole("button", { name: "Send", exact: true }).click();
 	await expect(page.getByText("Message sent")).toBeVisible();
@@ -61,6 +75,12 @@ test("files are attached to a message, held to what a message can carry, and sen
 	await row(page, "Behaviour: with a file").click();
 	await expect(page.getByText("report.txt")).toBeVisible();
 	await expect(page.getByText("notes.txt")).toHaveCount(0);
+	// The draft became the sent message: nothing of it is left in Drafts.
+	await page
+		.getByRole("navigation", { name: "Folders" })
+		.getByRole("link", { name: /Drafts/ })
+		.click();
+	await expect(row(page, "Behaviour: with a file")).toHaveCount(0);
 });
 
 test("an address is completed from the mail this mailbox has already exchanged", async ({
@@ -141,7 +161,7 @@ test("an answer is written under its conversation, and moves to the window witho
 	await expect(compose).toHaveCount(0);
 });
 
-test("a forward carries the files of the message, and leaves behind what can do harm", async ({
+test("a forward carries the files of the message, and what can do harm only when the person says so", async ({
 	page,
 	app,
 }) => {
@@ -153,6 +173,7 @@ test("a forward carries the files of the message, and leaves behind what can do 
 			parts: [
 				{ filename: "notes.txt", type: "text/plain", content: "some notes" },
 				{ filename: "setup.exe", type: "application/octet-stream", content: "MZ not a program" },
+				{ filename: "macro.docm", type: "application/octet-stream", content: "PK not a document" },
 			],
 		}),
 	);
@@ -165,7 +186,21 @@ test("a forward carries the files of the message, and leaves behind what can do 
 	const attached = compose.getByRole("list", { name: "Attached files" });
 	await expect(attached.getByRole("listitem")).toHaveCount(1);
 	await expect(attached).toContainText("notes.txt");
-	await expect(compose.getByRole("status")).toContainText("setup.exe (can do harm when opened)");
+	const left = compose.getByRole("list", { name: "Files that were not carried over" });
+	await expect(left.getByRole("listitem")).toHaveCount(2);
+	await expect(left).toContainText("setup.exe was not carried over: it can do harm when opened.");
+
+	// One of them is added after all, once the person was told what it is and agreed.
+	await left
+		.getByRole("listitem")
+		.filter({ hasText: "macro.docm" })
+		.getByRole("button", { name: "Add it anyway" })
+		.click();
+	const dialog = page.getByRole("alertdialog", { name: "Forward this file?" });
+	await expect(dialog).toContainText("macro.docm");
+	await dialog.getByRole("button", { name: "Add it anyway" }).click();
+	await expect(attached.getByRole("listitem")).toHaveCount(2);
+	await expect(left.getByRole("listitem")).toHaveCount(1);
 
 	await compose.getByRole("combobox", { name: "To" }).fill("someone@elsewhere.test");
 	await compose.getByRole("button", { name: "Send", exact: true }).click();
@@ -178,6 +213,7 @@ test("a forward carries the files of the message, and leaves behind what can do 
 		.click();
 	await row(page, "Fwd: Behaviour: forward my files").click();
 	await expect(page.getByText("notes.txt")).toBeVisible();
+	await expect(page.getByText("macro.docm")).toBeVisible();
 	await expect(page.getByText("setup.exe")).toHaveCount(0);
 });
 

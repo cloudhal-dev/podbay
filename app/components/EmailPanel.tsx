@@ -305,7 +305,10 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 			const originalEmail = target.in_reply_to
 				? allMessages.find((msg) => msg.id === target.in_reply_to)
 				: undefined;
+			// The message is sent from its draft: the draft's files are its files, and the draft's
+			// row becomes the sent message (ADR-0011), so nothing is left to delete.
 			const emailData = {
+				draft_id: target.id,
 				to: toEmailListValue(toRecipients),
 				cc: toEmailListValue(splitEmailList(target.cc)),
 				bcc: toEmailListValue(splitEmailList(target.bcc)),
@@ -317,7 +320,6 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 			if (originalEmail)
 				await replyMut.mutateAsync({ mailboxId, emailId: originalEmail.id, email: emailData });
 			else await sendEmailMut.mutateAsync({ mailboxId, email: emailData });
-			await deleteEmailMut.mutateAsync({ mailboxId, id: target.id });
 			toastManager.add({ title: t("Message sent") });
 			if (isDraftFolder) closePanel();
 		} catch (err) {

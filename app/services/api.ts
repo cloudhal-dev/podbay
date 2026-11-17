@@ -98,7 +98,62 @@ function del<T>(url: string) {
 	return request<T>(url, { method: "DELETE" });
 }
 
+/**
+ * Sends the bytes of a declared file. Not `fetch`: a person waits for megabytes here, and only
+ * this way says how far it is.
+ */
+function uploadDraftFile(
+	mailboxId: string,
+	draftId: string,
+	fileId: string,
+	file: File,
+	onProgress: (part: number) => void,
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const upload = new XMLHttpRequest();
+		upload.open("PUT", `/api/v1/mailboxes/${mailboxId}/drafts/${draftId}/attachments/${fileId}`);
+		upload.setRequestHeader("Content-Type", "application/octet-stream");
+		upload.upload.onprogress = (event) => {
+			if (event.lengthComputable && event.total > 0) onProgress(event.loaded / event.total);
+		};
+		upload.onerror = () => reject(new ApiError(0, {}));
+		upload.onload = () => {
+			if (upload.status >= 200 && upload.status < 300) return resolve();
+			let body: Record<string, unknown> = {};
+			try {
+				body = JSON.parse(upload.responseText) as Record<string, unknown>;
+			} catch {
+				// An answer that is not JSON says nothing more than its status.
+			}
+			reject(new ApiError(upload.status, body));
+		};
+		upload.send(file);
+	});
+}
+
 // ---------- Typed response shapes ----------
+
+/** What a save of a draft carries. */
+export interface DraftToSave {
+	to?: string;
+	cc?: string;
+	bcc?: string;
+	subject?: string;
+	body: string;
+	in_reply_to?: string;
+	thread_id?: string;
+}
+
+/** A file of a draft, as the Worker shows it once it is declared or copied. */
+export interface DraftFileShown {
+	id: string;
+	filename: string;
+	type: string;
+	size: number;
+}
+
+/** Why a file of a forwarded message was not copied into the draft. */
+export type DraftFileLeft = "risk" | "size" | "count" | "missing";
 
 interface EmailListResponse {
 	emails: Email[];
@@ -188,19 +243,31 @@ const api = {
 		get<Blob>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/attachments/${attachmentId}`, {
 			responseType: "blob",
 		}),
-	saveDraft: (
+	/** Makes a draft, or with `id` saves over the draft that has it (ADR-0011). */
+	saveDraft: (mailboxId: string, draft: DraftToSave, id?: string) =>
+		id === undefined
+			? post<{ id: string }>(`/api/v1/mailboxes/${mailboxId}/drafts`, draft)
+			: put<{ id: string }>(`/api/v1/mailboxes/${mailboxId}/drafts/${id}`, draft),
+	/** Declares a file of a draft; its bytes follow with `uploadDraftFile`. */
+	declareDraftFile: (mailboxId: string, draftId: string, file: File) =>
+		post<DraftFileShown>(`/api/v1/mailboxes/${mailboxId}/drafts/${draftId}/attachments`, {
+			filename: file.name,
+			type: file.type || "application/octet-stream",
+			size: file.size,
+		}),
+	uploadDraftFile,
+	removeDraftFile: (mailboxId: string, draftId: string, fileId: string) =>
+		del<void>(`/api/v1/mailboxes/${mailboxId}/drafts/${draftId}/attachments/${fileId}`),
+	/** Copies files of another message of the mailbox into a draft, inside the account. */
+	copyDraftFiles: (
 		mailboxId: string,
-		draft: {
-			to?: string;
-			cc?: string;
-			bcc?: string;
-			subject?: string;
-			body: string;
-			in_reply_to?: string;
-			thread_id?: string;
-			draft_id?: string;
-		},
-	) => post<{ id: string }>(`/api/v1/mailboxes/${mailboxId}/drafts`, draft),
+		draftId: string,
+		body: { emailId: string; attachmentIds: string[]; acknowledged?: boolean },
+	) =>
+		post<{ copied: DraftFileShown[]; left: { id: string; reason: DraftFileLeft }[] }>(
+			`/api/v1/mailboxes/${mailboxId}/drafts/${draftId}/attachments/copy`,
+			body,
+		),
 	replyToEmail: (mailboxId: string, emailId: string, email: unknown) =>
 		post<void>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/reply`, email),
 	forwardEmail: (mailboxId: string, emailId: string, email: unknown) =>

@@ -4,7 +4,7 @@
 // Modified by the Podbay contributors.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import api from "~/services/api";
+import api, { type DraftToSave } from "~/services/api";
 import type { Email } from "~/types";
 import { queryKeys } from "./keys";
 
@@ -218,22 +218,16 @@ export function useMoveEmail() {
 export function useSaveDraft() {
 	const invalidate = useInvalidateEmailData();
 	return useMutation({
+		/** With `id` the draft that has it is saved over; without, a draft is made. */
 		mutationFn: ({
 			mailboxId,
 			draft,
+			id,
 		}: {
 			mailboxId: string;
-			draft: {
-				to?: string;
-				cc?: string;
-				bcc?: string;
-				subject?: string;
-				body: string;
-				in_reply_to?: string;
-				thread_id?: string;
-				draft_id?: string;
-			};
-		}) => api.saveDraft(mailboxId, draft),
+			draft: DraftToSave;
+			id?: string;
+		}) => api.saveDraft(mailboxId, draft, id),
 		onSuccess: (_data, { mailboxId }) => invalidate(mailboxId),
 	});
 }

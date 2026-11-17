@@ -8,10 +8,19 @@ import { FileIcon, FloppyDiskIcon, PaperclipIcon, TrashIcon, XIcon } from "@phos
 import { type DragEvent, type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
 import type { ComposeForm } from "~/hooks/useComposeForm";
 import { useDisplay } from "~/hooks/useDisplay";
-import { t } from "~/i18n";
+import { m, t } from "~/i18n";
 import { formatBytes } from "~/lib/utils";
 import AddressField from "./AddressField";
+import { useConfirm } from "./Confirm";
 import RichTextEditor from "./RichTextEditor";
+
+/** Why a file of a forwarded message was not carried into the draft. */
+const LEFT_BEHIND = {
+	risk: m("{name} was not carried over: it can do harm when opened."),
+	size: m("{name} was not carried over: it is too large to send with the rest."),
+	count: m("{name} was not carried over: a message carries no more files."),
+	missing: m("{name} could not be carried over."),
+} as const;
 
 const FIELD =
 	"min-w-0 flex-1 border-0 bg-transparent py-2 text-sm text-kumo-default outline-none placeholder:text-kumo-subtle";
@@ -35,6 +44,7 @@ function Line({ label, id, children }: { label: string; id: string; children: Re
 export default function ComposePanel({ form }: { form: ComposeForm }) {
 	const toField = useRef<HTMLInputElement>(null);
 	const filePicker = useRef<HTMLInputElement>(null);
+	const confirm = useConfirm();
 
 	/** Files dropped anywhere on the message are attached to it. */
 	function onDrop(event: DragEvent<HTMLFormElement>) {
@@ -138,27 +148,55 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 			</div>
 
 			{form.leftBehind.length > 0 && (
-				<p
-					role="status"
-					className="m-0 shrink-0 border-t border-kumo-line px-3 pt-2 text-xs text-kumo-warning"
+				<ul
+					aria-label={t("Files that were not carried over")}
+					className="m-0 shrink-0 list-none space-y-0.5 border-t border-kumo-line px-3 pt-2 text-xs text-kumo-warning"
 				>
-					{t("Not forwarded: {files}.", { files: form.leftBehind.join(", ") })}
-				</p>
+					{form.leftBehind.map((left) => (
+						<li key={left.id} className="flex flex-wrap items-center gap-x-2">
+							<span>{t(LEFT_BEHIND[left.reason], { name: left.name })}</span>
+							{left.reason === "risk" && (
+								<button
+									type="button"
+									onClick={async () => {
+										const sure = await confirm({
+											title: t("Forward this file?"),
+											body: t(
+												"{name} is a kind of file that can do harm when it is opened. Whoever gets your message gets it too.",
+												{ name: left.name },
+											),
+											action: t("Add it anyway"),
+											destructive: true,
+										});
+										if (sure) form.carryAnyway(left);
+									}}
+									className="cursor-pointer border-0 bg-transparent p-0 text-xs text-kumo-default underline"
+								>
+									{t("Add it anyway")}
+								</button>
+							)}
+						</li>
+					))}
+				</ul>
 			)}
 			{form.files.length > 0 && (
 				<div className="shrink-0 border-t border-kumo-line px-3 pt-2">
 					<ul aria-label={t("Attached files")} className="m-0 flex list-none flex-wrap gap-1.5 p-0">
-						{form.files.map((file, index) => (
+						{form.files.map((file) => (
 							<li
-								key={`${file.name}-${file.size}-${file.lastModified}`}
+								key={file.key}
 								className="flex max-w-full items-center gap-1.5 rounded-md border border-kumo-line bg-kumo-recessed py-1 pl-2 pr-1 text-xs text-kumo-default"
 							>
 								<FileIcon size={14} className="shrink-0 text-kumo-subtle" />
 								<span className="truncate">{file.name}</span>
-								<span className="shrink-0 text-kumo-subtle">{formatBytes(file.size)}</span>
+								<span className="shrink-0 text-kumo-subtle">
+									{file.uploading === null
+										? formatBytes(file.size)
+										: t("Attaching {percent}%", { percent: Math.round(file.uploading * 100) })}
+								</span>
 								<button
 									type="button"
-									onClick={() => form.removeFile(index)}
+									onClick={() => form.removeFile(file)}
 									aria-label={t("Remove {name}", { name: file.name })}
 									className="shrink-0 cursor-pointer rounded border-0 bg-transparent p-0.5 text-kumo-subtle hover:bg-kumo-fill hover:text-kumo-default"
 								>
@@ -167,9 +205,6 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 							</li>
 						))}
 					</ul>
-					<p className="m-0 mt-1 text-xs text-kumo-subtle">
-						{t("Files are sent with the message. A draft does not keep them.")}
-					</p>
 				</div>
 			)}
 

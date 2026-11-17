@@ -42,6 +42,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Add a signature to new messages": "Yeni iletilere imza ekle",
 	"Add a star": "Yıldız ekle",
 	"Add at least one recipient.": "En az bir alıcı ekleyin.",
+	"Add it anyway": "Yine de ekle",
 	"Added {date}": "Eklendi: {date}",
 	Address: "Adres",
 	"Address prefix": "Adres ön eki",
@@ -63,6 +64,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Already set up": "Kurulum zaten yapılmış",
 	"An AI client can read the mailboxes you choose, organise them and prepare drafts. It can never send: a person opens the draft here and sends it. Each client gets its own key, and a key stops working the moment you revoke it or lose access to a mailbox.":
 		"Bir yapay zekâ istemcisi seçtiğiniz posta kutularını okuyabilir, düzenleyebilir ve taslak hazırlayabilir. Hiçbir zaman gönderemez: taslağı bir kişi burada açar ve gönderir. Her istemcinin kendi anahtarı olur; anahtarı iptal ettiğiniz ya da posta kutusuna erişiminizi yitirdiğiniz anda anahtar çalışmaz.",
+	"An empty file cannot be attached.": "Boş bir dosya eklenemez.",
 	"An invitation works once and for a limited time. Ask the person who invited you for a new one.":
 		"Davet bir kez ve sınırlı bir süre çalışır. Sizi davet eden kişiden yenisini isteyin.",
 	"An owner of this mailbox can change it.": "Bunu bu posta kutusunun bir sahibi değiştirebilir.",
@@ -87,6 +89,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Attached files": "Ekli dosyalar",
 	"Attached files can be {limit} MB together. These would be {size} MB.":
 		"Ekli dosyalar toplamda en çok {limit} MB olabilir. Bunlarla {size} MB olurdu.",
+	"Attaching {percent}%": "Ekleniyor: %{percent}",
 	"Authenticator app": "Kimlik doğrulama uygulaması",
 	"Back to list": "Listeye dön",
 	"Back to sign in": "Oturum açmaya dön",
@@ -236,8 +239,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Failed to save draft.": "Taslak kaydedilemedi.",
 	"Failed to send email.": "E-posta gönderilemedi.",
 	"Fetching emails": "E-postalar getiriliyor",
-	"Files are sent with the message. A draft does not keep them.":
-		"Dosyalar iletiyle birlikte gönderilir. Taslak onları saklamaz.",
+	"Files that were not carried over": "Aktarılmayan dosyalar",
 	"Files to attach": "Eklenecek dosyalar",
 	"Find messages from this sender": "Bu gönderenin iletilerini bul",
 	Folders: "Klasörler",
@@ -249,6 +251,7 @@ export const tr: Readonly<Record<string, string>> = {
 		"{email} için. Bu işlem her yerde oturumunuzu kapatır; kimlik doğrulama uygulamanızı, geçiş anahtarlarınızı ve anahtarlarınızı kaldırır. Böylece hesabı yalnızca yeni parola açar.",
 	Formatting: "Biçimlendirme",
 	Forward: "İlet",
+	"Forward this file?": "Bu dosya iletilsin mi?",
 	"Forwarded message:": "İletilen ileti:",
 	From: "Kimden",
 	"From:": "Kimden:",
@@ -379,7 +382,6 @@ export const tr: Readonly<Record<string, string>> = {
 	"Not a member": "Üye değilsiniz",
 	"Not everything could be deleted. What was deleted stays deleted.":
 		"Her şey silinemedi. Silinenler silinmiş olarak kalır.",
-	"Not forwarded: {files}.": "İletilmedi: {files}.",
 	"Not spam": "Spam değil",
 	"Nothing has changed yet.": "Henüz bir değişiklik yok.",
 	"Nothing is starred": "Yıldızlı bir şey yok",
@@ -654,6 +656,7 @@ export const tr: Readonly<Record<string, string>> = {
 		"Bu kurulumun dışında bir adres kullanın; buradaki posta durursa size yine ulaşılabilsin.",
 	"Usual colour": "Olağan renk",
 	"Valid for": "Geçerlilik süresi",
+	"Wait until the files are attached.": "Dosyaların eklenmesi bitene kadar bekleyin.",
 	"What a client can do": "Bir istemcinin yapabildikleri",
 	"What the Reply button on a message does.": "Bir iletideki Yanıtla düğmesinin ne yaptığı.",
 	"Where a conversation opens when the screen has room.":
@@ -765,9 +768,15 @@ export const tr: Readonly<Record<string, string>> = {
 		"{holds}, içlerindeki tüm dosyalarla birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz.",
 	"{mailbox} and every message in it will be deleted. This cannot be undone.":
 		"{mailbox} ve içindeki tüm iletiler silinir. Bu işlem geri alınamaz.",
-	"{name} (can do harm when opened)": "{name} (açıldığında zarar verebilir)",
-	"{name} (could not be fetched)": "{name} (getirilemedi)",
-	"{name} (too large to send with the rest)":
-		"{name} (diğerleriyle birlikte gönderilemeyecek kadar büyük)",
 	"{name} ({count} unread)": "{name} ({count} okunmamış)",
+	"{name} could not be attached.": "{name} eklenemedi.",
+	"{name} could not be carried over.": "{name} aktarılamadı.",
+	"{name} is a kind of file that can do harm when it is opened. Whoever gets your message gets it too.":
+		"{name}, açıldığında zarar verebilecek türde bir dosya. İletinizi alan herkes onu da alır.",
+	"{name} was not carried over: a message carries no more files.":
+		"{name} aktarılmadı: bir ileti daha fazla dosya taşıyamaz.",
+	"{name} was not carried over: it can do harm when opened.":
+		"{name} aktarılmadı: açıldığında zarar verebilir.",
+	"{name} was not carried over: it is too large to send with the rest.":
+		"{name} aktarılmadı: diğerleriyle birlikte gönderilemeyecek kadar büyük.",
 };

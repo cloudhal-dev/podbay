@@ -5,9 +5,9 @@
 
 import { useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { attachmentRisk } from "shared/attachment-risk";
 import { Folders } from "shared/folders";
-import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "shared/sending-limits";
+import { MAX_RECIPIENTS } from "shared/sending-limits";
+import { type DraftFile, type LeftBehind, useDraftFiles } from "~/hooks/useDraftFiles";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { useUIStore } from "~/hooks/useUIStore";
 import { quoteLanguage, t } from "~/i18n";
@@ -30,8 +30,7 @@ import {
 	useSendEmail,
 } from "~/queries/emails";
 import { useMailbox } from "~/queries/mailboxes";
-import api from "~/services/api";
-import type { Attachment } from "~/types";
+import api, { ApiError } from "~/services/api";
 
 function appendUniqueAddress(
 	addresses: string[],
@@ -47,55 +46,6 @@ function appendUniqueAddress(
 
 	seen.add(normalized);
 	addresses.push(trimmed);
-}
-
-/**
- * The files of a message, fetched to travel with a forward of it. One that can do harm when
- * opened is not fetched: the reader would have to ask for it, and a forward must not pass it on
- * without that. Files beyond what a message can carry are left behind too.
- */
-async function carryFiles(
-	mailboxId: string,
-	emailId: string,
-	attachments: readonly Attachment[],
-): Promise<{ files: File[]; left: string[] }> {
-	const files: File[] = [];
-	const left: string[] = [];
-	let total = 0;
-	for (const attachment of attachments) {
-		// A picture shown inside the message is part of its text, not a file of it.
-		if (attachment.disposition === "inline") continue;
-		if (attachmentRisk(attachment) !== null) {
-			left.push(t("{name} (can do harm when opened)", { name: attachment.filename }));
-		} else if (total + attachment.size > MAX_ATTACHMENTS_BYTES) {
-			left.push(t("{name} (too large to send with the rest)", { name: attachment.filename }));
-		} else {
-			try {
-				const blob = await api.getAttachment(mailboxId, emailId, attachment.id);
-				files.push(new File([blob], attachment.filename, { type: attachment.mimetype }));
-				total += attachment.size;
-			} catch {
-				left.push(t("{name} (could not be fetched)", { name: attachment.filename }));
-			}
-		}
-	}
-	return { files, left };
-}
-
-/** A file as the send request carries it: its bytes as base64, and what it is. */
-async function asAttachment(file: File) {
-	const bytes = new Uint8Array(await file.arrayBuffer());
-	let binary = "";
-	// In pieces: one call with every byte as an argument overflows the stack on a large file.
-	for (let start = 0; start < bytes.length; start += 0x8000) {
-		binary += String.fromCharCode(...bytes.subarray(start, start + 0x8000));
-	}
-	return {
-		content: btoa(binary),
-		filename: file.name,
-		type: file.type || "application/octet-stream",
-		disposition: "attachment" as const,
-	};
 }
 
 /** How long after the last change what is written is saved by itself. */
@@ -250,10 +200,12 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const [isSending, setIsSending] = useState(false);
 	/** Whether the person wrote anything since the window opened or the draft was last saved. */
 	const [touched, setTouched] = useState(false);
-	/** The files to send with the message. They live in this window only: a draft does not keep them. */
-	const [files, setFiles] = useState<File[]>([]);
-	/** The draft this window saved, so saving again replaces it and sending or discarding removes it. */
+	/** The draft of this window: saving again saves over it, and sending makes it the sent message. */
 	const draftId = useRef<string | null>(null);
+	/** Gives the draft's id, saving one first when there is none yet. Set below, once saving exists. */
+	const ensureDraft = useRef<() => Promise<string | null>>(async () => null);
+	/** The files of the message. They are the draft's: uploaded once, kept in every browser. */
+	const draftFiles = useDraftFiles(mailboxId, () => ensureDraft.current(), setError);
 	/** A save that is on its way, so that sending or discarding waits for it. */
 	const pendingSave = useRef<Promise<boolean> | null>(null);
 	/** Counts what the person did, so a save does not call something saved that came after it. */
@@ -261,13 +213,12 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	/** When what is written was last saved by itself; shown as "Saved". */
 	const [savedAt, setSavedAt] = useState<number | null>(null);
 	const isComposing = useUIStore((state) => state.isComposing);
-	/** Files of a forwarded message that are not carried, each with the reason. */
-	const [leftBehind, setLeftBehind] = useState<string[]>([]);
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
 	const isDraftEdit = !!composeOptions.draftEmail;
 
 	const sigBlock = useMemo(() => getSignatureBlock(currentMailbox?.settings), [currentMailbox]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: a new message is the trigger; the files follow it
 	useEffect(() => {
 		if (lastInitializedOptionsRef.current === composeOptions) return;
 		lastInitializedOptionsRef.current = composeOptions;
@@ -278,29 +229,32 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			sigBlock,
 		);
 		setError(null);
-		draftId.current = null;
+		// A draft that is opened again keeps its id: it is saved over, not replaced (ADR-0011).
+		const editing = composeOptions.draftEmail;
+		draftId.current = editing?.id ?? null;
 		setSavedAt(null);
 		setTouched(false);
-		setFiles([]);
+		draftFiles.reset(editing?.attachments ?? []);
 		setTo(initialFields.to);
 		setCc(initialFields.cc);
 		setBcc(initialFields.bcc);
 		setShowCcBcc(initialFields.showCcBcc);
 		setSubject(initialFields.subject);
 		setBody(initialFields.body);
-		setLeftBehind([]);
 
-		// A forward carries the files of the message it forwards. They are fetched as the reader
-		// could download them, so one that can do harm when opened is left behind and named.
-		const original = composeOptions.originalEmail;
-		const carried = composeOptions.mode === "forward" ? (original?.attachments ?? []) : [];
-		if (mailboxId && original && carried.length > 0) {
-			void carryFiles(mailboxId, original.id, carried).then(({ files: fetched, left }) => {
-				// Only if this is still the message being written.
-				if (lastInitializedOptionsRef.current !== composeOptions) return;
-				setFiles(fetched);
-				setLeftBehind(left);
+		// A draft opened from a list comes without its files: they are asked for.
+		if (mailboxId && editing && editing.attachments === undefined) {
+			void api.getEmail(mailboxId, editing.id).then((whole) => {
+				if (lastInitializedOptionsRef.current === composeOptions) {
+					draftFiles.reset(whole.attachments ?? []);
+				}
 			});
+		}
+		// A forward carries the files of the message it forwards. They are copied inside the
+		// account; one that can do harm when opened is left behind and named.
+		const original = composeOptions.originalEmail;
+		if (composeOptions.mode === "forward" && original && !editing) {
+			void draftFiles.carry(original.id, original.attachments ?? []);
 		}
 	}, [composeOptions, currentMailbox?.email, sigBlock, mailboxId]);
 
@@ -318,24 +272,29 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			setError(null);
 		}
 		try {
-			const saved = await saveDraftMutation.mutateAsync({
-				mailboxId,
-				draft: {
-					to,
-					cc: cc || undefined,
-					bcc: bcc || undefined,
-					subject,
-					body,
-					in_reply_to:
-						composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to || undefined,
-					thread_id:
-						composeOptions.originalEmail?.thread_id ||
-						composeOptions.draftEmail?.thread_id ||
-						undefined,
-					draft_id: draftId.current || composeOptions.draftEmail?.id || undefined,
-				},
+			const draft = {
+				to,
+				cc: cc || undefined,
+				bcc: bcc || undefined,
+				subject,
+				body,
+				in_reply_to:
+					composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to || undefined,
+				thread_id:
+					composeOptions.originalEmail?.thread_id ||
+					composeOptions.draftEmail?.thread_id ||
+					undefined,
+			};
+			const save = (id: string | undefined) =>
+				saveDraftMutation.mutateAsync({ mailboxId, draft, id });
+			// A draft that is gone (sent or discarded elsewhere) is written again as a new one.
+			const saved = await save(draftId.current ?? undefined).catch((caught) => {
+				if (draftId.current === null || !(caught instanceof ApiError) || caught.status !== 404) {
+					throw caught;
+				}
+				return save(undefined);
 			});
-			if (saved?.id) draftId.current = saved.id;
+			draftId.current = saved.id;
 			// Only what was there when the save began is saved.
 			if (version.current === saving) setTouched(false);
 			setSavedAt(Date.now());
@@ -359,6 +318,11 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		return save;
 	};
 	const handleSaveDraft = () => saveOnce(false);
+	ensureDraft.current = async () => {
+		await pendingSave.current;
+		if (draftId.current === null) await saveOnce(true);
+		return draftId.current;
+	};
 
 	// What is written is saved by itself a moment after the person stops writing, so a closed
 	// tab or a lost connection costs a few words at most.
@@ -402,29 +366,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		setTouched(true);
 	};
 
-	/** Adds files, unless together they would be more than a message can carry. */
-	const addFiles = (added: Iterable<File>) => {
-		const next = [...files, ...added];
-		const total = next.reduce((sum, file) => sum + file.size, 0);
-		if (next.length > MAX_ATTACHMENTS) {
-			setError(t("A message carries {count} files at most.", { count: MAX_ATTACHMENTS }));
-			return;
-		}
-		if (total > MAX_ATTACHMENTS_BYTES) {
-			setError(
-				t("Attached files can be {limit} MB together. These would be {size} MB.", {
-					limit: Math.floor(MAX_ATTACHMENTS_BYTES / (1024 * 1024)),
-					size: Math.ceil(total / (1024 * 1024)),
-				}),
-			);
-			return;
-		}
-		setError(null);
-		setFiles(next);
-		touch();
-	};
-	const removeFile = (index: number) => setFiles(files.filter((_file, at) => at !== index));
-
 	/**
 	 * Sends the message. With `archive`, an answer also files the conversation it answers in
 	 * Archive once it is sent, and goes back to the list.
@@ -457,9 +398,15 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			fromName && fromName !== currentMailbox.email
 				? { email: currentMailbox.email, name: fromName }
 				: currentMailbox.email;
-		const attachments = await Promise.all(files.map(asAttachment));
+		if (draftFiles.uploading) {
+			setError(t("Wait until the files are attached."));
+			return;
+		}
+		// A draft saved a moment ago must be known before the message goes: the message is sent
+		// from its draft, whose files are its files and whose row becomes the sent message.
+		await pendingSave.current;
 		const emailData = {
-			...(attachments.length > 0 ? { attachments } : {}),
+			...(draftId.current ? { draft_id: draftId.current } : {}),
 			to: toEmailListValue(toRecipients),
 			cc: toEmailListValue(ccRecipients),
 			bcc: toEmailListValue(bccRecipients),
@@ -468,9 +415,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			html: body,
 			text: htmlToPlainText(body),
 		};
-		// A draft saved a moment ago must be known before the message goes, or it would be left.
-		await pendingSave.current;
-		const sentDraftId = draftId.current || composeOptions.draftEmail?.id;
 		const mode = composeOptions.mode;
 		const originalId = composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to;
 		setIsSending(true);
@@ -480,7 +424,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			else if (mode === "forward" && originalId)
 				await forwardMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
 			else await sendEmailMutation.mutateAsync({ mailboxId, email: emailData });
-			if (sentDraftId) deleteEmailMutation.mutate({ mailboxId, id: sentDraftId });
 			const answered = composeOptions.originalEmail;
 			if (archive && answered && answered.folder_id === Folders.INBOX) {
 				moveEmailMutation.mutate({ mailboxId, id: answered.id, folderId: Folders.ARCHIVE });
@@ -519,10 +462,17 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		handleSaveDraft,
 		handleSend,
 		knownAddresses,
-		files,
-		leftBehind,
-		addFiles,
-		removeFile,
+		files: draftFiles.files,
+		leftBehind: draftFiles.leftBehind,
+		uploading: draftFiles.uploading,
+		addFiles: (added: Iterable<File>) => void draftFiles.addFiles(added),
+		removeFile: (file: DraftFile) => void draftFiles.removeFile(file),
+		/** Carries a file that can do harm after all: the person said so. */
+		carryAnyway: (left: LeftBehind) => {
+			const original = composeOptions.originalEmail;
+			const file = original?.attachments?.find((one) => one.id === left.id);
+			if (original && file) void draftFiles.carry(original.id, [file], true);
+		},
 		saveAndClose,
 		discard,
 		touch,
