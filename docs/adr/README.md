@@ -14,3 +14,7 @@ Decisions are immutable once accepted. A later ADR supersedes an earlier one; th
 | [0008](0008-rules-for-incoming-mail.md) | A mailbox has rules for its incoming mail: blocked senders, filters, an automatic reply | Proposed, 2026-11-17 |
 | [0009](0009-emptying-trash-and-spam.md) | Trash and Spam can be emptied in one step | Proposed, 2026-11-17 |
 | [0010](0010-snooze-and-mute.md) | A conversation can be snoozed, and a conversation can be muted | Proposed, 2026-11-17 |
+| [0011](0011-drafts-keep-their-files.md) | A draft keeps its files | Proposed, 2026-11-17 |
+| [0012](0012-a-persons-choices-and-known-addresses.md) | A person's choices are kept with their account, and a mailbox remembers the addresses it has written to | Proposed, 2026-11-17 |
+| [0013](0013-the-mailbox-tells-the-open-app.md) | The mailbox tells the open app that something changed, and nothing more | Proposed, 2026-11-17 |
+| [0014](0014-acting-on-many-conversations.md) | One request acts on many conversations, and a list has an order a person chooses | Proposed, 2026-11-17 |
