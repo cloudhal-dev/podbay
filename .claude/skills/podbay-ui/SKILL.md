@@ -83,6 +83,9 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | The bar keeps the same order as the list's: Back; Archive, Report spam, Delete; Mark as unread, Move to, Star; a More menu at the right | `email-panel/EmailPanelToolbar.tsx` |
 | Filing a conversation away (archive, spam, delete, move, mark as unread) returns to the list | `away` in `EmailPanel.tsx` |
 | The subject is a large, plain heading; Reply, Reply all and Forward are buttons under the last message | `EmailPanelHeader.tsx`, `EmailPanel.tsx` |
+| A conversation is read **oldest first**. Its newest message and whatever is still unread are open, the rest are folded to one line each; the conversation's menu opens or folds all of them. A message deleted or reported from a conversation is no longer shown in it | `EmailPanel.tsx`, `ThreadMessage.tsx` |
+| **Each message has its own header and menu**: who wrote it, "to" with the full details one click away, a star, Reply, and a menu: reply, reply to all, forward, delete this message, mark as unread, report spam, find messages from this sender, print, show headers. They act on that message, not on the conversation | `email-panel/MessageHeader.tsx`; `messageActions` in `EmailPanel.tsx` |
+| **Print** prints one message or the whole conversation: on paper there is the mail and none of the app (`print:` classes on the frame, the rail, the bars and the compose window). The conversation's menu also opens it in a new tab | `EmailPanel.tsx`, `routes/mailbox.tsx`, `MailView.tsx` |
 | Newer and Older step to the conversation above or below in the list it was opened from (the page on screen), and read it as opening it from the list does | `useOpenConversation.ts`, `EmailPanel.tsx` |
 
 ### Writing
