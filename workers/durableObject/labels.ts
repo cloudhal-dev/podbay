@@ -32,8 +32,11 @@ interface Storage {
 	transactionSync: <T>(closure: () => T) => T;
 }
 
-/** Constants of the code, never input: a label's list and a conversation's labels skip these. */
-const HIDDEN = `('${Folders.SPAM}', '${Folders.TRASH}')`;
+/**
+ * Constants of the code, never input: a label's list and a conversation's labels skip these,
+ * and so does a search that names no place. What is in Spam or Trash is found by asking there.
+ */
+export const HIDDEN = `('${Folders.SPAM}', '${Folders.TRASH}')`;
 /** A query takes at most 100 bound parameters (docs/cloudflare/ledger.json). */
 const CHUNK = 90;
 

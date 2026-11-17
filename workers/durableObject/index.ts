@@ -598,7 +598,7 @@ export class MailboxDO extends DurableObject<Env> {
 			conditions.push(
 				`${prefix}folder_id = (SELECT id FROM folders WHERE name = ${p} OR id = ${p} LIMIT 1)`,
 			);
-		}
+		} else conditions.push(`${prefix}folder_id NOT IN ${labels.HIDDEN}`);
 		if (from) {
 			const p = addParam(`%${from}%`);
 			conditions.push(`${prefix}sender LIKE ${p}`);
