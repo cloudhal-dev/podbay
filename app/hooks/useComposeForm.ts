@@ -318,7 +318,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			setError(null);
 		}
 		try {
-			const saved = (await saveDraftMutation.mutateAsync({
+			const saved = await saveDraftMutation.mutateAsync({
 				mailboxId,
 				draft: {
 					to,
@@ -334,7 +334,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 						undefined,
 					draft_id: draftId.current || composeOptions.draftEmail?.id || undefined,
 				},
-			})) as { id?: string } | undefined;
+			});
 			if (saved?.id) draftId.current = saved.id;
 			// Only what was there when the save began is saved.
 			if (version.current === saving) setTouched(false);
