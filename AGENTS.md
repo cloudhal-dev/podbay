@@ -30,7 +30,7 @@ PODBAY_STATE_DIR=<dir> pnpm exec vite preview   # the built app with its real re
 node scripts/auth-ddl.ts --check   # the auth migrations still produce Better Auth's schema (--delta: what to add)
 pnpm format           # Biome formatting and safe fixes
 pnpm static [name]    # one static check: pins, copies, licences, names, secrets, account, imports, html,
-                      #   hosts, headers, compat, ledger, vendored, docs, ratchets
+                      #   dialogs, hosts, headers, compat, ledger, vendored, docs, guidance, ratchets
 node scripts/checks/headers.ts --write   # after changing shared/security-headers.ts
 node scripts/pins.ts --resolve [names]   # newest stable version that is at least 3 days old (network, read-only)
 pnpm pins:outdated                       # pins that are behind (network, read-only)

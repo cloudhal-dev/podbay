@@ -90,6 +90,7 @@ The trust boundaries S18 refers to: inbound mail bytes; mail HTML and attachment
 | **D13.** Budgets: UI bundle size, and CPU time of the `email` handler on the largest allowed message | Budget tests |
 | **D14.** Every user-visible feature has a docs page; links resolve | Docs link check |
 | **D15. Guidance is checked like code.** `AGENTS.md` is one page for people and coding agents. The method for each kind of work is a skill; a rule scoped to paths names the skill a file needs; subagents review and verify and never edit; the committed settings keep local secrets unread and ask before anything leaves the machine ([ADR-0006](adr/0006-guidance-for-engineers-and-agents.md)) | A static check: every skill and subagent is named in `AGENTS.md`, names match folders, a rule's paths still match files, a subagent names only skills that exist and no editing tool, the settings keep their refusals |
+| **D16. The app asks in its own voice.** A question, a warning or a form over the page is a Kumo `LayerDialog`; a confirmation goes through `useConfirm()`. The browser's own `confirm`, `alert` and `prompt` are not used: they block the page, cannot be read or styled, and look like a warning from the browser | A static check over `app/`; the browser tests fail on any browser dialog they did not expect |
 
 ## 4. End-to-end coverage: which rule guards which area
 
@@ -100,7 +101,7 @@ The trust boundaries S18 refers to: inbound mail bytes; mail HTML and attachment
 | Worker: outbound consumer and send adapter | S8, S9, S14, D7 |
 | Durable Objects and D1 | S2, S13, D3, D6 |
 | R2: raw messages, attachments, exports | S2, S5, S13 |
-| UI | S4, S5, S11, D8, D9, D13 |
+| UI | S4, S5, S11, D8, D9, D13, D16 |
 | Agent and MCP | S1, S9, D2, D7 |
 | Setup and operator surface | S10, S14 |
 | Scripts and tooling | S6, D5, D11 |

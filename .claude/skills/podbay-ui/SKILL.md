@@ -24,27 +24,67 @@ The app is a single-page app served as static assets. It shows strangers' mail i
 3. **The Worker decides; the app shows.** Hiding a button is a convenience, never a control. Every action must be safe when called directly.
 4. **A sensitive change goes through `useFreshProof()`** ([`app/components/FreshProof.tsx`](../../../app/components/FreshProof.tsx)): it runs the change, and when the Worker asks for fresh proof it shows the sign-in steps and runs the change once more. Do not build a second confirmation.
 5. **A secret is shown once and kept nowhere**: a key, a link, a recovery code lives in component state until dismissed. Never in storage, a URL, a query cache or a log.
-6. **Every control has a name.** Kumo's `Input` takes `label`; a native control gets a `<label htmlFor>` or `aria-label`; an icon button gets `aria-label`. Errors are `role="alert"`. Dialogs are Kumo's `Dialog`. Move focus by a ref to the form, not by element id (the field library sets ids after the first paint).
+6. **Every control has a name.** Kumo's `Input` takes `label`; a native control gets a `<label htmlFor>` or `aria-label`; an icon button gets `aria-label`. Errors are `role="alert"`. Move focus by a ref to the form, not by element id (the field library sets ids after the first paint).
 7. **Attachments are downloads.** Link to a plain one; a risky one goes through the warning in `EmailAttachmentList`. Only plain image kinds are previewed or embedded (`isShowableImage`).
 8. **No new lint warning.** The count in `ratchets.json` only goes down.
+9. **The app asks in its own voice** (D16, `pnpm static dialogs`). Anything over the page is Kumo's `LayerDialog`: `LayerDialog.Root` for a form or a view, `LayerDialog.Alert` when the person must choose. `Content` takes exactly one `Title` and one `Body`, and at most one `Description` and one `Actions` with one `Action`; a form lives in `Body` with an `id`, and the `Action` submits it with `form="<id>"`. A confirmation is `useConfirm()` ([`app/components/Confirm.tsx`](../../../app/components/Confirm.tsx)). Never the browser's `confirm`, `alert` or `prompt`, and never Kumo's older `Dialog`. A menu is Kumo's `DropdownMenu`, not a hand-built list.
 
 ## 3. How a mailbox behaves
 
-The mail screens follow what a person expects from a first-class web mail client. These are decisions; `test/e2e/mailbox.spec.ts` holds each one.
+The mail screens follow what a person expects from a first-class web mail client (the bar is the mail people know from Gmail and Google Workspace). The behaviour was studied on the live product and written down here in our own words; nothing of it is copied: no code, no text, no asset. These are decisions; `test/e2e/mailbox.spec.ts` holds each one.
+
+### The frame
 
 | Behaviour | How it is built |
 |---|---|
-| The frame: a top bar across the width with one wide search box, a rail on the left, the mail in one surface | `app/routes/mailbox.tsx`, `Header.tsx`, `Sidebar.tsx` |
+| A top bar across the width (64px) with one wide, rounded search box (48px); a rail on the left; the mail in one surface | `app/routes/mailbox.tsx`, `Header.tsx`, `Sidebar.tsx` |
 | The rail collapses to icons and stays that way; on a phone it slides over the list. Folder names stay as tooltips and accessible names | `isRailCollapsed` in `useUIStore`, remembered in this browser only |
 | One list **or** one conversation, never both. Opening a conversation is a navigation (`?open=<id>`), so Back returns to the list and a reload shows the conversation again | `MailView.tsx`: the address is the truth |
-| A conversation is one dense line: sender, subject and the start of the text, date. Unread is bold. The line under the pointer or the keyboard shows quick actions in place of the date | `MessageList.tsx`, shared by folders and search results |
-| Each line is one real button, with a checkbox and a star beside it. No clickable `div` | `MessageList.tsx` |
-| The toolbar acts on what is selected, or on the line the keyboard is on | `targets()` in `MessageList.tsx` |
-| **Delete means Trash.** Only inside Trash is a message deleted for good, and then it asks first | `remove` in `MessageList.tsx`, `handleDelete` in `EmailPanel.tsx` |
-| Writing floats: the compose window sits over whatever is being read, never closes it, minimises to its title and keeps what was written | `ComposeWindow.tsx` |
-| The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `e`, `#`, `s`, `g` then a letter, `?` | `useShortcuts`. Shortcuts never fire while typing, with a modifier held, or while a dialog is open |
 | Starred is a search (`is:starred`), not a folder | The rail links to the search screen |
 | Every screen has a heading, shown or not | `<h1 className="sr-only">` in `MessageList.tsx` |
+
+### The list
+
+| Behaviour | How it is built |
+|---|---|
+| A conversation is one dense line (40px): checkbox, star, sender, subject and the start of the text, date. Unread is bold. The line under the pointer lifts, and it or the line the keyboard is on shows quick actions in place of the date | `MessageList.tsx`, shared by folders and search results |
+| Each line is one real button, with a checkbox and a star beside it. No clickable `div` | `MessageList.tsx` |
+| The box above the list selects the page; the menu beside it selects by kind: All, None, Read, Unread, Starred, Unstarred | `MessageListToolbar.tsx` |
+| With nothing selected the bar refreshes, pages, and offers "Mark this page as read". With a selection it shows, in this order: Archive, Report spam (Not spam inside Spam), Delete; then Mark as read or unread (whichever applies), Move to | `MessageListToolbar.tsx` |
+| An action applies to what is selected, or to the line the keyboard is on | `targets()` in `MessageList.tsx` |
+
+### What an action does
+
+| Behaviour | How it is built |
+|---|---|
+| Every move (archive, spam, Trash, a folder) says what happened in a toast with **Undo**, which puts each conversation back where it was | `moveTo` in `app/hooks/useConversationActions.ts`, used by the list and the open conversation alike |
+| **Delete means Trash.** Only inside Trash is a message deleted for good, and then the app asks first in its own dialog | `remove` in `useConversationActions.ts` |
+| Mail cannot be moved into Sent or Drafts: only sending fills Sent, only writing makes a draft | `moveTargets` in `useConversationActions.ts` |
+
+### An open conversation
+
+| Behaviour | How it is built |
+|---|---|
+| The bar keeps the same order as the list's: Back; Archive, Report spam, Delete; Mark as unread, Move to, Star; a More menu at the right | `email-panel/EmailPanelToolbar.tsx` |
+| Filing a conversation away (archive, spam, delete, move, mark as unread) returns to the list | `away` in `EmailPanel.tsx` |
+| The subject is a large, plain heading; Reply, Reply all and Forward are buttons under the last message | `EmailPanelHeader.tsx`, `EmailPanel.tsx` |
+
+### Writing
+
+| Behaviour | How it is built |
+|---|---|
+| Writing floats: the compose window sits at the bottom right over whatever is being read and never closes it. Its title bar shows the subject once there is one, and minimises, enlarges or closes the window | `ComposeWindow.tsx` |
+| **Closing keeps what was written** as a draft; only Discard (the bin at the right of the bottom row) throws it away. One window keeps one draft however often it is saved | `saveAndClose`, `discard` in `useComposeForm.ts` |
+| Fields have no boxes: To (with Cc and Bcc on demand), Subject, the message. Send is first in the bottom row | `ComposePanel.tsx` |
+| A new message starts in To; a reply starts in the text, above what it answers. Ctrl or Cmd with Enter sends | `ComposePanel.tsx` |
+
+### The keyboard
+
+The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then `a` or `n`, `e`, `#`, `!`, `s`, `Shift+I` `Shift+U`, `r` `a` `f` in an open conversation, `g` then a letter, `?` (`useShortcuts`). Shortcuts never fire while typing, with a modifier held, or while a dialog or a menu is open.
+
+### Not built yet
+
+Labels, snooze, a reading pane beside the list, list density, importance markers, category tabs, a search-options panel, scheduled send, and a context menu on a line. Add one with its line above and its test.
 
 A new behaviour of this kind gets a line here and a test there, in the same change.
 
@@ -66,6 +106,10 @@ A new behaviour of this kind gets a line here and a test there, in the same chan
 | Copy to the clipboard | `app/components/CopyButton.tsx` |
 | The steps of signing in | `app/components/SignInSteps.tsx` (the sign-in page and the confirmation use the same steps) |
 | A list of conversations with selection, quick actions and paging | `app/components/MessageList.tsx` |
+| A confirmation before something that cannot be undone | `useConfirm()` from `app/components/Confirm.tsx` |
+| A dialog with a form | The "Create folder" dialog in `app/components/Sidebar.tsx` |
+| Something done to conversations (move, archive, spam, delete, read, star) | `useConversationActions` in `app/hooks/useConversationActions.ts`; it brings the toast and Undo |
+| A toolbar button that is only an icon | `app/components/IconButton.tsx` |
 | A keyboard shortcut | `useShortcuts` in `app/hooks/useShortcuts.ts`; add it to `SHORTCUT_HELP` so the `?` dialog lists it |
 
 ## 6. A new screen
