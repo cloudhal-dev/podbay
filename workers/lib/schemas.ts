@@ -12,6 +12,7 @@
  * Zod schemas: used across route handlers to eliminate duplication.
  */
 import { z } from "zod";
+import { base64Bytes, MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "../../shared/sending-limits";
 
 // ── TypeScript Interfaces ──────────────────────────────────────────
 
@@ -82,7 +83,21 @@ export const SendEmailRequestSchema = z
 	})
 	.refine((data) => data.html || data.text, {
 		message: "Either 'html' or 'text' must be provided",
-	});
+	})
+	.refine(
+		(data) => {
+			const count = (field: string | string[] | undefined) =>
+				field === undefined ? 0 : Array.isArray(field) ? field.length : 1;
+			return count(data.to) + count(data.cc) + count(data.bcc) <= MAX_RECIPIENTS;
+		},
+		{ message: `A message goes to at most ${MAX_RECIPIENTS} recipients` },
+	)
+	.refine(
+		(data) =>
+			(data.attachments ?? []).reduce((sum, file) => sum + base64Bytes(file.content), 0) <=
+			MAX_ATTACHMENTS_BYTES,
+		{ message: "The attached files are too large to send together" },
+	);
 
 export const SendEmailResponseSchema = z.object({
 	id: z.string(),

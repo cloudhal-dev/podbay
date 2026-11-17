@@ -503,6 +503,17 @@
 			"code": ["docs/architecture.md", "workers/index.ts"]
 		},
 		{
+			"id": "limit.email.outbound_size",
+			"kind": "limit",
+			"relies": "A message being sent is at most 25 MiB in all, attachments included, and goes to at most 50 recipients. The Worker refuses more before it stores or sends anything, and the app says so while the message is written.",
+			"source": "https://developers.cloudflare.com/email-service/platform/limits/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| **Total message size** | 25 MiB | Including attachments |",
+			"code": ["shared/sending-limits.ts", "workers/lib/schemas.ts"],
+			"note": "The same table: `| **Recipients (to, cc, bcc)** | 50 per email | Combined across all recipient fields |`."
+		},
+		{
 			"id": "limit.durable_objects.storage",
 			"kind": "limit",
 			"relies": "One Durable Object stores at most 10 GB, so raw messages and attachments live in R2.",
