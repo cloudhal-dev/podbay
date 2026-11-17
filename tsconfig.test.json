@@ -8,7 +8,11 @@
 		"scripts/**/*",
 		"worker-configuration.d.ts"
 	],
-	"exclude": ["test/workerd/vitest.config.ts", "test/workerd-agent/vitest.config.ts"],
+	"exclude": [
+		"test/workerd/vitest.config.ts",
+		"test/workerd-agent/vitest.config.ts",
+		"test/e2e/playwright.config.ts"
+	],
 	"compilerOptions": {
 		"composite": true,
 		"noEmit": true,

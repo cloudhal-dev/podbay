@@ -19,6 +19,9 @@ export default defineConfig({
 			// A second local instance with its own data, beside the one in `.wrangler/state`: set
 			// PODBAY_STATE_DIR to a directory. Used to try a build without touching local mail.
 			...(stateDir ? { persistState: { path: stateDir } } : {}),
+			// PODBAY_OFFLINE keeps every binding local: no connection to a Cloudflare account, so
+			// nothing can call a model. The browser tests run this way.
+			...(process.env.PODBAY_OFFLINE ? { remoteBindings: false } : {}),
 		}),
 	],
 	resolve: {

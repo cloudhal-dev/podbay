@@ -6,6 +6,7 @@
 import { Button } from "@cloudflare/kumo";
 import DOMPurify from "dompurify";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MAIL_FRAME_SANDBOX } from "shared/mail-frame";
 import { freshNonce, mailDocument, type Purifier, sanitizeMailHtml } from "~/lib/mail-html";
 
 interface EmailIframeProps {
@@ -89,7 +90,7 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 				srcDoc={frameDocument}
 				className="block w-full border-0"
 				style={autoSize ? { height: `${height}px` } : { height: "100%" }}
-				sandbox="allow-scripts allow-popups allow-top-navigation-by-user-activation"
+				sandbox={MAIL_FRAME_SANDBOX}
 				title="Email content"
 			/>
 		</>

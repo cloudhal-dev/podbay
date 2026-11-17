@@ -21,5 +21,19 @@ setTimeout(reportHeight, 150);
 setTimeout(reportHeight, 400);
 `;
 
+/**
+ * What the mail frame's sandbox allows, and with that everything it forbids:
+ *
+ * - `allow-scripts`: the sizing script. Scripts in the frame still have no origin: without
+ *   `allow-same-origin` the frame cannot read the app, its cookies or its storage.
+ * - `allow-popups`: a link opens in a new window.
+ * - `allow-popups-to-escape-sandbox`: that window is an ordinary one, so the site the reader
+ *   chose to visit works there; it gets no handle on the app (`noopener`).
+ *
+ * Not allowed: moving the app's own window (a message cannot replace Podbay with a look-alike),
+ * forms, downloads, dialogs, pointer lock and everything else.
+ */
+export const MAIL_FRAME_SANDBOX = "allow-scripts allow-popups allow-popups-to-escape-sandbox";
+
 /** `sha256-` and the base64 SHA-256 digest of `MAIL_FRAME_SCRIPT`, as a content policy names it. */
 export const MAIL_FRAME_SCRIPT_HASH = "sha256-TqViNdPjitTrwP0rHe9I4wm2ERtodCsHvLHB0da+hsc=";

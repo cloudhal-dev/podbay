@@ -11,6 +11,9 @@ build/
 !.dev.vars.example
 .vite/
 dist/
+.e2e/
+test-results/
+playwright-report/
 snapshot-*.txt
 .agents/
 opencode.jsonc

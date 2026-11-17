@@ -10,7 +10,11 @@ import {
 	MAX_INLINE_IMAGE_BYTES,
 } from "../../app/lib/inline-images.ts";
 import { freshNonce, mailContentPolicy, mailDocument } from "../../app/lib/mail-html.ts";
-import { MAIL_FRAME_SCRIPT, MAIL_FRAME_SCRIPT_HASH } from "../../shared/mail-frame.ts";
+import {
+	MAIL_FRAME_SANDBOX,
+	MAIL_FRAME_SCRIPT,
+	MAIL_FRAME_SCRIPT_HASH,
+} from "../../shared/mail-frame.ts";
 import {
 	API_CONTENT_POLICY,
 	PAGE_CONTENT_POLICY_DIRECTIVES as PAGE,
@@ -113,6 +117,13 @@ describe("the mail frame inside the page", () => {
 		expect(closed["img-src"]).toEqual(["data:"]);
 		expect(closed["form-action"]).toEqual(["'none'"]);
 		expect(closed["connect-src"]).toBeUndefined();
+	});
+});
+
+describe("the mail frame's sandbox", () => {
+	it("gives the frame no origin, no way to move the app, no forms and no downloads", () => {
+		const allowed = MAIL_FRAME_SANDBOX.split(" ").sort();
+		expect(allowed).toEqual(["allow-popups", "allow-popups-to-escape-sandbox", "allow-scripts"]);
 	});
 });
 

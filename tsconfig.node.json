@@ -5,7 +5,8 @@
 		"test/workerd/vitest.config.ts",
 		"scripts/**/*",
 		"shared/**/*",
-		"test/workerd-agent/vitest.config.ts"
+		"test/workerd-agent/vitest.config.ts",
+		"test/e2e/playwright.config.ts"
 	],
 	"compilerOptions": {
 		"composite": true,
