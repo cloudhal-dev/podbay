@@ -14,6 +14,7 @@ const DENSITY: [Density, string][] = [
 const PANE: [ReadingPane, string][] = [
 	["none", m("No split")],
 	["right", m("Right of the list")],
+	["below", m("Below the list")],
 ];
 
 /** How the mail screens are laid out: the height of a line, and where a conversation opens. */

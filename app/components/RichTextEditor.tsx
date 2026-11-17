@@ -3,32 +3,19 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Button, Input, LayerDialog, Tooltip } from "@cloudflare/kumo";
-import {
-	ArrowClockwiseIcon,
-	ArrowCounterClockwiseIcon,
-	LinkBreakIcon,
-	LinkSimpleIcon,
-	ListBulletsIcon,
-	ListNumbersIcon,
-	MinusIcon,
-	QuotesIcon,
-	TextBIcon,
-	TextItalicIcon,
-	TextStrikethroughIcon,
-	TextUnderlineIcon,
-} from "@phosphor-icons/react";
+import { Input, LayerDialog } from "@cloudflare/kumo";
 import { Color } from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TiptapImage from "@tiptap/extension-image";
 import LinkExtension from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
-import { TextStyle } from "@tiptap/extension-text-style";
+import { FontSize, TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { type FormEvent, useEffect, useState } from "react";
 import { t } from "~/i18n";
+import Toolbar from "./editor/Toolbar";
 
 interface RichTextEditorProps {
 	value: string;
@@ -50,6 +37,7 @@ export default function RichTextEditor({
 			LinkExtension.configure({ openOnClick: false }),
 			TiptapImage,
 			TextStyle,
+			FontSize,
 			Color,
 			Highlight.configure({ multicolor: true }),
 		],
@@ -98,146 +86,10 @@ export default function RichTextEditor({
 
 	return (
 		<div className="rounded-lg border border-kumo-line overflow-hidden flex flex-col h-full">
-			{/* Toolbar */}
-			<div className="flex flex-wrap items-center gap-0.5 bg-kumo-recessed px-2 py-1.5 border-b border-kumo-line shrink-0">
-				{/* Text formatting */}
-				<Tooltip content={t("Bold")} side="bottom" asChild>
-					<Button
-						variant={editor.isActive("bold") ? "secondary" : "ghost"}
-						shape="square"
-						size="sm"
-						icon={<TextBIcon size={16} />}
-						onClick={() => editor.chain().focus().toggleBold().run()}
-						aria-label={t("Bold")}
-					/>
-				</Tooltip>
-				<Tooltip content={t("Italic")} side="bottom" asChild>
-					<Button
-						variant={editor.isActive("italic") ? "secondary" : "ghost"}
-						shape="square"
-						size="sm"
-						icon={<TextItalicIcon size={16} />}
-						onClick={() => editor.chain().focus().toggleItalic().run()}
-						aria-label={t("Italic")}
-					/>
-				</Tooltip>
-				<Tooltip content={t("Underline")} side="bottom" asChild>
-					<Button
-						variant={editor.isActive("underline") ? "secondary" : "ghost"}
-						shape="square"
-						size="sm"
-						icon={<TextUnderlineIcon size={16} />}
-						onClick={() => editor.chain().focus().toggleUnderline().run()}
-						aria-label={t("Underline")}
-					/>
-				</Tooltip>
-				<Tooltip content={t("Strikethrough")} side="bottom" asChild>
-					<Button
-						variant={editor.isActive("strike") ? "secondary" : "ghost"}
-						shape="square"
-						size="sm"
-						icon={<TextStrikethroughIcon size={16} />}
-						onClick={() => editor.chain().focus().toggleStrike().run()}
-						aria-label={t("Strikethrough")}
-					/>
-				</Tooltip>
-
-				<div className="mx-1 h-5 w-px bg-kumo-fill" />
-
-				{/* Lists */}
-				<Tooltip content={t("Bullet list")} side="bottom" asChild>
-					<Button
-						variant={editor.isActive("bulletList") ? "secondary" : "ghost"}
-						shape="square"
-						size="sm"
-						icon={<ListBulletsIcon size={16} />}
-						onClick={() => editor.chain().focus().toggleBulletList().run()}
-						aria-label={t("Bullet list")}
-					/>
-				</Tooltip>
-				<Tooltip content={t("Numbered list")} side="bottom" asChild>
-					<Button
-						variant={editor.isActive("orderedList") ? "secondary" : "ghost"}
-						shape="square"
-						size="sm"
-						icon={<ListNumbersIcon size={16} />}
-						onClick={() => editor.chain().focus().toggleOrderedList().run()}
-						aria-label={t("Numbered list")}
-					/>
-				</Tooltip>
-
-				<div className="mx-1 h-5 w-px bg-kumo-fill" />
-
-				{/* Block formatting */}
-				<Tooltip content={t("Blockquote")} side="bottom" asChild>
-					<Button
-						variant={editor.isActive("blockquote") ? "secondary" : "ghost"}
-						shape="square"
-						size="sm"
-						icon={<QuotesIcon size={16} />}
-						onClick={() => editor.chain().focus().toggleBlockquote().run()}
-						aria-label={t("Blockquote")}
-					/>
-				</Tooltip>
-				<Tooltip content={t("Link")} side="bottom" asChild>
-					<Button
-						variant={editor.isActive("link") ? "secondary" : "ghost"}
-						shape="square"
-						size="sm"
-						icon={<LinkSimpleIcon size={16} />}
-						onClick={() => setLinkAddress(editor.getAttributes("link").href ?? "")}
-						aria-label={t("Link")}
-					/>
-				</Tooltip>
-				{editor.isActive("link") && (
-					<Tooltip content={t("Remove link")} side="bottom" asChild>
-						<Button
-							variant="ghost"
-							shape="square"
-							size="sm"
-							icon={<LinkBreakIcon size={16} />}
-							onClick={() => editor.chain().focus().unsetLink().run()}
-							aria-label={t("Remove link")}
-						/>
-					</Tooltip>
-				)}
-				<Tooltip content={t("Horizontal rule")} side="bottom" asChild>
-					<Button
-						variant="ghost"
-						shape="square"
-						size="sm"
-						icon={<MinusIcon size={16} />}
-						onClick={() => editor.chain().focus().setHorizontalRule().run()}
-						aria-label={t("Horizontal rule")}
-					/>
-				</Tooltip>
-
-				<div className="mx-1 h-5 w-px bg-kumo-fill" />
-
-				{/* Undo/Redo */}
-				<Tooltip content={t("Undo")} side="bottom" asChild>
-					<Button
-						variant="ghost"
-						shape="square"
-						size="sm"
-						icon={<ArrowCounterClockwiseIcon size={16} />}
-						onClick={() => editor.chain().focus().undo().run()}
-						disabled={!editor.can().undo()}
-						aria-label={t("Undo")}
-					/>
-				</Tooltip>
-				<Tooltip content={t("Redo")} side="bottom" asChild>
-					<Button
-						variant="ghost"
-						shape="square"
-						size="sm"
-						icon={<ArrowClockwiseIcon size={16} />}
-						onClick={() => editor.chain().focus().redo().run()}
-						disabled={!editor.can().redo()}
-						aria-label={t("Redo")}
-					/>
-				</Tooltip>
-			</div>
+			<Toolbar
+				editor={editor}
+				onLink={() => setLinkAddress(editor.getAttributes("link").href ?? "")}
+			/>
 
 			{/* Editor content */}
 			<div className="flex-1 overflow-y-auto">

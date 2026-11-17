@@ -15,8 +15,8 @@ import type { Email } from "~/types";
 
 /**
  * The main area of a mailbox. By default it is the list, or the conversation that was opened
- * from it, never both. When the reader chose the reading pane and the screen has room, the
- * conversation opens beside the list instead.
+ * from it, never both. When the reader chose a reading pane and the screen has room, the
+ * conversation opens beside the list or under it instead.
  *
  * Opening a conversation is a navigation (`?open=<id>`) either way, so the browser's Back
  * returns to the list and a conversation can be reloaded or bookmarked. The address is the
@@ -62,11 +62,19 @@ export default function MailView({
 
 	if (split) {
 		return (
-			<div className="flex h-full min-w-0 print:block print:h-auto">
-				<div className="@container flex w-[38%] min-w-[360px] max-w-[520px] shrink-0 flex-col border-r border-kumo-line print:hidden">
+			<div
+				className={`flex h-full min-w-0 print:block print:h-auto ${split === "below" ? "flex-col" : ""}`}
+			>
+				<div
+					className={`@container flex shrink-0 flex-col border-kumo-line print:hidden ${
+						split === "right"
+							? "w-[38%] min-w-[360px] max-w-[520px] border-r"
+							: "h-[38%] min-h-[180px] border-b"
+					}`}
+				>
 					{children}
 				</div>
-				<div className="flex min-w-0 flex-1 flex-col print:block">
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col print:block">
 					{open ? (
 						<EmailPanel emailId={open} inPane />
 					) : (

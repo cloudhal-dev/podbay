@@ -220,8 +220,9 @@ test("what is written is saved by itself, and sending or discarding leaves no dr
 	await page.getByRole("button", { name: "Refresh" }).click();
 	await expect(row(page, "Behaviour: saved by itself")).toHaveCount(0);
 
-	// So does discarding, also when a save was still on its way.
-	await page.getByRole("button", { name: "Compose" }).click();
+	// So does discarding, also when a save was still on its way. (An empty Drafts offers to
+	// write as well; the rail's button comes first.)
+	await page.getByRole("button", { name: "Compose" }).first().click();
 	await compose.getByLabel("Subject").fill("Behaviour: thrown away");
 	await expect(compose.getByText("Saved", { exact: true })).toBeVisible();
 	await compose.getByLabel("Subject").fill("Behaviour: thrown away, changed");
@@ -229,4 +230,69 @@ test("what is written is saved by itself, and sending or discarding leaves no dr
 	await page.waitForTimeout(3500);
 	await page.getByRole("button", { name: "Refresh" }).click();
 	await expect(row(page, "Behaviour: thrown away")).toHaveCount(0);
+});
+
+test("the formatting bar sizes, colours, aligns and indents, in plain markup, and takes it off again", async ({
+	page,
+	app,
+}) => {
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await page.getByRole("button", { name: "Compose" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	const bar = compose.getByRole("toolbar", { name: "Formatting" });
+	const text = compose.locator(".ProseMirror");
+	const choose = async (tool: string, choice: string) => {
+		await bar.getByRole("button", { name: tool, exact: true }).click();
+		await page.getByRole("menuitem", { name: choice, exact: true }).click();
+		// The cursor goes back into the text, so writing goes on where it was.
+		await expect(text).toBeFocused();
+	};
+	const press = async (tool: string) => {
+		await bar.getByRole("button", { name: tool, exact: true }).click();
+		await expect(text).toBeFocused();
+	};
+	await text.click();
+	await page.keyboard.type("Styled words");
+	await page.keyboard.press("ControlOrMeta+a");
+
+	// A choice from a menu acts on what was selected, and the window stays open.
+	await choose("Size", "Large");
+	await choose("Text colour", "Red");
+	await choose("Highlight", "Yellow");
+	await choose("Align", "Align centre");
+	const words = text.getByText("Styled words");
+	await expect(words).toHaveCSS("font-size", "18px");
+	await expect(words).toHaveCSS("color", "rgb(198, 40, 40)");
+	await expect(text.locator("p").first()).toHaveCSS("text-align", "center");
+	// What goes out is literal: a size in pixels and colours as numbers, nothing of the app's theme.
+	const markup = await text.innerHTML();
+	expect(markup).toContain("font-size: 18px");
+	expect(markup).toMatch(/color: (#c62828|rgb\(198, 40, 40\))/);
+	expect(markup).toMatch(/background-color: (#fff59d|rgb\(255, 245, 157\))/);
+	expect(markup).not.toContain("var(--");
+	await expect(compose).toBeVisible();
+
+	await page.keyboard.press("ControlOrMeta+a");
+	await press("Remove formatting");
+	await expect(text.locator("[style]")).toHaveCount(0);
+	await expect(text.locator("mark")).toHaveCount(0);
+	await expect(text).toContainText("Styled words");
+
+	// A list is indented a level and brought back.
+	await page.keyboard.press("End");
+	await page.keyboard.press("Enter");
+	await press("Bullet list");
+	await page.keyboard.type("one");
+	await page.keyboard.press("Enter");
+	await page.keyboard.type("two");
+	await expect(bar.getByRole("button", { name: "Indent more" })).toBeEnabled();
+	await press("Indent more");
+	await expect(text.locator("ul ul")).toHaveCount(1);
+	await press("Indent less");
+	await expect(text.locator("ul ul")).toHaveCount(0);
+
+	await expect(page.getByText("Message sent")).toHaveCount(0);
+	expect(app.watch.dialogs).toEqual([]);
+	expect(app.watch.errors).toEqual([]);
+	await compose.getByRole("button", { name: "Discard" }).click();
 });

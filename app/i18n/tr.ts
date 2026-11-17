@@ -48,6 +48,10 @@ export const tr: Readonly<Record<string, string>> = {
 	"After your password, Podbay asks for a six-digit code from an app on your phone. Recovery codes are the way back in if you lose the phone.":
 		"Podbay, parolanızdan sonra telefonunuzdaki bir uygulamanın ürettiği altı haneli kodu ister. Telefonu kaybederseniz geri dönüş yolunuz kurtarma kodlarıdır.",
 	Agent: "Asistan",
+	Align: "Hizala",
+	"Align centre": "Ortala",
+	"Align left": "Sola hizala",
+	"Align right": "Sağa hizala",
 	All: "Tümü",
 	"All mail": "Tüm postalar",
 	"All mailboxes": "Tüm posta kutuları",
@@ -85,6 +89,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Back to the list": "Listeye dön",
 	Bcc: "Gizli",
 	Before: "Şu tarihten önce",
+	"Below the list": "Listenin altında",
 	"Beside the list, on its right": "Listenin yanında, sağında",
 	Blockquote: "Alıntı",
 	Blue: "Mavi",
@@ -219,6 +224,7 @@ export const tr: Readonly<Record<string, string>> = {
 		"Bu kurulumu yapan kişi içindir. Kurulum anahtarını, yani dağıtımdaki {secret} adlı gizli değeri ister ve bir sahibin yeni parola seçmesini sağlayan tek kullanımlık bir bağlantı oluşturur.",
 	"For {email}. This signs you out everywhere and removes your authenticator app, passkeys and keys, so only the new password opens the account.":
 		"{email} için. Bu işlem her yerde oturumunuzu kapatır; kimlik doğrulama uygulamanızı, geçiş anahtarlarınızı ve anahtarlarınızı kaldırır. Böylece hesabı yalnızca yeni parola açar.",
+	Formatting: "Biçimlendirme",
 	Forward: "İlet",
 	"Forwarded message:": "İletilen ileti:",
 	From: "Kimden",
@@ -239,10 +245,12 @@ export const tr: Readonly<Record<string, string>> = {
 	"Hide agent panel": "Asistan panelini gizle",
 	"Hide details": "Ayrıntıları gizle",
 	"Hide it": "Gizle",
+	Highlight: "Vurgu",
 	"Horizontal rule": "Yatay çizgi",
 	"How many lines a list shows before it pages.":
 		"Bir listenin sayfalara bölünmeden önce kaç satır gösterdiği.",
 	"How tall a line of a list is.": "Listedeki bir satırın yüksekliği.",
+	Huge: "Çok büyük",
 	"I can read emails, search conversations, and draft replies.":
 		"E-postaları okuyabilir, yazışmalarda arama yapabilir ve yanıt taslakları hazırlayabilirim.",
 	"I have copied it": "Kopyaladım",
@@ -252,6 +260,8 @@ export const tr: Readonly<Record<string, string>> = {
 	"In the inbox": "Gelen Kutusu'nda",
 	"In your AI client, add a remote MCP server with the URL above and the header {header} followed by this key.":
 		"Yapay zekâ istemcinize, yukarıdaki adresle uzak bir MCP sunucusu ekleyin; başlık olarak {header} ve ardından bu anahtarı yazın.",
+	"Indent less": "Girintiyi azalt",
+	"Indent more": "Girintiyi artır",
 	Info: "Bilgi",
 	"Invite a person": "Kişi davet et",
 	"It is taken off one message. No message is deleted or moved.":
@@ -269,6 +279,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Label {name}": "Etiket: {name}",
 	Labels: "Etiketler",
 	Language: "Dil",
+	Large: "Büyük",
 	"Last used {date}": "Son kullanım: {date}",
 	"Let me edit this draft first. Show me what you have so I can modify it.":
 		"Önce bu taslağı düzenleyeyim. Değiştirebilmem için hazırladığını göster.",
@@ -330,6 +341,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"No drafts": "Taslak yok",
 	"No emails": "E-posta yok",
 	"No end date": "Bitiş tarihi yok",
+	"No highlight": "Vurgu yok",
 	"No labels yet. Make one in the rail.": "Henüz etiket yok. Kenar çubuğundan bir tane oluşturun.",
 	"No mailbox selected.": "Posta kutusu seçilmedi.",
 	"No mailboxes yet": "Henüz posta kutusu yok",
@@ -339,6 +351,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"No sent emails": "Gönderilmiş e-posta yok",
 	"No split": "Bölme yok",
 	None: "Hiçbiri",
+	Normal: "Normal",
 	"Not a member": "Üye değilsiniz",
 	"Not forwarded: {files}.": "İletilmedi: {files}.",
 	"Not spam": "Spam değil",
@@ -396,6 +409,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Remote images are hidden to protect your privacy.":
 		"Uzak görseller, gizliliğinizi korumak için gizlendi.",
 	Remove: "Kaldır",
+	"Remove formatting": "Biçimlendirmeyi kaldır",
 	"Remove link": "Bağlantıyı kaldır",
 	"Remove the star": "Yıldızı kaldır",
 	"Remove {name}": "{name} öğesini kaldır",
@@ -479,6 +493,8 @@ export const tr: Readonly<Record<string, string>> = {
 	"Signed in as {email}.": "{email} olarak oturum açıldı.",
 	"Single keys that act on mail, such as c to write.":
 		"Postada işlem yapan tek tuşlar; örneğin yazmak için c.",
+	Size: "Boyut",
+	Small: "Küçük",
 	Snippets: "Önizleme metni",
 	"Something went wrong": "Bir sorun oluştu",
 	Star: "Yıldızla",
@@ -494,6 +510,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Subject only": "Yalnızca konu",
 	"Subject:": "Konu:",
 	Teal: "Camgöbeği",
+	"Text colour": "Metin rengi",
 	"That code is not right, or it has run out. Try again.":
 		"Bu kod doğru değil ya da süresi doldu. Yeniden deneyin.",
 	"That code is not right. Try the next one.": "Bu kod doğru değil. Bir sonrakini deneyin.",
@@ -580,6 +597,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Turn on": "Aç",
 	"Type something to search by subject, sender or content.":
 		"Konuya, gönderene ya da içeriğe göre aramak için bir şey yazın.",
+	"Under the list": "Listenin altında",
 	Underline: "Altı çizili",
 	Undo: "Geri al",
 	"Undo the last move, while its note is on screen": "Notu ekrandayken son taşımayı geri al",
@@ -596,10 +614,12 @@ export const tr: Readonly<Record<string, string>> = {
 	"Use a recovery code instead": "Bunun yerine kurtarma kodu kullan",
 	"Use an address outside this instance, so you can still be reached if mail here stops.":
 		"Bu kurulumun dışında bir adres kullanın; buradaki posta durursa size yine ulaşılabilsin.",
+	"Usual colour": "Olağan renk",
 	"Valid for": "Geçerlilik süresi",
 	"What a client can do": "Bir istemcinin yapabildikleri",
 	"What the Reply button on a message does.": "Bir iletideki Yanıtla düğmesinin ne yaptığı.",
-	"Where a conversation opens on a wide screen.": "Geniş ekranda yazışmanın nerede açıldığı.",
+	"Where a conversation opens when the screen has room.":
+		"Ekranda yer olduğunda yazışmanın nerede açıldığı.",
 	"Where this key will be used": "Bu anahtarın kullanılacağı yer",
 	"Where to go after the open conversation is archived, deleted, moved or reported.":
 		"Açık yazışma arşivlendikten, silindikten, taşındıktan ya da bildirildikten sonra nereye gidileceği.",

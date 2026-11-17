@@ -7,7 +7,7 @@ import { deviceLanguage, LANGUAGES, setLanguage } from "~/i18n";
 
 export const DENSITIES = ["default", "comfortable", "compact"] as const;
 export type Density = (typeof DENSITIES)[number];
-export const READING_PANES = ["none", "right"] as const;
+export const READING_PANES = ["none", "right", "below"] as const;
 export type ReadingPane = (typeof READING_PANES)[number];
 export const PAGE_SIZES = [10, 25, 50, 100] as const;
 export type PageSize = (typeof PAGE_SIZES)[number];
@@ -22,8 +22,10 @@ export const LANGUAGE_CHOICES = ["system", ...LANGUAGES] as const;
 export type LanguageChoice = (typeof LANGUAGE_CHOICES)[number];
 
 const KEY = "podbay.display";
-/** The reading pane needs room: below this width a conversation always replaces the list. */
+/** The reading pane needs room: without it a conversation always replaces the list. */
 const WIDE = "(min-width: 1024px)";
+/** Under the list a pane needs height more than width. */
+const TALL = "(min-width: 768px) and (min-height: 640px)";
 const DARK = "(prefers-color-scheme: dark)";
 
 /**
@@ -155,18 +157,28 @@ window.matchMedia(DARK).addEventListener("change", () => {
 	showAppearance(useDisplay.getState().appearance);
 });
 
-function subscribeToWidth(notify: () => void): () => void {
-	const query = window.matchMedia(WIDE);
-	query.addEventListener("change", notify);
-	return () => query.removeEventListener("change", notify);
-}
-
-/** Whether a conversation opens beside the list: the reader chose it and the screen has room. */
-export function useSplit(): boolean {
-	const wide = useSyncExternalStore(
-		subscribeToWidth,
-		() => window.matchMedia(WIDE).matches,
+/** Whether the screen is of a size, kept up to date as the window changes. */
+function useRoom(media: string): boolean {
+	return useSyncExternalStore(
+		(notify) => {
+			const query = window.matchMedia(media);
+			query.addEventListener("change", notify);
+			return () => query.removeEventListener("change", notify);
+		},
+		() => window.matchMedia(media).matches,
 		() => false,
 	);
-	return useDisplay((state) => state.readingPane) === "right" && wide;
+}
+
+/**
+ * Where a conversation opens with the list still on screen: beside it or under it, when the
+ * reader chose that and the screen has room. `null` when a conversation replaces the list.
+ */
+export function useSplit(): "right" | "below" | null {
+	const wide = useRoom(WIDE);
+	const tall = useRoom(TALL);
+	const pane = useDisplay((state) => state.readingPane);
+	if (pane === "right" && wide) return "right";
+	if (pane === "below" && tall) return "below";
+	return null;
 }

@@ -25,3 +25,12 @@ body {
 	margin-top: 0.25em;
 	margin-bottom: 0.25em;
 }
+
+/*
+ * A menu opens over whatever it was opened from. The compose window floats above the page
+ * (z-40) and a menu is drawn at the end of the document, so without an order of its own a
+ * menu opened inside the window would open underneath it.
+ */
+[data-kumo-component="DropdownMenu"][data-kumo-part="positioner"] {
+	z-index: 50;
+}

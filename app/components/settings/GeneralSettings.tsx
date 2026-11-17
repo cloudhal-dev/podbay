@@ -70,13 +70,17 @@ export default function GeneralSettings() {
 				/>
 			</Row>
 
-			<Row name={t("Reading pane")} about={t("Where a conversation opens on a wide screen.")}>
+			<Row
+				name={t("Reading pane")}
+				about={t("Where a conversation opens when the screen has room.")}
+			>
 				<Choice
 					legend={t("Reading pane")}
 					value={choices.readingPane}
 					options={[
 						["none", m("In place of the list")],
 						["right", m("Beside the list, on its right")],
+						["below", m("Under the list")],
 					]}
 					onChange={(readingPane) => choices.choose({ readingPane })}
 				/>

@@ -348,6 +348,25 @@ test("the reader chooses the height of a line and a reading pane, and the choice
 	await page.setViewportSize({ width: 800, height: 800 });
 	await expect(page.getByText("No conversation is open.")).toHaveCount(0);
 	await page.setViewportSize({ width: 1280, height: 800 });
+
+	// Under the list the pane needs height, not width: the list keeps its single lines above it.
+	await page.getByRole("button", { name: "Display" }).click();
+	await page.getByRole("menuitemradio", { name: "Below the list" }).click();
+	await page.keyboard.press("Escape");
+	await expect(page.getByText("No conversation is open.")).toBeVisible();
+	expect(await height()).toBe(32);
+	await line.click();
+	const pane = page.locator('iframe[title="Email content"]');
+	await expect(pane).toBeVisible();
+	await expect(line).toBeVisible();
+	expect((await pane.boundingBox())?.y ?? 0).toBeGreaterThan((await line.boundingBox())?.y ?? 0);
+	await page.setViewportSize({ width: 800, height: 800 });
+	await expect(line).toBeVisible();
+	await expect(pane).toBeVisible();
+	await page.setViewportSize({ width: 1280, height: 500 });
+	await expect(line).toHaveCount(0);
+	await page.setViewportSize({ width: 1280, height: 800 });
+	await page.keyboard.press("u");
 	await page.getByRole("button", { name: "Display" }).click();
 	await page.getByRole("menuitemradio", { name: "No split" }).click();
 	await page.keyboard.press("Escape");
