@@ -255,16 +255,6 @@
 			"code": ["workers/email-sender.ts"]
 		},
 		{
-			"id": "runtime.r2.head",
-			"kind": "runtime",
-			"relies": "`bucket.head(key)` returns the object's metadata, or `null` when the key does not exist. Podbay uses it as an existence test.",
-			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
-			"pageUpdated": "2026-11-04",
-			"verifiedAt": "2026-11-17",
-			"evidence": "Retrieves the `R2Object` for the given key containing only object metadata, if the key exists, and `null` if the key does not exist.",
-			"code": ["workers/index.ts"]
-		},
-		{
 			"id": "runtime.r2.get",
 			"kind": "runtime",
 			"relies": "`bucket.get(key)` returns the object with its body, or `null` when the key does not exist.",
@@ -272,7 +262,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "`get` `(key: string, options?: R2GetOptions): Promise<R2ObjectBody | R2Object | null>`",
-			"code": ["workers/index.ts", "workers/agent/index.ts"]
+			"code": ["workers/index.ts"]
 		},
 		{
 			"id": "runtime.r2.put",
@@ -285,17 +275,6 @@
 			"code": ["workers/index.ts", "workers/lib/attachments.ts"]
 		},
 		{
-			"id": "runtime.r2.list",
-			"kind": "runtime",
-			"relies": "`bucket.list({ prefix })` returns the objects whose keys start with the prefix. Podbay lists the mailbox registry with it.",
-			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
-			"pageUpdated": "2026-11-04",
-			"verifiedAt": "2026-11-17",
-			"evidence": "Returns up to 1000 entries, but may return less in order to minimize memory pressure within the Worker.",
-			"code": ["workers/lib/email-helpers.ts"],
-			"note": "The page says to use the `truncated` property to see whether more results exist. The mailbox listing reads one page only."
-		},
-		{
 			"id": "runtime.r2.delete",
 			"kind": "runtime",
 			"relies": "`bucket.delete(key)` removes an object, and later reads no longer see it.",
@@ -303,7 +282,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "R2 deletes are strongly consistent. Once the Promise resolves, all subsequent read operations will no longer see the provided key value pairs globally.",
-			"code": ["workers/index.ts"]
+			"code": ["workers/index.ts", "workers/routes/mailboxes.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.namespace",

@@ -18,3 +18,5 @@ Decisions are immutable once accepted. A later ADR supersedes an earlier one; th
 | [0012](0012-a-persons-choices-and-known-addresses.md) | A person's choices are kept with their account, and a mailbox remembers the addresses it has written to | Proposed, 2026-11-17 |
 | [0013](0013-the-mailbox-tells-the-open-app.md) | The mailbox tells the open app that something changed, and nothing more | Proposed, 2026-11-17 |
 | [0014](0014-acting-on-many-conversations.md) | One request acts on many conversations, and a list has an order a person chooses | Proposed, 2026-11-17 |
+| [0015](0015-the-original-message-is-kept.md) | The original message is kept | Proposed, 2026-11-17 |
+| [0016](0016-outgoing-mail-waits-before-it-leaves.md) | Outgoing mail waits before it leaves | Proposed, 2026-11-17 |

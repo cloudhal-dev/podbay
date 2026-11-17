@@ -52,6 +52,7 @@ A mailbox is a Durable Object, and "Each Durable Object is able to schedule a si
 
 - The feature matrix moves Snoozed from phase B to phase A, and keeps Scheduled in B, when this record is accepted and not before.
 - The mailbox object gets its first alarm. The alarm, the schedule it reads and the at-least-once rule get tests in the Workers runtime before any screen is built.
+- The alarm alone is not enough to rely on: reading for [ADR-0016](0016-outgoing-mail-waits-before-it-leaves.md) found that a handler that throws is tried a limited number of times, that an alarm can run late, and that one held for days can be lost. That record's decisions 17 and 18 say how one alarm serves every waiting time and is set again on every wake; if both records are accepted, snooze uses the same function, and if only this one is, it needs the same care.
 - The inbound path gets one more step (mute), next to conversation matching.
 - The app gets "Snooze" and "Mute" where the reference has them: on a line, in a line's menu, in a conversation's menu.
 
