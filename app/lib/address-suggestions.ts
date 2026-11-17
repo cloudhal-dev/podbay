@@ -9,6 +9,39 @@ const listed = (value: string): string[] =>
 		.map((address) => address.trim())
 		.filter((address) => address !== "");
 
+/** A message or a line of a list, as far as its addresses go. */
+export interface Exchanged {
+	folder_id?: string | null;
+	sender?: string | null;
+	recipient?: string | null;
+	cc?: string | null;
+	participants?: string | null;
+}
+
+/** Mail nobody asked for, and mail thrown away, teaches no address. */
+const TEACHES_NOTHING: readonly string[] = ["spam", "trash"];
+
+/**
+ * The addresses a mailbox has exchanged mail with, as far as this mail shows them, each once
+ * and in order. Whoever wrote from Spam is not someone to write to: an address that only
+ * unwanted mail carries is never offered.
+ */
+export function addressesOf(mail: readonly Exchanged[], own?: string): string[] {
+	const seen = new Map<string, string>();
+	for (const one of mail) {
+		if (TEACHES_NOTHING.includes(one.folder_id?.toLowerCase() ?? "")) continue;
+		for (const field of [one.sender, one.recipient, one.cc, one.participants]) {
+			for (const address of listed(field ?? "")) {
+				const key = address.toLowerCase();
+				if (key !== own?.toLowerCase() && key.includes("@") && !seen.has(key)) {
+					seen.set(key, address);
+				}
+			}
+		}
+	}
+	return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+
 /** The part of a list of addresses that is being typed: what follows the last comma. */
 export function lastAddress(value: string): string {
 	return value.slice(value.lastIndexOf(",") + 1).trim();

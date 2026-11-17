@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	addressesOf,
 	completeAddress,
 	joinTyped,
 	lastAddress,
@@ -73,5 +74,45 @@ describe("addresses as they are typed", () => {
 		]) {
 			expect(looksLikeAddress(bad), bad).toBe(false);
 		}
+	});
+});
+
+describe("the addresses a mailbox knows", () => {
+	it("gathers them from the mail on screen, each once, without the mailbox's own", () => {
+		const known = addressesOf(
+			[
+				{ folder_id: "inbox", sender: "Ada@sender.test", recipient: "me@example.com" },
+				{
+					folder_id: "sent",
+					sender: "me@example.com",
+					recipient: "grace@navy.test, ada@sender.test",
+				},
+				{
+					folder_id: "inbox",
+					sender: "bob@sender.test",
+					cc: "carol@example.net",
+					participants: "bob@sender.test",
+				},
+				{ folder_id: "inbox", sender: "not an address" },
+			],
+			"ME@example.com",
+		);
+		expect(known).toEqual([
+			"Ada@sender.test",
+			"bob@sender.test",
+			"carol@example.net",
+			"grace@navy.test",
+		]);
+	});
+
+	it("learns nothing from Spam or Trash", () => {
+		const known = addressesOf([
+			{ folder_id: "spam", sender: "prize@unwanted.test", recipient: "me@example.com" },
+			{ folder_id: "trash", sender: "old@thrown.test" },
+			{ folder_id: "archive", sender: "kept@friend.test" },
+		]);
+		expect(known).toEqual(["kept@friend.test"]);
+		expect(known).not.toContain("prize@unwanted.test");
+		expect(known).not.toContain("old@thrown.test");
 	});
 });
