@@ -40,6 +40,16 @@ export interface Choices {
 	/** Whether single keys act as shortcuts. */
 	shortcuts: boolean;
 	appearance: Appearance;
+	/** Whether the messages of a conversation are one line and one screen, or each its own. */
+	conversationView: boolean;
+	/** Whether a line shows the start of the message after the subject. */
+	snippets: boolean;
+	/** Whether the line under the pointer offers archive, delete and read in place of its date. */
+	hoverActions: boolean;
+	/** Whether an answer can be sent and its conversation archived in one press. */
+	sendAndArchive: boolean;
+	/** Whether new mail is announced by a notification of this device. */
+	notifications: boolean;
 }
 
 export const DEFAULT_CHOICES: Choices = {
@@ -50,10 +60,17 @@ export const DEFAULT_CHOICES: Choices = {
 	afterFiling: "list",
 	shortcuts: true,
 	appearance: "system",
+	conversationView: true,
+	snippets: true,
+	hoverActions: true,
+	sendAndArchive: false,
+	notifications: false,
 };
 
 const oneOf = <T>(allowed: readonly T[], value: unknown, fallback: T): T =>
 	allowed.find((item) => item === value) ?? fallback;
+const yesOrNo = (value: unknown, fallback: boolean): boolean =>
+	typeof value === "boolean" ? value : fallback;
 
 /** Whatever was stored, as valid choices: an unknown value falls back to its default. */
 export function readChoices(saved: Partial<Record<keyof Choices, unknown>>): Choices {
@@ -63,8 +80,13 @@ export function readChoices(saved: Partial<Record<keyof Choices, unknown>>): Cho
 		pageSize: oneOf(PAGE_SIZES, saved.pageSize, DEFAULT_CHOICES.pageSize),
 		defaultReply: oneOf(DEFAULT_REPLIES, saved.defaultReply, DEFAULT_CHOICES.defaultReply),
 		afterFiling: oneOf(AFTER_FILING, saved.afterFiling, DEFAULT_CHOICES.afterFiling),
-		shortcuts: typeof saved.shortcuts === "boolean" ? saved.shortcuts : DEFAULT_CHOICES.shortcuts,
+		shortcuts: yesOrNo(saved.shortcuts, DEFAULT_CHOICES.shortcuts),
 		appearance: oneOf(APPEARANCES, saved.appearance, DEFAULT_CHOICES.appearance),
+		conversationView: yesOrNo(saved.conversationView, DEFAULT_CHOICES.conversationView),
+		snippets: yesOrNo(saved.snippets, DEFAULT_CHOICES.snippets),
+		hoverActions: yesOrNo(saved.hoverActions, DEFAULT_CHOICES.hoverActions),
+		sendAndArchive: yesOrNo(saved.sendAndArchive, DEFAULT_CHOICES.sendAndArchive),
+		notifications: yesOrNo(saved.notifications, DEFAULT_CHOICES.notifications),
 	};
 }
 

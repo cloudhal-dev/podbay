@@ -9,6 +9,7 @@ import AgentSidebar from "~/components/AgentSidebar";
 import { ComposeSession } from "~/components/ComposeSession";
 import ComposeWindow from "~/components/ComposeWindow";
 import Header, { SEARCH_INPUT_ID } from "~/components/Header";
+import NewMailNotifier from "~/components/NewMailNotifier";
 import ShortcutHelp from "~/components/ShortcutHelp";
 import Sidebar from "~/components/Sidebar";
 import { useShortcuts } from "~/hooks/useShortcuts";
@@ -69,6 +70,8 @@ export default function MailboxRoute() {
 		c: () => startCompose(),
 		"/": () => document.getElementById(SEARCH_INPUT_ID)?.focus(),
 		"?": () => setShortcutHelpOpen(true),
+		// Takes back the last move, while its note is still on screen.
+		z: () => useUIStore.getState().lastUndo?.(),
 		"g i": () => goTo("inbox"),
 		"g t": () => goTo("sent"),
 		"g d": () => goTo("draft"),
@@ -119,6 +122,7 @@ export default function MailboxRoute() {
 				</div>
 
 				<ComposeWindow />
+				<NewMailNotifier mailboxId={mailboxId} />
 				<ShortcutHelp />
 			</div>
 		</ComposeSession>

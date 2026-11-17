@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Button } from "@cloudflare/kumo";
+import { useState } from "react";
 import { PAGE_SIZES, type PageSize, useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";
 import Row, { Choice } from "./Row";
@@ -13,6 +14,17 @@ import Row, { Choice } from "./Row";
 export default function GeneralSettings() {
 	const choices = useDisplay();
 	const { setShortcutHelpOpen } = useUIStore();
+	const [refused, setRefused] = useState(false);
+
+	/** Turning notifications on asks the browser first; a no leaves them off and says why. */
+	async function notify(on: boolean) {
+		setRefused(false);
+		if (!on) return choices.choose({ notifications: false });
+		const allowed =
+			typeof Notification !== "undefined" && (await Notification.requestPermission()) === "granted";
+		setRefused(!allowed);
+		choices.choose({ notifications: allowed });
+	}
 
 	return (
 		<div>
@@ -65,6 +77,48 @@ export default function GeneralSettings() {
 				/>
 			</Row>
 
+			<Row
+				name="Conversation view"
+				about="Whether a message and the answers to it are one line and one screen."
+			>
+				<Choice
+					legend="Conversation view"
+					value={choices.conversationView ? "on" : "off"}
+					options={[
+						["on", "On: messages of a conversation together"],
+						["off", "Off: each message by itself"],
+					]}
+					onChange={(value) => choices.choose({ conversationView: value === "on" })}
+				/>
+			</Row>
+
+			<Row name="Snippets" about="The start of a message after its subject, in a list.">
+				<Choice
+					legend="Snippets"
+					value={choices.snippets ? "on" : "off"}
+					options={[
+						["on", "Show them"],
+						["off", "Subject only"],
+					]}
+					onChange={(value) => choices.choose({ snippets: value === "on" })}
+				/>
+			</Row>
+
+			<Row
+				name="Actions on a line"
+				about="Archive, delete and read on the line under the pointer, in place of its date."
+			>
+				<Choice
+					legend="Actions on a line"
+					value={choices.hoverActions ? "on" : "off"}
+					options={[
+						["on", "Show them"],
+						["off", "Keep the date"],
+					]}
+					onChange={(value) => choices.choose({ hoverActions: value === "on" })}
+				/>
+			</Row>
+
 			<Row name="Reply button" about="What the Reply button on a message does.">
 				<Choice
 					legend="Reply button"
@@ -91,6 +145,42 @@ export default function GeneralSettings() {
 					]}
 					onChange={(afterFiling) => choices.choose({ afterFiling })}
 				/>
+			</Row>
+
+			<Row
+				name="Send and archive"
+				about="A second button on an answer: send it and file its conversation in one press."
+			>
+				<Choice
+					legend="Send and archive"
+					value={choices.sendAndArchive ? "on" : "off"}
+					options={[
+						["on", "Show the button"],
+						["off", "Hide it"],
+					]}
+					onChange={(value) => choices.choose({ sendAndArchive: value === "on" })}
+				/>
+			</Row>
+
+			<Row
+				name="Notifications"
+				about="A notification of this device when mail arrives while Podbay is open in a tab. It shows who wrote and the subject."
+			>
+				<Choice
+					legend="Notifications"
+					value={choices.notifications ? "on" : "off"}
+					options={[
+						["on", "For new mail"],
+						["off", "None"],
+					]}
+					onChange={(value) => void notify(value === "on")}
+				/>
+				{refused && (
+					<p role="alert" className="m-0 mt-2 text-xs text-kumo-danger">
+						This browser does not allow notifications for Podbay. Allow them in the browser's
+						settings for this site, then choose again.
+					</p>
+				)}
 			</Row>
 
 			<Row name="Keyboard shortcuts" about="Single keys that act on mail, such as c to write.">

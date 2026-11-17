@@ -97,11 +97,17 @@ export default function EmailListRoute() {
 	const { startCompose } = useUIStore();
 	const [page, setPage] = useState(1);
 	const pageSize = useDisplay((state) => state.pageSize);
+	const conversations = useDisplay((state) => state.conversationView);
 	const queryClient = useQueryClient();
 
 	const params = useMemo(
-		() => ({ folder: folder || "", page: String(page), limit: String(pageSize) }),
-		[folder, page, pageSize],
+		() => ({
+			folder: folder || "",
+			page: String(page),
+			limit: String(pageSize),
+			threaded: String(conversations),
+		}),
+		[folder, page, pageSize, conversations],
 	);
 	const { data: emailData, isFetching: isRefreshing } = useEmails(mailboxId, params, {
 		refetchInterval: 30_000,

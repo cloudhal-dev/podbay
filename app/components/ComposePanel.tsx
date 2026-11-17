@@ -7,6 +7,7 @@ import { Banner, Button, Tooltip } from "@cloudflare/kumo";
 import { FileIcon, FloppyDiskIcon, PaperclipIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
 import { type DragEvent, type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
 import type { ComposeForm } from "~/hooks/useComposeForm";
+import { useDisplay } from "~/hooks/useDisplay";
 import { formatBytes } from "~/lib/utils";
 import AddressField from "./AddressField";
 import RichTextEditor from "./RichTextEditor";
@@ -41,6 +42,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 		form.addFiles(event.dataTransfer.files);
 	}
 	const { mode, isDraftEdit } = form;
+	const sendAndArchive = useDisplay((state) => state.sendAndArchive);
 
 	// A new message starts at "To"; a reply starts in the text, above what it answers.
 	const startsInText = isDraftEdit || mode === "reply" || mode === "reply-all";
@@ -182,6 +184,17 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						{form.isSending ? "Sending" : "Send"}
 					</Button>
 				</Tooltip>
+				{sendAndArchive && (mode === "reply" || mode === "reply-all") && (
+					<Button
+						type="button"
+						variant="secondary"
+						className="rounded-full"
+						disabled={form.isSavingDraft || form.isSending}
+						onClick={(event) => void form.handleSend(event, form.closeCompose, true)}
+					>
+						Send and archive
+					</Button>
+				)}
 				<input
 					ref={filePicker}
 					type="file"

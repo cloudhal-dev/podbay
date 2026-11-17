@@ -22,7 +22,9 @@ export function useEmails(
 	params: Record<string, string>,
 	options?: { enabled?: boolean; refetchInterval?: number },
 ) {
-	const queryParams = params.folder ? { ...params, threaded: "true" } : params;
+	// A folder is listed by conversation, unless the reader turned conversations off.
+	const { threaded, ...rest } = params;
+	const queryParams = params.folder && threaded !== "false" ? { ...rest, threaded: "true" } : rest;
 
 	return useQuery<EmailListResponse>({
 		queryKey: mailboxId ? queryKeys.emails.list(mailboxId, queryParams) : ["emails", "_disabled"],

@@ -4,6 +4,7 @@
 import { useKumoToastManager } from "@cloudflare/kumo";
 import { Folders, getFolderDisplayName } from "shared/folders";
 import { useConfirm } from "~/components/Confirm";
+import { useUIStore } from "~/hooks/useUIStore";
 import { useDeleteEmail, useMoveEmail, useUpdateEmail } from "~/queries/emails";
 import { useFolders } from "~/queries/folders";
 import { useLabelConversation, useLabels } from "~/queries/labels";
@@ -11,6 +12,9 @@ import type { Email, Folder, Label } from "~/types";
 
 /** Only a real send fills Sent, and drafts are made by writing: neither is a place to move mail to. */
 const NOT_A_MOVE_TARGET: readonly string[] = [Folders.SENT, Folders.DRAFT];
+
+/** How long `z` can still take back the last move: about as long as its note is on screen. */
+const UNDO_FOR_MS = 8000;
 
 const plural = (count: number) => (count === 1 ? "Conversation" : `${count} conversations`);
 
@@ -35,27 +39,36 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 	);
 
 	/** `what` names what moved when it is not whole conversations: one message of one. */
+	/**
+	 * Says what was done and offers to take it back, on the note and, while the note is there,
+	 * with `z`.
+	 */
+	function offerUndo(title: string, undo: () => void) {
+		const forget = () => {
+			if (useUIStore.getState().lastUndo === run) useUIStore.setState({ lastUndo: null });
+		};
+		const run = () => {
+			undo();
+			toasts.close(toast);
+			forget();
+		};
+		const toast: string = toasts.add({
+			title,
+			actions: [{ children: "Undo", variant: "ghost", onClick: run }],
+		});
+		useUIStore.setState({ lastUndo: run });
+		setTimeout(forget, UNDO_FOR_MS);
+	}
+
 	function moveTo(list: Email[], target: string, said?: string, what?: string): boolean {
 		if (!mailboxId || list.length === 0) return false;
 		const before = list.map((email) => ({ id: email.id, folderId: email.folder_id || folder }));
 		for (const email of list) moveEmail.mutate({ mailboxId, id: email.id, folderId: target });
 		const name = folders.find((f) => f.id === target)?.name ?? getFolderDisplayName(target);
-		const toast: string = toasts.add({
-			title: `${what ?? plural(list.length)} ${said ?? `moved to ${name}`}`,
-			actions: [
-				{
-					children: "Undo",
-					variant: "ghost",
-					onClick: () => {
-						for (const was of before) {
-							if (was.folderId) {
-								moveEmail.mutate({ mailboxId, id: was.id, folderId: was.folderId });
-							}
-						}
-						toasts.close(toast);
-					},
-				},
-			],
+		offerUndo(`${what ?? plural(list.length)} ${said ?? `moved to ${name}`}`, () => {
+			for (const was of before) {
+				if (was.folderId) moveEmail.mutate({ mailboxId, id: was.id, folderId: was.folderId });
+			}
 		});
 		return true;
 	}
@@ -111,30 +124,15 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 				moveEmail.mutate({ mailboxId, id: email.id, folderId: Folders.ARCHIVE });
 			}
 		}
-		const toast: string = toasts.add({
-			title: `${plural(list.length)} moved to ${target.name}`,
-			actions: [
-				{
-					children: "Undo",
-					variant: "ghost",
-					onClick: () => {
-						for (const { email, had, folderId } of before) {
-							if (!had) {
-								labelConversation.mutate({
-									mailboxId,
-									emailId: email.id,
-									add: [],
-									remove: [target.id],
-								});
-							}
-							if (folderId === Folders.INBOX) {
-								moveEmail.mutate({ mailboxId, id: email.id, folderId: Folders.INBOX });
-							}
-						}
-						toasts.close(toast);
-					},
-				},
-			],
+		offerUndo(`${plural(list.length)} moved to ${target.name}`, () => {
+			for (const { email, had, folderId } of before) {
+				if (!had) {
+					labelConversation.mutate({ mailboxId, emailId: email.id, add: [], remove: [target.id] });
+				}
+				if (folderId === Folders.INBOX) {
+					moveEmail.mutate({ mailboxId, id: email.id, folderId: Folders.INBOX });
+				}
+			}
 		});
 		return true;
 	}

@@ -92,10 +92,12 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	const [previewImage, setPreviewImage] = useState<{ url: string; filename: string } | null>(null);
 	const isDraftFolder = folder === Folders.DRAFT;
 
+	// With conversations turned off, a message is read by itself.
+	const conversations = useDisplay((state) => state.conversationView);
 	const threadReplies = useMemo(() => {
-		if (!threadRepliesRaw || !email) return [];
+		if (!conversations || !threadRepliesRaw || !email) return [];
 		return threadRepliesRaw.filter((e) => e.id !== email.id);
-	}, [threadRepliesRaw, email]);
+	}, [threadRepliesRaw, email, conversations]);
 
 	/** The folder this conversation is in: the one on screen, or its own in search results. */
 	const place = folder || email?.folder_id || undefined;
@@ -209,6 +211,22 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 			f: () => reply("forward"),
 			k: () => newer && openConversation(newer),
 			j: () => older && openConversation(older),
+			";": () => {
+				setShowsMiddle(true);
+				setExpanded(new Set(allMessages.map((msg) => msg.id)));
+			},
+			":": () => setExpanded(new Set()),
+			// Archive and go on to the next one, whatever "after filing" says.
+			"]": () => {
+				if (!email || place === Folders.ARCHIVE || !actions.archive([email])) return;
+				if (older) openConversation(older);
+				else closePanel();
+			},
+			"[": () => {
+				if (!email || place === Folders.ARCHIVE || !actions.archive([email])) return;
+				if (newer) openConversation(newer);
+				else closePanel();
+			},
 			e: () => email && place !== Folders.ARCHIVE && away(actions.archive([email])),
 			"#": () => email && void actions.remove([email]).then(away),
 			"!": () => email && place !== Folders.SPAM && away(actions.reportSpam([email])),

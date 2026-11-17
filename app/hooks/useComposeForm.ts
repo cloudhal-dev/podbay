@@ -6,6 +6,7 @@
 import { useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { attachmentRisk } from "shared/attachment-risk";
+import { Folders } from "shared/folders";
 import { MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "shared/sending-limits";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { useUIStore } from "~/hooks/useUIStore";
@@ -22,6 +23,7 @@ import {
 import {
 	useDeleteEmail,
 	useForwardEmail,
+	useMoveEmail,
 	useReplyToEmail,
 	useSaveDraft,
 	useSendEmail,
@@ -229,6 +231,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const replyMutation = useReplyToEmail();
 	const forwardMutation = useForwardEmail();
 	const deleteEmailMutation = useDeleteEmail();
+	const moveEmailMutation = useMoveEmail();
 
 	const [to, setTo] = useState("");
 	const [cc, setCc] = useState("");
@@ -367,7 +370,15 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	};
 	const removeFile = (index: number) => setFiles(files.filter((_file, at) => at !== index));
 
-	const handleSend = async (e: FormEvent, onClose: () => void) => {
+	/**
+	 * Sends the message. With `archive`, an answer also files the conversation it answers in
+	 * Archive once it is sent, and goes back to the list.
+	 */
+	const handleSend = async (
+		e: Pick<FormEvent, "preventDefault">,
+		onClose: () => void,
+		archive = false,
+	) => {
 		e.preventDefault();
 		if (isSending) return;
 		setError(null);
@@ -413,7 +424,14 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				await forwardMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
 			else await sendEmailMutation.mutateAsync({ mailboxId, email: emailData });
 			if (draftId) deleteEmailMutation.mutate({ mailboxId, id: draftId });
-			toastManager.add({ title: "Message sent" });
+			const answered = composeOptions.originalEmail;
+			if (archive && answered && answered.folder_id === Folders.INBOX) {
+				moveEmailMutation.mutate({ mailboxId, id: answered.id, folderId: Folders.ARCHIVE });
+				closePanel();
+				toastManager.add({ title: "Message sent and conversation archived" });
+			} else {
+				toastManager.add({ title: "Message sent" });
+			}
 			onClose();
 		} catch (err: unknown) {
 			const message = (err instanceof Error ? err.message : null) || "Failed to send email.";

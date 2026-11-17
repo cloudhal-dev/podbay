@@ -109,6 +109,8 @@ export default function MessageList({
 	const openId = useUIStore((state) => state.selectedEmailId);
 	const open = useOpenConversation(mailboxId);
 	const density = useDisplay((state) => state.density);
+	const showSnippets = useDisplay((state) => state.snippets);
+	const showActions = useDisplay((state) => state.hoverActions);
 	const split = useSplit();
 	const base = useConversationActions(mailboxId, folder);
 	/** Beside the list, a conversation that was filed away must not stay open. */
@@ -310,7 +312,9 @@ export default function MessageList({
 										>
 											{mark(email.subject || "(no subject)")}
 										</span>
-										{snippet && <span className="text-kumo-subtle"> — {mark(snippet)}</span>}
+										{showSnippets && snippet && (
+											<span className="text-kumo-subtle"> — {mark(snippet)}</span>
+										)}
 									</span>
 								</button>
 
@@ -322,13 +326,17 @@ export default function MessageList({
 									</Tooltip>
 								)}
 								<span
-									className={`w-16 shrink-0 text-right text-xs group-hover:hidden group-focus-within:hidden ${
-										unread ? "font-semibold text-kumo-default" : "text-kumo-subtle"
-									}`}
+									className={`w-16 shrink-0 text-right text-xs ${
+										showActions ? "group-hover:hidden group-focus-within:hidden" : ""
+									} ${unread ? "font-semibold text-kumo-default" : "text-kumo-subtle"}`}
 								>
 									{formatListDate(email.date)}
 								</span>
-								<span className="hidden shrink-0 items-center group-hover:flex group-focus-within:flex">
+								<span
+									className={`hidden shrink-0 items-center ${
+										showActions ? "group-hover:flex group-focus-within:flex" : ""
+									}`}
+								>
 									{folder !== Folders.ARCHIVE && (
 										<IconButton
 											label="Archive"
