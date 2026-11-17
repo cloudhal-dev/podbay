@@ -70,6 +70,22 @@ export default function GeneralSettings() {
 				</label>
 			</Row>
 
+			<Row
+				name={t("Order of a list")}
+				about={t("What a list puts on top. Inside each group the newest is first.")}
+			>
+				<Choice
+					legend={t("Order of a list")}
+					value={choices.order}
+					options={[
+						["newest", m("Newest first")],
+						["unread", m("Unread first")],
+						["starred", m("Starred first")],
+					]}
+					onChange={(order) => choices.choose({ order })}
+				/>
+			</Row>
+
 			<Row name={t("Density")} about={t("How tall a line of a list is.")}>
 				<Choice
 					legend={t("Density")}

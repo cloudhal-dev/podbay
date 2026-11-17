@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { useSyncExternalStore } from "react";
+import { LIST_ORDERS, type ListOrder } from "shared/list-order";
 import { create } from "zustand";
 import { deviceLanguage, LANGUAGES, setLanguage } from "~/i18n";
 
@@ -17,6 +18,7 @@ export const AFTER_FILING = ["list", "newer", "older"] as const;
 export type AfterFiling = (typeof AFTER_FILING)[number];
 export const APPEARANCES = ["system", "light", "dark"] as const;
 export type Appearance = (typeof APPEARANCES)[number];
+export { LIST_ORDERS, type ListOrder };
 /** The language of the app's own words: this device's, or one chosen. */
 export const LANGUAGE_CHOICES = ["system", ...LANGUAGES] as const;
 export type LanguageChoice = (typeof LANGUAGE_CHOICES)[number];
@@ -39,6 +41,8 @@ export interface Choices {
 	readingPane: ReadingPane;
 	/** Conversations on one page of a list. */
 	pageSize: PageSize;
+	/** What a list puts on top: the newest, or what is unread or starred (ADR-0014). */
+	order: ListOrder;
 	/** What the Reply button of a message does. */
 	defaultReply: DefaultReply;
 	/** Where to go after the open conversation is archived, deleted, moved or reported. */
@@ -63,6 +67,7 @@ export const DEFAULT_CHOICES: Choices = {
 	density: "default",
 	readingPane: "none",
 	pageSize: 25,
+	order: "newest",
 	defaultReply: "reply",
 	afterFiling: "list",
 	shortcuts: true,
@@ -86,6 +91,7 @@ export function readChoices(saved: Partial<Record<keyof Choices, unknown>>): Cho
 		density: oneOf(DENSITIES, saved.density, DEFAULT_CHOICES.density),
 		readingPane: oneOf(READING_PANES, saved.readingPane, DEFAULT_CHOICES.readingPane),
 		pageSize: oneOf(PAGE_SIZES, saved.pageSize, DEFAULT_CHOICES.pageSize),
+		order: oneOf(LIST_ORDERS, saved.order, DEFAULT_CHOICES.order),
 		defaultReply: oneOf(DEFAULT_REPLIES, saved.defaultReply, DEFAULT_CHOICES.defaultReply),
 		afterFiling: oneOf(AFTER_FILING, saved.afterFiling, DEFAULT_CHOICES.afterFiling),
 		shortcuts: yesOrNo(saved.shortcuts, DEFAULT_CHOICES.shortcuts),
@@ -131,6 +137,7 @@ interface DisplayState extends Choices {
 	choose: (change: Partial<Choices>) => void;
 	setDensity: (density: Density) => void;
 	setReadingPane: (readingPane: ReadingPane) => void;
+	setOrder: (order: ListOrder) => void;
 }
 
 const choicesOf = (state: Choices): Choices => readChoices(state);
@@ -146,6 +153,7 @@ export const useDisplay = create<DisplayState>((set, get) => ({
 	},
 	setDensity: (density) => get().choose({ density }),
 	setReadingPane: (readingPane) => get().choose({ readingPane }),
+	setOrder: (order) => get().choose({ order }),
 }));
 
 // The words are in the reader's language before anything is drawn.

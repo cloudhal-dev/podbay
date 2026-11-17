@@ -7,6 +7,7 @@ import { useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Folders } from "shared/folders";
 import { MAX_RECIPIENTS } from "shared/sending-limits";
+import { useDisplay } from "~/hooks/useDisplay";
 import { type DraftFile, type LeftBehind, useDraftFiles } from "~/hooks/useDraftFiles";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { useUIStore } from "~/hooks/useUIStore";
@@ -24,7 +25,7 @@ import {
 import {
 	useDeleteEmail,
 	useForwardEmail,
-	useMoveEmail,
+	useInvalidateEmailData,
 	useReplyToEmail,
 	useSaveDraft,
 	useSendEmail,
@@ -187,7 +188,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const replyMutation = useReplyToEmail();
 	const forwardMutation = useForwardEmail();
 	const deleteEmailMutation = useDeleteEmail();
-	const moveEmailMutation = useMoveEmail();
+	const invalidate = useInvalidateEmailData();
+	const conversations = useDisplay((state) => state.conversationView);
 
 	const [to, setTo] = useState("");
 	const [cc, setCc] = useState("");
@@ -426,7 +428,14 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			else await sendEmailMutation.mutateAsync({ mailboxId, email: emailData });
 			const answered = composeOptions.originalEmail;
 			if (archive && answered && answered.folder_id === Folders.INBOX) {
-				moveEmailMutation.mutate({ mailboxId, id: answered.id, folderId: Folders.ARCHIVE });
+				// The answered conversation goes whole, as a line of a list does (ADR-0014).
+				void api
+					.actOnLines(mailboxId, {
+						ids: [answered.id],
+						unit: conversations ? "conversation" : "message",
+						change: { move: "archive" },
+					})
+					.finally(() => invalidate(mailboxId));
 				closePanel();
 				toastManager.add({ title: t("Message sent and conversation archived") });
 			} else {

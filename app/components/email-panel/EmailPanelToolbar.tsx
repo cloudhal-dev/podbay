@@ -134,17 +134,20 @@ export default function EmailPanelToolbar({
 				</>
 			) : (
 				<>
-					{folder !== Folders.ARCHIVE && (
+					{/* A conversation in Sent goes only to Trash (ADR-0014, decision 5). */}
+					{folder !== Folders.ARCHIVE && folder !== Folders.SENT && (
 						<IconButton label={t("Archive")} icon={<ArchiveIcon size={18} />} onClick={onArchive} />
 					)}
 					{folder === Folders.SPAM ? (
 						<IconButton label={t("Not spam")} icon={<TrayIcon size={18} />} onClick={onNotSpam} />
 					) : (
-						<IconButton
-							label={t("Report spam")}
-							icon={<WarningOctagonIcon size={18} />}
-							onClick={onSpam}
-						/>
+						folder !== Folders.SENT && (
+							<IconButton
+								label={t("Report spam")}
+								icon={<WarningOctagonIcon size={18} />}
+								onClick={onSpam}
+							/>
+						)
 					)}
 				</>
 			)}

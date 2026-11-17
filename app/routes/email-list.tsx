@@ -103,6 +103,7 @@ export default function EmailListRoute() {
 	const [page, setPage] = useState(1);
 	const pageSize = useDisplay((state) => state.pageSize);
 	const conversations = useDisplay((state) => state.conversationView);
+	const order = useDisplay((state) => state.order);
 	const queryClient = useQueryClient();
 
 	const params = useMemo(
@@ -111,8 +112,10 @@ export default function EmailListRoute() {
 			page: String(page),
 			limit: String(pageSize),
 			threaded: String(conversations),
+			// Newest first needs no word; the Worker acts on the request, never on a stored choice.
+			...(order === "newest" ? {} : { order }),
 		}),
-		[folder, page, pageSize, conversations],
+		[folder, page, pageSize, conversations, order],
 	);
 	const { data: emailData, isFetching: isRefreshing } = useEmails(mailboxId, params, {
 		refetchInterval: 30_000,
@@ -128,7 +131,7 @@ export default function EmailListRoute() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: the folder is the trigger
 	useEffect(() => {
 		setPage(1);
-	}, [mailboxId, folder]);
+	}, [mailboxId, folder, order]);
 
 	const handleRefresh = () => {
 		if (!mailboxId) return;
@@ -152,6 +155,16 @@ export default function EmailListRoute() {
 				isRefreshing={isRefreshing}
 				onRefresh={handleRefresh}
 				folder={folder}
+				// Drafts are not moved together: each is kept or discarded by itself.
+				everything={
+					folder && folder !== Folders.DRAFT
+						? {
+								filter: { folder },
+								offer: t("Select everything in {place}", { place: folderName }),
+								chosen: t("Everything in {place} is selected.", { place: folderName }),
+							}
+						: undefined
+				}
 				empty={<FolderEmptyState folder={folder} onCompose={() => startCompose()} />}
 			/>
 		</MailView>

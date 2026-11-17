@@ -11,7 +11,9 @@ import MessageList from "~/components/MessageList";
 import { useDisplay } from "~/hooks/useDisplay";
 import { m, t } from "~/i18n";
 import { rich } from "~/i18n/rich";
+import { filterOf } from "~/lib/search-filter";
 import { hasOperator, parseSearchQuery, toggleOperator } from "~/lib/search-parser";
+import { useLabels } from "~/queries/labels";
 import { useSearchEmails } from "~/queries/search";
 
 function highlightTerms(text: string, query: string): React.ReactNode {
@@ -57,6 +59,8 @@ export default function SearchResultsRoute() {
 	const [page, setPage] = useState(1);
 	const navigate = useNavigate();
 	const pageSize = useDisplay((state) => state.pageSize);
+	const order = useDisplay((state) => state.order);
+	const { data: labels = [] } = useLabels(mailboxId);
 	const starred = urlQuery.trim() === "is:starred";
 	// A search that is only a label is that label's list.
 	const asked = parseSearchQuery(urlQuery);
@@ -69,9 +73,15 @@ export default function SearchResultsRoute() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: the search is the trigger
 	useEffect(() => {
 		setPage(1);
-	}, [mailboxId, urlQuery]);
+	}, [mailboxId, urlQuery, order]);
 
-	const { data: searchData, isLoading } = useSearchEmails(mailboxId, urlQuery, page, pageSize);
+	const { data: searchData, isLoading } = useSearchEmails(
+		mailboxId,
+		urlQuery,
+		page,
+		pageSize,
+		order,
+	);
 
 	return (
 		<MailView emails={searchData?.results ?? []}>
@@ -121,6 +131,16 @@ export default function SearchResultsRoute() {
 				isLoading={isLoading}
 				highlight={starred ? undefined : (text) => highlightTerms(text, urlQuery)}
 				showFolder
+				// The same filter the list was asked with, so "everything" is what the search finds.
+				everything={
+					urlQuery.trim() === ""
+						? undefined
+						: {
+								filter: filterOf(urlQuery, labels),
+								offer: t("Select everything this search finds"),
+								chosen: t("Everything this search finds is selected."),
+							}
+				}
 				empty={
 					<div className="flex flex-col items-center justify-center py-24 px-6 text-center">
 						<div className="mb-4">

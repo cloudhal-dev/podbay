@@ -30,6 +30,10 @@ interface MessageListToolbarProps {
 	onSelect: (ids: string[]) => void;
 	isUnread: (email: Email) => boolean;
 	actions: ConversationActions;
+	/** Whether everything of the place or the search is chosen, and not only this page. */
+	all?: boolean;
+	/** Whether "Move to" offers the labels. */
+	moveToLabel?: boolean;
 	folder?: string;
 	page: number;
 	setPage: (page: number) => void;
@@ -49,6 +53,8 @@ export default function MessageListToolbar({
 	onSelect,
 	isUnread,
 	actions,
+	all = false,
+	moveToLabel = true,
 	folder,
 	page,
 	setPage,
@@ -147,7 +153,7 @@ export default function MessageListToolbar({
 				</>
 			) : (
 				<>
-					{folder !== Folders.ARCHIVE && (
+					{folder !== Folders.ARCHIVE && !actions.fromSent && (
 						<IconButton
 							label={t("Archive")}
 							icon={<ArchiveIcon size={18} />}
@@ -161,17 +167,22 @@ export default function MessageListToolbar({
 							onClick={() => actions.notSpam(chosen)}
 						/>
 					) : (
+						!actions.fromSent && (
+							<IconButton
+								label={t("Report spam")}
+								icon={<WarningOctagonIcon size={18} />}
+								onClick={() => actions.reportSpam(chosen)}
+							/>
+						)
+					)}
+					{/* Everything in Trash is deleted for good by emptying it, not from here. */}
+					{!(all && actions.inTrash) && (
 						<IconButton
-							label={t("Report spam")}
-							icon={<WarningOctagonIcon size={18} />}
-							onClick={() => actions.reportSpam(chosen)}
+							label={actions.inTrash ? t("Delete forever") : t("Delete")}
+							icon={<TrashIcon size={18} />}
+							onClick={() => void actions.remove(chosen)}
 						/>
 					)}
-					<IconButton
-						label={actions.inTrash ? t("Delete forever") : t("Delete")}
-						icon={<TrashIcon size={18} />}
-						onClick={() => void actions.remove(chosen)}
-					/>
 					<span className="mx-1 h-5 w-px bg-kumo-line" aria-hidden="true" />
 					<IconButton
 						label={anyUnread ? t("Mark as read") : t("Mark as unread")}
@@ -182,7 +193,7 @@ export default function MessageListToolbar({
 						folders={actions.moveTargets}
 						labels={actions.labels}
 						onMove={(target) => actions.moveTo(chosen, target)}
-						onMoveToLabel={(label) => actions.moveToLabel(chosen, label)}
+						onMoveToLabel={moveToLabel ? (label) => actions.moveToLabel(chosen, label) : undefined}
 					/>
 					<LabelMenu
 						labels={actions.labels}
@@ -193,7 +204,7 @@ export default function MessageListToolbar({
 						className="sr-only ml-2 text-sm text-kumo-subtle @xl:not-sr-only"
 						aria-live="polite"
 					>
-						{t("{count} selected", { count: chosen.length })}
+						{all ? t("Everything selected") : t("{count} selected", { count: chosen.length })}
 					</span>
 				</>
 			)}

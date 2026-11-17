@@ -178,7 +178,7 @@ test("the keyboard drives the list, the conversation and the compose window", as
 	// `g` then `s` goes to Starred, which lists what was starred.
 	await page.keyboard.press("g");
 	await page.keyboard.press("s");
-	await expect(page.getByRole("heading", { name: "Starred" })).toBeAttached();
+	await expect(page.getByRole("heading", { name: "Starred", exact: true })).toBeAttached();
 	await expect(row(page, "Behaviour: keys second")).toBeVisible();
 
 	await page.keyboard.press("?");

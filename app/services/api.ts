@@ -3,6 +3,14 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import type {
+	BulkChange,
+	BulkCountAnswer,
+	BulkFilter,
+	BulkStepAnswer,
+	BulkUndoAnswer,
+	BulkUnit,
+} from "shared/bulk";
 import { t } from "~/i18n";
 import type {
 	AccessKey,
@@ -233,6 +241,18 @@ const api = {
 			`/api/v1/mailboxes/${mailboxId}/folders/${place}/empty`,
 			before === undefined ? {} : { before },
 		),
+	/** One request for the ticked lines: it acts at once and says what it changed (ADR-0014). */
+	actOnLines: (mailboxId: string, body: { ids: string[]; unit: BulkUnit; change: BulkChange }) =>
+		post<BulkStepAnswer>(`/api/v1/mailboxes/${mailboxId}/bulk`, body),
+	/** Counts what a filter finds and changes nothing; `runDeed` then acts on what was counted. */
+	askDeed: (mailboxId: string, body: { filter: BulkFilter; unit: BulkUnit; change: BulkChange }) =>
+		post<BulkCountAnswer>(`/api/v1/mailboxes/${mailboxId}/bulk`, body),
+	/** One step of a counted deed; call again while `more`. */
+	runDeed: (mailboxId: string, deed: string) =>
+		post<BulkStepAnswer>(`/api/v1/mailboxes/${mailboxId}/bulk/${deed}/run`),
+	/** One step of taking a deed back, from the mailbox's record; call again while `more`. */
+	undoDeed: (mailboxId: string, deed: string) =>
+		post<BulkUndoAnswer>(`/api/v1/mailboxes/${mailboxId}/bulk/${deed}/undo`),
 	moveEmail: (mailboxId: string, id: string, folderId: string) =>
 		post<void>(`/api/v1/mailboxes/${mailboxId}/emails/${id}/move`, { folderId }),
 	getThread: (mailboxId: string, threadId: string, opts?: { signal?: AbortSignal }) =>
@@ -284,11 +304,6 @@ const api = {
 		put<Label>(`/api/v1/mailboxes/${mailboxId}/labels/${id}`, change),
 	deleteLabel: (mailboxId: string, id: string) =>
 		del<void>(`/api/v1/mailboxes/${mailboxId}/labels/${id}`),
-	labelConversation: (
-		mailboxId: string,
-		emailId: string,
-		change: { add: string[]; remove: string[] },
-	) => put<{ labels: string[] }>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/labels`, change),
 
 	// Search
 	searchEmails: (mailboxId: string, params: Record<string, string>) =>

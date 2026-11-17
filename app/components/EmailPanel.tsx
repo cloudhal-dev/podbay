@@ -220,18 +220,22 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 			":": () => setExpanded(new Set()),
 			// Archive and go on to the next one, whatever "after filing" says.
 			"]": () => {
-				if (!email || place === Folders.ARCHIVE || !actions.archive([email])) return;
+				if (!email || place === Folders.ARCHIVE || actions.fromSent || !actions.archive([email]))
+					return;
 				if (older) openConversation(older);
 				else closePanel();
 			},
 			"[": () => {
-				if (!email || place === Folders.ARCHIVE || !actions.archive([email])) return;
+				if (!email || place === Folders.ARCHIVE || actions.fromSent || !actions.archive([email]))
+					return;
 				if (newer) openConversation(newer);
 				else closePanel();
 			},
-			e: () => email && place !== Folders.ARCHIVE && away(actions.archive([email])),
+			e: () =>
+				email && place !== Folders.ARCHIVE && !actions.fromSent && away(actions.archive([email])),
 			"#": () => email && void actions.remove([email]).then(away),
-			"!": () => email && place !== Folders.SPAM && away(actions.reportSpam([email])),
+			"!": () =>
+				email && place !== Folders.SPAM && !actions.fromSent && away(actions.reportSpam([email])),
 			s: () => email && actions.star(email),
 			"Shift+U": () => {
 				if (email) actions.setRead([email], false);
@@ -377,14 +381,14 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		onForward: () => startCompose({ mode: "forward", originalEmail: msg }, "inline"),
 		onDelete: () => void actions.remove([msg], "message").then(afterLeaving(msg)),
 		onMarkUnread: () => {
-			actions.setRead([msg], false);
+			actions.setRead([msg], false, "message");
 			closePanel();
 		},
 		onSpam:
 			msg.folder_id === Folders.SPAM
 				? undefined
 				: () => afterLeaving(msg)(actions.reportSpam([msg], "message")),
-		onStar: () => actions.star(msg),
+		onStar: () => actions.star(msg, "message"),
 		onPrint: () => {
 			setExpanded((open) => new Set([...open, msg.id]));
 			setPrinting(msg.id);

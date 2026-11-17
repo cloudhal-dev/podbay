@@ -4,7 +4,8 @@
 // Modified by the Podbay contributors.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { labelKey } from "shared/labels";
+import type { ListOrder } from "shared/list-order";
+import { filterOf, filterParams } from "~/lib/search-filter";
 import { parseSearchQuery } from "~/lib/search-parser";
 import api from "~/services/api";
 import type { Email } from "~/types";
@@ -20,38 +21,29 @@ export function useSearchEmails(
 	query: string,
 	page: number,
 	pageSize: number,
+	order: ListOrder = "newest",
 ) {
 	const queryClient = useQueryClient();
 	return useQuery<{ results: Email[]; totalCount: number }>({
 		queryKey:
 			mailboxId && query
-				? [...queryKeys.search.results(mailboxId, query, page), pageSize]
+				? [...queryKeys.search.results(mailboxId, query, page), pageSize, order]
 				: ["search", "_disabled"],
 		queryFn: async () => {
-			const parsed = parseSearchQuery(query);
+			// A label is asked for by name and sent by id, so the labels are needed first.
+			const labels =
+				parseSearchQuery(query).label === undefined
+					? []
+					: await queryClient.ensureQueryData({
+							queryKey: queryKeys.labels.list(mailboxId!),
+							queryFn: () => api.listLabels(mailboxId!),
+						});
 			const params: Record<string, string> = {
+				...filterParams(filterOf(query, labels)),
 				page: String(page),
 				limit: String(pageSize),
 			};
-			if (parsed.query) params.query = parsed.query;
-			if (parsed.from) params.from = parsed.from;
-			if (parsed.to) params.to = parsed.to;
-			if (parsed.subject) params.subject = parsed.subject;
-			if (parsed.folder) params.folder = parsed.folder;
-			if (parsed.date_start) params.date_start = parsed.date_start;
-			if (parsed.date_end) params.date_end = parsed.date_end;
-			if (parsed.is_read !== undefined) params.is_read = String(parsed.is_read);
-			if (parsed.is_starred !== undefined) params.is_starred = String(parsed.is_starred);
-			if (parsed.has_attachment) params.has_attachment = "true";
-			if (parsed.label !== undefined) {
-				// A label is asked for by name and sent by id. A name that is no label finds nothing.
-				const wanted = labelKey(parsed.label);
-				const labels = await queryClient.ensureQueryData({
-					queryKey: queryKeys.labels.list(mailboxId!),
-					queryFn: () => api.listLabels(mailboxId!),
-				});
-				params.label = labels.find((label) => labelKey(label.name) === wanted)?.id ?? "none";
-			}
+			if (order !== "newest") params.order = order;
 
 			const data = (await api.searchEmails(mailboxId!, params)) as SearchResponse | Email[];
 			if (data && typeof data === "object" && "emails" in data) {

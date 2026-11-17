@@ -96,7 +96,7 @@ export default function ConversationMenu({
 						<DropdownMenu.Separator />
 					</>
 				)}
-				{folder !== Folders.ARCHIVE && (
+				{folder !== Folders.ARCHIVE && !actions.fromSent && (
 					<DropdownMenu.Item icon={ArchiveIcon} onClick={() => actions.archive(targets)}>
 						{t("Archive")}
 					</DropdownMenu.Item>
@@ -120,9 +120,14 @@ export default function ConversationMenu({
 						{t("Not spam")}
 					</DropdownMenu.Item>
 				) : (
-					<DropdownMenu.Item icon={WarningOctagonIcon} onClick={() => actions.reportSpam(targets)}>
-						{t("Report spam")}
-					</DropdownMenu.Item>
+					!actions.fromSent && (
+						<DropdownMenu.Item
+							icon={WarningOctagonIcon}
+							onClick={() => actions.reportSpam(targets)}
+						>
+							{t("Report spam")}
+						</DropdownMenu.Item>
+					)
 				)}
 				<DropdownMenu.Separator />
 				<DropdownMenu.Sub>

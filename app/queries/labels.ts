@@ -42,16 +42,3 @@ export function useDeleteLabel() {
 		onSuccess: (_data, { mailboxId }) => invalidate(mailboxId),
 	});
 }
-
-/** Gives labels to, and takes labels from, the conversation a message belongs to. */
-export function useLabelConversation() {
-	const invalidate = useInvalidateEmailData();
-	return useMutation({
-		mutationFn: (change: { mailboxId: string; emailId: string; add: string[]; remove: string[] }) =>
-			api.labelConversation(change.mailboxId, change.emailId, {
-				add: change.add,
-				remove: change.remove,
-			}),
-		onSuccess: (_data, { mailboxId }) => invalidate(mailboxId),
-	});
-}
