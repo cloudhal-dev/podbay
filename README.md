@@ -2,7 +2,7 @@
 
 Self-hosted mail that runs entirely in your own Cloudflare account. Email Routing brings mail in, Email Sending sends it out, each mailbox is a Durable Object, and messages stay in your account.
 
-> **Status: early development.** Milestone 1 (repository bootstrap) is in progress. Nothing here is ready for real mail yet.
+> **Status: early development.** Sign-in, per-mailbox access and the mail renderer exist and are tested; invitations, queues, search and releases do not yet. Nothing here is ready for real mail.
 
 ## Try it locally
 
@@ -10,7 +10,7 @@ No Cloudflare account is needed. Local development uses simulated mail and never
 
 ```bash
 pnpm install
-pnpm dev        # http://localhost:5173
+pnpm dev        # http://localhost:5173; then open /setup with the token from .dev.vars
 pnpm check      # lint, static checks, typecheck, unit tests, build
 ```
 

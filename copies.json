@@ -12,7 +12,7 @@
 				{
 					"path": ".dev.vars.example",
 					"upstream": ".dev.vars.example",
-					"status": "verbatim"
+					"status": "modified"
 				},
 				{
 					"path": ".gitignore",
@@ -336,9 +336,9 @@
 					"status": "modified"
 				},
 				{
-					"path": "workers/lib/mailbox.ts",
+					"path": null,
 					"upstream": "workers/lib/mailbox.ts",
-					"status": "modified"
+					"status": "removed"
 				},
 				{
 					"path": "workers/lib/schemas.ts",
@@ -368,6 +368,21 @@
 				{
 					"path": "wrangler.jsonc",
 					"upstream": "wrangler.jsonc",
+					"status": "modified"
+				},
+				{
+					"path": "workers/agent/tools.ts",
+					"upstream": "workers/agent/index.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/agent/auto-draft.ts",
+					"upstream": "workers/agent/index.ts",
+					"status": "modified"
+				},
+				{
+					"path": "workers/durableObject/shapes.ts",
+					"upstream": "workers/durableObject/index.ts",
 					"status": "modified"
 				}
 			]

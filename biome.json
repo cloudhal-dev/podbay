@@ -51,9 +51,7 @@
 			"includes": [
 				"workers/index.ts",
 				"workers/durableObject/index.ts",
-				"workers/agent/index.ts",
 				"workers/email-sender.ts",
-				"app/components/AgentPanel.tsx",
 				"app/queries/*.ts"
 			],
 			"linter": {
@@ -69,7 +67,6 @@
 		},
 		{
 			"includes": [
-				"app/components/AgentPanel.tsx",
 				"app/components/ComposePanel.tsx",
 				"app/components/EmailPanel.tsx",
 				"app/components/MCPPanel.tsx",

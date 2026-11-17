@@ -72,7 +72,7 @@ Podbay can be installed by hand from the docs or by an installer acting for the 
 |---|---|
 | Signed release | Each version ships a bundle, a manifest and a signed statement. The manifest lists the Worker, its bindings, Durable Object migrations, queues and assets |
 | Health | `GET /api/health` without a credential: version and schema state, no mail counts, no addresses |
-| Guarded first owner | A new instance is closed. The first owner is created only by a call that carries the setup token set as a Worker secret |
+| Guarded first owner | A new instance is closed. The first owner is created only by `POST /api/setup/owner` with the setup token the deployer set as the Worker secret `SETUP_TOKEN`; it works once. `AUTH_SECRET`, a second secret, signs session cookies |
 | Narrow operator surface | A deploy token authorises a short, documented set of calls. It never returns message content |
 | Names from the deployer | No hard-coded Worker, database, bucket or queue name |
 | No credential, no call home | No Cloudflare token in the Worker and no request to any vendor. Removing the installer leaves Podbay running |
@@ -92,4 +92,4 @@ The project's own site, demos and trial instances live under `cloudhal.dev`, wit
 | 4 | Installer support | A one-click installer can install, update, back up and remove Podbay |
 | 5 | Complete mail (phase B) | Each phase B row ships as its own slice with its tests |
 
-Current state: milestone 1 in progress. See the repository's README.
+Current state: milestones 1 and 2 in progress. `AGENTS.md` lists what is enforced today and what is still open.

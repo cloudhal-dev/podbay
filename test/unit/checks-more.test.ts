@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { accountProblems } from "../../scripts/checks/account.ts";
 import { compatProblems, MAX_AGE_DAYS } from "../../scripts/checks/compat.ts";
+import { headersProblems } from "../../scripts/checks/headers.ts";
 import { htmlProblems } from "../../scripts/checks/html.ts";
 import { secretProblems } from "../../scripts/checks/secrets.ts";
+import { headersFile, SECURITY_HEADERS } from "../../shared/security-headers.ts";
 
 // Sample credentials are assembled at run time, so this file contains none.
 const join = (...parts: string[]) => parts.join("");
@@ -98,5 +100,34 @@ describe("html", () => {
 		expect(htmlProblems("app/x.ts", 'if (el.innerHTML === "") return;')).toEqual([]);
 		expect(htmlProblems("app/x.ts", "// never assign el.innerHTML = body here")).toEqual([]);
 		expect(htmlProblems("workers/x.ts", "el.innerHTML = body;")).toEqual([]);
+	});
+});
+
+describe("headers", () => {
+	it("passes when the file equals the generated content", () => {
+		expect(headersProblems(headersFile(), headersFile())).toEqual([]);
+	});
+
+	it("fails when the file is missing or was edited by hand", () => {
+		expect(headersProblems(null, headersFile())).toHaveLength(1);
+		expect(
+			headersProblems(headersFile().replace("DENY", "SAMEORIGIN"), headersFile()),
+		).toHaveLength(1);
+	});
+
+	it("forbids framing, sniffing and referrers, and requires HTTPS", () => {
+		expect(SECURITY_HEADERS["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
+		expect(SECURITY_HEADERS["X-Frame-Options"]).toBe("DENY");
+		expect(SECURITY_HEADERS["X-Content-Type-Options"]).toBe("nosniff");
+		expect(SECURITY_HEADERS["Referrer-Policy"]).toBe("no-referrer");
+		expect(SECURITY_HEADERS["Strict-Transport-Security"]).toMatch(/^max-age=\d{8,}$/);
+	});
+
+	it("applies every header to every asset", () => {
+		const file = headersFile();
+		expect(file).toContain("\n/*\n");
+		for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+			expect(file).toContain(`  ${name}: ${value}\n`);
+		}
 	});
 });

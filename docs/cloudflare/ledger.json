@@ -262,7 +262,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Retrieves the `R2Object` for the given key containing only object metadata, if the key exists, and `null` if the key does not exist.",
-			"code": ["workers/index.ts", "workers/lib/mailbox.ts", "workers/mcp/index.ts"]
+			"code": ["workers/index.ts"]
 		},
 		{
 			"id": "runtime.r2.get",
@@ -313,7 +313,7 @@
 			"pageUpdated": "2026-11-05",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Named Durable Objects are the most common method of referring to Durable Objects.",
-			"code": ["workers/index.ts", "workers/lib/mailbox.ts", "workers/lib/email-helpers.ts"]
+			"code": ["workers/index.ts", "workers/auth/middleware.ts", "workers/routes/mailboxes.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.sql.exec",
@@ -386,34 +386,48 @@
 			"code": ["workers/lib/ai.ts"]
 		},
 		{
+			"id": "runtime.ai.model.glm-4.7-flash",
+			"kind": "runtime",
+			"relies": "`@cf/zai-org/glm-4.7-flash` is a Workers AI chat model with tool calling that needs no paid plan. It is the assistant's chat model.",
+			"source": "https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/",
+			"pageUpdated": null,
+			"verifiedAt": "2026-11-17",
+			"evidence": "Optimized for dialogue, instruction-following, and multi-turn tool calling across 100+ languages.",
+			"code": ["workers/lib/models.ts", "workers/agent/index.ts"],
+			"note": "The page states the model id, `Function calling | Yes`, `Reasoning | Yes`, $0.0605 per M input and $0.40 per M output tokens, and carries no paid-access or planned-deprecation label. The changelog of 2026-07-28 names it among the models that remain on the Workers Free plan. It replaces `@cf/moonshotai/kimi-k2.5`, which the changelog of 2026-05-08 aliased to `kimi-k2.6` from 2026-05-30; `kimi-k2.6` needs the Workers Paid plan and is retired on 2026-11-20."
+		},
+		{
+			"id": "runtime.ai.model.granite-4.0-h-micro",
+			"kind": "runtime",
+			"relies": "`@cf/ibm-granite/granite-4.0-h-micro` is a Workers AI text model that accepts chat messages and answers in a `response` string. It runs the prompt-injection scan.",
+			"source": "https://developers.cloudflare.com/workers-ai/models/granite-4.0-h-micro/",
+			"pageUpdated": null,
+			"verifiedAt": "2026-11-17",
+			"evidence": "const response = await env.AI.run(\"@cf/ibm-granite/granite-4.0-h-micro\", { messages });",
+			"code": ["workers/lib/models.ts", "workers/lib/ai.ts"],
+			"note": "The page's output schema is `response` (string), `usage`, `tool_calls`; it lists no reasoning, $0.017 per M input and $0.112 per M output tokens (the lowest text-model row on the pricing page), and no paid-access or planned-deprecation label. It replaces `@cf/meta/llama-3.1-8b-instruct-fast`: on 2026-11-17 that model page returns 404 and the catalog does not list the id, although the changelog of 2026-05-08 said the `-fast` variants remain active."
+		},
+		{
 			"id": "runtime.ai.model.llama-4-scout-17b-16e-instruct",
 			"kind": "runtime",
-			"relies": "`@cf/meta/llama-4-scout-17b-16e-instruct` is a Workers AI model id that accepts chat messages.",
+			"relies": "`@cf/meta/llama-4-scout-17b-16e-instruct` is a Workers AI text model that accepts chat messages and answers in a `response` string. It runs the draft verifier.",
 			"source": "https://developers.cloudflare.com/workers-ai/models/llama-4-scout-17b-16e-instruct/",
 			"pageUpdated": null,
 			"verifiedAt": "2026-11-17",
 			"evidence": "const response = await env.AI.run(\"@cf/meta/llama-4-scout-17b-16e-instruct\", { messages });",
-			"code": ["workers/lib/ai.ts"]
+			"code": ["workers/lib/models.ts", "workers/lib/ai.ts"],
+			"note": "The page's output schema is `response` (string), `usage`, `tool_calls`; it lists no reasoning, $0.27 per M input and $0.85 per M output tokens, and no paid-access or planned-deprecation label."
 		},
 		{
-			"id": "runtime.ai.model.llama-3.1-8b-instruct-fast",
+			"id": "runtime.ai.model_retirement",
 			"kind": "runtime",
-			"relies": "`@cf/meta/llama-3.1-8b-instruct-fast` is a Workers AI model id that accepts chat messages.",
-			"source": "https://developers.cloudflare.com/workers-ai/changelog/",
-			"pageUpdated": "2026-04-21",
-			"verifiedAt": null,
-			"evidence": "needs verification: the model page returns 404 and the model index does not list this id. The 2026-05-08 changelog only says the `-fast` variants remain active.",
-			"code": ["workers/lib/ai.ts"]
-		},
-		{
-			"id": "runtime.ai.model.kimi-k2.5",
-			"kind": "runtime",
-			"relies": "`@cf/moonshotai/kimi-k2.5` is a Workers AI model id the agent can run.",
-			"source": "https://developers.cloudflare.com/workers-ai/changelog/",
-			"pageUpdated": "2026-04-21",
-			"verifiedAt": null,
-			"evidence": "needs verification: the 2026-05-08 changelog says the id is deprecated and aliased to kimi-k2.6, at a higher price, from May 30, 2026. The model page returns 404.",
-			"code": ["workers/agent/index.ts"]
+			"relies": "Cloudflare retires Workers AI model ids on announced dates; a retired id fails every request. None of the three ids in `workers/lib/models.ts` is on the list for 2026-11-20.",
+			"source": "https://developers.cloudflare.com/changelog/post/2026-11-05-planned-model-deprecations/",
+			"pageUpdated": "2026-11-05",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Starting November 20, 2026, these models will stop returning responses. Requests to them will fail with an HTTP `410 Gone` error",
+			"code": ["workers/lib/models.ts", "workers/lib/ai.ts"],
+			"note": "The error is code `5028`. The list names `@cf/moonshotai/kimi-k2.6`, `@cf/meta/llama-3.1-8b-instruct-fp8` and 14 other text models. When a model call fails, the injection scan blocks the automatic draft and the draft verifier refuses the draft (both fail closed), so a retired id stops the assistant from drafting but sends and leaks nothing. Read the Workers AI changelog before each release."
 		},
 		{
 			"id": "tooling.local_bindings",
@@ -599,6 +613,47 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "Email Routing is available on both the Workers Free and Workers Paid plans.",
 			"code": ["docs/architecture.md"]
+		},
+		{
+			"id": "wrangler.d1_databases",
+			"kind": "config",
+			"relies": "A D1 database is bound as `env.DB`; it holds accounts, sessions, mailboxes, memberships and the audit log.",
+			"source": "https://developers.cloudflare.com/d1/get-started/",
+			"pageUpdated": "2026-08-25",
+			"verifiedAt": "2026-11-17",
+			"evidence": "\"binding\": \"prod_d1_tutorial\", // available in your Worker on env.DB",
+			"code": ["wrangler.jsonc", "workers/auth/store.ts"],
+			"note": "`migrations_dir` on the same binding points at `migrations/` (source: https://developers.cloudflare.com/d1/reference/migrations/, page updated 2026-06-08)."
+		},
+		{
+			"id": "runtime.d1.batch",
+			"kind": "runtime",
+			"relies": "Statements passed to `batch()` run as one transaction: all of them apply or none does. Podbay uses it wherever writes belong together, because D1 has no interactive transactions.",
+			"source": "https://developers.cloudflare.com/d1/worker-api/d1-database/",
+			"pageUpdated": "2026-06-22",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Batched statements are [SQL transactions ↗︎](https://www.sqlite.org/lang_transaction.html).",
+			"code": ["workers/auth/store.ts", "workers/auth/people.ts"]
+		},
+		{
+			"id": "runtime.d1.foreign_keys",
+			"kind": "runtime",
+			"relies": "Foreign keys are enforced, so deleting a mailbox removes its memberships and deleting a user removes their roles and memberships.",
+			"source": "https://developers.cloudflare.com/d1/sql-api/foreign-keys/",
+			"pageUpdated": "2026-11-10",
+			"verifiedAt": "2026-11-17",
+			"evidence": "By default, D1 enforces that foreign key constraints are valid within all queries and migrations.",
+			"code": ["migrations/0002_index.sql", "migrations/0003_invitations.sql"]
+		},
+		{
+			"id": "runtime.assets.headers_file",
+			"kind": "config",
+			"relies": "A `_headers` file in the asset directory adds response headers to static assets; it does not apply to responses the Worker generates, so the Worker sets the same headers itself.",
+			"source": "https://developers.cloudflare.com/workers/static-assets/headers/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Custom headers defined in the `_headers` file are not applied to responses generated by your Worker code, even if the request URL matches a rule defined in `_headers`.",
+			"code": ["public/_headers", "shared/security-headers.ts", "workers/app.ts"]
 		}
 	]
 }

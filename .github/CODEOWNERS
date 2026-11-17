@@ -15,3 +15,6 @@
 /app/components/EmailIframe.tsx @madraka
 /shared/log.ts            @madraka
 /.github/dependabot.yml   @madraka
+/workers/auth/            @madraka
+/workers/routes/account.ts @madraka
+/migrations/              @madraka

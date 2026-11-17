@@ -24,8 +24,8 @@ Find the paths you changed. A path may sit on more than one boundary.
 |---|---|
 | `workers/lib/inbound.ts`, `workers/lib/filenames.ts`, the `email` handler in `workers/app.ts`, `receiveEmail` in `workers/index.ts`, any use of the mail parser, `shared/log.ts` and any log call | B1 |
 | `app/lib/mail-html.ts`, `app/components/EmailIframe.tsx`, anything that puts message content in the DOM, the attachment route in `workers/index.ts`, `workers/lib/attachments.ts` | B2 |
-| The gate in `workers/app.ts`, the CORS and origin handling in `workers/index.ts`, cookies, response headers, later the sign-in code | B3 |
-| `workers/lib/mailbox.ts`, every route under `/api/v1/mailboxes/`, `workers/durableObject/`, any place that builds a Durable Object name or an R2 key | B4 |
+| `workers/auth/options.ts`, `workers/auth/instance.ts`, `workers/routes/account.ts` (sign-in, setup), the origin check and session lookup in `workers/auth/middleware.ts`, the optional Access check in `workers/app.ts`, `migrations/0001_auth.sql`, cookies, response headers | B3 |
+| `workers/auth/authorize.ts`, `workers/auth/route-table.ts`, `workers/auth/middleware.ts` (the guard), `workers/auth/store.ts`, `workers/routes/mailboxes.ts`, every route under `/api/v1/mailboxes/`, `workers/durableObject/`, `migrations/0002_index.sql`, any place that builds a Durable Object name or an R2 key | B4 |
 | `workers/agent/`, `workers/mcp/`, `workers/lib/tools.ts`, `workers/lib/ai.ts`, `workers/lib/features.ts`, the `/mcp` and `/agents` routes | B5 |
 | `workers/email-sender.ts`, `validateSender` in `workers/lib/email-helpers.ts`, `workers/routes/reply-forward.ts`, the send route in `workers/index.ts`, the send caps in the Durable Object | B6 |
 | Bindings, variables and secrets in `wrangler.jsonc`, `.dev.vars.example`, later the health, setup and operator routes | B7 |
@@ -44,9 +44,9 @@ State on 2026-11-17: milestone 1 (repository bootstrap). Accounts, queues, expor
 |---|---|---|---|
 | B1 | Inbound mail bytes | S2, S3, S7, D2, D13 | Partly: envelope routing, file names and log redaction are tested |
 | B2 | Mail HTML and attachments in the browser | S4, S5, S11, S12 | Partly: the renderer is unit-tested and a static check keeps it the only one |
-| B3 | Sign-in, sessions and step-up | S10, S11 | Not built yet |
-| B4 | Per-mailbox authorisation | S1, S2, S10, S13 | Not built yet |
-| B5 | The agent and MCP | S1, S9, D2, D7 | Partly: off by default is tested |
+| B3 | Sign-in, sessions and step-up | S10, S11 | Partly: password sign-in, sessions, the guarded first owner and the origin check are built and tested; passkeys, the authenticator app, step-up and invitations are not |
+| B4 | Per-mailbox authorisation | S1, S2, S10, S13 | Built and tested for the API; the agent connection is checked; MCP tools are not limited per mailbox yet |
+| B5 | The agent and MCP | S9, D7, S1 | The assistant: gated, cannot send, tested with a fake model. MCP: owner-only, tools not limited per mailbox, sends without confirmation |
 | B6 | The outbound sender | S8, S9, D7 | Partly: the `From` check is unit-tested |
 | B7 | The setup and operator tokens | S6, S10, S14 | Tokens not built yet. Static checks for S6 and S14 exist |
 | B8 | Queues and exports | S1, S2, S3, S5, S13, D2 | Not built yet |
@@ -76,25 +76,25 @@ Each boundary below has the same five lines: what crosses it, the invariant, the
 
 - **Crosses:** credentials, session cookies, invitation and recovery links and step-up proofs, from any browser.
 - **Invariant:** the design in [sign-in and access](../../../docs/auth-and-access.md). Invitation only. A new instance is closed until the guarded first-owner call. Sessions are server-side; cookies are host-only, `HttpOnly`, `Secure`, `SameSite=Lax`. Sensitive changes need fresh proof. Every authentication route is rate-limited and answers uniformly. Every state-changing request is checked against the app's own origin.
-- **Code today:** none of it. The only gate is the Cloudflare Access token check in `workers/app.ts`: it fails closed outside local development and is skipped in local development. `workers/index.ts` sets a CORS policy that allows no other origin; that is not yet the origin check on state-changing requests that S11 asks for.
-- **Proof today:** none.
-- **Open:** everything; lands with milestone 2. Until then, do not weaken the Access gate or the origin handling, and add a test when you touch either.
+- **Code today:** Better Auth on D1 (`workers/auth/options.ts`, tables generated into `migrations/0001_auth.sql` and checked by `node scripts/auth-ddl.ts --check`). Password sign-in with a 12-character minimum; rate limits counted in the database. Accounts cannot be created over HTTP: the sign-up endpoint is refused, and accounts are made on the server by the guarded first-owner call (`POST /api/setup/owner`, needs the `SETUP_TOKEN` secret, works once, compared in constant time). An account without an instance role is not admitted. Every request that changes state must carry the app's own `Origin` (`sameOrigin` in `workers/auth/middleware.ts`). Cloudflare Access is an optional outer layer; a half-configured Access refuses to run.
+- **Proof today:** `test/workerd/access.test.ts`: a new instance answers 401 everywhere; the first-owner call is refused without the token, with a weak password and from another origin, and works once; HTTP sign-up is refused and creates no row; a wrong password and a forged cookie are refused; the session cookie is `HttpOnly`, `Secure`, `SameSite=Lax`; a cross-origin or origin-less mutation is refused.
+- **Open:** passkeys and the authenticator app (decided for v0.1), step-up for sensitive changes, invitations and recovery, the app's own response headers (content policy, `frame-ancestors`, HSTS), session listing and revocation in the UI. Do not add a second way to create an account.
 
 ### B4. Per-mailbox authorisation
 
 - **Crosses:** a mailbox, message or attachment id in a request, and the identity of the caller.
 - **Invariant:** deny by default. One `authorize(actor, action, resource)` decides for every route, tool and connection, from one table. A non-member gets "not found". **Managing is not reading:** an owner or administrator without a membership cannot open a mailbox, and granting themselves one needs step-up, is audited and is visible to the mailbox's owners. An id from a request is resolved to an opaque id before it touches storage. Deleting a message or a mailbox removes its rows, its Durable Object data and its R2 objects.
-- **Code today:** not built. Whoever passes the Access gate reaches every mailbox. `requireMailbox` in `workers/lib/mailbox.ts` checks only that the mailbox exists, and the storage names still come from the request path.
-- **Proof today:** one existence test, "answers 404 for a mailbox that does not exist", in `test/workerd/inbound.test.ts`. It proves nothing about membership.
-- **Open:** everything; lands with milestone 2 (S1 table and its enumeration test, a non-member test per entry, the administrator-without-membership test, the deletion test).
+- **Code today:** `authorize` in `workers/auth/authorize.ts` decides; `ROUTE_TABLE` in `workers/auth/route-table.ts` names the right of every API route; the guard in `workers/auth/middleware.ts` runs in front of all of `/api/*`, refuses a route that is not in the table, resolves the mailbox through the D1 index with the caller's membership, and names the Durable Object after the address stored in the index, never after the request. A non-member gets 404, whatever their instance role. Deleting a mailbox purges its Durable Object and its attachments (`purge` in `workers/durableObject/index.ts`). The agent connection checks a session and the right to change mail in that mailbox (`mailboxDecision`).
+- **Proof today:** `test/unit/authorize.test.ts` (the whole rights matrix, the table's shape) and `test/workerd/access.test.ts`: every registered route is in the table and the table names no missing route; each mailbox route answers 404 to a signed-in non-member and to an administrator without a membership, 401 without a session, 403 to a reader where it changes anything, 403 to a sender where it manages; a crafted address is 404; an administrator can create a mailbox for someone else and then cannot open it; deletion removes mail, attachments, the index row and memberships, and a new mailbox at the same address starts empty.
+- **Open:** opaque storage ids (the Durable Object and attachment keys are still named after the address and the message id); membership management routes with step-up and audit for a manager granting themselves access; MCP tools take any mailbox id and are reachable only by the instance owner until they are limited; the assistant's chat history is not purged with the mailbox.
 
 ### B5. The agent and MCP
 
 - **Crosses:** mail content into a model prompt, and tool calls from a model or an MCP client back into mailboxes.
 - **Invariant:** both are off unless `AGENT_ENABLED` or `MCP_ENABLED` is exactly `"true"`. They hold the caller's rights only. A send or a forward needs a person's confirmation in the UI. Mail content given to a model is data, never instructions; the injection scan is advisory. Tests and local development never call a model.
-- **Code today:** `workers/lib/features.ts` and the gates in `workers/app.ts`; `workers/agent/`, `workers/mcp/`, `workers/lib/tools.ts`, `workers/lib/ai.ts`.
-- **Proof today:** `test/unit/features.test.ts` and "optional features are off by default" in `test/workerd/inbound.test.ts` (`/mcp` and `/agents` answer 404).
-- **Open:** tool authorisation, and the confirmation rule: with MCP turned on, the `send_reply` and `send_email` tools send without a confirmation token today. Also the tool tests as a non-member and a fake for the model.
+- **Code today:** `workers/lib/features.ts` and the gates in `workers/app.ts`: the assistant's connection needs a session and the right to change mail in the mailbox it names (`mailboxDecision`), and MCP needs a session of the instance owner. The assistant's tools (`workers/agent/tools.ts`) run with `withoutSend(env)`, an environment whose send binding refuses, so no tool can send whatever the model asks; they only save drafts. The automatic draft (`workers/agent/auto-draft.ts`) scans the sender, the subject and the body before any of it reaches the chat model, and fails closed: only a clear NO passes. Fixed rules follow every system prompt, including a mailbox's own (`workers/agent/prompt.ts`). Every model id is in `workers/lib/models.ts`. MCP (`workers/mcp/`, `workers/lib/tools.ts`) is unchanged from the seed.
+- **Proof today:** `test/unit/features.test.ts`; "optional features are off by default" in `test/workerd/inbound.test.ts`; `test/workerd-agent/gate.test.ts` (with both features on: 401 without a session, 404 to a non-member and to an administrator without a membership, 403 to a reader, a crafted mailbox name refused, MCP refused to everyone but the owner); `test/unit/agent-no-send.test.ts` (a model that asks to send reaches no send binding, and Sent stays empty); `test/unit/agent-ai.test.ts`, `agent-auto-draft.test.ts`, `agent-prompt.test.ts` and `agent-models.test.ts`, all against the fake model in `test/helpers/fake-ai.ts`.
+- **Open:** MCP tools take any mailbox id and `send_reply` and `send_email` send without a person's confirmation; that is why MCP is owner-only and must stay off for real mail. In chat, mail read through a tool is not scanned, so a hostile message can still make the assistant move mail to Trash or discard drafts. The assistant has not been run against a real model since its model ids changed.
 
 ### B6. The outbound sender
 
