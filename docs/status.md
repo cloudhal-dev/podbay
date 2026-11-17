@@ -65,6 +65,7 @@
 | The app's words are messages, in English and Turkish: every message the code names has a Turkish translation with the same values, the catalog holds nothing the code dropped, and no words stand bare in the markup of a screen; a person chooses the language in the settings or takes the device's, it takes effect at once and is kept in the browser, and dates follow it | D8 | `pnpm static messages`, `test/unit/messages.test.ts`; `pnpm e2e`: `language.spec.ts` |
 | The formatting bar sizes, colours, highlights, aligns and indents what is written and takes it off again; what goes into a message is literal markup with nothing of the app's theme, a choice from one of its menus leaves the cursor in the text, and its menus open above the compose window | D9 | `pnpm e2e`: `writing.spec.ts` (the formatting bar) |
 | A mailbox sends at most 20 messages in an hour and 100 in a day, counted in time: until 2026-11-17 the hour was compared as text against dates written another way, so it counted the whole day and a mailbox could send twenty messages a day | S8 | `test/workerd/sending-limit.test.ts` |
+| A person looks after their own account: they see where they are signed in (only with fresh proof, and only their own sessions), end one browser or all the others, and change their password with the current one and fresh proof; a change signs every other browser out, keeps this one in and retires the old password. What ends a session is used and never drawn on the page | S10 | `test/workerd/sessions.test.ts`; `pnpm e2e`: `account.spec.ts`; `test/unit/user-agent.test.ts` |
 
 ## 2. Not enforced yet
 
@@ -72,7 +73,7 @@ These rules are accepted but their checks land with the code they guard. Until t
 
 | Rules | Lands with |
 |---|---|
-| S10 (a recovery address outside Podbay with reset links by mail; sessions listed and ended in the app; changing a password in the app; a rate limit on Podbay's own public routes) | Milestone 2, remaining work |
+| S10 (a recovery address outside Podbay with reset links by mail; a rate limit on Podbay's own public routes) | Milestone 2, remaining work |
 | S8, S12 (one send path, constrained outbound requests); keys for the HTTP API and management keys; OAuth 2.1 with a consent screen for MCP clients ([ADR-0004](adr/0004-mcp-keys-first.md)) | Milestone 3 |
 | S18 (audit records and the release gate; the skill and the hash check exist) | Before v0.1 |
 | D2, D3, D9, D10, D13 (schemas at every entry point, migration tests, design lint, drift check, budgets) | Milestones 1 to 3 |

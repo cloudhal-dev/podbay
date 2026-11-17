@@ -21,7 +21,7 @@ Self-hosted mail for a person, a family or a small organisation, running entirel
 
 ## 3. What comes next, in order
 
-1. Finish milestone 2: the first full security audit, with its record ([`podbay-audit`](../.claude/skills/podbay-audit/SKILL.md)), and password change and sessions in the app.
+1. Finish milestone 2: the first full security audit, with its record ([`podbay-audit`](../.claude/skills/podbay-audit/SKILL.md)). Password change and sessions in the app were built on 2026-11-17.
 2. Milestone 3, storage first: raw messages in R2, inbound through a queue, opaque storage ids. These change persisted formats, so each starts with an ADR.
 3. Search (full-text in the mailbox's own database), then exports and deletion that an owner can verify.
 4. The release: one build, attested and signed, and the full audit that gates version 0.1.
