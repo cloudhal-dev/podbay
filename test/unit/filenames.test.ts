@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { headerFilename, storageFilename } from "../../workers/lib/filenames.ts";
+import {
+	headerFilename,
+	STORAGE_NAME_BYTES,
+	storageFilename,
+} from "../../workers/lib/filenames.ts";
 
 describe("storageFilename", () => {
 	it("keeps an ordinary name", () => {
@@ -26,6 +30,27 @@ describe("storageFilename", () => {
 
 	it.each([undefined, null, "", "   ", ".", ".."])("falls back for %j", (name) => {
 		expect(storageFilename(name)).toBe("untitled");
+	});
+
+	it("cuts a name that a storage key could not hold, and keeps its extension", () => {
+		const bytes = (text: string) => new TextEncoder().encode(text).length;
+		const long = storageFilename(`${"a".repeat(5000)}.pdf`);
+		expect(bytes(long)).toBe(STORAGE_NAME_BYTES);
+		expect(long.endsWith(".pdf")).toBe(true);
+		expect(long.startsWith("aaaa")).toBe(true);
+
+		// Never inside a character, whatever its width.
+		const wide = storageFilename(`${"ş".repeat(400)}.docx`);
+		expect(bytes(wide)).toBeLessThanOrEqual(STORAGE_NAME_BYTES);
+		expect(wide).toMatch(/^ş+\.docx$/);
+		const emoji = storageFilename("📎".repeat(300));
+		expect(bytes(emoji)).toBeLessThanOrEqual(STORAGE_NAME_BYTES);
+		expect([...emoji].every((char) => char === "📎")).toBe(true);
+
+		// A name without an ordinary extension is cut all the same, and a short one is left alone.
+		expect(bytes(storageFilename(`a.${"b".repeat(3000)}`))).toBe(STORAGE_NAME_BYTES);
+		const exact = `${"a".repeat(STORAGE_NAME_BYTES - 4)}.txt`;
+		expect(storageFilename(exact)).toBe(exact);
 	});
 });
 

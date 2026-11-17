@@ -718,6 +718,16 @@
 			"evidence": "When no Worker subrequest is triggered, `cf-connecting-ip` reflects the client's IP address and the `x-real-ip` header is stripped.",
 			"code": ["workers/auth/options.ts"],
 			"note": "The page also says that another Worker in front, on the same zone, can alter `x-real-ip` and with it this header. An instance placed behind such a Worker must trust it."
+		},
+		{
+			"id": "limit.r2.object_key_length",
+			"kind": "limit",
+			"relies": "A storage key ends with the file's name, so a name is cut to 255 bytes before it becomes part of a key: a longer key would make the write fail, and with it the delivery of the message that carries the file.",
+			"source": "https://developers.cloudflare.com/r2/platform/limits/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Object key length | 1,024 bytes",
+			"code": ["workers/lib/filenames.ts"]
 		}
 	]
 }

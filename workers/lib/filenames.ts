@@ -24,9 +24,33 @@ function replaceUnsafe(name: string, forbidden: ReadonlySet<string>): string {
  * characters, never empty and never a dot segment.
  */
 export function storageFilename(name: string | null | undefined): string {
-	const cleaned = replaceUnsafe(name ?? "", STORAGE_FORBIDDEN).trim();
+	const cleaned = shortened(replaceUnsafe(name ?? "", STORAGE_FORBIDDEN).trim());
 	if (cleaned === "" || cleaned === "." || cleaned === "..") return "untitled";
 	return cleaned;
+}
+
+/**
+ * A storage key holds 1,024 bytes and the name is its last part. A longer name would make the
+ * write fail, and with it the delivery of the message that carries the file. So a name keeps
+ * this many bytes at most: its beginning, and its extension when it has an ordinary one.
+ */
+export const STORAGE_NAME_BYTES = 255;
+const LONGEST_EXTENSION = 16;
+const encoder = new TextEncoder();
+
+function shortened(name: string): string {
+	if (encoder.encode(name).length <= STORAGE_NAME_BYTES) return name;
+	const dot = name.lastIndexOf(".");
+	const extension = dot > 0 && name.length - dot <= LONGEST_EXTENSION ? name.slice(dot) : "";
+	let room = STORAGE_NAME_BYTES - encoder.encode(extension).length;
+	let kept = "";
+	// Whole characters only: a name is never cut inside one.
+	for (const char of name.slice(0, name.length - extension.length)) {
+		room -= encoder.encode(char).length;
+		if (room < 0) break;
+		kept += char;
+	}
+	return `${kept.trimEnd()}${extension}`;
 }
 
 /** A name that is safe inside the quoted `filename="..."` of a Content-Disposition header. */
