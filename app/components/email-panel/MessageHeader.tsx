@@ -8,9 +8,11 @@ import {
 	CaretDownIcon,
 	ChatCircleIcon,
 	CodeIcon,
+	CopyIcon,
 	DotsThreeVerticalIcon,
 	EnvelopeSimpleIcon,
 	MagnifyingGlassIcon,
+	PencilSimpleIcon,
 	PrinterIcon,
 	StarIcon,
 	TrashIcon,
@@ -37,6 +39,8 @@ export interface MessageActions {
 	onStar: () => void;
 	onPrint: () => void;
 	onFindFromSender: () => void;
+	/** Starts a new message to whoever wrote this one. */
+	onWriteToSender: () => void;
 	onShowHeaders: () => void;
 	/** Only for mail from a list that says how to leave it. */
 	onUnsubscribe?: () => void;
@@ -125,7 +129,41 @@ export default function MessageHeader({
 
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-2">
-					<span className="truncate text-sm font-semibold text-kumo-default">{sender}</span>
+					{actions && !isSelf && !isDraft ? (
+						// The sender's name opens what can be done with the sender, as a card would.
+						<DropdownMenu>
+							<DropdownMenu.Trigger
+								render={
+									<button
+										type="button"
+										aria-label={t("About the sender {address}", { address: email.sender })}
+										className="min-w-0 cursor-pointer truncate border-0 bg-transparent p-0 text-left text-sm font-semibold text-kumo-default hover:underline print:no-underline"
+									>
+										{sender}
+									</button>
+								}
+							/>
+							<DropdownMenu.Content align="start">
+								<DropdownMenu.Group>
+									<DropdownMenu.Label>{email.sender}</DropdownMenu.Label>
+									<DropdownMenu.Item icon={PencilSimpleIcon} onClick={actions.onWriteToSender}>
+										{t("Write to this sender")}
+									</DropdownMenu.Item>
+									<DropdownMenu.Item icon={MagnifyingGlassIcon} onClick={actions.onFindFromSender}>
+										{t("Find messages from this sender")}
+									</DropdownMenu.Item>
+									<DropdownMenu.Item
+										icon={CopyIcon}
+										onClick={() => void navigator.clipboard?.writeText(email.sender)}
+									>
+										{t("Copy the address")}
+									</DropdownMenu.Item>
+								</DropdownMenu.Group>
+							</DropdownMenu.Content>
+						</DropdownMenu>
+					) : (
+						<span className="truncate text-sm font-semibold text-kumo-default">{sender}</span>
+					)}
 					{isDraft && <Badge variant="outline">{t("Draft")}</Badge>}
 					{actions?.onUnsubscribe && (
 						<button

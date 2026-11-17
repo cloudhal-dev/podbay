@@ -231,3 +231,37 @@ test("holding Shift selects every line between the last box used and this one", 
 	await expect(box("three")).not.toBeChecked();
 	await expect(box("four")).toBeChecked();
 });
+
+test("the sender's name opens what can be done with the sender, and the settings point to the account", async ({
+	page,
+	app,
+}) => {
+	await app.deliver(
+		mime({ subject: "Choices: about the sender", to: app.account.mailbox, html: "<p>Hello</p>" }),
+	);
+	const base = `/mailbox/${encodeURIComponent(app.account.mailbox)}`;
+	await page.goto(`${base}/emails/inbox`);
+	await row(page, "Choices: about the sender").click();
+
+	// Writing to the sender starts a new message, addressed.
+	const sender = page.getByRole("button", { name: "About the sender ada@sender.test" });
+	await sender.click();
+	await page.getByRole("menuitem", { name: "Write to this sender" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	await expect(compose.getByRole("combobox", { name: "To" })).toHaveValue("ada@sender.test");
+	await compose.getByRole("button", { name: "Discard" }).click();
+
+	// Finding their mail is a search a person could have typed.
+	await sender.click();
+	await page.getByRole("menuitem", { name: "Find messages from this sender" }).click();
+	await expect(page).toHaveURL(/search/);
+	await expect(page.getByRole("searchbox")).toHaveValue(/from:ada@sender\.test/);
+
+	// The settings of a mailbox say where the account's own settings are.
+	await page.goto(`${base}/settings?tab=account`);
+	await expect(page.getByText(app.account.email)).toBeVisible();
+	await page.getByRole("link", { name: "Open sign-in and security" }).click();
+	await expect(page.getByRole("heading", { name: "Sign-in and security" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Where you are signed in" })).toBeVisible();
+	expect(app.watch.errors).toEqual([]);
+});

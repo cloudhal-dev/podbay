@@ -5,6 +5,7 @@
 
 import { Loader } from "@cloudflare/kumo";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
+import AccountSettings from "~/components/settings/AccountSettings";
 import AssistantSettings from "~/components/settings/AssistantSettings";
 import GeneralSettings from "~/components/settings/GeneralSettings";
 import LabelSettings from "~/components/settings/LabelSettings";
@@ -20,6 +21,7 @@ const TABS = [
 	{ id: "labels", name: m("Labels") },
 	{ id: "mailbox", name: m("Mailbox") },
 	{ id: "assistant", name: m("Assistant") },
+	{ id: "account", name: m("Account") },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -78,6 +80,7 @@ export default function SettingsRoute() {
 				)}
 				{current === "mailbox" && <MailboxDetails mailbox={mailbox} />}
 				{current === "assistant" && <AssistantSettings mailbox={mailbox} />}
+				{current === "account" && <AccountSettings />}
 			</div>
 		</div>
 	);

@@ -31,7 +31,9 @@ export const tr: Readonly<Record<string, string>> = {
 	"A second button on an answer: send it and file its conversation in one press.":
 		"Yanıtta ikinci bir düğme: tek basışta gönderir ve yazışmayı arşivler.",
 	AI: "YZ",
+	"About the sender {address}": "Gönderen hakkında: {address}",
 	Access: "Erişim",
+	Account: "Hesap",
 	Actions: "İşlemler",
 	"Actions on a line": "Satırdaki işlemler",
 	Add: "Ekle",
@@ -141,6 +143,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Conversations on a page": "Sayfa başına yazışma",
 	"Copied!": "Kopyalandı!",
 	Copy: "Kopyala",
+	"Copy the address": "Adresi kopyala",
 	"Copy the key": "Anahtarı kopyala",
 	"Copy the recovery codes": "Kurtarma kodlarını kopyala",
 	"Copy the recovery link": "Kurtarma bağlantısını kopyala",
@@ -305,6 +308,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Mailbox created successfully!": "Posta kutusu oluşturuldu!",
 	"Mailbox deleted": "Posta kutusu silindi",
 	Mailboxes: "Posta kutuları",
+	"Mailboxes and programs": "Posta kutuları ve programlar",
 	"Main menu": "Ana menü",
 	"Make the compose window larger": "Yazma penceresini büyüt",
 	"Make the compose window smaller": "Yazma penceresini küçült",
@@ -383,6 +387,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Open in a window": "Pencerede aç",
 	"Open or fold every message of the open conversation":
 		"Açık yazışmanın tüm iletilerini aç ya da katla",
+	"Open sign-in and security": "Oturum açma ve güvenliği aç",
 	"Open the conversation": "Yazışmayı aç",
 	"Open the page": "Sayfayı aç",
 	"Open this link, or give it to {email}. It works once and is shown only now.":
@@ -502,6 +507,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Sign-in and security": "Oturum açma ve güvenlik",
 	Signature: "İmza",
 	"Signature saved": "İmza kaydedildi",
+	"Signed in as": "Oturum açan",
 	"Signed in as {email}.": "{email} olarak oturum açıldı.",
 	"Signed in {date}": "Oturum açıldı: {date}",
 	"Single keys that act on mail, such as c to write.":
@@ -531,6 +537,8 @@ export const tr: Readonly<Record<string, string>> = {
 		"Bu e-posta ve parola buradaki bir hesapla eşleşmiyor.",
 	"That passkey could not be used here.": "Bu geçiş anahtarı burada kullanılamadı.",
 	"The account could not be created.": "Hesap oluşturulamadı.",
+	"The account these settings and this mail are open with.":
+		"Bu ayarların ve bu postanın açıldığı hesap.",
 	"The authenticator app could not be set up.": "Kimlik doğrulama uygulaması kurulamadı.",
 	"The conversation with the assistant will be removed. Your mail is not touched.":
 		"Asistanla olan sohbet kaldırılır. Postalarınıza dokunulmaz.",
@@ -544,6 +552,8 @@ export const tr: Readonly<Record<string, string>> = {
 		"Podbay'in kendi metinlerinin dili. Postalar yazıldıkları dilde kalır.",
 	"The list of people could not be loaded.": "Kişi listesi yüklenemedi.",
 	"The mailboxes could not be loaded.": "Posta kutuları yüklenemedi.",
+	"The mailboxes you can open, and the keys of the AI clients you connected.":
+		"Açabildiğiniz posta kutuları ve bağladığınız yapay zekâ istemcilerinin anahtarları.",
 	'The marked actions need a key with "Read, organise, draft" and a mailbox you can write in.':
 		'İşaretli işlemler için "Okuma, düzenleme, taslak" yetkili bir anahtar ve yazabildiğiniz bir posta kutusu gerekir.',
 	"The member could not be removed.": "Üye çıkarılamadı.",
@@ -647,6 +657,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Who may read this mailbox and send as it.":
 		"Bu posta kutusunu kimlerin okuyabileceği ve onun adına gönderebileceği.",
 	"Write a new message": "Yeni ileti yaz",
+	"Write to this sender": "Bu gönderene yaz",
 	Yellow: "Sarı",
 	You: "Siz",
 	"You are a member": "Üyesiniz",
@@ -674,6 +685,8 @@ export const tr: Readonly<Record<string, string>> = {
 	"Your password is changed. Every other browser was signed out.":
 		"Parolanız değiştirildi. Diğer tüm tarayıcılardaki oturumlar kapatıldı.",
 	"Your password is set": "Parolanız belirlendi",
+	"Your password, your passkeys, your authenticator app, and the browsers you are signed in with.":
+		"Parolanız, geçiş anahtarlarınız, kimlik doğrulama uygulamanız ve oturum açtığınız tarayıcılar.",
 	"Your sessions could not be loaded.": "Oturumlarınız yüklenemedi.",
 	"a person whose account is gone": "hesabı artık olmayan bir kişi",
 	"added {date}": "{date} tarihinde eklendi",

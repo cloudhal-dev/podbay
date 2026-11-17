@@ -388,6 +388,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 			setPrinting(msg.id);
 		},
 		onFindFromSender: () => findFrom(msg),
+		onWriteToSender: () => startCompose({ mode: "new", prefill: { to: msg.sender, subject: "" } }),
 		onShowHeaders: () => setSourceViewEmail(msg),
 		onUnsubscribe: leaveList(msg),
 	});
