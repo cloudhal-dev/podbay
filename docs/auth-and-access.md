@@ -41,8 +41,9 @@ Better Auth is used for identity only. Authorisation is Podbay's own code, in on
 A mail product cannot send a password reset to the mailbox the person is locked out of. So:
 
 - **A recovery address is outside Podbay.** Each account may record an external address for reset links.
-- **Administrators can issue a one-time recovery link** for another account. It is audited and it never reveals the old credentials.
-- **The last owner recovers through the operator path**: a one-time link created with the deploy token, by the person who controls the Cloudflare account, or by the installer acting for them.
+- **Owners and administrators can issue a one-time recovery link** for another account: an owner for anyone, an administrator for members only, nobody for themselves. It needs fresh proof, is audited and never reveals the old credentials.
+- **The last owner recovers through the operator path**: a one-time link created with the setup token (the `SETUP_TOKEN` secret), by the person who controls the Cloudflare account, or by the installer acting for them. It serves owners only. A deployer who removes the secret after setup closes this path until they set it again.
+- **A recovery link resets the account to a new password alone.** It works once, for a day. Using it ends every session, removes the authenticator app and the passkeys and revokes the person's keys for programs: whatever was lost or stolen stops working, and the person sets their second step up again.
 - **Before a sending domain is onboarded**, Podbay cannot send mail at all. Invitation and recovery links are then shown to the administrator to pass on by hand.
 
 ## 3. Who may do what
