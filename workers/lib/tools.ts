@@ -46,8 +46,6 @@ export async function toolListEmails(
 		folder: params.folder,
 		limit: params.limit,
 		page: params.page,
-		sortColumn: "date",
-		sortDirection: "DESC",
 	});
 }
 

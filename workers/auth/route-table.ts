@@ -107,6 +107,12 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	// Emptying Trash or Spam deletes for good; the route takes no other place (ADR-0009).
 	{ method: "POST", path: `${M}/folders/:folderId/empty`, right: "mailbox.write" },
 
+	// One request acts on many conversations (ADR-0014): the ticked lines at once, or everything
+	// a filter finds after it was counted, in steps. Nothing here deletes for good or sends.
+	{ method: "POST", path: `${M}/bulk`, right: "mailbox.write" },
+	{ method: "POST", path: `${M}/bulk/:deedId/run`, right: "mailbox.write" },
+	{ method: "POST", path: `${M}/bulk/:deedId/undo`, right: "mailbox.write" },
+
 	// Labels: anyone who reads the mailbox sees them; changing one, or what carries it, is a change.
 	{ method: "GET", path: `${M}/labels`, right: "mailbox.read" },
 	{ method: "POST", path: `${M}/labels`, right: "mailbox.write" },

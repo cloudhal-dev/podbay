@@ -2,7 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import type { MailboxDO } from "../durableObject";
-import type { SearchFilterOptions } from "./list-options";
+import type { ListOrder, SearchFilterOptions } from "./list-options";
 
 /**
  * The mailbox calls whose inferred RPC return types are too deep for the compiler
@@ -16,11 +16,12 @@ export interface MailboxQueries {
 		folder?: string;
 		page?: number;
 		limit?: number;
+		order?: ListOrder;
 	}): Promise<unknown[]>;
 	countThreadedEmails(folder: string): Promise<number>;
 	getThreadEmails(threadId: string): Promise<unknown[]>;
 	searchEmails(
-		options: SearchFilterOptions & { page?: number; limit?: number },
+		options: SearchFilterOptions & { page?: number; limit?: number; order?: ListOrder },
 	): Promise<unknown[]>;
 	countSearchResults(options: SearchFilterOptions): Promise<number>;
 	findThreadBySubject(subject: string, senderAddress?: string): Promise<string | null>;

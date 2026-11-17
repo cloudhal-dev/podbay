@@ -9,8 +9,14 @@ import { and, asc, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/durable-sqlite";
 import { Folders } from "../../shared/folders";
 import * as schema from "../db/schema";
-import { parseSortColumn, type SearchFilterOptions, type SortColumn } from "../lib/list-options";
+import {
+	conversationOrderSql,
+	type ListOrder,
+	type SearchFilterOptions,
+} from "../lib/list-options";
 import type { Env } from "../types";
+import * as steps from "./deed-steps";
+import * as deeds from "./deeds";
 import * as drafts from "./drafts";
 import { type EmptiedBatch, emptyBatch } from "./emptying";
 import * as labels from "./labels";
@@ -32,20 +38,6 @@ const NORMALIZED_SUBJECT_SQL = `LOWER(TRIM(
 		're: ', ''), 'fwd: ', ''), 'fw: ', '')
 ))`;
 
-/**
- * Map SortColumn string names to Drizzle column references for safe
- * ORDER BY construction (no string interpolation into SQL).
- */
-const SORT_COLUMN_MAP = {
-	id: schema.emails.id,
-	subject: schema.emails.subject,
-	sender: schema.emails.sender,
-	recipient: schema.emails.recipient,
-	date: schema.emails.date,
-	read: schema.emails.read,
-	starred: schema.emails.starred,
-} satisfies Record<SortColumn, (typeof schema.emails)[keyof typeof schema.emails]>;
-
 export class MailboxDO extends DurableObject<Env> {
 	declare __DURABLE_OBJECT_BRAND: never;
 	db: ReturnType<typeof drizzle>;
@@ -59,19 +51,10 @@ export class MailboxDO extends DurableObject<Env> {
 	// ── Email CRUD (Drizzle) ───────────────────────────────────────
 
 	async getEmails(options: GetEmailsOptions = {}) {
-		const {
-			folder,
-			thread_id,
-			page = 1,
-			limit: rawLimit = 25,
-			sortColumn: rawSortColumn = "date",
-			sortDirection = "DESC",
-		} = options;
+		const { folder, thread_id, page = 1, limit: rawLimit = 25, order } = options;
 
 		// Cap pagination limit to prevent unbounded queries
 		const limit = Math.min(Math.max(rawLimit, 1), 100);
-
-		const sortColumn: SortColumn = parseSortColumn(rawSortColumn) ?? "date";
 
 		const offset = (page - 1) * limit;
 
@@ -85,8 +68,14 @@ export class MailboxDO extends DurableObject<Env> {
 			conditions.push(eq(schema.emails.thread_id, thread_id));
 		}
 
-		const orderCol = SORT_COLUMN_MAP[sortColumn];
-		const orderDir = sortDirection === "ASC" ? asc(orderCol) : desc(orderCol);
+		// Unread or starred messages first when asked, newest first inside each group (ADR-0014).
+		const newest = desc(schema.emails.date);
+		const orderBy =
+			order === "unread"
+				? [asc(schema.emails.read), newest]
+				: order === "starred"
+					? [desc(schema.emails.starred), newest]
+					: [newest];
 
 		const result = this.db
 			.select({
@@ -107,7 +96,7 @@ export class MailboxDO extends DurableObject<Env> {
 			})
 			.from(schema.emails)
 			.where(conditions.length > 0 ? and(...conditions) : undefined)
-			.orderBy(orderDir)
+			.orderBy(...orderBy)
 			.limit(limit)
 			.offset(offset)
 			.all();
@@ -149,7 +138,7 @@ export class MailboxDO extends DurableObject<Env> {
 	// ── Threaded queries (raw SQL — too complex for Drizzle's builder) ──
 
 	async getThreadedEmails(options: GetEmailsOptions = {}) {
-		const { folder, page = 1, limit: rawLimit = 25 } = options;
+		const { folder, page = 1, limit: rawLimit = 25, order } = options;
 		const limit = Math.min(Math.max(rawLimit, 1), 100);
 
 		if (!folder) {
@@ -184,6 +173,7 @@ export class MailboxDO extends DurableObject<Env> {
 						draft_group_key,
 						COUNT(*) as thread_count,
 						SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END) as thread_unread_count,
+						SUM(CASE WHEN starred = 1 THEN 1 ELSE 0 END) as thread_starred_count,
 						GROUP_CONCAT(DISTINCT sender) as participants
 					FROM folder_emails
 					GROUP BY draft_group_key
@@ -206,7 +196,11 @@ export class MailboxDO extends DurableObject<Env> {
 				FROM latest_per_group lp
 				JOIN draft_stats ds ON lp.draft_group_key = ds.draft_group_key
 				WHERE lp.rn = 1
-				ORDER BY lp.date DESC
+				ORDER BY ${conversationOrderSql(order, {
+					unread: "ds.thread_unread_count",
+					starred: "ds.thread_starred_count",
+					date: "lp.date",
+				})}
 				LIMIT ?2 OFFSET ?3`,
 				folder,
 				limit,
@@ -260,6 +254,7 @@ export class MailboxDO extends DurableObject<Env> {
 					COUNT(*) as thread_count,
 					SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END) as thread_unread_count,
 					SUM(CASE WHEN read = 1 THEN 1 ELSE 0 END) as thread_read_count,
+					SUM(CASE WHEN starred = 1 THEN 1 ELSE 0 END) as thread_starred_count,
 					GROUP_CONCAT(DISTINCT sender) as participants,
 					SUM(CASE WHEN folder_id = (SELECT id FROM folders WHERE name = 'draft' LIMIT 1) THEN 1 ELSE 0 END) as has_draft
 				FROM all_emails_with_conversation
@@ -304,7 +299,11 @@ export class MailboxDO extends DurableObject<Env> {
 			LEFT JOIN latest_message_per_conversation lmc
 				ON lmc.conversation_id = lif.conversation_id AND lmc.rn = 1
 			WHERE lif.rn = 1
-			ORDER BY lif.date DESC
+			ORDER BY ${conversationOrderSql(order, {
+				unread: "cs.thread_unread_count",
+				starred: "cs.thread_starred_count",
+				date: "lif.date",
+			})}
 			LIMIT ?2 OFFSET ?3`,
 			folder,
 			limit,
@@ -481,6 +480,7 @@ export class MailboxDO extends DurableObject<Env> {
 			.all();
 
 		labels.forgetLabelsOf(this.ctx.storage.sql, id);
+		deeds.forgetChangesOf(this.ctx.storage.sql, [id]);
 		this.db.delete(schema.emails).where(eq(schema.emails.id, id)).run();
 
 		return emailAttachments;
@@ -585,9 +585,26 @@ export class MailboxDO extends DurableObject<Env> {
 		return true;
 	}
 
+	// ── Deeds on many conversations (ADR-0014, ./deeds) ───────────
+
+	/** Acts on the ticked lines at once, or counts what a filter finds and changes nothing. */
+	async bulk(request: deeds.DeedRequest) {
+		return deeds.begin(this.ctx.storage, request, Date.now());
+	}
+	/** One step of a filter deed that was asked for. */
+	async runDeed(deedId: string) {
+		return steps.run(this.ctx.storage, deedId, Date.now());
+	}
+	/** One step of taking a deed back. */
+	async undoDeed(deedId: string) {
+		return steps.undo(this.ctx.storage, deedId, Date.now());
+	}
+
 	// ── Search (./search) ──────────────────────────────────────────
 
-	async searchEmails(options: SearchFilterOptions & { page?: number; limit?: number }) {
+	async searchEmails(
+		options: SearchFilterOptions & { page?: number; limit?: number; order?: ListOrder },
+	) {
 		return this.#labelled(searchEmails(this.ctx.storage.sql, options));
 	}
 

@@ -223,4 +223,36 @@ export const mailboxMigrations: Migration[] = [
 			CREATE INDEX IF NOT EXISTS idx_attachments_email ON attachments(email_id);
 		`,
 	},
+	{
+		// ADR-0014: one request acts on many conversations. A deed is what was asked (the change,
+		// and for "everything" the filter, the count and the time of asking) and how far it is;
+		// its changes are what each message had before: the place, a mark, a label gained or
+		// lost. Neither table holds content, and both are emptied an hour after a deed.
+		name: "13_deeds",
+		sql: `
+			CREATE TABLE deeds (
+				id TEXT PRIMARY KEY,
+				asked_at TEXT NOT NULL,
+				unit TEXT NOT NULL,
+				change TEXT NOT NULL,
+				filter TEXT,
+				conversations INTEGER NOT NULL DEFAULT 0,
+				messages INTEGER NOT NULL DEFAULT 0,
+				started_at TEXT,
+				finished_at TEXT,
+				position_date TEXT NOT NULL DEFAULT '',
+				position_id TEXT NOT NULL DEFAULT '',
+				undo_started_at TEXT
+			);
+
+			CREATE TABLE deed_changes (
+				deed_id TEXT NOT NULL,
+				email_id TEXT NOT NULL,
+				kind TEXT NOT NULL,
+				was TEXT NOT NULL,
+				PRIMARY KEY (deed_id, email_id, kind, was)
+			) WITHOUT ROWID;
+			CREATE INDEX idx_deed_changes_email ON deed_changes(email_id);
+		`,
+	},
 ];

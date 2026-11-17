@@ -1,30 +1,39 @@
 import { describe, expect, it } from "vitest";
+import { LIST_ORDERS } from "../../shared/list-order.ts";
 import {
-	parseSortColumn,
-	parseSortDirection,
-	SORT_COLUMNS,
+	conversationOrderSql,
+	messageOrderSql,
+	parseListOrder,
 } from "../../workers/lib/list-options.ts";
 
-describe("parseSortColumn", () => {
-	it.each([...SORT_COLUMNS])("accepts %s", (column) => {
-		expect(parseSortColumn(column)).toBe(column);
+describe("the order of a list (ADR-0014)", () => {
+	it.each([...LIST_ORDERS])("takes %s", (order) => {
+		expect(parseListOrder(order)).toBe(order);
 	});
 
-	it.each([undefined, "", "body", "DATE", "date; DROP TABLE emails", "date DESC", "1=1"])(
-		"refuses %j",
-		(value) => {
-			expect(parseSortColumn(value)).toBeUndefined();
-		},
-	);
-});
-
-describe("parseSortDirection", () => {
-	it("accepts both directions in any casing", () => {
-		expect(parseSortDirection("asc")).toBe("ASC");
-		expect(parseSortDirection("DESC")).toBe("DESC");
+	it.each([
+		undefined,
+		"",
+		"oldest",
+		"NEWEST",
+		"date",
+		"starred; DROP TABLE emails",
+		"unread DESC",
+		"1=1",
+		7,
+	])("refuses %j", (value) => {
+		expect(parseListOrder(value)).toBeUndefined();
 	});
 
-	it.each([undefined, "", "up", "ASC; --", "desc nulls first"])("refuses %j", (value) => {
-		expect(parseSortDirection(value)).toBeUndefined();
+	it("is newest first unless it says otherwise, and newest first inside each group", () => {
+		expect(messageOrderSql(undefined)).toBe("date DESC");
+		expect(messageOrderSql("newest", "e.")).toBe("e.date DESC");
+		expect(messageOrderSql("unread", "e.")).toBe("e.read ASC, e.date DESC");
+		expect(messageOrderSql("starred")).toBe("starred DESC, date DESC");
+
+		const columns = { unread: "cs.unread", starred: "cs.starred", date: "l.date" };
+		expect(conversationOrderSql(undefined, columns)).toBe("l.date DESC");
+		expect(conversationOrderSql("unread", columns)).toBe("(cs.unread > 0) DESC, l.date DESC");
+		expect(conversationOrderSql("starred", columns)).toBe("(cs.starred > 0) DESC, l.date DESC");
 	});
 });

@@ -4,15 +4,15 @@
 // Modified by the Podbay contributors.
 
 /** The plain data shapes the mailbox object takes. Moved out of index.ts unchanged. */
-import type { SortColumn } from "../lib/list-options";
+import type { ListOrder } from "../lib/list-options";
 
 export interface GetEmailsOptions {
 	folder?: string;
 	thread_id?: string;
 	page?: number;
 	limit?: number;
-	sortColumn?: SortColumn;
-	sortDirection?: "ASC" | "DESC";
+	/** Newest first unless it says unread or starred first (ADR-0014, decision 25). */
+	order?: ListOrder;
 }
 
 export interface EmailData {

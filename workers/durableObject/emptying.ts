@@ -59,6 +59,8 @@ export function emptyBatch(storage: Storage, place: string, before: string): Emp
 			),
 		].map((row) => `attachments/${row.email_id}/${row.id}/${row.filename}`);
 		sql.exec(`DELETE FROM email_labels WHERE email_id IN (${marks})`, ...ids);
+		// What a deed recorded about a message goes with the message (ADR-0014, decision 18).
+		sql.exec(`DELETE FROM deed_changes WHERE email_id IN (${marks})`, ...ids);
 		sql.exec(`DELETE FROM attachments WHERE email_id IN (${marks})`, ...ids);
 		sql.exec(`DELETE FROM emails WHERE id IN (${marks})`, ...ids);
 

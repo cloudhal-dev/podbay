@@ -21,12 +21,13 @@ import type { StoredAttachment } from "./lib/attachments";
 import { features } from "./lib/features";
 import { headerFilename, storageFilename } from "./lib/filenames";
 import { type InboundEnvelope, routeInbound } from "./lib/inbound";
-import { parseSortColumn, parseSortDirection, type SearchFilterOptions } from "./lib/list-options";
+import { parseListOrder, type SearchFilterOptions } from "./lib/list-options";
 import { mailboxQueries } from "./lib/mailbox-rpc";
 import { deleteMessage } from "./lib/messages";
 import { storeAndSend } from "./lib/outgoing";
 import { SendEmailRequestSchema } from "./lib/schemas";
 import { account } from "./routes/account";
+import { bulk } from "./routes/bulk";
 import { drafts } from "./routes/drafts";
 import { keys } from "./routes/keys";
 import { labels } from "./routes/labels";
@@ -48,6 +49,15 @@ function intQuery(c: AppContext, key: string): number | undefined {
 	if (!v) return undefined;
 	const n = Number(v);
 	return Number.isNaN(n) ? undefined : n;
+}
+
+const BAD_ORDER = { error: "A list is ordered newest, unread or starred.", code: "INVALID" };
+
+/** The order asked for, `undefined` for none, or `null` for a value that names none. */
+function orderQuery(c: AppContext) {
+	const value = c.req.query("order");
+	if (value === undefined || value === "") return undefined;
+	return parseListOrder(value) ?? null;
 }
 
 function boolQuery(c: AppContext, key: string): boolean | undefined {
@@ -72,6 +82,7 @@ app.route("/", keys);
 app.route("/", drafts);
 app.route("/", labels);
 app.route("/", places);
+app.route("/", bulk);
 app.route("/", recovery);
 
 // -- Config ---------------------------------------------------------
@@ -94,12 +105,13 @@ app.get("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 	const threaded = boolQuery(c, "threaded");
 	const page = intQuery(c, "page");
 	const limit = intQuery(c, "limit");
-	const sortColumn = parseSortColumn(c.req.query("sortColumn"));
-	const sortDirection = parseSortDirection(c.req.query("sortDirection"));
+	// Newest first unless the request says otherwise (ADR-0014, decision 25).
+	const order = orderQuery(c);
+	if (order === null) return c.json(BAD_ORDER, 400);
 	const stub = c.var.mailboxStub;
 
 	if (threaded && folder) {
-		const emails = await mailboxQueries(stub).getThreadedEmails({ folder, page, limit });
+		const emails = await mailboxQueries(stub).getThreadedEmails({ folder, page, limit, order });
 		const totalCount = await mailboxQueries(stub).countThreadedEmails(folder);
 		return c.json({ emails, totalCount });
 	}
@@ -108,8 +120,7 @@ app.get("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 		thread_id,
 		page,
 		limit,
-		sortColumn,
-		sortDirection,
+		order,
 	});
 	if (folder) {
 		const totalCount = await stub.countEmails({ folder, thread_id });
@@ -194,11 +205,14 @@ app.get("/api/v1/mailboxes/:mailboxId/search", async (c: AppContext) => {
 	if (c.req.query("label") !== undefined && searchOpts.label === undefined) {
 		return c.json({ emails: [], totalCount: 0 });
 	}
+	const order = orderQuery(c);
+	if (order === null) return c.json(BAD_ORDER, 400);
 	const stub = mailboxQueries(c.var.mailboxStub);
 	const emails = await stub.searchEmails({
 		...searchOpts,
 		page: intQuery(c, "page"),
 		limit: intQuery(c, "limit"),
+		order,
 	});
 	const totalCount = await stub.countSearchResults(searchOpts);
 	return c.json({ emails, totalCount });

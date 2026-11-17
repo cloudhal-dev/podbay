@@ -8,14 +8,15 @@
  * of `./index.ts`, which calls these with the mailbox's own database.
  */
 
-import type { SearchFilterOptions } from "../lib/list-options";
+import { type ListOrder, messageOrderSql, type SearchFilterOptions } from "../lib/list-options";
 import { HIDDEN } from "./labels";
 
 /**
  * Build WHERE conditions and params for search queries.
- * Shared between searchEmails and countSearchResults.
+ * Shared between searchEmails and countSearchResults, and by the deed on everything a search
+ * finds (ADR-0014, decision 7: `./deeds`), so the three cannot differ.
  */
-function buildSearchConditions(
+export function buildSearchConditions(
 	options: SearchFilterOptions,
 	tableAlias = "",
 ): { conditions: string[]; params: (string | number)[] } {
@@ -105,7 +106,7 @@ function buildSearchConditions(
 
 export function searchEmails(
 	sql: SqlStorage,
-	options: SearchFilterOptions & { page?: number; limit?: number },
+	options: SearchFilterOptions & { page?: number; limit?: number; order?: ListOrder },
 ) {
 	const { page = 1, limit: rawLimit = 25 } = options;
 	const limit = Math.min(Math.max(rawLimit, 1), 100);
@@ -123,7 +124,7 @@ export function searchEmails(
 		FROM emails e
 		LEFT JOIN folders f ON e.folder_id = f.id
 		${where}
-		ORDER BY e.date DESC LIMIT ?${params.length + 1} OFFSET ?${params.length + 2}`;
+		ORDER BY ${messageOrderSql(options.order, "e.")} LIMIT ?${params.length + 1} OFFSET ?${params.length + 2}`;
 	params.push(limit, offset);
 
 	const result = sql.exec(query, ...params);

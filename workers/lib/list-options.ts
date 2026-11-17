@@ -5,18 +5,9 @@
  * Options for listing and searching a mailbox. Values arrive as query strings, so every one is
  * parsed against a closed set here before it reaches the mailbox object (rule D2).
  */
+import { type ListOrder, parseListOrder } from "../../shared/list-order";
 
-export const SORT_COLUMNS = [
-	"id",
-	"subject",
-	"sender",
-	"recipient",
-	"date",
-	"read",
-	"starred",
-] as const;
-export type SortColumn = (typeof SORT_COLUMNS)[number];
-export type SortDirection = "ASC" | "DESC";
+export { type ListOrder, parseListOrder };
 
 export interface SearchFilterOptions {
 	query: string;
@@ -33,13 +24,28 @@ export interface SearchFilterOptions {
 	label?: string;
 }
 
-/** The sort column, or undefined when the value is not one of the allowed columns. */
-export function parseSortColumn(value: string | undefined): SortColumn | undefined {
-	return SORT_COLUMNS.find((column) => column === value);
+/**
+ * `ORDER BY` for a list of messages, by the order asked for (ADR-0014, decision 25). The text
+ * is chosen from this closed set and never built from input. `alias` is the table's alias with
+ * its dot, or nothing.
+ */
+export function messageOrderSql(order: ListOrder | undefined, alias = ""): string {
+	const newest = `${alias}date DESC`;
+	if (order === "unread") return `${alias}read ASC, ${newest}`;
+	if (order === "starred") return `${alias}starred DESC, ${newest}`;
+	return newest;
 }
 
-/** `ASC` or `DESC` (any casing), or undefined. */
-export function parseSortDirection(value: string | undefined): SortDirection | undefined {
-	const upper = value?.toUpperCase();
-	return upper === "ASC" || upper === "DESC" ? upper : undefined;
+/**
+ * The same for a list of conversations: `unread` and `starred` are the names of the columns
+ * that count the unread and the starred messages of each conversation.
+ */
+export function conversationOrderSql(
+	order: ListOrder | undefined,
+	columns: { unread: string; starred: string; date: string },
+): string {
+	const newest = `${columns.date} DESC`;
+	if (order === "unread") return `(${columns.unread} > 0) DESC, ${newest}`;
+	if (order === "starred") return `(${columns.starred} > 0) DESC, ${newest}`;
+	return newest;
 }
