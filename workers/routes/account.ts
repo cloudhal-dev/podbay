@@ -9,7 +9,7 @@ import { AuthNotConfigured, authFor } from "../auth/instance";
 import type { ApiContext } from "../auth/middleware";
 import { MIN_PASSWORD_LENGTH } from "../auth/options";
 import { claimFirstOwner, mailboxesOf, ownerExists } from "../auth/store";
-import { secret } from "../lib/secrets";
+import { sameSecret, secret } from "../lib/secrets";
 
 const OwnerBody = z.object({
 	token: z.string().min(1).max(512),
@@ -17,20 +17,6 @@ const OwnerBody = z.object({
 	email: z.string().trim().toLowerCase().email().max(254),
 	password: z.string().min(MIN_PASSWORD_LENGTH).max(256),
 });
-
-/** Compare two secrets without leaking where they differ: both are hashed, then compared in full. */
-async function sameSecret(given: string, expected: string): Promise<boolean> {
-	const encoder = new TextEncoder();
-	const [a, b] = await Promise.all([
-		crypto.subtle.digest("SHA-256", encoder.encode(given)),
-		crypto.subtle.digest("SHA-256", encoder.encode(expected)),
-	]);
-	const left = new Uint8Array(a);
-	const right = new Uint8Array(b);
-	let difference = 0;
-	for (let i = 0; i < left.length; i++) difference |= (left[i] ?? 0) ^ (right[i] ?? 0);
-	return difference === 0;
-}
 
 export const account = new Hono<ApiContext>();
 

@@ -111,3 +111,52 @@ export function acceptInvitation(token: string, name: string, password: string):
 		body: JSON.stringify({ name, password }),
 	});
 }
+
+export interface Person {
+	id: string;
+	name: string;
+	email: string;
+	role: "owner" | "admin" | "member";
+}
+
+/** Everyone on the instance. For owners and administrators. */
+export function listPeople(): Promise<Person[]> {
+	return call("/api/v1/users");
+}
+
+export interface RecoveryLink {
+	email: string;
+	expiresAt: string;
+	/** Shown once. The token in it is not stored anywhere. */
+	link: string;
+}
+
+/** A recovery link for another person, to pass on by a channel you trust. */
+export function issueRecovery(userId: string): Promise<RecoveryLink> {
+	return call(`/api/v1/users/${encodeURIComponent(userId)}/recovery`, {
+		method: "POST",
+		body: "{}",
+	});
+}
+
+/** A recovery link for an owner, by the person who holds the instance's setup token. */
+export function issueOwnerRecovery(token: string, email: string): Promise<RecoveryLink> {
+	return call("/api/setup/recovery", { method: "POST", body: JSON.stringify({ token, email }) });
+}
+
+/** The address a recovery link is for, or null when the link is not valid any more. */
+export async function recoveryFor(token: string): Promise<{ email: string } | null> {
+	try {
+		return await call<{ email: string }>(`/api/recovery/${encodeURIComponent(token)}`);
+	} catch (error) {
+		if (error instanceof ApiError && error.status === 404) return null;
+		throw error;
+	}
+}
+
+export function redeemRecovery(token: string, password: string): Promise<unknown> {
+	return call(`/api/recovery/${encodeURIComponent(token)}`, {
+		method: "POST",
+		body: JSON.stringify({ password }),
+	});
+}

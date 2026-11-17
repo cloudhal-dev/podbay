@@ -47,6 +47,7 @@ describe("the routes that need fresh proof", () => {
 			[
 				"POST /api/v1/keys",
 				"POST /api/v1/invitations",
+				"POST /api/v1/users/:userId/recovery",
 				"DELETE /api/v1/mailboxes/:mailboxId",
 				"PUT /api/v1/mailboxes/:mailboxId/members/:userId",
 				"DELETE /api/v1/mailboxes/:mailboxId/members/:userId",

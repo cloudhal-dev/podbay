@@ -27,6 +27,8 @@ import EmailListRoute from "~/routes/email-list";
 import HomeRoute from "~/routes/home";
 import MailboxRoute from "~/routes/mailbox";
 import NotFoundRoute from "~/routes/not-found";
+import OwnerRecoveryRoute from "~/routes/owner-recovery";
+import RecoverRoute from "~/routes/recover";
 import SearchResultsRoute from "~/routes/search-results";
 import SecurityRoute from "~/routes/security";
 import SettingsRoute from "~/routes/settings";
@@ -79,8 +81,8 @@ const KumoLink = forwardRef<
 	);
 });
 
-const SIGNED_OUT_PATHS = ["/sign-in", "/setup"];
-const SIGNED_OUT_PREFIXES = ["/accept/"];
+const SIGNED_OUT_PATHS = ["/sign-in", "/setup", "/setup/recovery"];
+const SIGNED_OUT_PREFIXES = ["/accept/", "/recover/"];
 
 /**
  * Sends a visitor without a session to the sign-in screen. This is navigation, not protection:
@@ -175,6 +177,18 @@ const acceptRoute = createRoute({
 	component: AcceptRoute,
 });
 
+const recoverRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/recover/$token",
+	component: RecoverRoute,
+});
+
+const ownerRecoveryRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/setup/recovery",
+	component: OwnerRecoveryRoute,
+});
+
 const securityRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/account/security",
@@ -225,6 +239,8 @@ const routeTree = rootRoute.addChildren([
 	signInRoute,
 	setupRoute,
 	acceptRoute,
+	recoverRoute,
+	ownerRecoveryRoute,
 	securityRoute,
 	mailboxRoute.addChildren([mailboxIndexRoute, emailListRoute, settingsRoute, searchRoute]),
 ]);

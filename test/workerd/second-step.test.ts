@@ -14,19 +14,23 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createPasskey, type SoftwarePasskey, totpCode } from "../helpers/authenticator.ts";
 import {
+	AUTH,
 	ageSessions,
 	Browser,
 	createMailbox,
+	enableApp,
+	json,
 	migrate,
 	ORIGIN,
 	PASSWORD,
+	passkeySignIn,
+	registerPasskey,
 	seedMembership,
 	seedUser,
 	setupOwner,
 	testEnv,
 } from "./helpers.ts";
 
-const AUTH = "/api/auth";
 const MAILBOX = "team@example.com";
 const ids: Record<string, string> = {};
 
@@ -36,52 +40,11 @@ async function signedIn(email: string): Promise<Browser> {
 	return browser;
 }
 
-async function json<T>(res: Response): Promise<T> {
-	return (await res.json()) as T;
-}
-
 async function sessionsOf(userId: string): Promise<number> {
 	const row = await testEnv.DB.prepare(`select count(*) as "n" from "session" where "userId" = ?1`)
 		.bind(userId)
 		.first<{ n: number }>();
 	return row?.n ?? 0;
-}
-
-/** Enable the authenticator app for a signed-in browser. Returns what the person keeps. */
-async function enableApp(browser: Browser): Promise<{ uri: string; codes: string[] }> {
-	const enabled = await browser.post(`${AUTH}/two-factor/enable`, { password: PASSWORD });
-	expect(enabled.status).toBe(200);
-	const { totpURI, backupCodes } = await json<{ totpURI: string; backupCodes: string[] }>(enabled);
-	const confirmed = await browser.post(`${AUTH}/two-factor/verify-totp`, {
-		code: await totpCode(totpURI),
-	});
-	expect(confirmed.status).toBe(200);
-	return { uri: totpURI, codes: backupCodes };
-}
-
-async function registerPasskey(browser: Browser, name = "Laptop"): Promise<SoftwarePasskey> {
-	const passkey = await createPasskey();
-	const options = await browser.fetch(`${AUTH}/passkey/generate-register-options`);
-	expect(options.status).toBe(200);
-	const verified = await browser.post(`${AUTH}/passkey/verify-registration`, {
-		response: await passkey.register(await json(options), ORIGIN),
-		name,
-	});
-	expect(verified.status).toBe(200);
-	return passkey;
-}
-
-/** One passkey sign-in attempt in a browser. */
-async function passkeySignIn(
-	browser: Browser,
-	passkey: SoftwarePasskey,
-	how: { origin?: string; verified?: boolean; rpId?: string } = {},
-): Promise<Response> {
-	const options = await browser.fetch(`${AUTH}/passkey/generate-authenticate-options`);
-	expect(options.status).toBe(200);
-	return browser.post(`${AUTH}/passkey/verify-authentication`, {
-		response: await passkey.assert(await json(options), how.origin ?? ORIGIN, how),
-	});
 }
 
 beforeAll(async () => {

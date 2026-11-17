@@ -90,6 +90,9 @@ describe("route table", () => {
 			"POST /api/setup/owner",
 			"GET /api/invitations/:token",
 			"POST /api/invitations/:token/accept",
+			"GET /api/recovery/:token",
+			"POST /api/recovery/:token",
+			"POST /api/setup/recovery",
 		]);
 	});
 

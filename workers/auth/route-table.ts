@@ -9,7 +9,8 @@ import type { Action } from "./authorize";
  * A route that is not in this table is refused, and a test fails when a registered route is
  * missing here or an entry here matches no route. `public` routes need no session; they are the
  * sign-in endpoints, the health and setup status, the guarded first-owner call (which checks its
- * own token) and the two invitation calls (where the token in the path is the proof).
+ * own token), the two invitation calls and the two recovery calls (where the token in the path
+ * is the proof) and the operator's recovery call (which checks the setup token).
  *
  * `fresh` marks a sensitive change: the caller must have signed in within the last few minutes
  * (workers/auth/fresh.ts). Better Auth's own sensitive endpoints are held to the same rule in
@@ -35,6 +36,10 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	// Accepting an invitation: the token in the path is the proof.
 	{ method: "GET", path: "/api/invitations/:token", right: "public" },
 	{ method: "POST", path: "/api/invitations/:token/accept", right: "public" },
+	// Recovery: the token in the path is the proof; the operator call checks the setup token.
+	{ method: "GET", path: "/api/recovery/:token", right: "public" },
+	{ method: "POST", path: "/api/recovery/:token", right: "public" },
+	{ method: "POST", path: "/api/setup/recovery", right: "public" },
 
 	// The signed-in person
 	{ method: "GET", path: "/api/v1/me", right: "session" },
@@ -49,6 +54,7 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 
 	// People: owners and administrators
 	{ method: "GET", path: "/api/v1/users", right: "instance.manage" },
+	{ method: "POST", path: "/api/v1/users/:userId/recovery", right: "instance.manage", fresh: true },
 	{ method: "GET", path: "/api/v1/invitations", right: "instance.manage" },
 	{ method: "POST", path: "/api/v1/invitations", right: "instance.manage", fresh: true },
 	{ method: "DELETE", path: "/api/v1/invitations/:invitationId", right: "instance.manage" },

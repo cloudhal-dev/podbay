@@ -33,6 +33,14 @@ export default function SignInRoute() {
 						await navigate({ to: "/" });
 					}}
 				/>
+				<p className="text-xs text-kumo-subtle">
+					Cannot sign in? Ask an owner or an administrator of this instance for a recovery link. If
+					you are the only owner, the person who deployed it can{" "}
+					<Link to="/setup/recovery" className="underline">
+						make one with the setup token
+					</Link>
+					.
+				</p>
 			</div>
 		</div>
 	);

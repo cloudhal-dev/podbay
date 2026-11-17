@@ -9,6 +9,7 @@ import { applyD1Migrations, env, SELF } from "cloudflare:test";
 import { expect } from "vitest";
 import type { InstanceRole, MailboxRole } from "../../workers/auth/authorize.ts";
 import { authFor } from "../../workers/auth/instance.ts";
+import { createPasskey, type SoftwarePasskey, totpCode } from "../helpers/authenticator.ts";
 
 export const ORIGIN = "https://podbay.test";
 export const PASSWORD = "correct horse battery staple";
@@ -198,4 +199,49 @@ export function inbound(to: string, raw: string) {
 		},
 	};
 	return { message: message as unknown as ForwardableEmailMessage, rejections };
+}
+
+// ── the second step and passkeys, as a person's browser and devices do them ──
+
+export const AUTH = "/api/auth";
+
+export async function json<T>(res: Response): Promise<T> {
+	return (await res.json()) as T;
+}
+
+/** Enable the authenticator app for a signed-in browser. Returns what the person keeps. */
+export async function enableApp(browser: Browser): Promise<{ uri: string; codes: string[] }> {
+	const enabled = await browser.post(`${AUTH}/two-factor/enable`, { password: PASSWORD });
+	expect(enabled.status).toBe(200);
+	const { totpURI, backupCodes } = await json<{ totpURI: string; backupCodes: string[] }>(enabled);
+	const confirmed = await browser.post(`${AUTH}/two-factor/verify-totp`, {
+		code: await totpCode(totpURI),
+	});
+	expect(confirmed.status).toBe(200);
+	return { uri: totpURI, codes: backupCodes };
+}
+
+export async function registerPasskey(browser: Browser, name = "Laptop"): Promise<SoftwarePasskey> {
+	const passkey = await createPasskey();
+	const options = await browser.fetch(`${AUTH}/passkey/generate-register-options`);
+	expect(options.status).toBe(200);
+	const verified = await browser.post(`${AUTH}/passkey/verify-registration`, {
+		response: await passkey.register(await json(options), ORIGIN),
+		name,
+	});
+	expect(verified.status).toBe(200);
+	return passkey;
+}
+
+/** One passkey sign-in attempt in a browser. */
+export async function passkeySignIn(
+	browser: Browser,
+	passkey: SoftwarePasskey,
+	how: { origin?: string; verified?: boolean; rpId?: string } = {},
+): Promise<Response> {
+	const options = await browser.fetch(`${AUTH}/passkey/generate-authenticate-options`);
+	expect(options.status).toBe(200);
+	return browser.post(`${AUTH}/passkey/verify-authentication`, {
+		response: await passkey.assert(await json(options), how.origin ?? ORIGIN, how),
+	});
 }
