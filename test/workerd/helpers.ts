@@ -176,20 +176,36 @@ export function mime(headers: Record<string, string>, body = "Hello"): string {
 	return `${lines.join("\r\n")}\r\n\r\n${body}\r\n`;
 }
 
-export function inbound(to: string, raw: string) {
-	const bytes = new TextEncoder().encode(raw);
+/**
+ * A message as the `email` handler is given it. `raw` may be bytes, for a message that is not
+ * text; `headers` is what the platform hands over beside the bytes; `rawSize` is the size the
+ * platform declares, when a test wants it to differ from the bytes that come.
+ */
+export function inbound(
+	to: string,
+	raw: string | Uint8Array,
+	options: { headers?: Headers; from?: string; rawSize?: number } = {},
+) {
+	const bytes = typeof raw === "string" ? new TextEncoder().encode(raw) : raw;
 	const rejections: string[] = [];
+	/** How many times the handler asked the stream for bytes. */
+	const read = { pulls: 0 };
 	const message = {
-		from: "ada@sender.test",
+		from: options.from ?? "ada@sender.test",
 		to,
-		headers: new Headers(),
-		raw: new ReadableStream<Uint8Array>({
-			start(controller) {
-				controller.enqueue(bytes);
-				controller.close();
+		headers: options.headers ?? new Headers(),
+		// Nothing is asked of the stream until the handler reads it.
+		raw: new ReadableStream<Uint8Array>(
+			{
+				pull(controller) {
+					read.pulls += 1;
+					controller.enqueue(bytes);
+					controller.close();
+				},
 			},
-		}),
-		rawSize: bytes.length,
+			{ highWaterMark: 0 },
+		),
+		rawSize: options.rawSize ?? bytes.length,
 		setReject(reason: string) {
 			rejections.push(reason);
 		},
@@ -200,7 +216,7 @@ export function inbound(to: string, raw: string) {
 			throw new Error("reply is not used");
 		},
 	};
-	return { message: message as unknown as ForwardableEmailMessage, rejections };
+	return { message: message as unknown as ForwardableEmailMessage, rejections, read };
 }
 
 // ── the second step and passkeys, as a person's browser and devices do them ──

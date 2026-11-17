@@ -3,25 +3,45 @@
 
 import type { Env } from "../types";
 
-/** The mailbox call that deletes a message's rows and names its files. */
+/** The mailbox calls that name a message's objects and delete its rows. */
 interface Deleter {
-	deleteEmail(id: string): Promise<{ id: string; filename: string }[] | null>;
+	messageKeys(id: string): Promise<string[] | null>;
+	deleteEmail(id: string): Promise<string[] | null>;
+}
+
+/** One call to the bucket deletes at most this many objects (docs/cloudflare/ledger.json). */
+export const DELETE_AT_ONCE = 1000;
+
+/** Deletes objects from the bucket, a thousand at a time. */
+export async function deleteObjects(bucket: Env["BUCKET"], keys: readonly string[]): Promise<void> {
+	for (let from = 0; from < keys.length; from += DELETE_AT_ONCE) {
+		await bucket.delete(keys.slice(from, from + DELETE_AT_ONCE));
+	}
 }
 
 /**
- * Deletes a message for good: its rows and the objects that held its files, stored or not
- * (rule S13, ADR-0011 decision 9). Every path that deletes one message goes through here, so
- * none can leave the files behind. False when there is no such message.
+ * Deletes a message for good: the objects that hold its files, stored or not, and its
+ * original, and then its rows (rule S13; ADR-0011, decision 9; ADR-0015, decision 22). Every
+ * path that deletes one message goes through here, so none can leave an object behind.
+ * Objects go before rows: a failure in between leaves rows that can be deleted again, never
+ * an object that no row names. False when there is no such message.
  */
 export async function deleteMessage(
 	bucket: Env["BUCKET"],
 	stub: Deleter,
 	id: string,
 ): Promise<boolean> {
-	const files = await stub.deleteEmail(id);
-	if (files === null) return false;
-	if (files.length > 0) {
-		await bucket.delete(files.map((file) => `attachments/${id}/${file.id}/${file.filename}`));
-	}
+	const keys = await stub.messageKeys(id);
+	if (keys === null) return false;
+	await deleteObjects(bucket, keys);
+	// The rows say what the message had when they went: a file that was declared in between
+	// is deleted now, so that it is not left without its row.
+	const last = await stub.deleteEmail(id);
+	if (last === null) return true;
+	const gone = new Set(keys);
+	await deleteObjects(
+		bucket,
+		last.filter((key) => !gone.has(key)),
+	);
 	return true;
 }

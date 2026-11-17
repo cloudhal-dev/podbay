@@ -30,6 +30,18 @@ export const emails = sqliteTable("emails", {
 	thread_id: text("thread_id"),
 	message_id: text("message_id"),
 	raw_headers: text("raw_headers"),
+	/**
+	 * The whole key of the object that holds the bytes that arrived (ADR-0015), and the only
+	 * way to it. Empty for a sent message, a draft and mail stored before originals were kept.
+	 * It never leaves the Worker: no answer and no log carries it.
+	 */
+	raw_key: text("raw_key"),
+	/** The number of bytes of the original. */
+	raw_size: integer("raw_size"),
+	/** Why the message has no parsed fields: `parser`, `too_large` or `interrupted`. */
+	unparsed: text("unparsed"),
+	/** The platform's own `Authentication-Results` field, as it stood when the message arrived. */
+	auth_results: text("auth_results"),
 });
 
 export const attachments = sqliteTable("attachments", {

@@ -14,6 +14,7 @@ import {
 	updateMailboxSettings,
 } from "../auth/store";
 import { mailboxAddressFor } from "../lib/inbound";
+import { deleteObjects } from "../lib/messages";
 
 const CreateBody = z.object({
 	email: z.string().max(254),
@@ -132,15 +133,22 @@ mailboxes.put("/api/v1/mailboxes/:mailboxId", async (c) => {
 });
 
 /**
- * Deleting a mailbox deletes its mail (rule S13): the attachments in R2, everything in the
- * mailbox object, then the index row and its memberships.
+ * Deleting a mailbox deletes its mail (rule S13). Objects go before rows (ADR-0015, decision
+ * 22): the keys of every file, every original and every arrival are read, the objects are
+ * deleted a thousand at a time, and only then is the mailbox object emptied; then the index
+ * row and its memberships go. A failure on the way leaves rows that can be deleted again.
  */
 mailboxes.delete("/api/v1/mailboxes/:mailboxId", async (c) => {
 	const mailbox = c.var.mailbox;
-	const attachmentKeys = await c.var.mailboxStub.purge();
-	for (let i = 0; i < attachmentKeys.length; i += 1000) {
-		await c.env.BUCKET.delete(attachmentKeys.slice(i, i + 1000));
-	}
+	const keys = await c.var.mailboxStub.allKeys();
+	await deleteObjects(c.env.BUCKET, keys);
+	// What reached the mailbox while its objects were deleted is named by the purge itself.
+	const late = await c.var.mailboxStub.purge();
+	const gone = new Set(keys);
+	await deleteObjects(
+		c.env.BUCKET,
+		late.filter((key) => !gone.has(key)),
+	);
 	await deleteMailbox(c.env.DB, mailbox.id, c.var.user.id, mailbox.address);
 	return c.body(null, 204);
 });

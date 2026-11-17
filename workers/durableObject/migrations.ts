@@ -255,4 +255,29 @@ export const mailboxMigrations: Migration[] = [
 			CREATE INDEX idx_deed_changes_email ON deed_changes(email_id);
 		`,
 	},
+	{
+		// ADR-0015: the original of a received message is kept. `raw_key` is the whole key of
+		// the object that holds the bytes that arrived, and the only way to it; `raw_size` is
+		// their number; `unparsed` says why a message has no parsed fields (`parser`,
+		// `too_large` or `interrupted`); `auth_results` is the platform's own statement about
+		// SPF, DKIM and DMARC. `arrivals` holds a message from the moment it is taken until its
+		// row is written: the row is there before the bytes are, so the bucket never holds an
+		// object no row names. Nothing is rewritten: every row that exists has no original.
+		name: "14_originals",
+		sql: `
+			ALTER TABLE emails ADD COLUMN raw_key TEXT;
+			ALTER TABLE emails ADD COLUMN raw_size INTEGER;
+			ALTER TABLE emails ADD COLUMN unparsed TEXT;
+			ALTER TABLE emails ADD COLUMN auth_results TEXT;
+
+			CREATE TABLE arrivals (
+				id TEXT PRIMARY KEY,
+				raw_key TEXT NOT NULL,
+				raw_size INTEGER NOT NULL,
+				envelope_from TEXT NOT NULL DEFAULT '',
+				started_at TEXT NOT NULL,
+				attempts INTEGER NOT NULL DEFAULT 0
+			);
+		`,
+	},
 ];

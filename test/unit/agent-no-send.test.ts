@@ -395,3 +395,66 @@ describe("the assistant and labels (ADR-0007)", () => {
 		]);
 	});
 });
+
+describe("the assistant and the original of a message (ADR-0015, decision 21)", () => {
+	it("is told nothing of an original: its tools answer with named fields only", async () => {
+		const { env, mailbox, send } = world();
+		// The row as the mailbox's database holds it, with everything a tool must not hand on.
+		Object.assign(mailbox.emails.get("mail-1") ?? {}, {
+			raw_key: "raw/0123456789abcdef0123456789abcdef",
+			raw_size: 4096,
+			unparsed: null,
+			auth_results: "mx.cloudflare.net; dmarc=pass",
+			has_original: true,
+			some_later_column: "must-not-leak",
+		});
+		const model = new MockLanguageModelV4({
+			doGenerate: [
+				asks(
+					{ name: "get_email", input: { emailId: "mail-1" } },
+					{ name: "get_thread", input: { threadId: "thread-1" } },
+					{ name: "list_emails", input: { folder: Folders.INBOX } },
+					{ name: "search_emails", input: { query: "price list" } },
+				),
+				says("Read."),
+			],
+		});
+		const result = await generateText({
+			model,
+			tools: createAgentTools(env, MAILBOX),
+			prompt: "Read the invoice mail.",
+			stopWhen: stepCountIs(5),
+		});
+		const outputs = result.steps.flatMap((step) => step.toolResults.map((r) => r.output));
+		expect(outputs).toHaveLength(4);
+		const told = JSON.stringify(outputs);
+		expect(told).toContain("Invoice");
+		for (const kept of [
+			"raw_key",
+			"0123456789abcdef",
+			"raw_size",
+			"unparsed",
+			"auth_results",
+			"mx.cloudflare.net",
+			"has_original",
+			"must-not-leak",
+		]) {
+			expect(told, kept).not.toContain(kept);
+		}
+		expect(send.calls).toEqual([]);
+	});
+
+	it("names the fields a tool answers with, and none of them is about the original", () => {
+		const fields = [
+			...sharedTools.TOOL_MESSAGE_FIELDS,
+			...sharedTools.TOOL_LINE_FIELDS,
+			...sharedTools.TOOL_FILE_FIELDS,
+		];
+		expect(fields.filter((field) => /raw_key|raw_size|original|unparsed|auth/.test(field))).toEqual(
+			[],
+		);
+		// `raw_headers` stays as it was: taking it out is not decided (ADR-0015, decision 21).
+		expect(sharedTools.TOOL_MESSAGE_FIELDS).toContain("raw_headers");
+		expect(AGENT_TOOL_NAMES.filter((name) => /original|download/.test(name))).toEqual([]);
+	});
+});

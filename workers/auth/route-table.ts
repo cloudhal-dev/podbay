@@ -98,6 +98,10 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 		path: `${M}/emails/:emailId/attachments/:attachmentId/download`,
 		right: "mailbox.read",
 	},
+	// The original of a received message (ADR-0015): whoever may read the message may see and
+	// save the bytes it arrived as. The bytes leave by a POST, so only the app's own page can ask.
+	{ method: "GET", path: `${M}/emails/:id/original`, right: "mailbox.read" },
+	{ method: "POST", path: `${M}/emails/:id/original/download`, right: "mailbox.read" },
 
 	{ method: "GET", path: `${M}/threads/:threadId`, right: "mailbox.read" },
 	{ method: "POST", path: `${M}/threads/:threadId/read`, right: "mailbox.write" },

@@ -394,6 +394,12 @@
 					"status": "modified"
 				},
 				{
+					"path": "workers/arrival.ts",
+					"upstream": "workers/index.ts",
+					"status": "modified",
+					"note": "Holds the inbound handler moved out of index.ts: the seed's reading of the message's fields, its threading lookups and the call that wakes the assistant, inside Podbay's own order of arrival (ADR-0015)."
+				},
+				{
 					"path": "workers/durableObject/threads.ts",
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified",

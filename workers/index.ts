@@ -4,23 +4,17 @@
 // Modified by the Podbay contributors.
 
 import { type Context, Hono } from "hono";
-import PostalMime from "postal-mime";
 import { z } from "zod";
 import {
 	attachmentRisk,
 	NEEDS_ACKNOWLEDGEMENT_CODE,
 	servedContentType,
 } from "../shared/attachment-risk";
-import { Folders } from "../shared/folders";
 import { isLabelId } from "../shared/labels";
-import { errorFields, log } from "../shared/log";
 import { type ApiContext, guard } from "./auth/middleware";
-import { mailboxExists } from "./auth/store";
 import { fileKey } from "./durableObject/drafts";
-import type { StoredAttachment } from "./lib/attachments";
 import { features } from "./lib/features";
-import { headerFilename, storageFilename } from "./lib/filenames";
-import { type InboundEnvelope, routeInbound } from "./lib/inbound";
+import { headerFilename } from "./lib/filenames";
 import { parseListOrder, type SearchFilterOptions } from "./lib/list-options";
 import { mailboxQueries } from "./lib/mailbox-rpc";
 import { deleteMessage } from "./lib/messages";
@@ -32,11 +26,11 @@ import { drafts } from "./routes/drafts";
 import { keys } from "./routes/keys";
 import { labels } from "./routes/labels";
 import { mailboxes } from "./routes/mailboxes";
+import { original } from "./routes/original";
 import { people } from "./routes/people";
 import { places } from "./routes/places";
 import { recovery } from "./routes/recovery";
 import { handleForwardEmail, handleReplyEmail } from "./routes/reply-forward";
-import type { Env } from "./types";
 
 type AppContext = Context<ApiContext>;
 
@@ -82,6 +76,7 @@ app.route("/", keys);
 app.route("/", drafts);
 app.route("/", labels);
 app.route("/", places);
+app.route("/", original);
 app.route("/", bulk);
 app.route("/", recovery);
 
@@ -279,147 +274,4 @@ app.post(
 	},
 );
 
-// -- Receive inbound email ------------------------------------------
-
-const MAX_EMAIL_SIZE = 25 * 1024 * 1024;
-
-async function streamToArrayBuffer(stream: ReadableStream, streamSize: number) {
-	if (streamSize > MAX_EMAIL_SIZE)
-		throw new Error(`Email too large: ${streamSize} bytes exceeds ${MAX_EMAIL_SIZE} byte limit`);
-	if (streamSize <= 0) throw new Error(`Invalid stream size: ${streamSize}`);
-	const result = new Uint8Array(streamSize);
-	let bytesRead = 0;
-	const reader = stream.getReader();
-	while (true) {
-		const { done, value } = await reader.read();
-		if (done) break;
-		if (bytesRead + value.length > streamSize) {
-			reader.cancel();
-			throw new Error(`Stream exceeds declared size`);
-		}
-		result.set(value, bytesRead);
-		bytesRead += value.length;
-	}
-	return result;
-}
-
-async function receiveEmail(event: InboundEnvelope, env: Env, ctx: ExecutionContext) {
-	// Route by the envelope recipient, before the body is read. The `To:` header is the sender's
-	// text: it is missing for Bcc and names the list for list mail.
-	const decision = await routeInbound(
-		event.to,
-		(env.EMAIL_ADDRESSES ?? []) as string[],
-		(address) => mailboxExists(env.DB, address),
-	);
-	if (!decision.deliver) {
-		event.setReject(decision.reason);
-		return;
-	}
-	const mailboxId = decision.mailboxId;
-
-	const rawEmail = await streamToArrayBuffer(event.raw, event.rawSize);
-	const parsedEmail = await new PostalMime().parse(rawEmail);
-
-	const allRecipients = (parsedEmail.to ?? [])
-		.map((t) => t.address?.toLowerCase())
-		.filter(Boolean) as string[];
-	const ccRecipients = (parsedEmail.cc || [])
-		.map((e) => e.address?.toLowerCase())
-		.filter(Boolean) as string[];
-	const bccRecipients = (parsedEmail.bcc || [])
-		.map((e) => e.address?.toLowerCase())
-		.filter(Boolean) as string[];
-
-	const messageId = crypto.randomUUID();
-
-	const stub = env.MAILBOX.get(env.MAILBOX.idFromName(mailboxId));
-
-	const attachmentData: StoredAttachment[] = [];
-	if (parsedEmail.attachments) {
-		for (const att of parsedEmail.attachments) {
-			const attId = crypto.randomUUID();
-			const filename = storageFilename(att.filename);
-			await env.BUCKET.put(`attachments/${messageId}/${attId}/${filename}`, att.content);
-			attachmentData.push({
-				id: attId,
-				email_id: messageId,
-				filename,
-				mimetype: att.mimeType,
-				size: typeof att.content === "string" ? att.content.length : att.content.byteLength,
-				content_id: att.contentId || null,
-				disposition: att.disposition || "attachment",
-			});
-		}
-	}
-
-	const extractMsgId = (s: string) => {
-		const m = s.match(/<([^>]+)>/);
-		return m ? m[1] : s.trim().split(/\s+/)[0];
-	};
-	const inReplyTo = parsedEmail.inReplyTo ? extractMsgId(parsedEmail.inReplyTo) : null;
-	const emailReferences = parsedEmail.references
-		? parsedEmail.references.split(/\s+/).filter(Boolean).map(extractMsgId)
-		: [];
-	let threadId = emailReferences[0] || inReplyTo || messageId;
-
-	if (inReplyTo || emailReferences.length > 0) {
-		// The message joins the conversation of what it answers when that message is here; an
-		// answer to something this mailbox never held keeps the id the sender's program gave it.
-		const known = await mailboxQueries(stub).findThreadOfReferences(
-			[...emailReferences, ...(inReplyTo ? [inReplyTo] : [])],
-			parsedEmail.subject || "",
-		);
-		if (known) threadId = known;
-	} else {
-		const subjectThread = await mailboxQueries(stub).findThreadBySubject(
-			parsedEmail.subject || "",
-			parsedEmail.from?.address || undefined,
-		);
-		if (subjectThread) threadId = subjectThread;
-	}
-
-	const originalMessageId = parsedEmail.messageId ? extractMsgId(parsedEmail.messageId) : null;
-
-	await stub.createEmail(
-		Folders.INBOX,
-		{
-			id: messageId,
-			subject: parsedEmail.subject || "",
-			sender: (parsedEmail.from?.address || "").toLowerCase(),
-			recipient: allRecipients.join(", ") || mailboxId,
-			cc: ccRecipients.join(", ") || null,
-			bcc: bccRecipients.join(", ") || null,
-			date: new Date().toISOString(), // uses receive time, not the email's Date header
-			body: parsedEmail.html || parsedEmail.text || "",
-			in_reply_to: inReplyTo,
-			email_references: emailReferences.length > 0 ? JSON.stringify(emailReferences) : null,
-			thread_id: threadId,
-			message_id: originalMessageId,
-			raw_headers: JSON.stringify(parsedEmail.headers),
-		},
-		attachmentData,
-	);
-
-	// The auto-draft calls a model, so it runs only when the deployer turned the agent on.
-	if (!features(env).agent) return;
-	const agentStub = env.EMAIL_AGENT.get(env.EMAIL_AGENT.idFromName(mailboxId));
-	ctx.waitUntil(
-		agentStub
-			.fetch(
-				new Request("https://agents/onNewEmail", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						mailboxId,
-						emailId: messageId,
-						sender: (parsedEmail.from?.address || "").toLowerCase(),
-						subject: parsedEmail.subject || "",
-						threadId,
-					}),
-				}),
-			)
-			.catch((e) => log.error("agent.autodraft_trigger_failed", errorFields(e))),
-	);
-}
-
-export { app, receiveEmail };
+export { app };

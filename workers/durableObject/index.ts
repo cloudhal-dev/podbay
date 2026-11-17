@@ -18,9 +18,10 @@ import type { Env } from "../types";
 import * as steps from "./deed-steps";
 import * as deeds from "./deeds";
 import * as drafts from "./drafts";
-import { type EmptiedBatch, emptyBatch } from "./emptying";
+import { type BatchToEmpty, batchToEmpty, type EmptiedBatch, emptyBatch } from "./emptying";
 import * as labels from "./labels";
 import { applyMigrations, mailboxMigrations } from "./migrations";
+import * as originals from "./originals";
 import { countSearchResults, searchEmails } from "./search";
 import { sendRefusal } from "./sending";
 import type { AttachmentData, EmailData, GetEmailsOptions } from "./shapes";
@@ -387,7 +388,8 @@ export class MailboxDO extends DurableObject<Env> {
 			.where(and(eq(schema.attachments.email_id, id), isNull(schema.attachments.uploading_since)))
 			.all();
 
-		const one = { ...email, read: !!email.read, starred: !!email.starred };
+		// The key of the original stays here: the answer says `has_original` (ADR-0015).
+		const one = originals.shownMessage({ ...email, read: !!email.read, starred: !!email.starred });
 		return this.#labelled([{ ...one, attachments: emailAttachments }])[0] ?? null;
 	}
 
@@ -427,7 +429,7 @@ export class MailboxDO extends DurableObject<Env> {
 		}
 
 		const list = emailRows.map((email) => ({
-			...email,
+			...originals.shownMessage(email),
 			read: !!email.read,
 			starred: !!email.starred,
 			attachments: attachmentsByEmail.get(String(email.id)) || [],
@@ -461,29 +463,51 @@ export class MailboxDO extends DurableObject<Env> {
 		return { threadId, markedRead: true };
 	}
 
+	/**
+	 * Deletes a message's rows and names the objects it had at that moment. The caller has
+	 * deleted its objects first (`messageKeys`, `workers/lib/messages.ts`).
+	 */
 	async deleteEmail(id: string) {
-		const email = this.db
-			.select({ id: schema.emails.id })
-			.from(schema.emails)
-			.where(eq(schema.emails.id, id))
-			.get();
+		return this.ctx.storage.transactionSync(() => {
+			const keys = originals.messageKeys(this.ctx.storage, id);
+			if (keys === null) return null;
+			labels.forgetLabelsOf(this.ctx.storage.sql, id);
+			deeds.forgetChangesOf(this.ctx.storage.sql, [id]);
+			this.db.delete(schema.attachments).where(eq(schema.attachments.email_id, id)).run();
+			this.db.delete(schema.emails).where(eq(schema.emails.id, id)).run();
+			return keys;
+		});
+	}
 
-		if (!email) return null;
+	// ── Arrivals and originals (ADR-0015, ./originals) ─────────────
 
-		const emailAttachments = this.db
-			.select({
-				id: schema.attachments.id,
-				filename: schema.attachments.filename,
-			})
-			.from(schema.attachments)
-			.where(eq(schema.attachments.email_id, id))
-			.all();
-
-		labels.forgetLabelsOf(this.ctx.storage.sql, id);
-		deeds.forgetChangesOf(this.ctx.storage.sql, [id]);
-		this.db.delete(schema.emails).where(eq(schema.emails.id, id)).run();
-
-		return emailAttachments;
+	async beginArrival(arrival: Parameters<typeof originals.beginArrival>[1]) {
+		return originals.beginArrival(this.ctx.storage, arrival, Date.now());
+	}
+	async dropArrival(id: string) {
+		return originals.dropArrival(this.ctx.storage, id);
+	}
+	async fileArrival(id: string, filed: originals.Filed) {
+		return originals.fileArrival(this.ctx.storage, id, filed, Date.now());
+	}
+	async filesStored(emailId: string, fileIds: string[]) {
+		return originals.filesStored(this.ctx.storage, emailId, fileIds);
+	}
+	/** One arrival that was left half done; the attempt is counted. */
+	async claimArrival(skip: string[]) {
+		return originals.claimArrival(this.ctx.storage, Date.now(), skip);
+	}
+	/** Where a message's original is. For the Worker's two routes only: never an answer. */
+	async originalOf(id: string) {
+		return originals.originalOf(this.ctx.storage, id);
+	}
+	/** The keys of every object a message has, to delete them before its rows. */
+	async messageKeys(id: string) {
+		return originals.messageKeys(this.ctx.storage, id);
+	}
+	/** The keys of everything this mailbox has in the bucket. */
+	async allKeys() {
+		return originals.allKeys(this.ctx.storage);
 	}
 
 	/** A stored file by its id. One whose bytes have not arrived does not exist yet. */
@@ -631,21 +655,24 @@ export class MailboxDO extends DurableObject<Env> {
 		return sendRefusal(this.ctx.storage.sql);
 	}
 
-	/** Deletes one batch of what Trash or Spam held at `before` (ADR-0009, ./emptying). */
-	async emptyBatch(place: string, before: string): Promise<EmptiedBatch> {
-		return emptyBatch(this.ctx.storage, place, before);
+	/** Names one batch of what Trash or Spam held at `before`, and its objects (./emptying). */
+	async batchToEmpty(place: string, before: string): Promise<BatchToEmpty> {
+		return batchToEmpty(this.ctx.storage, place, before);
+	}
+	/** Deletes the rows of a named batch, after its objects are gone (ADR-0009, ./emptying). */
+	async emptyBatch(place: string, before: string, ids: string[]): Promise<EmptiedBatch> {
+		return emptyBatch(this.ctx.storage, place, before, ids);
 	}
 
 	// ── Email creation (Drizzle) ───────────────────────────────────
 
 	/**
-	 * Delete everything this mailbox holds (rule S13). Returns the R2 keys of its attachments so
-	 * the caller can delete those too; after this the object is empty.
+	 * Delete everything this mailbox holds (rule S13). The caller has deleted its objects first
+	 * (`allKeys`); this names what it held in the bucket at this moment, so that what arrived
+	 * in between is deleted too. After this the object is empty.
 	 */
 	async purge(): Promise<string[]> {
-		const keys = [
-			...this.ctx.storage.sql.exec(`SELECT id, email_id, filename FROM attachments`),
-		].map((row) => `attachments/${row.email_id}/${row.id}/${row.filename}`);
+		const keys = originals.allKeys(this.ctx.storage);
 		await this.ctx.storage.deleteAll();
 		// The object may live on in memory. Leave it empty but usable, so a mailbox created again at
 		// the same address starts from a clean schema instead of from missing tables.

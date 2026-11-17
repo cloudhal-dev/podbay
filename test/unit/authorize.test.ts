@@ -124,10 +124,12 @@ describe("route table", () => {
 	});
 
 	it("needs a right stronger than reading for every route that changes a mailbox", () => {
-		// One POST changes nothing: it downloads an attachment the reader acknowledged. It is a
-		// POST so that only the app's own origin can make it, and a reader may read attachments.
+		// Two POSTs change nothing: one downloads an attachment the reader acknowledged, the
+		// other the original of a message (ADR-0015, decisions 15 and 20). Each is a POST so that
+		// only the app's own origin can make it, and a reader may read what the message holds.
 		const READS_BY_POST = [
 			`POST ${"/api/v1/mailboxes/:mailboxId"}/emails/:emailId/attachments/:attachmentId/download`,
+			`POST ${"/api/v1/mailboxes/:mailboxId"}/emails/:id/original/download`,
 		];
 		const changing = ROUTE_TABLE.filter((r) => r.path.includes(":mailboxId") && r.method !== "GET");
 		for (const route of changing) {

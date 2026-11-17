@@ -10,14 +10,12 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { ApiContext } from "../auth/middleware";
 import { EMPTIABLE } from "../durableObject/emptying";
+import { deleteObjects } from "../lib/messages";
 
 const M = "/api/v1/mailboxes/:mailboxId";
 
 /** `before` is what an earlier answer gave: the moment emptying was asked for. */
 const EmptyBody = z.object({ before: z.string().datetime().optional() });
-
-/** One call to the bucket deletes at most this many objects (docs/cloudflare/ledger.json). */
-const DELETE_AT_ONCE = 1000;
 
 export const places = new Hono<ApiContext>();
 
@@ -34,10 +32,10 @@ places.post(`${M}/folders/:folderId/empty`, async (c) => {
 	const now = new Date().toISOString();
 	const before = body.data.before !== undefined && body.data.before < now ? body.data.before : now;
 
-	const batch = await c.var.mailboxStub.emptyBatch(place, before);
-	// The objects of this batch are gone before the next batch is asked for.
-	for (let from = 0; from < batch.keys.length; from += DELETE_AT_ONCE) {
-		await c.env.BUCKET.delete(batch.keys.slice(from, from + DELETE_AT_ONCE));
-	}
-	return c.json({ deleted: batch.deleted, more: batch.more, before });
+	// Objects before rows (ADR-0015, decision 22): the mailbox names a batch and what it has in
+	// the bucket, the objects go, and only then the rows of exactly that batch.
+	const batch = await c.var.mailboxStub.batchToEmpty(place, before);
+	await deleteObjects(c.env.BUCKET, batch.keys);
+	const emptied = await c.var.mailboxStub.emptyBatch(place, before, batch.ids);
+	return c.json({ deleted: emptied.deleted, more: emptied.more, before });
 });

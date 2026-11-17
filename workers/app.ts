@@ -8,9 +8,10 @@ import { Hono } from "hono";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { errorFields, log } from "../shared/log";
 import { API_CACHE_CONTROL, API_HEADERS } from "../shared/security-headers";
+import { receiveEmail } from "./arrival";
 import { callerForToken, touchKey } from "./auth/keys";
 import { mailboxDecision, sameOrigin } from "./auth/middleware";
-import { app as apiApp, receiveEmail } from "./index";
+import { app as apiApp } from "./index";
 import { features } from "./lib/features";
 import { secret } from "./lib/secrets";
 import { handleMcp, MCP_ROUTE } from "./mcp/server";
@@ -151,8 +152,8 @@ export default {
 			await receiveEmail(event, env, ctx);
 		} catch (e) {
 			log.error("inbound.failed", errorFields(e));
-			// Re-throw so Cloudflare's email routing can retry delivery or bounce the message.
-			// Swallowing the error would silently drop the email.
+			// Thrown only before the original is stored (workers/arrival.ts): Podbay has not
+			// taken the message, and the sending server must not be told that it has.
 			throw e;
 		}
 	},

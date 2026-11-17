@@ -165,8 +165,11 @@ export class FakeMailbox {
 		email.folder_id = folderId;
 		return true;
 	}
-	/** The files a deleted message had, as the mailbox names them; this fake keeps none. */
-	async deleteEmail(id: string): Promise<{ id: string; filename: string }[] | null> {
+	/** The objects a message has in the bucket, as the mailbox names them; this fake keeps none. */
+	async messageKeys(id: string): Promise<string[] | null> {
+		return this.emails.has(id) ? [] : null;
+	}
+	async deleteEmail(id: string): Promise<string[] | null> {
 		return this.emails.delete(id) ? [] : null;
 	}
 	/** Whether a person gave the draft files. A tool does not touch such a draft (ADR-0011). */

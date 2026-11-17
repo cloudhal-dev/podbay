@@ -457,6 +457,126 @@ describe("labels through a key (ADR-0007)", () => {
 	});
 });
 
+describe("a tool gets nothing of the original (ADR-0015, decision 21)", () => {
+	const KEY = "raw/0123456789abcdef0123456789abcdef";
+	const STATEMENT = "mx.cloudflare.net; spf=pass; dkim=pass; dmarc=pass";
+	const BYTES = "Subject: Kept whole\r\n\r\nTHE-ORIGINAL-BYTES";
+
+	beforeAll(async () => {
+		// A received message as an arrival leaves it, with a file: put there directly, because
+		// this is about what a tool answers and the assistant must not be woken.
+		await runInDurableObject(
+			testEnv.MAILBOX.get(testEnv.MAILBOX.idFromName(TEAM)),
+			(_object, state) => {
+				state.storage.sql.exec(
+					`INSERT INTO emails (id, folder_id, subject, sender, recipient, date, body, thread_id,
+						raw_headers, raw_key, raw_size, unparsed, auth_results)
+					 VALUES ('with-original', 'inbox', 'Kept whole', 'ada@sender.test', ?1, ?2, 'Parsed text',
+						'thread-original', '[]', ?3, ?4, NULL, ?5)`,
+					TEAM,
+					new Date().toISOString(),
+					KEY,
+					BYTES.length,
+					STATEMENT,
+				);
+				state.storage.sql.exec(
+					`INSERT INTO attachments (id, email_id, filename, mimetype, size) VALUES ('file-1', 'with-original', 'a.txt', 'text/plain', 1)`,
+				);
+			},
+		);
+		await (testEnv as unknown as { BUCKET: R2Bucket }).BUCKET.put(KEY, BYTES);
+	});
+
+	it("answers about a message with a list of named fields, and nothing else", async () => {
+		const key = (await newKey("owner", [TEAM], "read")).body.token;
+		const one = await tool(key, "get_email", { mailboxId: TEAM, emailId: "with-original" });
+		expect(one.isError).toBe(false);
+		// Pinned: a new column of the mailbox's database does not reach a client by itself.
+		expect(Object.keys(one.value as object).sort()).toEqual(
+			[
+				"attachments",
+				"bcc",
+				"body",
+				"body_html",
+				"body_text",
+				"cc",
+				"date",
+				"email_references",
+				"folder_id",
+				"id",
+				"in_reply_to",
+				"labels",
+				"message_id",
+				"raw_headers",
+				"read",
+				"recipient",
+				"sender",
+				"starred",
+				"subject",
+				"thread_id",
+			].sort(),
+		);
+		const files = (one.value as { attachments: object[] }).attachments;
+		expect(files.map((file) => Object.keys(file).sort())).toEqual([
+			["content_id", "disposition", "email_id", "filename", "id", "mimetype", "size"],
+		]);
+
+		const thread = await tool(key, "get_thread", { mailboxId: TEAM, threadId: "thread-original" });
+		const lines = await tool(key, "list_emails", { mailboxId: TEAM, limit: 100 });
+		const found = await tool(key, "search_emails", { mailboxId: TEAM, query: "Kept whole" });
+		expect(thread.text).toContain("Kept whole");
+		expect(lines.text).toContain("Kept whole");
+		expect(found.text).toContain("Kept whole");
+		const line = (lines.value as Record<string, unknown>[]).find(
+			(row) => row.id === "with-original",
+		);
+		expect(Object.keys(line ?? {}).sort()).toEqual(
+			[
+				"bcc",
+				"cc",
+				"date",
+				"email_references",
+				"folder_id",
+				"id",
+				"in_reply_to",
+				"labels",
+				"read",
+				"recipient",
+				"sender",
+				"snippet",
+				"starred",
+				"subject",
+				"thread_id",
+			].sort(),
+		);
+
+		// Neither the original, nor its key, nor what the platform said, nor that there is one.
+		for (const answer of [one, thread, lines, found]) {
+			expect(answer.isError).toBe(false);
+			for (const kept of [
+				"raw_key",
+				KEY,
+				KEY.slice(4),
+				"raw_size",
+				"has_original",
+				"unparsed",
+				"auth_results",
+				"authentication",
+				"mx.cloudflare.net",
+				"THE-ORIGINAL-BYTES",
+			]) {
+				expect(answer.text, kept).not.toContain(kept);
+			}
+		}
+	});
+
+	it("has no tool that shows or downloads an original", () => {
+		expect(
+			MCP_TOOLS.map((t) => t.name).filter((name) => /original|raw|download/.test(name)),
+		).toEqual([]);
+	});
+});
+
 describe("a key stops working when what it was made from goes away", () => {
 	it("at once when its owner loses the membership", async () => {
 		const key = (await newKey("sender", [TEAM], "write")).body.token;

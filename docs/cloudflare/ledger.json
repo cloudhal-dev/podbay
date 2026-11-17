@@ -139,7 +139,7 @@
 			"kind": "runtime",
 			"relies": "Inbound mail reaches the Worker through the exported `email(message, env, ctx)` handler.",
 			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
-			"pageUpdated": "2026-10-30",
+			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Add the `email` handler function to your Worker's exported handlers:",
 			"code": ["workers/app.ts"]
@@ -147,62 +147,63 @@
 		{
 			"id": "runtime.email.message.from",
 			"kind": "runtime",
-			"relies": "`message.from` is the envelope sender, not the `From:` header.",
+			"relies": "`message.from` is the envelope sender, not the `From:` header. It is kept with an arrival, and is the sender of a message that could not be read.",
 			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
-			"pageUpdated": "2026-10-30",
+			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "readonly from: string; // Sender email address (envelope MAIL FROM)",
-			"code": ["workers/lib/inbound.ts"]
+			"code": ["workers/lib/inbound.ts", "workers/arrival.ts"]
 		},
 		{
 			"id": "runtime.email.message.to",
 			"kind": "runtime",
 			"relies": "`message.to` is the envelope recipient. Podbay files a message by it and never by the `To:` header.",
 			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
-			"pageUpdated": "2026-10-30",
+			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "readonly to: string; // Recipient email address (envelope RCPT TO)",
-			"code": ["workers/index.ts", "workers/lib/inbound.ts"]
+			"code": ["workers/arrival.ts", "workers/lib/inbound.ts"]
 		},
 		{
 			"id": "runtime.email.message.raw",
 			"kind": "runtime",
-			"relies": "`message.raw` is a stream of the raw MIME message.",
+			"relies": "`message.raw` is a stream of the raw MIME message. Podbay stores exactly these bytes as the original of the message.",
 			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
-			"pageUpdated": "2026-10-30",
+			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "readonly raw: ReadableStream; // Raw MIME email content stream",
-			"code": ["workers/index.ts", "workers/lib/inbound.ts"]
+			"code": ["workers/arrival.ts", "workers/lib/inbound.ts"]
 		},
 		{
 			"id": "runtime.email.message.rawSize",
 			"kind": "runtime",
-			"relies": "`message.rawSize` is the size of the raw message in bytes. Podbay sizes its read buffer from it.",
+			"relies": "`message.rawSize` is the size of the raw message in bytes. Podbay refuses a size that is not between 1 byte and 25 MiB, sizes its read buffer from it, and takes no message whose stream gives more or fewer bytes.",
 			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
-			"pageUpdated": "2026-10-30",
+			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "readonly rawSize: number; // Size of raw email in bytes",
-			"code": ["workers/index.ts", "workers/lib/inbound.ts"]
+			"code": ["workers/arrival.ts", "workers/lib/inbound.ts"]
 		},
 		{
 			"id": "runtime.email.message.setReject",
 			"kind": "runtime",
-			"relies": "`message.setReject(reason)` refuses the message with a permanent SMTP error. Podbay calls it for an unknown recipient.",
+			"relies": "`message.setReject(reason)` refuses the message with a permanent SMTP error. Podbay calls it for an unknown recipient and for a declared size it does not accept.",
 			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
-			"pageUpdated": "2026-10-30",
+			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Reject emails with a permanent SMTP error:",
-			"code": ["workers/index.ts", "workers/lib/inbound.ts"]
+			"code": ["workers/arrival.ts", "workers/lib/inbound.ts"]
 		},
 		{
 			"id": "runtime.email.authentication_results",
 			"kind": "runtime",
-			"relies": "Only the first `Authentication-Results` header, written by `mx.cloudflare.net`, can be trusted for SPF, DKIM and DMARC results.",
+			"relies": "Email Routing puts its own `Authentication-Results` field in front of the message. Podbay reads the first such field through `message.headers` and keeps it only when its identifier is exactly `mx.cloudflare.net`.",
 			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
-			"pageUpdated": "2026-10-30",
+			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
-			"evidence": "Other `Authentication-Results` headers may have been supplied by the sender and should not be trusted.",
-			"code": ["docs/architecture.md"]
+			"evidence": "To check for `dmarc=pass`, read the first `Authentication-Results` header through `message.headers` and verify that its authentication service identifier is `mx.cloudflare.net`.",
+			"code": ["workers/lib/original.ts", "workers/arrival.ts", "docs/architecture.md"],
+			"note": "The page also says: \"Other `Authentication-Results` headers may have been supplied by the sender and should not be trusted.\" It does not say how `headers` gives a field that occurs more than once, so Podbay cuts the value at the first comma outside a quoted string or a comment and keeps nothing when that cannot be told (ADR-0015, decision 19)."
 		},
 		{
 			"id": "runtime.send_email.send",
@@ -262,17 +263,23 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "`get` `(key: string, options?: R2GetOptions): Promise<R2ObjectBody | R2Object | null>`",
-			"code": ["workers/index.ts", "workers/lib/outgoing.ts", "workers/routes/drafts.ts"]
+			"code": [
+				"workers/index.ts",
+				"workers/arrival.ts",
+				"workers/lib/outgoing.ts",
+				"workers/routes/drafts.ts",
+				"workers/routes/original.ts"
+			]
 		},
 		{
 			"id": "runtime.r2.put",
 			"kind": "runtime",
-			"relies": "`bucket.put(key, value)` stores a string or bytes under the key.",
+			"relies": "`bucket.put(key, value)` stores a string or bytes under the key, and answers with the stored object, whose `size` Podbay compares with the declared size of a message.",
 			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Stores the given `value` and metadata under the associated `key`. Once the write succeeds, returns an `R2Object` containing metadata about the stored Object.",
-			"code": ["workers/index.ts", "workers/lib/attachments.ts", "workers/routes/drafts.ts"]
+			"code": ["workers/arrival.ts", "workers/lib/attachments.ts", "workers/routes/drafts.ts"]
 		},
 		{
 			"id": "runtime.r2.delete",
@@ -283,12 +290,10 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "R2 deletes are strongly consistent. Once the Promise resolves, all subsequent read operations will no longer see the provided key value pairs globally.",
 			"code": [
-				"workers/index.ts",
 				"workers/lib/messages.ts",
+				"workers/arrival.ts",
 				"workers/lib/outgoing.ts",
-				"workers/routes/drafts.ts",
-				"workers/routes/mailboxes.ts",
-				"workers/routes/places.ts"
+				"workers/routes/drafts.ts"
 			]
 		},
 		{
@@ -299,7 +304,7 @@
 			"pageUpdated": "2026-11-05",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Named Durable Objects are the most common method of referring to Durable Objects.",
-			"code": ["workers/index.ts", "workers/auth/middleware.ts", "workers/routes/mailboxes.ts"]
+			"code": ["workers/arrival.ts", "workers/auth/middleware.ts", "workers/routes/mailboxes.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.sql.exec",
@@ -334,12 +339,12 @@
 		{
 			"id": "runtime.ctx.waitUntil",
 			"kind": "runtime",
-			"relies": "`ctx.waitUntil(promise)` lets work continue after the handler has returned. Podbay sends mail and wakes the agent this way.",
+			"relies": "`ctx.waitUntil(promise)` lets work continue after the handler has returned. Podbay sends mail, wakes the agent and takes up arrivals that were left half done this way.",
 			"source": "https://developers.cloudflare.com/workers/runtime-apis/context/",
 			"pageUpdated": "2026-10-12",
 			"verifiedAt": "2026-11-17",
 			"evidence": "`ctx.waitUntil()` extends the lifetime of your Worker, allowing you to perform work without blocking returning a response, and that may continue after a response is returned.",
-			"code": ["workers/index.ts", "workers/routes/reply-forward.ts"]
+			"code": ["workers/arrival.ts", "workers/lib/outgoing.ts"]
 		},
 		{
 			"id": "runtime.access.jwt_header",
@@ -444,8 +449,8 @@
 			"pageUpdated": "2026-10-15",
 			"verifiedAt": "2026-11-17",
 			"evidence": "curl --request POST 'http://localhost:8787/cdn-cgi/local/email' \\",
-			"code": ["AGENTS.md"],
-			"note": "An older path, `/cdn-cgi/handler/email`, still works in the installed Vite plugin as a legacy route; Podbay's docs use the documented one."
+			"code": ["AGENTS.md", "test/e2e/fixtures.ts"],
+			"note": "An older path, `/cdn-cgi/handler/email`, still works in the installed Vite plugin as a legacy route; Podbay's docs use the documented one. Nothing on the local endpoint checks authentication: the page names no SPF, DKIM or DMARC check, and the installed runtime builds `headers` from the posted message, so on a development instance an `Authentication-Results` field the sender wrote is believed (ADR-0015, decision 19). The installed runtime also takes a `Bcc` field out of the bytes it delivers and answers 400 for a message its own parser refuses or that has no `Message-ID` (read in miniflare's entry worker, 2026-11-17)."
 		},
 		{
 			"id": "tooling.vite.viteEnvironment",
@@ -481,12 +486,12 @@
 		{
 			"id": "limit.email.inbound_size",
 			"kind": "limit",
-			"relies": "An inbound message is at most 25 MiB. Larger mail never reaches the Worker.",
+			"relies": "An inbound message is at most 25 MiB. Larger mail never reaches the Worker, and Podbay refuses a declared size above it all the same; an original is never larger.",
 			"source": "https://developers.cloudflare.com/email-service/platform/limits/",
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| **Inbound message size** | 25 MiB | Messages larger than this are rejected |",
-			"code": ["docs/architecture.md", "workers/index.ts"]
+			"code": ["docs/architecture.md", "shared/original.ts", "workers/arrival.ts"]
 		},
 		{
 			"id": "limit.email.outbound_size",
@@ -524,12 +529,13 @@
 		{
 			"id": "limit.durable_objects.row_size",
 			"kind": "limit",
-			"relies": "A string, a blob or a table row in a Durable Object is at most 8 MB.",
+			"relies": "A string, a blob or a table row in a Durable Object is at most 8 MB. A message whose text would not fit is filed with its original alone (`unparsed: too_large`).",
 			"source": "https://developers.cloudflare.com/durable-objects/platform/limits/",
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| Maximum string, `BLOB` or table row size | 8 MB |",
-			"code": ["docs/architecture.md"]
+			"code": ["docs/architecture.md", "workers/durableObject/originals.ts", "workers/arrival.ts"],
+			"note": "The page does not say whether 8 MB is 8,000,000 or 8,388,608 bytes. The local runtime took a string of 8,000,001 bytes and refused one of 8,388,608 (`SQLITE_TOOBIG`; tried in test/workerd on 2026-11-17). Podbay treats more than 8,000,000 bytes of text as too large, and a refusal by the database the same way."
 		},
 		{
 			"id": "limit.durable_objects.bound_parameters",
@@ -760,6 +766,153 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "request body size limits depend on the domain's Cloudflare plan, not your Workers plan",
 			"code": ["workers/routes/drafts.ts", "shared/sending-limits.ts"]
+		},
+		{
+			"id": "runtime.email.message.headers",
+			"kind": "runtime",
+			"relies": "`message.headers` is a `Headers` object with the header fields of the message. Podbay reads `Authentication-Results` from it and nothing else.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-17",
+			"evidence": "readonly headers: Headers; // Email headers (Subject, Message-ID, etc.)",
+			"code": ["workers/lib/inbound.ts", "workers/lib/original.ts"],
+			"note": "The page does not say how a field that occurs more than once is given. In the Workers runtime `Headers.get` joins the values with a comma and a space, in their order (test/workerd/original-routes.test.ts)."
+		},
+		{
+			"id": "runtime.email.authentication_results.forged",
+			"kind": "runtime",
+			"relies": "A message whose sender wrote an `Authentication-Results` field with the identifier `mx.cloudflare.net` still arrives with the platform's own field first, so the sender's copy is never the one Podbay keeps. Until this is seen on a real domain the app says nothing about authentication (`AUTHENTICATION_SHOWN`).",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": null,
+			"evidence": "needs verification: send one message with a forged field of the platform's identifier to a real domain of the test zone, by hand, and record here what arrives (ADR-0015, decision 19)",
+			"code": ["shared/original.ts", "test/unit/original.test.ts"]
+		},
+		{
+			"id": "runtime.email.handler.throws",
+			"kind": "runtime",
+			"relies": "The handler throws only before the original of a message is stored: Podbay has not taken the message, and whatever the sending server is told then, nothing of the message is kept. After that point it neither throws nor rejects.",
+			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": null,
+			"evidence": "needs verification: the pages read on 2026-11-17 do not say what the sending server is told when the `email` handler throws",
+			"code": ["workers/app.ts", "workers/arrival.ts"]
+		},
+		{
+			"id": "runtime.email.unauthenticated_rejected",
+			"kind": "runtime",
+			"relies": "Mail that fails both SPF and DKIM does not reach the handler, and a sender domain's DMARC policy is honoured before it. What Podbay keeps of authentication is the platform's own record of mail it let through.",
+			"source": "https://developers.cloudflare.com/email-service/reference/postmaster/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "The email must either pass SPF or be correctly signed with DKIM. Emails that fail both checks are rejected.",
+			"code": ["docs/adr/0015-the-original-message-is-kept.md"],
+			"note": "The same page: \"Incoming emails are rejected if they fail authentication according to that domain's DMARC policy.\""
+		},
+		{
+			"id": "limit.email.handler_free_plan",
+			"kind": "limit",
+			"relies": "On the Workers Free plan the handler can be stopped while it parses a costly message. The arrival's row and the stored original are there by then, so the next arrival finishes the message or files it as `interrupted`.",
+			"source": "https://developers.cloudflare.com/email-service/platform/limits/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "On the Workers Free plan, complex handlers may exceed these limits and fail to process a message.",
+			"code": ["workers/arrival.ts", "workers/durableObject/originals.ts"]
+		},
+		{
+			"id": "limit.workers.cpu_time",
+			"kind": "limit",
+			"relies": "A handler has 10 ms of CPU time on Workers Free and 30 seconds by default on Workers Paid; waiting on the bucket or the mailbox does not count. Parsing is what can run out, storing the original is not.",
+			"source": "https://developers.cloudflare.com/workers/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| CPU time per HTTP request | 10 ms | 5 min (default: 30 seconds) |",
+			"code": ["docs/adr/0015-the-original-message-is-kept.md", "workers/arrival.ts"],
+			"note": "The page gives the figure for an HTTP request and for a Cron Trigger and names none for the `email` handler. It also says: \"Waiting on network requests (such as `fetch()` calls, KV reads, or database queries) does **not** count toward CPU time.\""
+		},
+		{
+			"id": "runtime.streams.fixed_length_stream",
+			"kind": "runtime",
+			"relies": "An answer whose body is the readable half of a `FixedLengthStream` carries its length. The download of an original is passed through one of the object's size.",
+			"source": "https://developers.cloudflare.com/workers/runtime-apis/streams/transformstream/",
+			"pageUpdated": "2026-04-23",
+			"verifiedAt": "2026-11-17",
+			"evidence": "when using `FixedLengthStream` to produce either a `Response` or `Request`, the fixed length of the stream will be used as the `Content-Length` header value",
+			"code": ["workers/routes/original.ts", "workers/routes/drafts.ts"],
+			"note": "The same paragraph: \"An error will occur if too many, or too few bytes are written through the stream.\""
+		},
+		{
+			"id": "runtime.r2.get.range",
+			"kind": "runtime",
+			"relies": "`bucket.get(key, { range: { offset, length } })` returns only that part of the object, and `size` is still the size of the whole. Showing an original reads its first 256 KiB this way, so the Worker never holds more.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "`R2GetOptions` accepts a `range` parameter, which can be used to restrict the data returned in `body`.",
+			"code": ["workers/routes/original.ts"],
+			"note": "That `size` stays the size of the whole object is not said on the page; it is asserted in test/workerd/original-routes.test.ts against the local bucket."
+		},
+		{
+			"id": "runtime.r2.head",
+			"kind": "runtime",
+			"relies": "`bucket.head(key)` says whether an object exists without reading it. An arrival that is filed as `interrupted` is checked this way, so its bytes are not read again.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Retrieves the `R2Object` for the given key containing only object metadata, if the key exists, and `null` if the key does not exist.",
+			"code": ["workers/arrival.ts"]
+		},
+		{
+			"id": "limit.r2.delete_keys",
+			"kind": "limit",
+			"relies": "One call to `bucket.delete` takes at most 1000 keys. Deleting a message, a batch of a place and a whole mailbox deletes objects a thousand at a time.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Up to 1000 keys may be deleted per call.",
+			"code": ["workers/lib/messages.ts"]
+		},
+		{
+			"id": "limit.r2.upload_size",
+			"kind": "limit",
+			"relies": "One `put` stores up to 5 GiB less 5 MiB, so an original of at most 25 MiB is always written in one call and never needs a multipart upload.",
+			"source": "https://developers.cloudflare.com/r2/platform/limits/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "The max upload size is 5 MiB less than 5 GiB, so 4.995 GiB.",
+			"code": ["workers/arrival.ts"]
+		},
+		{
+			"id": "plan.r2.price",
+			"kind": "plan",
+			"relies": "An original costs one write when a message arrives and one read each time it is shown or downloaded; deleting is free. Storage is charged by the gigabyte and month.",
+			"source": "https://developers.cloudflare.com/r2/pricing/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| Storage | $0.015 / GB-month | $0.01 / GB-month |",
+			"code": ["docs/adr/0015-the-original-message-is-kept.md"],
+			"note": "The same table: \"| Class A Operations | $4.50 / million requests |\" (a write) and \"| Class B Operations | $0.36 / million requests |\" (a read); \"Free operations include `DeleteObject`, `DeleteBucket` and `AbortMultipartUpload`.\" and \"There are no charges for egress bandwidth for any storage class.\""
+		},
+		{
+			"id": "plan.r2.free_tier",
+			"kind": "plan",
+			"relies": "Each month 10 GB of storage, a million writes and ten million reads cost nothing.",
+			"source": "https://developers.cloudflare.com/r2/pricing/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| Storage | 10 GB-month / month |",
+			"code": ["docs/adr/0015-the-original-message-is-kept.md"],
+			"note": "The same table: \"| Class A Operations | 1 million requests / month |\" and \"| Class B Operations | 10 million requests / month |\". The free tier applies to Standard storage only."
+		},
+		{
+			"id": "runtime.send_email.platform_headers",
+			"kind": "runtime",
+			"relies": "The sending service makes `Date`, `Message-ID`, `MIME-Version`, `Content-Type`, `DKIM-Signature` and `Return-Path` itself and refuses a request that sets one. So what leaves is never what Podbay holds: a sent message has no original, and its stored header fields are the ones Podbay handed over.",
+			"source": "https://developers.cloudflare.com/email-service/reference/headers/",
+			"pageUpdated": "2026-11-11",
+			"verifiedAt": "2026-11-17",
+			"evidence": "These headers are auto-generated by the Cloudflare Email Service infrastructure. You cannot set or override them.",
+			"code": ["workers/lib/outgoing.ts", "app/components/email-panel/EmailPanelDialogs.tsx"]
 		}
 	]
 }

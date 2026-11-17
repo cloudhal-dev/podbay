@@ -12,6 +12,8 @@ export interface InboundEnvelope {
 	readonly from: string;
 	/** Envelope recipient (RCPT TO). */
 	readonly to: string;
+	/** The header fields of the message, as the platform gives them. */
+	readonly headers?: Headers;
 	readonly raw: ReadableStream;
 	readonly rawSize: number;
 	setReject(reason: string): void;

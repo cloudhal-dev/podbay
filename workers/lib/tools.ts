@@ -34,6 +34,91 @@ type MailboxSearchStub = {
 	searchEmails: (options: { query: string; folder?: string }) => Promise<unknown>;
 };
 
+// ── What a tool answers about a message ────────────────────────────
+
+/**
+ * What a tool answers about a message is built from these named fields and from nothing else
+ * (ADR-0015, decision 21), so that a new column of the mailbox's database cannot reach a
+ * model or an MCP client by accident. No tool returns the original of a message, its text,
+ * the key it is stored under, what the platform said about its authentication, or whether it
+ * has an original at all. Adding a field here is a decision about boundary B5: the tests pin
+ * these lists (`test/workerd-agent/mcp.test.ts`, `test/unit/agent-no-send.test.ts`).
+ */
+export const TOOL_MESSAGE_FIELDS = [
+	"id",
+	"folder_id",
+	"subject",
+	"sender",
+	"recipient",
+	"cc",
+	"bcc",
+	"date",
+	"read",
+	"starred",
+	"body",
+	"body_text",
+	"body_html",
+	"in_reply_to",
+	"email_references",
+	"thread_id",
+	"message_id",
+	"raw_headers",
+	"labels",
+] as const;
+
+/** A file of a message, as a tool names it. */
+export const TOOL_FILE_FIELDS = [
+	"id",
+	"email_id",
+	"filename",
+	"mimetype",
+	"size",
+	"content_id",
+	"disposition",
+] as const;
+
+/** A line of a list or of a search, as a tool answers it. */
+export const TOOL_LINE_FIELDS = [
+	"id",
+	"folder_id",
+	"folder_name",
+	"subject",
+	"sender",
+	"recipient",
+	"cc",
+	"bcc",
+	"date",
+	"read",
+	"starred",
+	"snippet",
+	"in_reply_to",
+	"email_references",
+	"thread_id",
+	"labels",
+] as const;
+
+/** The named fields of a row, in the list's order; a field the row lacks is left out. */
+function named(row: unknown, fields: readonly string[]): Record<string, unknown> {
+	const from = (row ?? {}) as Record<string, unknown>;
+	const answer: Record<string, unknown> = {};
+	for (const field of fields) if (field in from) answer[field] = from[field];
+	return answer;
+}
+
+/** A message for a tool: its named fields, and its files by their named fields. */
+function toolMessage(row: unknown): Record<string, unknown> {
+	const files = (row as { attachments?: unknown }).attachments;
+	return {
+		...named(row, TOOL_MESSAGE_FIELDS),
+		...(Array.isArray(files)
+			? { attachments: files.map((file) => named(file, TOOL_FILE_FIELDS)) }
+			: {}),
+	};
+}
+
+const toolLines = (rows: unknown): Record<string, unknown>[] =>
+	Array.isArray(rows) ? rows.map((row) => named(row, TOOL_LINE_FIELDS)) : [];
+
 // ── list_emails ────────────────────────────────────────────────────
 
 export async function toolListEmails(
@@ -42,11 +127,13 @@ export async function toolListEmails(
 	params: { folder: string; limit: number; page: number },
 ) {
 	const stub = getMailboxStub(env, mailboxId);
-	return stub.getEmails({
-		folder: params.folder,
-		limit: params.limit,
-		page: params.page,
-	});
+	return toolLines(
+		await stub.getEmails({
+			folder: params.folder,
+			limit: params.limit,
+			page: params.page,
+		}),
+	);
 }
 
 // ── get_email ──────────────────────────────────────────────────────
@@ -55,14 +142,15 @@ export async function toolGetEmail(env: Env, mailboxId: string, emailId: string)
 	const stub = getMailboxStub(env, mailboxId);
 	const email = await getFullEmail(stub, emailId);
 	if (!email) return { error: "Email not found" };
-	return email;
+	return toolMessage(email);
 }
 
 // ── get_thread ─────────────────────────────────────────────────────
 
 export async function toolGetThread(env: Env, mailboxId: string, threadId: string) {
 	const stub = getMailboxStub(env, mailboxId);
-	return getFullThread(stub, threadId);
+	const thread = await getFullThread(stub, threadId);
+	return { ...thread, messages: thread.messages.map(toolMessage) };
 }
 
 // ── search_emails ──────────────────────────────────────────────────
@@ -73,10 +161,12 @@ export async function toolSearchEmails(
 	params: { query: string; folder?: string },
 ) {
 	const stub = getMailboxStub(env, mailboxId);
-	return (stub as unknown as MailboxSearchStub).searchEmails({
-		query: params.query,
-		folder: params.folder,
-	});
+	return toolLines(
+		await (stub as unknown as MailboxSearchStub).searchEmails({
+			query: params.query,
+			folder: params.folder,
+		}),
+	);
 }
 
 // ── draft_reply ────────────────────────────────────────────────────
