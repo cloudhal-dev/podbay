@@ -19,6 +19,7 @@ import {
 import { useState } from "react";
 import { formatDetailDate } from "shared/dates";
 import IconButton from "~/components/IconButton";
+import { useDisplay } from "~/hooks/useDisplay";
 import { splitEmailList } from "~/lib/utils";
 import type { Email } from "~/types";
 
@@ -74,6 +75,7 @@ export default function MessageHeader({
 	onCollapse,
 }: MessageHeaderProps) {
 	const [detailsOpen, setDetailsOpen] = useState(false);
+	const replyToAll = useDisplay((state) => state.defaultReply) === "reply-all";
 	const isSelf = email.sender === mailboxEmail;
 	const sender = isDraft ? "Draft" : isSelf ? "You" : email.sender;
 	const recipients = splitEmailList(email.recipient).map((address) =>
@@ -158,9 +160,9 @@ export default function MessageHeader({
 							onClick={actions.onStar}
 						/>
 						<IconButton
-							label="Reply to this message"
-							icon={<ArrowBendUpLeftIcon size={16} />}
-							onClick={actions.onReply}
+							label={replyToAll ? "Reply to all of this message" : "Reply to this message"}
+							icon={replyToAll ? <ChatCircleIcon size={16} /> : <ArrowBendUpLeftIcon size={16} />}
+							onClick={replyToAll ? actions.onReplyAll : actions.onReply}
 						/>
 						<DropdownMenu>
 							<DropdownMenu.Trigger

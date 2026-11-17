@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { useEffect, useRef } from "react";
+import { useDisplay } from "~/hooks/useDisplay";
 
 /** A key (`c`, `#`, `Shift+I`) or two keys pressed one after the other (`g i`), and what it does. */
 export type Shortcuts = Record<string, () => void>;
@@ -61,9 +62,11 @@ export function shortcutName(event: Pick<KeyboardEvent, "key" | "shiftKey">): st
 export function useShortcuts(shortcuts: Shortcuts, enabled = true): void {
 	const latest = useRef(shortcuts);
 	latest.current = shortcuts;
+	// A person who turned shortcuts off types freely anywhere on the page.
+	const wanted = useDisplay((state) => state.shortcuts);
 
 	useEffect(() => {
-		if (!enabled) return;
+		if (!enabled || !wanted) return;
 		let prefix: string | null = null;
 		let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -94,5 +97,5 @@ export function useShortcuts(shortcuts: Shortcuts, enabled = true): void {
 			clearTimeout(timer);
 			window.removeEventListener("keydown", onKeyDown);
 		};
-	}, [enabled]);
+	}, [enabled, wanted]);
 }

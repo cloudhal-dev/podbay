@@ -19,12 +19,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Folders, getFolderDisplayName } from "shared/folders";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
+import { useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";
 import { useEmails } from "~/queries/emails";
 import { useFolders } from "~/queries/folders";
 import { queryKeys } from "~/queries/keys";
-
-const PAGE_SIZE = 25;
 
 const FOLDER_EMPTY_STATES: Record<
 	string,
@@ -97,11 +96,12 @@ export default function EmailListRoute() {
 	const { mailboxId, folder } = useParams({ strict: false });
 	const { startCompose } = useUIStore();
 	const [page, setPage] = useState(1);
+	const pageSize = useDisplay((state) => state.pageSize);
 	const queryClient = useQueryClient();
 
 	const params = useMemo(
-		() => ({ folder: folder || "", page: String(page), limit: String(PAGE_SIZE) }),
-		[folder, page],
+		() => ({ folder: folder || "", page: String(page), limit: String(pageSize) }),
+		[folder, page, pageSize],
 	);
 	const { data: emailData, isFetching: isRefreshing } = useEmails(mailboxId, params, {
 		refetchInterval: 30_000,
@@ -133,7 +133,7 @@ export default function EmailListRoute() {
 				totalCount={emailData?.totalCount ?? 0}
 				page={page}
 				setPage={setPage}
-				pageSize={PAGE_SIZE}
+				pageSize={pageSize}
 				isLoading={isRefreshing}
 				isRefreshing={isRefreshing}
 				onRefresh={handleRefresh}

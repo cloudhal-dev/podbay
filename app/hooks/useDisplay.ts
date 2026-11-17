@@ -8,28 +8,71 @@ export const DENSITIES = ["default", "comfortable", "compact"] as const;
 export type Density = (typeof DENSITIES)[number];
 export const READING_PANES = ["none", "right"] as const;
 export type ReadingPane = (typeof READING_PANES)[number];
+export const PAGE_SIZES = [10, 25, 50, 100] as const;
+export type PageSize = (typeof PAGE_SIZES)[number];
+export const DEFAULT_REPLIES = ["reply", "reply-all"] as const;
+export type DefaultReply = (typeof DEFAULT_REPLIES)[number];
+export const AFTER_FILING = ["list", "newer", "older"] as const;
+export type AfterFiling = (typeof AFTER_FILING)[number];
+export const APPEARANCES = ["system", "light", "dark"] as const;
+export type Appearance = (typeof APPEARANCES)[number];
 
 const KEY = "podbay.display";
 /** The reading pane needs room: below this width a conversation always replaces the list. */
 const WIDE = "(min-width: 1024px)";
+const DARK = "(prefers-color-scheme: dark)";
 
-interface Choices {
+/**
+ * A person's choices about how the mail screens look and behave. They are kept in this browser
+ * only: a convenience, never something the Worker decides by.
+ */
+export interface Choices {
+	/** How tall a line of a list is. */
 	density: Density;
+	/** Whether a conversation opens beside the list. */
 	readingPane: ReadingPane;
+	/** Conversations on one page of a list. */
+	pageSize: PageSize;
+	/** What the Reply button of a message does. */
+	defaultReply: DefaultReply;
+	/** Where to go after the open conversation is archived, deleted, moved or reported. */
+	afterFiling: AfterFiling;
+	/** Whether single keys act as shortcuts. */
+	shortcuts: boolean;
+	appearance: Appearance;
 }
 
-const DEFAULTS: Choices = { density: "default", readingPane: "none" };
+export const DEFAULT_CHOICES: Choices = {
+	density: "default",
+	readingPane: "none",
+	pageSize: 25,
+	defaultReply: "reply",
+	afterFiling: "list",
+	shortcuts: true,
+	appearance: "system",
+};
 
-/** How the reader left the mail screens last time. A convenience kept in this browser only. */
+const oneOf = <T>(allowed: readonly T[], value: unknown, fallback: T): T =>
+	allowed.find((item) => item === value) ?? fallback;
+
+/** Whatever was stored, as valid choices: an unknown value falls back to its default. */
+export function readChoices(saved: Partial<Record<keyof Choices, unknown>>): Choices {
+	return {
+		density: oneOf(DENSITIES, saved.density, DEFAULT_CHOICES.density),
+		readingPane: oneOf(READING_PANES, saved.readingPane, DEFAULT_CHOICES.readingPane),
+		pageSize: oneOf(PAGE_SIZES, saved.pageSize, DEFAULT_CHOICES.pageSize),
+		defaultReply: oneOf(DEFAULT_REPLIES, saved.defaultReply, DEFAULT_CHOICES.defaultReply),
+		afterFiling: oneOf(AFTER_FILING, saved.afterFiling, DEFAULT_CHOICES.afterFiling),
+		shortcuts: typeof saved.shortcuts === "boolean" ? saved.shortcuts : DEFAULT_CHOICES.shortcuts,
+		appearance: oneOf(APPEARANCES, saved.appearance, DEFAULT_CHOICES.appearance),
+	};
+}
+
 function remembered(): Choices {
 	try {
-		const saved = JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<Choices>;
-		return {
-			density: DENSITIES.find((d) => d === saved.density) ?? DEFAULTS.density,
-			readingPane: READING_PANES.find((p) => p === saved.readingPane) ?? DEFAULTS.readingPane,
-		};
+		return readChoices(JSON.parse(window.localStorage.getItem(KEY) ?? "{}"));
 	} catch {
-		return DEFAULTS;
+		return DEFAULT_CHOICES;
 	}
 }
 
@@ -41,23 +84,38 @@ function remember(choices: Choices): void {
 	}
 }
 
+/** Light or dark, on the document, where the components read it. */
+function showAppearance(appearance: Appearance): void {
+	const dark =
+		appearance === "dark" || (appearance === "system" && window.matchMedia(DARK).matches);
+	document.documentElement.setAttribute("data-mode", dark ? "dark" : "light");
+}
+
 interface DisplayState extends Choices {
+	choose: (change: Partial<Choices>) => void;
 	setDensity: (density: Density) => void;
 	setReadingPane: (readingPane: ReadingPane) => void;
 }
 
-/** How the mail screens are laid out: how tall a line is, and whether a conversation opens beside the list. */
+const choicesOf = (state: Choices): Choices => readChoices(state);
+
 export const useDisplay = create<DisplayState>((set, get) => ({
 	...remembered(),
-	setDensity: (density) => {
-		remember({ density, readingPane: get().readingPane });
-		set({ density });
+	choose: (change) => {
+		const next = { ...choicesOf(get()), ...change };
+		remember(next);
+		showAppearance(next.appearance);
+		set(change);
 	},
-	setReadingPane: (readingPane) => {
-		remember({ density: get().density, readingPane });
-		set({ readingPane });
-	},
+	setDensity: (density) => get().choose({ density }),
+	setReadingPane: (readingPane) => get().choose({ readingPane }),
 }));
+
+// The appearance holds from the first paint, and "system" follows the system while the app is open.
+showAppearance(useDisplay.getState().appearance);
+window.matchMedia(DARK).addEventListener("change", () => {
+	showAppearance(useDisplay.getState().appearance);
+});
 
 function subscribeToWidth(notify: () => void): () => void {
 	const query = window.matchMedia(WIDE);

@@ -3,57 +3,36 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Badge, Button, Input, Loader, useKumoToastManager } from "@cloudflare/kumo";
-import { ArrowCounterClockwiseIcon, RobotIcon } from "@phosphor-icons/react";
-import { Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { useMailbox, useUpdateMailbox } from "~/queries/mailboxes";
+import { Loader } from "@cloudflare/kumo";
+import { Link, useParams, useSearch } from "@tanstack/react-router";
+import AssistantSettings from "~/components/settings/AssistantSettings";
+import GeneralSettings from "~/components/settings/GeneralSettings";
+import LabelSettings from "~/components/settings/LabelSettings";
+import MailboxDetails from "~/components/settings/MailboxDetails";
+import SignatureSettings from "~/components/settings/SignatureSettings";
+import { useFeatures } from "~/queries/config";
+import { useMailbox } from "~/queries/mailboxes";
 
-// Placeholder shown in the textarea when no custom prompt is set.
-// The authoritative default prompt lives in workers/agent/index.ts (DEFAULT_SYSTEM_PROMPT).
-const PROMPT_PLACEHOLDER = `You are an email assistant that helps manage this inbox. You read emails, draft replies, and help organize conversations.\n\nWrite like a real person. Short, direct, flowing prose. Plain text only.\n\n(Leave empty to use the full built-in default prompt)`;
+const TABS = [
+	{ id: "general", name: "General" },
+	{ id: "signature", name: "Signature" },
+	{ id: "labels", name: "Labels" },
+	{ id: "mailbox", name: "Mailbox" },
+	{ id: "assistant", name: "Assistant" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
 
+/**
+ * Settings, in tabs as a mail client has them. General is the reader's own choices, kept in
+ * their browser; the other tabs are about the mailbox and are saved to it.
+ */
 export default function SettingsRoute() {
-	const { mailboxId } = useParams({ strict: false });
-	const toastManager = useKumoToastManager();
+	const { mailboxId = "" } = useParams({ strict: false });
+	const search = useSearch({ strict: false }) as { tab?: string };
 	const { data: mailbox } = useMailbox(mailboxId);
-	const updateMailboxMutation = useUpdateMailbox();
-
-	const [displayName, setDisplayName] = useState("");
-	const [agentPrompt, setAgentPrompt] = useState("");
-	const [isSaving, setIsSaving] = useState(false);
-
-	useEffect(() => {
-		if (mailbox) {
-			setDisplayName(mailbox.settings?.fromName || mailbox.name || "");
-			setAgentPrompt(mailbox.settings?.agentSystemPrompt || "");
-		}
-	}, [mailbox]);
-
-	const handleSave = async () => {
-		if (!mailbox || !mailboxId) return;
-		setIsSaving(true);
-		const settings = {
-			...mailbox.settings,
-			fromName: displayName,
-			agentSystemPrompt: agentPrompt.trim() || undefined,
-		};
-		try {
-			await updateMailboxMutation.mutateAsync({ mailboxId, settings });
-			toastManager.add({ title: "Settings saved!" });
-		} catch {
-			toastManager.add({
-				title: "Failed to save settings",
-				variant: "error",
-			});
-		} finally {
-			setIsSaving(false);
-		}
-	};
-
-	const handleResetPrompt = () => {
-		setAgentPrompt("");
-	};
+	const features = useFeatures();
+	const tabs = TABS.filter((tab) => tab.id !== "assistant" || features.agent);
+	const current: TabId = tabs.find((tab) => tab.id === search.tab)?.id ?? "general";
 
 	if (!mailbox) {
 		return (
@@ -63,85 +42,41 @@ export default function SettingsRoute() {
 		);
 	}
 
-	const isCustomPrompt = agentPrompt.trim().length > 0;
-
 	return (
-		<div className="max-w-2xl px-4 py-4 md:px-8 md:py-6 h-full overflow-y-auto">
-			<h1 className="text-lg font-semibold text-kumo-default mb-6">Settings</h1>
-
-			<div className="space-y-6">
-				{/* Account */}
-				<div className="rounded-lg border border-kumo-line bg-kumo-base p-5">
-					<div className="text-sm font-medium text-kumo-default mb-4">Account</div>
-					<div className="space-y-3">
-						<Input
-							label="Display Name"
-							value={displayName}
-							onChange={(e) => setDisplayName(e.target.value)}
-						/>
-						<Input label="Email" type="email" value={mailbox.email} disabled />
-					</div>
-				</div>
-
-				{/* Members */}
-				<div className="rounded-lg border border-kumo-line bg-kumo-base p-5">
-					<div className="text-sm font-medium text-kumo-default mb-1">Members</div>
-					<p className="text-xs text-kumo-subtle mb-3">Who may read this mailbox and send as it.</p>
-					<Link
-						to="/members/$mailboxId"
-						params={{ mailboxId: mailbox.email }}
-						className="text-sm underline text-kumo-default"
-					>
-						{mailbox.role === "owner" ? "Manage members" : "See the members"}
-					</Link>
-				</div>
-
-				{/* Agent System Prompt */}
-				<div className="rounded-lg border border-kumo-line bg-kumo-base p-5">
-					<div className="flex items-center justify-between mb-4">
-						<div className="flex items-center gap-2">
-							<RobotIcon size={16} weight="duotone" className="text-kumo-subtle" />
-							<span className="text-sm font-medium text-kumo-default">AI Agent Prompt</span>
-							{isCustomPrompt ? (
-								<Badge variant="primary">Custom</Badge>
-							) : (
-								<Badge variant="secondary">Default</Badge>
-							)}
-						</div>
-						{isCustomPrompt && (
-							<Button
-								variant="ghost"
-								size="xs"
-								icon={<ArrowCounterClockwiseIcon size={14} />}
-								onClick={handleResetPrompt}
-							>
-								Reset to default
-							</Button>
-						)}
-					</div>
-					<p className="text-xs text-kumo-subtle mb-3">
-						Customize how the AI agent behaves for this mailbox. Leave empty to use the built-in
-						default prompt.
-					</p>
-					<textarea
-						value={agentPrompt}
-						onChange={(e) => setAgentPrompt(e.target.value)}
-						placeholder={PROMPT_PLACEHOLDER}
-						rows={12}
-						className="w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 text-xs text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring font-mono leading-relaxed"
-					/>
-					<p className="text-xs text-kumo-subtle mt-2">
-						The prompt is sent as the system message to the AI model. It controls the agent's
-						personality, writing style, and behavior rules.
-					</p>
-				</div>
-
-				{/* Save */}
-				<div className="flex justify-end">
-					<Button variant="primary" onClick={handleSave} loading={isSaving}>
-						Save Changes
-					</Button>
-				</div>
+		<div className="h-full overflow-y-auto">
+			<div className="px-4 pt-5 md:px-8">
+				<h1 className="m-0 text-[22px] font-normal leading-7 text-kumo-default">Settings</h1>
+				<nav
+					aria-label="Settings"
+					className="mt-4 flex gap-1 overflow-x-auto border-b border-kumo-line"
+				>
+					{tabs.map((tab) => (
+						<Link
+							key={tab.id}
+							to="/mailbox/$mailboxId/settings"
+							params={{ mailboxId }}
+							search={{ tab: tab.id }}
+							aria-current={current === tab.id ? "page" : undefined}
+							className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm no-underline ${
+								current === tab.id
+									? "border-kumo-brand font-semibold text-kumo-default"
+									: "border-transparent text-kumo-subtle hover:text-kumo-default"
+							}`}
+						>
+							{tab.name}
+						</Link>
+					))}
+				</nav>
+			</div>
+			<div className="max-w-3xl px-4 py-5 md:px-8">
+				<h2 className="sr-only">{tabs.find((tab) => tab.id === current)?.name}</h2>
+				{current === "general" && <GeneralSettings />}
+				{current === "signature" && <SignatureSettings mailbox={mailbox} />}
+				{current === "labels" && (
+					<LabelSettings mailboxId={mailboxId} canChange={mailbox.role !== "reader"} />
+				)}
+				{current === "mailbox" && <MailboxDetails mailbox={mailbox} />}
+				{current === "assistant" && <AssistantSettings mailbox={mailbox} />}
 			</div>
 		</div>
 	);

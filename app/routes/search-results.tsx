@@ -8,8 +8,9 @@ import { useParams, useSearch } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
+import { useDisplay } from "~/hooks/useDisplay";
 import { parseSearchQuery } from "~/lib/search-parser";
-import { SEARCH_PAGE_SIZE, useSearchEmails } from "~/queries/search";
+import { useSearchEmails } from "~/queries/search";
 
 function highlightTerms(text: string, query: string): React.ReactNode {
 	if (!query || !text) return text;
@@ -45,6 +46,7 @@ export default function SearchResultsRoute() {
 	const search = useSearch({ strict: false }) as { q?: string };
 	const urlQuery = search.q ?? "";
 	const [page, setPage] = useState(1);
+	const pageSize = useDisplay((state) => state.pageSize);
 	const starred = urlQuery.trim() === "is:starred";
 	// A search that is only a label is that label's list.
 	const asked = parseSearchQuery(urlQuery);
@@ -59,7 +61,7 @@ export default function SearchResultsRoute() {
 		setPage(1);
 	}, [mailboxId, urlQuery]);
 
-	const { data: searchData, isLoading } = useSearchEmails(mailboxId, urlQuery, page);
+	const { data: searchData, isLoading } = useSearchEmails(mailboxId, urlQuery, page, pageSize);
 
 	return (
 		<MailView emails={searchData?.results ?? []}>
@@ -71,7 +73,7 @@ export default function SearchResultsRoute() {
 				totalCount={searchData?.totalCount ?? 0}
 				page={page}
 				setPage={setPage}
-				pageSize={SEARCH_PAGE_SIZE}
+				pageSize={pageSize}
 				isLoading={isLoading}
 				highlight={starred ? undefined : (text) => highlightTerms(text, urlQuery)}
 				showFolder

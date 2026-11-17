@@ -17,6 +17,7 @@ import SingleMessageView from "~/components/email-panel/SingleMessageView";
 import ThreadMessage from "~/components/email-panel/ThreadMessage";
 import { LabelChips } from "~/components/LabelChip";
 import { useConversationActions } from "~/hooks/useConversationActions";
+import { useDisplay } from "~/hooks/useDisplay";
 import { useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
@@ -174,9 +175,16 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	}, [printing]);
 
 	const isOpen = email !== undefined && !isDraftFolder;
-	/** Every action that files the conversation away also goes back to the list. */
+	/**
+	 * After the conversation is filed away: back to the list, or on to the next one, as the reader
+	 * chose in the settings.
+	 */
+	const afterFiling = useDisplay((state) => state.afterFiling);
 	const away = (did: boolean) => {
-		if (did) closePanel();
+		if (!did) return;
+		const next = afterFiling === "newer" ? newer : afterFiling === "older" ? older : undefined;
+		if (next) openConversation(next);
+		else closePanel();
 	};
 	const reply = (mode: "reply" | "reply-all" | "forward") =>
 		startCompose({ mode, originalEmail: mode === "forward" ? email : lastReceivedMessage });

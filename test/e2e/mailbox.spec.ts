@@ -575,3 +575,72 @@ test("each message has its own menu, and a conversation is read oldest first and
 	await expect(frames.first().contentFrame().getByText("second reply")).toBeVisible();
 	await expect(page.getByRole("button", { name: "Back to list" })).toBeVisible();
 });
+
+test("settings are in tabs; a person's choices take effect at once and stay, a mailbox's are saved", async ({
+	page,
+	app,
+}) => {
+	for (let n = 0; n < 11; n++) {
+		await app.deliver(
+			mime({ subject: `Behaviour: page ${n}`, to: app.account.mailbox, text: "x" }),
+		);
+	}
+	const base = `/mailbox/${encodeURIComponent(app.account.mailbox)}`;
+	await page.goto(`${base}/settings`);
+	const tabs = page.getByRole("navigation", { name: "Settings" });
+	await expect(tabs.getByRole("link", { name: "General" })).toHaveAttribute("aria-current", "page");
+
+	// A page of ten.
+	await page.getByLabel("Conversations on a page").selectOption("10");
+	await page.goto(`${base}/emails/inbox`);
+	await expect(page.getByText(/^1–10 of \d+$/)).toBeVisible();
+
+	// Shortcuts off: a key is only a key. On again: `c` writes.
+	await page.goto(`${base}/settings`);
+	await page.getByRole("radiogroup", { name: "Keyboard shortcuts" }).getByLabel("Off").check();
+	await page.keyboard.press("c");
+	await expect(page.getByRole("region", { name: "Compose" })).toHaveCount(0);
+	await page.getByRole("radiogroup", { name: "Keyboard shortcuts" }).getByLabel("On").check();
+
+	// The Reply button of a message can mean reply to all.
+	await page.getByRole("radiogroup", { name: "Reply button" }).getByLabel("Reply to all").check();
+	// Dark, at once and after a reload.
+	await page.getByRole("radiogroup", { name: "Appearance" }).getByLabel("Dark").check();
+	await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
+	await page.reload();
+	await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
+	await expect(
+		page.getByRole("radiogroup", { name: "Appearance" }).getByLabel("Dark"),
+	).toBeChecked();
+	await page.getByRole("radiogroup", { name: "Appearance" }).getByLabel("Light").check();
+	await expect(page.locator("html")).toHaveAttribute("data-mode", "light");
+
+	await page.goto(`${base}/emails/inbox`);
+	await row(page, "Behaviour: page 10").click();
+	await expect(page.getByRole("button", { name: "Reply to all of this message" })).toBeVisible();
+
+	// The signature belongs to the mailbox: saved there, and under the next new message.
+	await page.goto(`${base}/settings?tab=signature`);
+	await page.getByLabel("Add a signature to new messages").check();
+	await page.locator(".ProseMirror").click();
+	await page.keyboard.type("Kind regards from the pod bay");
+	await page.getByRole("button", { name: "Save signature" }).click();
+	await expect(page.getByText("Signature saved")).toBeVisible();
+	await page.getByRole("button", { name: "Compose" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	await expect(compose.locator(".ProseMirror")).toContainText("Kind regards from the pod bay");
+	await compose.getByRole("button", { name: "Discard" }).click();
+	await page.getByLabel("Add a signature to new messages").uncheck();
+	await page.getByRole("button", { name: "Save signature" }).click();
+
+	// Labels are managed here as well as in the rail.
+	await tabs.getByRole("link", { name: "Labels" }).click();
+	await page.getByRole("button", { name: "New label" }).click();
+	const dialog = page.getByRole("dialog", { name: "New label" });
+	await dialog.getByLabel("Name").fill("From settings");
+	await dialog.getByRole("button", { name: "Create" }).click();
+	await expect(page.getByRole("table").getByRole("link", { name: "From settings" })).toBeVisible();
+	await expect(
+		page.getByRole("navigation", { name: "Folders" }).getByRole("link", { name: "From settings" }),
+	).toBeVisible();
+});

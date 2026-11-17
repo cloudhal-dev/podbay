@@ -239,6 +239,9 @@ const settingsRoute = createRoute({
 	getParentRoute: () => mailboxRoute,
 	path: "settings",
 	component: SettingsRoute,
+	// Which tab of the settings is open.
+	validateSearch: (search: Record<string, unknown>): { tab?: string } =>
+		typeof search.tab === "string" ? { tab: search.tab } : {},
 });
 
 const searchRoute = createRoute({

@@ -10,25 +10,28 @@ import api from "~/services/api";
 import type { Email } from "~/types";
 import { queryKeys } from "./keys";
 
-export const SEARCH_PAGE_SIZE = 25;
-
 interface SearchResponse {
 	emails: Email[];
 	totalCount: number;
 }
 
-export function useSearchEmails(mailboxId: string | undefined, query: string, page: number) {
+export function useSearchEmails(
+	mailboxId: string | undefined,
+	query: string,
+	page: number,
+	pageSize: number,
+) {
 	const queryClient = useQueryClient();
 	return useQuery<{ results: Email[]; totalCount: number }>({
 		queryKey:
 			mailboxId && query
-				? queryKeys.search.results(mailboxId, query, page)
+				? [...queryKeys.search.results(mailboxId, query, page), pageSize]
 				: ["search", "_disabled"],
 		queryFn: async () => {
 			const parsed = parseSearchQuery(query);
 			const params: Record<string, string> = {
 				page: String(page),
-				limit: String(SEARCH_PAGE_SIZE),
+				limit: String(pageSize),
 			};
 			if (parsed.query) params.query = parsed.query;
 			if (parsed.from) params.from = parsed.from;
