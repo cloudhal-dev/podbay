@@ -6,6 +6,7 @@
  * lives in a cookie that scripts cannot read, so there is nothing to keep in the browser.
  */
 import { useQuery } from "@tanstack/react-query";
+import type { ChoicesAnswer, ChoicesChange } from "shared/choices";
 import { ApiError } from "~/services/api";
 
 export interface Me {
@@ -59,6 +60,19 @@ export function useSetupStatus() {
 		queryKey: sessionKeys.setup,
 		queryFn: () => call<{ needsSetup: boolean }>("/api/setup/status"),
 		staleTime: 60_000,
+	});
+}
+
+/** The signed-in person's choices as their account keeps them (ADR-0012). */
+export function fetchChoices(): Promise<ChoicesAnswer> {
+	return call<ChoicesAnswer>("/api/v1/me/choices");
+}
+
+/** Sends the choices that changed. The answer is the whole document, as the account has it now. */
+export function saveChoices(change: ChoicesChange): Promise<ChoicesAnswer> {
+	return call<ChoicesAnswer>("/api/v1/me/choices", {
+		method: "PUT",
+		body: JSON.stringify(change),
 	});
 }
 

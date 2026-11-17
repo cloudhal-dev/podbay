@@ -11,6 +11,7 @@ import type {
 	BulkUndoAnswer,
 	BulkUnit,
 } from "shared/bulk";
+import type { KnownAddressesAnswer } from "shared/known-addresses";
 import type { OriginalAnswer } from "shared/original";
 import { t } from "~/i18n";
 import type {
@@ -310,6 +311,17 @@ const api = {
 		put<Label>(`/api/v1/mailboxes/${mailboxId}/labels/${id}`, change),
 	deleteLabel: (mailboxId: string, id: string) =>
 		del<void>(`/api/v1/mailboxes/${mailboxId}/labels/${id}`),
+
+	// The addresses this mailbox has written to (ADR-0012)
+	completeAddress: (mailboxId: string, typed: string, opts?: { signal?: AbortSignal }) =>
+		get<KnownAddressesAnswer>(`/api/v1/mailboxes/${mailboxId}/known-addresses`, {
+			params: { q: typed },
+			signal: opts?.signal,
+		}),
+	forgetKnownAddress: (mailboxId: string, id: string) =>
+		del<void>(`/api/v1/mailboxes/${mailboxId}/known-addresses/${encodeURIComponent(id)}`),
+	forgetKnownAddresses: (mailboxId: string) =>
+		del<void>(`/api/v1/mailboxes/${mailboxId}/known-addresses`),
 
 	// Search
 	searchEmails: (mailboxId: string, params: Record<string, string>) =>

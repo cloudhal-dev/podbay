@@ -3,8 +3,8 @@
 
 /**
  * Tier 6: the app's own words follow the language a person chooses (rule D8). The choice is
- * made in the settings, takes effect at once, and is kept in the browser; mail is left as it
- * was written.
+ * made in the settings, takes effect at once, and is kept with the person's account and in the
+ * browser's copy (ADR-0012); mail is left as it was written.
  */
 import type { Page } from "@playwright/test";
 import { expect, mime, test } from "./fixtures.ts";
@@ -59,7 +59,7 @@ test("a person chooses Turkish, and the screens, the notes and the dates follow"
 	await page.getByRole("button", { name: "Yanıtla", exact: true }).click();
 	await expect(page.getByRole("button", { name: "Gönder", exact: true })).toBeVisible();
 
-	// The choice is kept by this browser.
+	// The choice holds from the first paint of a page loaded again.
 	await page.reload();
 	await expect(page.locator("html")).toHaveAttribute("lang", "tr");
 	await expect(page.getByRole("link", { name: /Gelen Kutusu/ })).toBeVisible();

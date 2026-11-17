@@ -237,6 +237,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The account could not be created.": "Hesap oluşturulamadı.",
 	"The account these settings and this mail are open with.":
 		"Bu ayarların ve bu postanın açıldığı hesap.",
+	"The addresses are forgotten": "Adresler unutuldu",
+	"The addresses could not be forgotten": "Adresler unutulamadı",
 	"The authenticator app could not be set up.": "Kimlik doğrulama uygulaması kurulamadı.",
 	"The conversation with the assistant will be removed. Your mail is not touched.":
 		"Asistanla olan sohbet kaldırılır. Postalarınıza dokunulmaz.",
@@ -302,8 +304,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 		"Bunlar, Podbay'in gönderim hizmetine verdiği alanlardır. Hizmet iletiye kendi tarihini ve ileti kimliğini verdi; bunlar burada tutulmaz, bu yüzden gönderilen bir iletinin özgün hali yoktur.",
 	"These attachments in it can do harm when opened:":
 		"İçindeki şu ekler açıldığında zarar verebilir:",
-	"These choices take effect at once and are kept in this browser. Another browser, or another person of this mailbox, has their own.":
-		"Bu seçimler hemen geçerli olur ve bu tarayıcıda saklanır. Başka bir tarayıcının ya da bu posta kutusundaki başka bir kişinin kendi seçimleri vardır.",
+	"These choices take effect at once and are kept with your account, so they are the same wherever you sign in. Density, the reading pane and notifications depend on the device and are kept in this browser only.":
+		"Bu seçimler hemen geçerli olur ve hesabınızla birlikte saklanır; oturum açtığınız her yerde aynıdır. Yoğunluk, okuma bölmesi ve bildirimler cihaza bağlıdır ve yalnızca bu tarayıcıda saklanır.",
 	"They get an account on this instance. They see no mailbox until a mailbox owner adds them.":
 		"Kişi bu kurulumda bir hesap edinir. Bir posta kutusu sahibi ekleyene kadar hiçbir posta kutusunu görmez.",
 	"They need an account on this instance first; an owner or administrator invites them.":
@@ -328,6 +330,10 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"This mailbox does not exist, or you may not see its members.":
 		"Bu posta kutusu yok ya da üyelerini görme yetkiniz yok.",
 	"This mailbox has no labels yet.": "Bu posta kutusunda henüz etiket yok.",
+	"This mailbox remembers the addresses mail was sent to from it, and offers them to everyone who writes from it while an address is typed. Mail that arrives teaches it nothing.":
+		"Bu posta kutusu, buradan posta gönderilen adresleri hatırlar ve adres yazılırken bunları buradan yazan herkese önerir. Gelen postalardan hiçbir şey öğrenmez.",
+	"This mailbox will no longer offer the addresses it has written to while an address is typed. No mail is deleted, and an address is remembered again when a message is sent to it. This cannot be undone.":
+		"Bu posta kutusu, adres yazılırken daha önce yazdığı adresleri artık önermeyecek. Hiçbir posta silinmez; bir adrese yeniden ileti gönderildiğinde o adres yine hatırlanır. Bu işlem geri alınamaz.",
 	"This message arrived before Podbay kept originals, so it has none. These are the header fields that were stored.":
 		"Bu ileti, Podbay özgün iletileri saklamaya başlamadan önce geldi; bu yüzden özgün hali yok. Bunlar, saklanan üstbilgi alanlarıdır.",
 	"This message has no header data.": "Bu iletide üstbilgi verisi yok.",
@@ -428,6 +434,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"reads, sends, and manages settings and members": "okur, gönderir, ayarları ve üyeleri yönetir",
 	"to {names}": "alıcı: {names}",
 	"to {names} and {count} more": "alıcı: {names} ve {count} kişi daha",
+	"{address} could not be forgotten": "{address} unutulamadı",
+	"{address} is forgotten": "{address} unutuldu",
 	"{browser} on {system}": "{system} üzerinde {browser}",
 	"{by} left the mailbox": "{by} posta kutusundan ayrıldı",
 	"{by} made themselves a member": "{by} kendisini üye yaptı",

@@ -22,7 +22,7 @@ import { forwardRef, useEffect } from "react";
 import { errorFields, log } from "shared/log";
 import { ConfirmProvider } from "~/components/Confirm";
 import { FreshProofProvider } from "~/components/FreshProof";
-import { useDisplay } from "~/hooks/useDisplay";
+import { useChoicesSync, useDisplay } from "~/hooks/useDisplay";
 import { currentLanguage, t } from "~/i18n";
 import { useMe } from "~/lib/session";
 import AcceptRoute from "~/routes/accept";
@@ -98,6 +98,8 @@ function SessionGate() {
 	const navigate = useNavigate();
 	const signedOutPage =
 		SIGNED_OUT_PATHS.includes(pathname) || SIGNED_OUT_PREFIXES.some((p) => pathname.startsWith(p));
+	// The person's choices come with their account (ADR-0012); the browser's copy drew the first paint.
+	useChoicesSync(me?.user.id);
 
 	useEffect(() => {
 		if (!isPending && me === null && !signedOutPage)

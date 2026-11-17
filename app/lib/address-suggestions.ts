@@ -3,6 +3,8 @@
 
 /** Completing an address while it is typed into a list of addresses separated by commas. */
 
+const lower = (address: string): string => address.toLowerCase();
+
 const listed = (value: string): string[] =>
 	value
 		.split(",")
@@ -63,6 +65,43 @@ export function suggestAddresses(known: readonly string[], value: string, max = 
 	);
 	const starts = (address: string) => (address.toLowerCase().startsWith(typed) ? 0 : 1);
 	return fits.sort((a, b) => starts(a) - starts(b) || a.localeCompare(b)).slice(0, max);
+}
+
+/** One address offered while typing. `id` is set for one the mailbox itself remembers. */
+export interface Suggestion {
+	address: string;
+	/** Beside the address, never in its place. */
+	name: string | null;
+	/** What the mailbox forgets it by; `null` for an address the loaded lists showed. */
+	id: string | null;
+}
+
+/**
+ * What is offered while an address is typed: first the addresses the mailbox has written to,
+ * as the Worker gave them, then what the loaded lists show. An address is offered once, never
+ * one that is in the field already, and never one the person just had forgotten.
+ */
+export function mergeSuggestions(
+	written: readonly { id: string; address: string; name: string | null }[],
+	loaded: readonly string[],
+	value: string,
+	forgotten: ReadonlySet<string> = new Set(),
+	max = 8,
+): Suggestion[] {
+	if (lastAddress(value) === "") return [];
+	const taken = new Set(listed(value.slice(0, value.lastIndexOf(",") + 1)).map(lower));
+	const offered: Suggestion[] = [];
+	const offer = (one: Suggestion) => {
+		const key = lower(one.address);
+		if (taken.has(key) || forgotten.has(key)) return;
+		taken.add(key);
+		offered.push(one);
+	};
+	for (const one of written) offer({ address: one.address, name: one.name, id: one.id });
+	for (const address of suggestAddresses(loaded, value, max)) {
+		offer({ address, name: null, id: null });
+	}
+	return offered.slice(0, max);
 }
 
 /** A list of addresses as it is typed, split into the ones that are done and the one in hand. */

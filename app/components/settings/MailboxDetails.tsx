@@ -4,8 +4,10 @@
 import { Button, Input, useKumoToastManager } from "@cloudflare/kumo";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useState } from "react";
+import { useConfirm } from "~/components/Confirm";
 import { t } from "~/i18n";
 import { useUpdateMailbox } from "~/queries/mailboxes";
+import api from "~/services/api";
 import type { Mailbox } from "~/types";
 import Row from "./Row";
 
@@ -15,6 +17,30 @@ export default function MailboxDetails({ mailbox }: { mailbox: Mailbox }) {
 	const updateMailbox = useUpdateMailbox();
 	const isOwner = mailbox.role === "owner";
 	const [name, setName] = useState("");
+	const confirm = useConfirm();
+	const [forgetting, setForgetting] = useState(false);
+
+	/** The mailbox forgets every address it has written to (ADR-0012, decision 20). */
+	async function forgetAddresses() {
+		const yes = await confirm({
+			title: t("Forget all addresses?"),
+			body: t(
+				"This mailbox will no longer offer the addresses it has written to while an address is typed. No mail is deleted, and an address is remembered again when a message is sent to it. This cannot be undone.",
+			),
+			action: t("Forget all addresses"),
+			destructive: true,
+		});
+		if (!yes) return;
+		setForgetting(true);
+		try {
+			await api.forgetKnownAddresses(mailbox.id);
+			toasts.add({ title: t("The addresses are forgotten") });
+		} catch {
+			toasts.add({ title: t("The addresses could not be forgotten"), variant: "error" });
+		} finally {
+			setForgetting(false);
+		}
+	}
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: filled when the mailbox arrives or changes
 	useEffect(() => {
@@ -70,6 +96,22 @@ export default function MailboxDetails({ mailbox }: { mailbox: Mailbox }) {
 				>
 					{isOwner ? t("Manage members") : t("See the members")}
 				</Link>
+			</Row>
+			<Row
+				name={t("Addresses written to")}
+				about={t(
+					"This mailbox remembers the addresses mail was sent to from it, and offers them to everyone who writes from it while an address is typed. Mail that arrives teaches it nothing.",
+				)}
+			>
+				{isOwner ? (
+					<Button variant="secondary" size="sm" loading={forgetting} onClick={forgetAddresses}>
+						{t("Forget all addresses")}
+					</Button>
+				) : (
+					<p className="m-0 text-xs text-kumo-subtle">
+						{t("An owner of this mailbox can have it forget them all.")}
+					</p>
+				)}
 			</Row>
 		</div>
 	);

@@ -26,8 +26,8 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 /**
- * Settings, in tabs as a mail client has them. General is the reader's own choices, kept in
- * their browser; the other tabs are about the mailbox and are saved to it.
+ * Settings, in tabs as a mail client has them. General is the reader's own choices, kept with
+ * their account; the other tabs are about the mailbox and are saved to it.
  */
 export default function SettingsRoute() {
 	const { mailboxId = "" } = useParams({ strict: false });

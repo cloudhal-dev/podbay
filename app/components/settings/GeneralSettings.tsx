@@ -9,8 +9,8 @@ import { LANGUAGE_NAMES, LANGUAGES, m, t } from "~/i18n";
 import Row, { Choice } from "./Row";
 
 /**
- * How the mail screens look and behave for this person. A choice takes effect at once and is
- * kept in this browser only.
+ * How the mail screens look and behave for this person. A choice takes effect at once. Most
+ * are kept with the person's account (ADR-0012); three depend on the device and stay here.
  */
 /**
  * Set when the language was just chosen. The whole app is drawn again in the new language, so
@@ -44,7 +44,7 @@ export default function GeneralSettings() {
 		<div>
 			<p className="m-0 border-b border-kumo-line pb-4 text-xs text-kumo-subtle">
 				{t(
-					"These choices take effect at once and are kept in this browser. Another browser, or another person of this mailbox, has their own.",
+					"These choices take effect at once and are kept with your account, so they are the same wherever you sign in. Density, the reading pane and notifications depend on the device and are kept in this browser only.",
 				)}
 			</p>
 

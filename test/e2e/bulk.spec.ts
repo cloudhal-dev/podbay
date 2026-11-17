@@ -215,7 +215,7 @@ test("a person puts unread conversations first, and the choice stays", async ({ 
 	await page.keyboard.press("Escape");
 	await expect.poll(order).toEqual(["older", "newer"]);
 
-	// A place is asked for in the same order, and the choice is kept in this browser.
+	// A place is asked for in the same order, and the choice stays (with the account, ADR-0012).
 	const place = page.waitForRequest((request) => /\/emails\?.*order=unread/.test(request.url()));
 	await page.goto(`${base}/emails/inbox`);
 	await place;

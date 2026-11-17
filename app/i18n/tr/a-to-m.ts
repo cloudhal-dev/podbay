@@ -45,6 +45,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	Address: "Adres",
 	"Address prefix": "Adres ön eki",
 	Addresses: "Adresler",
+	"Addresses written to": "Yazılan adresler",
 	Administrator: "Yönetici",
 	After: "Şu tarihten sonra",
 	"After filing a conversation": "Bir yazışma dosyalandıktan sonra",
@@ -66,6 +67,8 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"An invitation works once and for a limited time. Ask the person who invited you for a new one.":
 		"Davet bir kez ve sınırlı bir süre çalışır. Sizi davet eden kişiden yenisini isteyin.",
 	"An owner of this mailbox can change it.": "Bunu bu posta kutusunun bir sahibi değiştirebilir.",
+	"An owner of this mailbox can have it forget them all.":
+		"Bu posta kutusunun bir sahibi tümünün unutulmasını sağlayabilir.",
 	"An unexpected error occurred. Please try again.":
 		"Beklenmeyen bir hata oluştu. Lütfen yeniden deneyin.",
 	Any: "Herhangi biri",
@@ -264,6 +267,10 @@ export const trAtoM: Readonly<Record<string, string>> = {
 		"Bu kurulumu yapan kişi içindir. Kurulum anahtarını, yani dağıtımdaki {secret} adlı gizli değeri ister ve bir sahibin yeni parola seçmesini sağlayan tek kullanımlık bir bağlantı oluşturur.",
 	"For {email}. This signs you out everywhere and removes your authenticator app, passkeys and keys, so only the new password opens the account.":
 		"{email} için. Bu işlem her yerde oturumunuzu kapatır; kimlik doğrulama uygulamanızı, geçiş anahtarlarınızı ve anahtarlarınızı kaldırır. Böylece hesabı yalnızca yeni parola açar.",
+	"Forget all addresses": "Tüm adresleri unut",
+	"Forget all addresses?": "Tüm adresler unutulsun mu?",
+	"Forget this address (Shift+Delete)": "Bu adresi unut (Shift+Delete)",
+	"Forget {address}": "{address} adresini unut",
 	Formatting: "Biçimlendirme",
 	Forward: "İlet",
 	"Forward this file?": "Bu dosya iletilsin mi?",

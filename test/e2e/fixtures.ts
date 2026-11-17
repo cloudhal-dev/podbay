@@ -189,6 +189,21 @@ export const test = base.extend<{ app: App }>({
 						return { name: pair.slice(0, at), value: pair.slice(at + 1), url: BASE };
 					}),
 				);
+				// The tests share one person, and a person's choices are kept with their account
+				// (ADR-0012): what one test chose is taken back, so the next starts from the defaults.
+				const headers = { cookie, origin: BASE, "content-type": "application/json" };
+				const kept = (await (await fetch(`${BASE}/api/v1/me/choices`, { headers })).json()) as {
+					choices: Record<string, unknown>;
+				};
+				const chosen = Object.keys(kept.choices).filter((key) => key !== "v");
+				if (chosen.length > 0) {
+					const res = await fetch(`${BASE}/api/v1/me/choices`, {
+						method: "PUT",
+						headers,
+						body: JSON.stringify(Object.fromEntries(chosen.map((key) => [key, null]))),
+					});
+					expect(res.status, "taking back the choices of the test before").toBe(200);
+				}
 			},
 			async deliver(raw) {
 				const res = await fetch(
