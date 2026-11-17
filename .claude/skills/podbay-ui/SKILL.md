@@ -54,6 +54,7 @@ The mail screens follow what a person expects from a first-class web mail client
 | Each line is one real button, with a checkbox and a star beside it. No clickable `div` | `MessageList.tsx` |
 | The box above the list selects the page; the menu beside it selects by kind: All, None, Read, Unread, Starred, Unstarred | `MessageListToolbar.tsx` |
 | With nothing selected the bar refreshes, pages, and offers "Mark this page as read". With a selection it shows, in this order: Archive, Report spam (Not spam inside Spam), Delete; then Mark as read or unread (whichever applies), Move to | `MessageListToolbar.tsx` |
+| A line has a **menu on a right click** (and on the menu key): open, reply, reply to all, forward, archive, delete, read or unread, star, spam, move to, label as, find messages from the sender, open in a new tab. On a line that is part of a selection it acts on the selection | `ConversationMenu.tsx`: a Kumo `DropdownMenu` opened at the pointer through its `anchor` |
 | An action applies to what is selected, or to the line the keyboard is on | `targets()` in `MessageList.tsx` |
 
 ### What an action does
@@ -84,6 +85,8 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | Filing a conversation away (archive, spam, delete, move, mark as unread) returns to the list | `away` in `EmailPanel.tsx` |
 | The subject is a large, plain heading; Reply, Reply all and Forward are buttons under the last message | `EmailPanelHeader.tsx`, `EmailPanel.tsx` |
 | A conversation is read **oldest first**. Its newest message and whatever is still unread are open, the rest are folded to one line each; the conversation's menu opens or folds all of them. A message deleted or reported from a conversation is no longer shown in it | `EmailPanel.tsx`, `ThreadMessage.tsx` |
+| A conversation of five messages or more keeps its middle (between the first and the last two) behind one line that says how many are there | `EmailPanel.tsx` |
+| Every message is as tall as it is: the conversation scrolls, never a message inside it. **Quoted text at the end of a reply is folded** behind "Show quoted text", inside the mail frame, and opens without script | `foldQuote` in `app/lib/mail-html.ts` (the renderer: load `podbay-security` before touching it) |
 | **Each message has its own header and menu**: who wrote it, "to" with the full details one click away, a star, Reply, and a menu: reply, reply to all, forward, delete this message, mark as unread, report spam, find messages from this sender, print, show headers. They act on that message, not on the conversation | `email-panel/MessageHeader.tsx`; `messageActions` in `EmailPanel.tsx` |
 | **Print** prints one message or the whole conversation: on paper there is the mail and none of the app (`print:` classes on the frame, the rail, the bars and the compose window). The conversation's menu also opens it in a new tab | `EmailPanel.tsx`, `routes/mailbox.tsx`, `MailView.tsx` |
 | Newer and Older step to the conversation above or below in the list it was opened from (the page on screen), and read it as opening it from the list does | `useOpenConversation.ts`, `EmailPanel.tsx` |
