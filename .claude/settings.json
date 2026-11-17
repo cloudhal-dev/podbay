@@ -1,0 +1,39 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
+	"permissions": {
+		"deny": [
+			"Read(./.dev.vars)",
+			"Read(./dist/worker/.dev.vars)",
+			"Read(./.e2e/secrets.json)",
+			"Read(./.e2e/account.json)",
+			"Read(./.e2e/session.json)"
+		],
+		"ask": [
+			"Bash(git push:*)",
+			"Bash(wrangler deploy:*)",
+			"Bash(pnpm exec wrangler deploy:*)",
+			"Bash(npx wrangler deploy:*)",
+			"Bash(wrangler secret:*)",
+			"Bash(pnpm exec wrangler secret:*)",
+			"Bash(pnpm publish:*)",
+			"Bash(npm publish:*)",
+			"Bash(rm -rf .wrangler:*)",
+			"Bash(rm -rf ./.wrangler:*)"
+		],
+		"allow": [
+			"Bash(pnpm check)",
+			"Bash(pnpm lint)",
+			"Bash(pnpm typecheck)",
+			"Bash(pnpm test)",
+			"Bash(pnpm test:workerd)",
+			"Bash(pnpm e2e)",
+			"Bash(pnpm static:*)",
+			"Bash(node scripts/check-static.ts:*)",
+			"Bash(node scripts/auth-ddl.ts:*)",
+			"Bash(git status:*)",
+			"Bash(git diff:*)",
+			"Bash(git log:*)",
+			"Bash(git show:*)"
+		]
+	}
+}

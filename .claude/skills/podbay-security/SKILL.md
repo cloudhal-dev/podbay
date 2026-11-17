@@ -31,27 +31,27 @@ Find the paths you changed. A path may sit on more than one boundary.
 | Bindings, variables and secrets in `wrangler.jsonc`, `.dev.vars.example`, later the health, setup and operator routes | B7 |
 | Later: queue producers and consumers, the export code, the scheduled handler | B8 |
 | `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `copies.json`, `NOTICE`, `.claude/skills/security-audit/` | B9 |
-| `.github/`, `scripts/check-static.ts`, `scripts/checks/`, `ratchets.json`, `biome.json`, later the release workflow | B10 |
+| `.github/`, `scripts/check-static.ts`, `scripts/checks/`, `ratchets.json`, `biome.json`, `.claude/settings.json`, `.claude/agents/`, later the release workflow | B10 |
 | Any hostname in a `wrangler` configuration or a workflow | B11 |
 
 Unsure? Treat it as a boundary change. A new entry point (a route, a tool, a handler, a consumer, a binding) is always one.
 
 ## 2. The trust boundaries
 
-State on 2026-11-17: milestone 1 (repository bootstrap). Accounts, queues, exports and releases are **not built yet**. Their rows say so. Do not read a planned control as a control that exists.
+State on 2026-11-17: accounts, sign-in, memberships, the MCP keys, the content policies and the attachment rules are built and tested. Queues, exports, raw messages in R2 and releases are **not built yet**; their rows say so. No full audit has run yet. Do not read a planned control as a control that exists.
 
 | # | Boundary | Rules | Proof today |
 |---|---|---|---|
 | B1 | Inbound mail bytes | S2, S3, S7, D2, D13 | Partly: envelope routing, file names and log redaction are tested |
-| B2 | Mail HTML and attachments in the browser | S4, S5, S11, S12 | Partly: the renderer is unit-tested and a static check keeps it the only one |
-| B3 | Sign-in, sessions and step-up | S10, S11 | Partly: password sign-in, sessions, the guarded first owner and the origin check are built and tested; passkeys, the authenticator app, step-up and invitations are not |
-| B4 | Per-mailbox authorisation | S1, S2, S10, S13 | Built and tested for the API; the agent connection is checked; every MCP tool call is checked against the key's mailboxes and its owner's membership |
+| B2 | Mail HTML and attachments in the browser | S4, S5, S11, S12 | Yes: the renderer, the content policies and the attachment rules are unit-tested, the routes are tested in the Workers runtime, and sixteen kinds of hostile message are tried in a real browser. Open: other browsers, content inspection |
+| B3 | Sign-in, sessions and step-up | S10, S11 | Yes: password, authenticator app, passkeys, invitations, fresh proof and recovery links are built and tested, also in a real browser. Open: self-service reset, sessions and password change in the app, rate limits on Podbay's own public routes |
+| B4 | Per-mailbox authorisation | S1, S2, S10, S13 | Yes: the API, the agent connection, every MCP tool call and the member routes (with what managing the instance reaches) are tested. Open: opaque storage ids |
 | B5 | The agent and MCP | S9, D7, S1 | The assistant: gated, cannot send, tested with a fake model. MCP: its own keys, per mailbox, read or read-and-draft, no tool sends; OAuth and per-key rate limits are open |
 | B6 | The outbound sender | S8, S9, D7 | Partly: the `From` check is unit-tested |
-| B7 | The setup and operator tokens | S6, S10, S14 | Tokens not built yet. Static checks for S6 and S14 exist |
+| B7 | The setup and operator tokens | S6, S10, S14 | Partly: the setup token guards the first owner and the operator's recovery call, both tested. No deploy token, no rate limit. Static checks for S6 and S14 exist |
 | B8 | Queues and exports | S1, S2, S3, S5, S13, D2 | Not built yet |
 | B9 | Dependencies and original work | V1, V2, V3, V6, S15, S17, S18 | Yes: five static checks, four with unit tests; weekly update pull requests |
-| B10 | CI and releases | S6, S16, S18, D11 | Partly: the workflow, by review. Releases not built yet |
+| B10 | CI and releases | S6, S16, S18, D11 | Partly: two jobs (checks, browser tests), by review. Releases not built yet |
 | B11 | Where the project hosts things | ADR-0003, S11 | Yes: a static check with unit tests |
 
 Each boundary below has the same five lines: what crosses it, the invariant, the code, the proof, and what is open.
@@ -166,8 +166,8 @@ Use this for every change that touches a boundary, and for any security question
 
 4. **Apply it to the diff.** For each boundary, write down who the lower-trust party is, what they control, which control is meant to stop them, and what they would reach if it failed. If you cannot name all four, you have not understood the change yet.
 5. **Add a regression test for each boundary touched.** The rules for that test are below.
-6. **Keep this file true.** If the change adds a proof, moves code or closes an open item, update section 2 here and the "What is enforced today" table in [`AGENTS.md`](../../../AGENTS.md) in the same change.
-7. **Run** `pnpm check` and `pnpm test:workerd`.
+6. **Keep this file true.** If the change adds a proof, moves code or closes an open item, update section 2 here and section 1 of [`docs/status.md`](../../../docs/status.md) in the same change.
+7. **Run** `pnpm check` and `pnpm test:workerd`, and `pnpm e2e` when the change can be seen in a browser.
 
 A regression test counts when all of these hold:
 

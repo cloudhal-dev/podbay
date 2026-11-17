@@ -92,4 +92,4 @@ The project's own site, demos and trial instances live under `cloudhal.dev`, wit
 | 4 | Installer support | A one-click installer can install, update, back up and remove Podbay |
 | 5 | Complete mail (phase B) | Each phase B row ships as its own slice with its tests |
 
-Current state: milestones 1 and 2 in progress. `AGENTS.md` lists what is enforced today and what is still open.
+The state of each milestone and what comes next is in the [roadmap](roadmap.md); what each rule is held by today is in the [status](status.md).

@@ -1,0 +1,86 @@
+# Podbay: status
+
+- Companion to [`AGENTS.md`](../AGENTS.md), the [engineering rules](engineering-rules.md) and the [roadmap](roadmap.md).
+- Question answered here: which rule is held by which check today, which is not yet, and what is knowingly left open.
+
+**A rule without an automated check is not a rule.** Section 1 is the list of rules that have one. Add a row in the same change that adds the check; never describe a planned control as one that exists.
+
+## 1. What is enforced today
+
+| Check | Rules | Where |
+|---|---|---|
+| Exact pins, 0.x exceptions | V1, V3 | `pnpm static pins`, unit tests |
+| Minimum release age | V6 | `pnpm-workspace.yaml` (`minimumReleaseAge`) |
+| Weekly update pull requests | V2 | `.github/dependabot.yml` |
+| Compatibility date at most 60 days old | V4 | `pnpm static compat` |
+| Every Cloudflare surface in the configuration has a sourced ledger entry | V5 | `pnpm static ledger` |
+| Copied files listed, modified ones marked | S17 | `pnpm static copies` |
+| Licence allow-list over every installed package | S15, S17 | `pnpm static licences` |
+| No other mail product named | S17 | `pnpm static names` |
+| No credential shapes, no tracked environment file | S6 | `pnpm static secrets` |
+| No Cloudflare REST call or account credential in shipped code | S14 | `pnpm static account` |
+| Mail HTML has one renderer; no HTML injection in the UI | S4 | `pnpm static html`, `test/unit/mail-html.test.ts` (hostile bodies, real sanitiser) |
+| Logs only through `shared/log.ts`, addresses masked | S7 | Biome `noConsole`, `test/unit/log.test.ts` |
+| Dependency direction | D5 | `pnpm static imports` |
+| No deployment configuration or workflow names a `cloudhal.com` host | ADR-0003 | `pnpm static hosts` |
+| The vendored security skill is unmodified | S18 | `pnpm static vendored` |
+| Markdown links and anchors | D14 | `pnpm static docs` |
+| The guidance is consistent: `AGENTS.md` is one page and names every skill and subagent; skills are named as their folders; a rule's paths still match files; a subagent names only skills that exist and cannot edit; the settings keep local secrets unread and ask before a push or a deploy | D15 | `pnpm static guidance`, `test/unit/guidance.test.ts` |
+| Lint warnings and file size: only down | D1, D4 | `pnpm static ratchets` |
+| Lint errors, formatting | D1 | `pnpm lint` |
+| Types | D1 | `pnpm typecheck` |
+| Every API route is in the route table; a non-member gets 404 on every mailbox route; readers cannot change, senders cannot manage | S1 | `test/workerd/access.test.ts`, `test/unit/authorize.test.ts` |
+| A new instance is closed; the first owner needs the setup token, once; no account over HTTP; session cookie attributes | S10 | `test/workerd/access.test.ts` |
+| A request that changes state must come from the app's own origin; every answer carries the security headers; API answers are never cached | S11 | `test/workerd/access.test.ts`, `pnpm static headers` |
+| The page loads only its own script, style, fonts and API: no host, no wildcard, no `eval`, one inline script by hash (the mail frame's sizing script). The mail frame needs nothing the page does not allow and stays narrower. Whatever the Worker answers has a policy that allows nothing and is sandboxed | S4, S11 | `test/unit/content-policy.test.ts`, `pnpm static headers` |
+| An attachment leaves as a download with `nosniff` and a type the sender did not choose; one that can do harm (program, script, macro document, page, shortcut, archive, deceptive name) is refused to a link and handed over only to a POST from the app's own origin that says so; a risky file is always opaque bytes; images a message embeds reach the frame as `data:` URLs, plain image kinds only | S5 | `test/workerd/attachments.test.ts`, `test/unit/attachment-risk.test.ts`, `test/unit/content-policy.test.ts` |
+| Invitations work once, for the invited address, until they expire or are revoked; the token is never stored; a mailbox keeps an owner | S10 | `test/workerd/people.test.ts` |
+| An authenticator app stands between the password and a session once enabled; recovery codes work once; no trusted devices; no codes by mail; guesses are limited | S10 | `test/workerd/second-step.test.ts` |
+| A passkey is a complete sign-in, bound to this site, and must verify the person; an unknown passkey, another site's answer and a replayed answer are refused | S10 | `test/workerd/second-step.test.ts` (software authenticator in `test/helpers/authenticator.ts`) |
+| Sensitive changes need a session that signed in within ten minutes, read from the database: keys, invitations, members, deleting a mailbox, forwarding, and every Better Auth endpoint that changes how a person signs in; signing in again replaces the session | S10 (step-up) | `test/workerd/second-step.test.ts`, `test/unit/fresh.test.ts` |
+| A recovery link is issued by someone else (an owner for anyone, an administrator for members, the operator with the setup token for an owner), never for oneself and never without fresh proof; it works once, for a day, stored as a digest; using it sets a new password, ends every session, removes the authenticator app and passkeys and revokes the person's keys, in one batch | S10 (recovery) | `test/workerd/recovery.test.ts`, `test/unit/recovery.test.ts` |
+| A mailbox owner adds people by address, changes roles and removes members; other members only see the list; a non-member is told the mailbox does not exist. Whoever manages the instance reaches the member routes and the registry without a membership and nothing else (no mail, no settings, no storage); giving themselves a membership needs fresh proof and stays on a record the mailbox's owners read, also after they remove themselves; a mailbox keeps an owner | S1, S10 | `test/workerd/members.test.ts`, `test/workerd/access.test.ts`, `test/unit/authorize.test.ts`, `test/unit/members.test.ts` |
+| In a real browser a hostile message runs no script, contacts no host, opens no window or dialog, cannot move or reach the app, and leaves nothing active in the frame (sixteen kinds of attack); remote images load only after the reader asks, and only over https; an embedded image needs no request; a link opens an ordinary window with no handle on the app; no page of the app breaks its own policy; the page's policy alone stops any inline script in a frame but the sizing script | S4, S11 | `pnpm e2e`: `hostile-mail.spec.ts`, `mail-frame.spec.ts`, `policy.spec.ts` |
+| In a real browser an attachment never opens as a page, a risky one downloads only from the warning's button, and a person's whole way in works: invitation, authenticator app, a passkey through the browser's own WebAuthn, and the confirmation before a sensitive change | S5, S10 | `pnpm e2e`: `attachments.spec.ts`, `sign-in.spec.ts` |
+| The assistant cannot send: its tools run with a send binding that refuses | S9 (assistant) | `test/unit/agent-no-send.test.ts` |
+| The assistant's connection needs a session and the right to change that mailbox; MCP takes no session, only a key | S1, S9 | `test/workerd-agent/gate.test.ts` |
+| An MCP key reaches only the mailboxes it was made for, only while its owner is a member, and changes nothing when the key or the membership is read-only; a revoked or expired key stops at once; the token is stored as a digest and shown once | S1, S9 | `test/workerd-agent/mcp.test.ts`, `test/unit/keys.test.ts` |
+| No MCP tool sends, forwards or deletes for good; a draft is all a client leaves, and a message cannot be moved to Sent or Drafts | S9 (MCP) | `test/workerd-agent/mcp.test.ts`, `test/unit/agent-no-send.test.ts` |
+| No model is called in tests; every model id is in one module with a ledger entry | D7, V5 | `test/unit/agent-*.test.ts`, `test/helpers/fake-ai.ts` |
+| Deleting a mailbox deletes its mail, attachments and index rows | S13 | `test/workerd/access.test.ts` |
+| The auth tables equal what Better Auth generates | D3 (part) | `node scripts/auth-ddl.ts --check` (in `pnpm static`) |
+| Envelope routing, file names, feature switches, sender check, list options | S2, S3, S8, D2, D7 | `test/unit/`, `test/workerd/` |
+| Actions pinned by commit, read-only token | S16 | `.github/workflows/checks.yml` (by review until the workflow lint lands) |
+
+## 2. Not enforced yet
+
+These rules are accepted but their checks land with the code they guard. Until then they are review rules, and a change that touches the area must not make them harder to meet.
+
+| Rules | Lands with |
+|---|---|
+| S10 (a recovery address outside Podbay with reset links by mail; sessions listed and ended in the app; changing a password in the app; a rate limit on Podbay's own public routes) | Milestone 2, remaining work |
+| S8, S12 (one send path, constrained outbound requests); keys for the HTTP API and management keys; OAuth 2.1 with a consent screen for MCP clients ([ADR-0004](adr/0004-mcp-keys-first.md)) | Milestone 3 |
+| S18 (audit records and the release gate; the skill and the hash check exist) | Before v0.1 |
+| D2, D3, D8, D9, D10, D13 (schemas at every entry point, migration tests, message keys, design lint, drift check, budgets) | Milestones 1 to 3 |
+
+## 3. Known debt and known gaps
+
+Debt from the seed, recorded in `ratchets.json` and the `overrides` of `biome.json`:
+
+- Non-null assertions in the API routes, a few accessibility and hook-dependency findings in the UI.
+- `workers/durableObject/index.ts` is above the 800-line limit.
+
+Gaps that are open on purpose until their milestone, all behind features that are off by default or absent:
+
+- **An owner or administrator of the instance can take any mailbox**: add themselves, even replace its owners. That is what managing memberships means; what stands against misuse is fresh proof, the audit log and the record the mailbox's owners can read. Nobody is told when it happens: an owner sees it only when they open the members page. The record is read from audit rows by the mailbox's address.
+- **Recovery always needs a second person or the operator.** There is no self-service reset: Podbay cannot mail a link yet, and a recovery address outside Podbay is not built. Whoever issues a link decides, outside Podbay, that the person asking is who they say. Nobody is required to have a second step yet, not even owners.
+- **The setup token is a standing credential once recovery exists**: whoever holds `SETUP_TOKEN` can take over an owner account through `POST /api/setup/recovery`. A deployer who does not want that removes the secret after setup and sets a new one only when an owner must be recovered; without the secret the call answers 503. Podbay's own public routes (setup, invitations, recovery) are not rate-limited; their tokens are 190 random bits or more, the setup token as strong as the deployer made it (24 characters at least).
+- **A code from the authenticator app can be used again within its 30 seconds**; Better Auth does not remember used codes. Passkeys are tested with a software authenticator in the Workers runtime and with Chrome's own virtual authenticator in the browser tests, not with a physical device.
+- Changing forwarding is checked for fresh proof on the session copy cached in the cookie (at most a minute old); the other sensitive routes read the database.
+- **The assistant has not been run against a real model** since its model ids and SDK were updated: its logic is tested with a fake, never with Workers AI. In chat it can still be told by a hostile message to move mail to Trash or discard drafts; it cannot send.
+- Storage is still named after the mailbox address and the message id, taken from the index and never from the request; opaque storage ids come with the storage work of milestone 3.
+
+- **MCP clients sign in with a key, not with OAuth.** A key is a long-lived bearer secret that a person copies into their client; there is no consent screen and no per-tool grant, only read or read-and-draft per mailbox ([ADR-0004](adr/0004-mcp-keys-first.md)). MCP calls are not rate-limited per key yet, and only key creation and revocation are in the audit log, not each call. A hostile message read through MCP can still talk a client into moving mail to Trash or writing a draft; it cannot make it send.
+- **The browser tests run in one browser, Chrome.** No other engine is tried. While the sanitiser parses a hostile message the browser reports two kinds of policy violation in the page (an event handler attribute, a `<base>`); they are reports about markup that is then removed, nothing ran, and the tests accept exactly those two. The page allows inline styles and `https:` images only because the mail frame inherits its policy; the frame's own policy is the one that keeps remote images out until the reader asks.
+- **Attachment risk goes by the file's name and declared type.** Nothing looks inside a file and nothing scans for malware: a harmful file with an innocent name and type is an ordinary download. The marks say which kinds are dangerous by design, never that a file is safe.
+- Search builds `LIKE` patterns from user text, and Durable Object SQL caps a pattern at 50 bytes; FTS5 replaces it in milestone 3.

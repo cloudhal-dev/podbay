@@ -19,7 +19,7 @@ pnpm dev        # local development with simulated mail
 
 ## Rules
 
-Read [`AGENTS.md`](AGENTS.md) first. It is one page, and every rule on it is enforced by a check in `pnpm check`. The full text is [`docs/engineering-rules.md`](docs/engineering-rules.md). Three that surprise people:
+Read [`AGENTS.md`](AGENTS.md) first. It is one page for people and coding agents alike: the rules, the commands, and which skill in `.claude/skills/` describes each kind of work (start with `podbay-change`). Where the project is going is [`docs/roadmap.md`](docs/roadmap.md); what is enforced today is [`docs/status.md`](docs/status.md). Every rule on that page is enforced by a check in `pnpm check`. The full text is [`docs/engineering-rules.md`](docs/engineering-rules.md). Three that surprise people:
 
 - **Original work only.** Do not bring code, schema, tests, text or assets from any other mail product, and do not add a dependency under AGPL or GPL. Files that came from the seed are listed in `copies.json`.
 - **A change to a trust boundary ships a regression test** (sign-in, authorisation, mail rendering, attachments, the sender check, the agent and MCP, tokens, exports, CI and releases).

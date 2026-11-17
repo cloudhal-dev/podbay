@@ -8,6 +8,7 @@ import { check as account } from "./checks/account.ts";
 import { check as compat } from "./checks/compat.ts";
 import { check as copies } from "./checks/copies.ts";
 import { check as docs } from "./checks/docs.ts";
+import { check as guidance } from "./checks/guidance.ts";
 import { check as headers } from "./checks/headers.ts";
 import { check as hosts } from "./checks/hosts.ts";
 import { check as html } from "./checks/html.ts";
@@ -37,6 +38,7 @@ const ALL: Check[] = [
 	ledger,
 	vendored,
 	docs,
+	guidance,
 	ratchets,
 ];
 

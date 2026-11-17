@@ -22,3 +22,4 @@ skills-lock.json
 worker-configuration.d.ts
 node_modules/.cache/
 .claude/launch.json
+.claude/settings.local.json

@@ -89,6 +89,7 @@ The trust boundaries S18 refers to: inbound mail bytes; mail HTML and attachment
 | **D12.** Conventional commits with sign-off; a pull-request template with the security checklist; an RFC for any contract, persisted format or sticky name; ADRs for decisions | Commit lint; template; review |
 | **D13.** Budgets: UI bundle size, and CPU time of the `email` handler on the largest allowed message | Budget tests |
 | **D14.** Every user-visible feature has a docs page; links resolve | Docs link check |
+| **D15. Guidance is checked like code.** `AGENTS.md` is one page for people and coding agents. The method for each kind of work is a skill; a rule scoped to paths names the skill a file needs; subagents review and verify and never edit; the committed settings keep local secrets unread and ask before anything leaves the machine ([ADR-0006](adr/0006-guidance-for-engineers-and-agents.md)) | A static check: every skill and subagent is named in `AGENTS.md`, names match folders, a rule's paths still match files, a subagent names only skills that exist and no editing tool, the settings keep their refusals |
 
 ## 4. End-to-end coverage: which rule guards which area
 
@@ -107,6 +108,7 @@ The trust boundaries S18 refers to: inbound mail bytes; mail HTML and attachment
 | Cloudflare surfaces and configuration | V4, V5, S14 |
 | CI and releases | S16, S18, D11 |
 | Docs | D14, S17 |
+| Guidance for engineers and agents (`AGENTS.md`, `.claude/`) | D15, D14 |
 
 No area is left without at least one automated check. A new area added later gets a row here in the same change.
 
