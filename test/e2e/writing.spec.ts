@@ -180,3 +180,53 @@ test("a forward carries the files of the message, and leaves behind what can do 
 	await expect(page.getByText("notes.txt")).toBeVisible();
 	await expect(page.getByText("setup.exe")).toHaveCount(0);
 });
+
+test("what is written is saved by itself, and sending or discarding leaves no draft behind", async ({
+	page,
+	app,
+}) => {
+	const base = `/mailbox/${encodeURIComponent(app.account.mailbox)}`;
+	const drafts = async () => {
+		await page
+			.getByRole("navigation", { name: "Folders" })
+			.getByRole("link", { name: /Drafts/ })
+			.click();
+		await expect(page.getByRole("heading", { name: "Drafts" })).toBeAttached();
+	};
+	await page.goto(`${base}/emails/inbox`);
+	await page.getByRole("button", { name: "Compose" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	await compose.getByRole("combobox", { name: "To" }).fill("someone@elsewhere.test");
+	await compose.getByLabel("Subject").fill("Behaviour: saved by itself");
+	await compose.locator(".ProseMirror").click();
+	await page.keyboard.type("Words that must not be lost.");
+
+	// A moment after the last key the window says so, and the draft is in Drafts while the
+	// window is still open.
+	await expect(compose.getByText("Saved", { exact: true })).toBeVisible();
+	await drafts();
+	await expect(row(page, "Behaviour: saved by itself")).toHaveCount(1);
+
+	// Writing on and saving again keeps one draft, not two.
+	await compose.getByLabel("Subject").fill("Behaviour: saved by itself, twice");
+	await expect(compose.getByText("Saved", { exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "Refresh" }).click();
+	await expect(row(page, "Behaviour: saved by itself")).toHaveCount(1);
+	await expect(row(page, "Behaviour: saved by itself, twice")).toBeVisible();
+
+	// Sending takes the draft away.
+	await compose.getByRole("button", { name: "Send", exact: true }).click();
+	await expect(page.getByText("Message sent")).toBeVisible();
+	await page.getByRole("button", { name: "Refresh" }).click();
+	await expect(row(page, "Behaviour: saved by itself")).toHaveCount(0);
+
+	// So does discarding, also when a save was still on its way.
+	await page.getByRole("button", { name: "Compose" }).click();
+	await compose.getByLabel("Subject").fill("Behaviour: thrown away");
+	await expect(compose.getByText("Saved", { exact: true })).toBeVisible();
+	await compose.getByLabel("Subject").fill("Behaviour: thrown away, changed");
+	await compose.getByRole("button", { name: "Discard" }).click();
+	await page.waitForTimeout(3500);
+	await page.getByRole("button", { name: "Refresh" }).click();
+	await expect(row(page, "Behaviour: thrown away")).toHaveCount(0);
+});

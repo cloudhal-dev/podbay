@@ -37,6 +37,8 @@ export interface MessageActions {
 	onPrint: () => void;
 	onFindFromSender: () => void;
 	onShowHeaders: () => void;
+	/** Only for mail from a list that says how to leave it. */
+	onUnsubscribe?: () => void;
 }
 
 interface MessageHeaderProps {
@@ -121,6 +123,15 @@ export default function MessageHeader({
 				<div className="flex items-center gap-2">
 					<span className="truncate text-sm font-semibold text-kumo-default">{sender}</span>
 					{isDraft && <Badge variant="outline">Draft</Badge>}
+					{actions?.onUnsubscribe && (
+						<button
+							type="button"
+							onClick={actions.onUnsubscribe}
+							className="shrink-0 cursor-pointer border-0 bg-transparent p-0 text-xs text-kumo-subtle underline hover:text-kumo-default print:hidden"
+						>
+							Unsubscribe
+						</button>
+					)}
 				</div>
 				<button
 					type="button"

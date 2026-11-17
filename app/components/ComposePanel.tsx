@@ -233,6 +233,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						aria-label="Save draft"
 					/>
 				</Tooltip>
+				{form.isSaved && <span className="ml-1 text-xs text-kumo-subtle">Saved</span>}
 				<span className="ml-auto" />
 				<Tooltip content="Discard" side="top" asChild>
 					<Button

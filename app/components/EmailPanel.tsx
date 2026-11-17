@@ -22,6 +22,7 @@ import { useDisplay } from "~/hooks/useDisplay";
 import { useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
+import { unsubscribeOf } from "~/lib/unsubscribe";
 import { splitEmailList, toEmailListValue } from "~/lib/utils";
 import {
 	useDeleteEmail,
@@ -343,6 +344,27 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		if (!next) closePanel();
 		else if (msg.id === emailId) useUIStore.getState().selectEmail(next.id);
 	};
+	/**
+	 * Leaving the mailing list a message came from, as the message says how. Podbay contacts
+	 * nobody by itself: a page is opened by the person, after being told where it leads, and a
+	 * message is written for the person to send.
+	 */
+	const leaveList = (msg: Email) => {
+		const way = msg.sender === currentMailbox?.email ? null : unsubscribeOf(msg.raw_headers);
+		if (way === null) return undefined;
+		return async () => {
+			if (way.kind === "mail") {
+				startCompose({ mode: "new", prefill: { to: way.address, subject: way.subject } });
+				return;
+			}
+			const sure = await confirm({
+				title: "Unsubscribe from this list?",
+				body: `This opens ${way.host} in a new tab, where the list takes you off. Podbay sends nothing by itself.`,
+				action: "Open the page",
+			});
+			if (sure) window.open(way.url, "_blank", "noopener,noreferrer");
+		};
+	};
 	const messageActions = (msg: Email): MessageActions => ({
 		onReply: () => startCompose({ mode: "reply", originalEmail: msg }, "inline"),
 		onReplyAll: () => startCompose({ mode: "reply-all", originalEmail: msg }, "inline"),
@@ -363,6 +385,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		},
 		onFindFromSender: () => findFrom(msg),
 		onShowHeaders: () => setSourceViewEmail(msg),
+		onUnsubscribe: leaveList(msg),
 	});
 	const allExpanded = allMessages.every((msg) => expandedMessages.has(msg.id));
 	// With five messages or more, the ones between the first and the last two that are folded

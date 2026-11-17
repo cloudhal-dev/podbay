@@ -51,6 +51,8 @@ export function mime(input: {
 	parts?: Part[];
 	/** The Message-ID this message answers, so that several messages are one conversation. */
 	inReplyTo?: string;
+	/** Further header lines, as a mailing list adds them. */
+	headers?: Record<string, string>;
 }): string {
 	sequence += 1;
 	const id = `e2e-${Date.now()}-${sequence}@sender.test`;
@@ -67,6 +69,7 @@ export function mime(input: {
 		...(input.inReplyTo
 			? [`In-Reply-To: <${input.inReplyTo}>`, `References: <${input.inReplyTo}>`]
 			: []),
+		...Object.entries(input.headers ?? {}).map(([name, value]) => `${name}: ${value}`),
 	];
 	if (!input.parts?.length) return [...head, ...body, ""].join("\r\n");
 	const boundary = `b-${sequence}`;

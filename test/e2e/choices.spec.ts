@@ -159,3 +159,75 @@ test("the keyboard takes back a move, and archives a conversation on the way to 
 	await expect(row(page, "Choices: keys newer")).toHaveCount(0);
 	await expect(row(page, "Choices: keys older")).toBeVisible();
 });
+
+test("mail from a list can be left the way the list says, and only when the person says so", async ({
+	page,
+	context,
+	app,
+}) => {
+	await app.deliver(
+		mime({
+			subject: "Choices: a newsletter",
+			to: app.account.mailbox,
+			html: "<p>News.</p>",
+			headers: {
+				"List-Unsubscribe": "<mailto:leave@canary.test>, <https://canary.test/leave?u=7>",
+			},
+		}),
+	);
+	await app.deliver(mime({ subject: "Choices: a letter", to: app.account.mailbox, text: "Hello" }));
+	const inbox = `/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`;
+
+	// Ordinary mail offers nothing.
+	await page.goto(inbox);
+	await row(page, "Choices: a letter").click();
+	await expect(page.locator('iframe[title="Email content"]')).toBeVisible();
+	await expect(page.getByRole("button", { name: "Unsubscribe" })).toHaveCount(0);
+
+	// Mail from a list says where the link leads, and nothing is contacted until the person agrees.
+	await page.goto(inbox);
+	await row(page, "Choices: a newsletter").click();
+	await page.getByRole("button", { name: "Unsubscribe" }).click();
+	const asking = page.getByRole("alertdialog");
+	await expect(asking).toContainText("canary.test");
+	await asking.getByRole("button", { name: "Cancel" }).click();
+	expect(await app.contacted()).toEqual([]);
+	expect(app.watch.popups.length).toBe(0);
+
+	await page.getByRole("button", { name: "Unsubscribe" }).click();
+	const opened = context.waitForEvent("page");
+	await page.getByRole("alertdialog").getByRole("button", { name: "Open the page" }).click();
+	const popup = await opened;
+	await popup.waitForLoadState("domcontentloaded");
+	expect(popup.url()).toBe("https://canary.test/leave?u=7");
+	expect(await popup.evaluate(() => window.opener === null)).toBe(true);
+	await popup.close();
+});
+
+test("holding Shift selects every line between the last box used and this one", async ({
+	page,
+	app,
+}) => {
+	for (const name of ["one", "two", "three", "four"]) {
+		await app.deliver(
+			mime({ subject: `Choices: range ${name}`, to: app.account.mailbox, text: name }),
+		);
+	}
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	const box = (name: string) =>
+		page.getByLabel(new RegExp(`Select the conversation "Choices: range ${name}`));
+	await expect(box("four")).toBeVisible();
+
+	// Newest first: four, three, two, one.
+	await box("four").click();
+	await box("two").click({ modifiers: ["Shift"] });
+	for (const name of ["four", "three", "two"]) await expect(box(name)).toBeChecked();
+	await expect(box("one")).not.toBeChecked();
+	await expect(page.getByText("3 selected")).toBeVisible();
+
+	// The same way back: Shift on a ticked line unticks the range.
+	await box("three").click({ modifiers: ["Shift"] });
+	await expect(box("two")).not.toBeChecked();
+	await expect(box("three")).not.toBeChecked();
+	await expect(box("four")).toBeChecked();
+});

@@ -13,6 +13,8 @@ export interface ComposeOptions {
 	originalEmail?: Email | null;
 	/** When editing a draft, this holds the draft email to pre-fill the composer */
 	draftEmail?: Email | null;
+	/** A new message that starts with a recipient and a subject (leaving a mailing list). */
+	prefill?: { to: string; subject: string };
 }
 
 const RAIL_KEY = "podbay.rail";

@@ -11,7 +11,7 @@ import {
 	TrashIcon,
 } from "@phosphor-icons/react";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { formatListDate } from "shared/dates";
 import { Folders, getFolderDisplayName } from "shared/folders";
 import { type ConversationActions, useConversationActions } from "~/hooks/useConversationActions";
@@ -149,10 +149,25 @@ export default function MessageList({
 	/** What an action applies to: the selection, or the line the keyboard is on. */
 	const targets = () => (chosen.length > 0 ? chosen : current ? [current] : []);
 
+	/** The line whose box was used last, and whether Shift was held for the one in hand. */
+	const lastToggled = useRef<number | null>(null);
+	const withShift = useRef(false);
+
+	/** Ticks or unticks a line. With Shift held, every line from the last one used to this one. */
 	function toggle(id: string) {
 		const next = new Set(selected);
-		if (next.has(id)) next.delete(id);
+		const index = emails.findIndex((email) => email.id === id);
+		const from = lastToggled.current;
+		if (withShift.current && from !== null && index >= 0) {
+			const on = !next.has(id);
+			for (const email of emails.slice(Math.min(from, index), Math.max(from, index) + 1)) {
+				if (on) next.add(email.id);
+				else next.delete(email.id);
+			}
+		} else if (next.has(id)) next.delete(id);
 		else next.add(id);
+		withShift.current = false;
+		lastToggled.current = index;
 		setSelected(next);
 	}
 
@@ -255,6 +270,9 @@ export default function MessageList({
 									aria-label={`Select the conversation "${email.subject || "No subject"}"`}
 									className="mx-1 h-4 w-4 shrink-0 cursor-pointer"
 									checked={isSelected}
+									onClick={(event) => {
+										withShift.current = event.shiftKey;
+									}}
 									onChange={() => toggle(email.id)}
 								/>
 								<button

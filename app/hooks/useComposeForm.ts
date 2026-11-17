@@ -97,6 +97,9 @@ async function asAttachment(file: File) {
 	};
 }
 
+/** How long after the last change what is written is saved by itself. */
+const AUTOSAVE_AFTER_MS = 2500;
+
 interface ComposeFormFields {
 	to: string;
 	cc: string;
@@ -182,6 +185,8 @@ function buildInitialComposeFields(
 	if (!original) {
 		return {
 			...EMPTY_FIELDS,
+			to: composeOptions.prefill?.to ?? "",
+			subject: composeOptions.prefill?.subject ?? "",
 			body: sigBlock ? `<p><br></p>${sigBlock}` : "",
 		};
 	}
@@ -242,12 +247,19 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const [error, setError] = useState<string | null>(null);
 	const [isSavingDraft, setIsSavingDraft] = useState(false);
 	const [isSending, setIsSending] = useState(false);
-	/** The draft this window saved, so saving again replaces it and sending removes it. */
-	const [savedDraftId, setSavedDraftId] = useState<string | null>(null);
 	/** Whether the person wrote anything since the window opened or the draft was last saved. */
 	const [touched, setTouched] = useState(false);
 	/** The files to send with the message. They live in this window only: a draft does not keep them. */
 	const [files, setFiles] = useState<File[]>([]);
+	/** The draft this window saved, so saving again replaces it and sending or discarding removes it. */
+	const draftId = useRef<string | null>(null);
+	/** A save that is on its way, so that sending or discarding waits for it. */
+	const pendingSave = useRef<Promise<boolean> | null>(null);
+	/** Counts what the person did, so a save does not call something saved that came after it. */
+	const version = useRef(0);
+	/** When what is written was last saved by itself; shown as "Saved". */
+	const [savedAt, setSavedAt] = useState<number | null>(null);
+	const isComposing = useUIStore((state) => state.isComposing);
 	/** Files of a forwarded message that are not carried, each with the reason. */
 	const [leftBehind, setLeftBehind] = useState<string[]>([]);
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
@@ -279,7 +291,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			sigBlock,
 		);
 		setError(null);
-		setSavedDraftId(null);
+		draftId.current = null;
+		setSavedAt(null);
 		setTouched(false);
 		setFiles([]);
 		setTo(initialFields.to);
@@ -304,10 +317,19 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		}
 	}, [composeOptions, currentMailbox?.email, sigBlock, mailboxId]);
 
-	const handleSaveDraft = async (): Promise<boolean> => {
+	/**
+	 * Saves what is written as a draft. `quiet` is the save the window makes by itself while the
+	 * person writes: it says nothing, and a failure is simply tried again after the next change.
+	 */
+	const saveDraft = async (quiet: boolean): Promise<boolean> => {
 		if (!mailboxId || isSending) return false;
-		setIsSavingDraft(true);
-		setError(null);
+		// One save at a time: the next one must know the id the last one made.
+		await pendingSave.current;
+		const saving = version.current;
+		if (!quiet) {
+			setIsSavingDraft(true);
+			setError(null);
+		}
 		try {
 			const saved = (await saveDraftMutation.mutateAsync({
 				mailboxId,
@@ -323,35 +345,74 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 						composeOptions.originalEmail?.thread_id ||
 						composeOptions.draftEmail?.thread_id ||
 						undefined,
-					draft_id: savedDraftId || composeOptions.draftEmail?.id || undefined,
+					draft_id: draftId.current || composeOptions.draftEmail?.id || undefined,
 				},
 			})) as { id?: string } | undefined;
-			if (saved?.id) setSavedDraftId(saved.id);
-			setTouched(false);
-			toastManager.add({ title: "Draft saved" });
+			if (saved?.id) draftId.current = saved.id;
+			// Only what was there when the save began is saved.
+			if (version.current === saving) setTouched(false);
+			setSavedAt(Date.now());
+			if (!quiet) toastManager.add({ title: "Draft saved" });
 			return true;
 		} catch (err: unknown) {
+			if (quiet) return false;
 			const message = (err instanceof Error ? err.message : null) || "Failed to save draft.";
 			setError(message);
 			toastManager.add({ title: message, variant: "error" });
 			return false;
 		} finally {
-			setIsSavingDraft(false);
+			if (!quiet) setIsSavingDraft(false);
 		}
 	};
+	const saveOnce = (quiet: boolean): Promise<boolean> => {
+		const save = saveDraft(quiet).finally(() => {
+			if (pendingSave.current === save) pendingSave.current = null;
+		});
+		pendingSave.current = save;
+		return save;
+	};
+	const handleSaveDraft = () => saveOnce(false);
+
+	// What is written is saved by itself a moment after the person stops writing, so a closed
+	// tab or a lost connection costs a few words at most.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: the fields are the trigger; the save reads them when it runs
+	useEffect(() => {
+		if (!isComposing || !touched || isSending) return;
+		const timer = setTimeout(() => void saveOnce(true), AUTOSAVE_AFTER_MS);
+		return () => clearTimeout(timer);
+	}, [isComposing, touched, isSending, to, cc, bcc, subject, body]);
 
 	/** Closing keeps what was written: it is saved as a draft first, and stays open if that fails. */
 	const saveAndClose = async () => {
 		if (isSending) return;
-		if (touched && !(await handleSaveDraft())) return;
+		if (touched) {
+			if (!(await handleSaveDraft())) return;
+		} else {
+			// Already saved while it was written: wait for a save on its way, and say it is kept.
+			await pendingSave.current;
+			if (draftId.current) toastManager.add({ title: "Draft saved" });
+		}
 		closeCompose();
 	};
 
 	/** Discarding throws away what this window wrote, including a draft it saved itself. */
 	const discard = () => {
 		if (isSending) return;
-		if (mailboxId && savedDraftId) deleteEmailMutation.mutate({ mailboxId, id: savedDraftId });
+		// A save on its way would bring the draft back: it is waited for, then the draft goes.
+		const waited = pendingSave.current;
+		void Promise.resolve(waited).then(() => {
+			if (mailboxId && draftId.current) {
+				deleteEmailMutation.mutate({ mailboxId, id: draftId.current });
+			}
+		});
+		setTouched(false);
 		closeCompose();
+	};
+
+	/** The person changed something: what is written is no longer what was saved. */
+	const touch = () => {
+		version.current += 1;
+		setTouched(true);
 	};
 
 	/** Adds files, unless together they would be more than a message can carry. */
@@ -366,7 +427,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		}
 		setError(null);
 		setFiles(next);
-		setTouched(true);
+		touch();
 	};
 	const removeFile = (index: number) => setFiles(files.filter((_file, at) => at !== index));
 
@@ -413,7 +474,9 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			html: body,
 			text: htmlToPlainText(body),
 		};
-		const draftId = savedDraftId || composeOptions.draftEmail?.id;
+		// A draft saved a moment ago must be known before the message goes, or it would be left.
+		await pendingSave.current;
+		const sentDraftId = draftId.current || composeOptions.draftEmail?.id;
 		const mode = composeOptions.mode;
 		const originalId = composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to;
 		setIsSending(true);
@@ -423,7 +486,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			else if (mode === "forward" && originalId)
 				await forwardMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
 			else await sendEmailMutation.mutateAsync({ mailboxId, email: emailData });
-			if (draftId) deleteEmailMutation.mutate({ mailboxId, id: draftId });
+			if (sentDraftId) deleteEmailMutation.mutate({ mailboxId, id: sentDraftId });
 			const answered = composeOptions.originalEmail;
 			if (archive && answered && answered.folder_id === Folders.INBOX) {
 				moveEmailMutation.mutate({ mailboxId, id: answered.id, folderId: Folders.ARCHIVE });
@@ -469,7 +532,9 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		removeFile,
 		saveAndClose,
 		discard,
-		touch: () => setTouched(true),
+		touch,
+		/** Whether what is written is saved as it stands. */
+		isSaved: savedAt !== null && !touched,
 		mode: composeOptions.mode,
 		isDraftEdit,
 		closeCompose,

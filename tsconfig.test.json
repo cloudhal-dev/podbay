@@ -6,6 +6,7 @@
 		"app/lib/search-parser.ts",
 		"app/lib/address-suggestions.ts",
 		"app/lib/label-tree.ts",
+		"app/lib/unsubscribe.ts",
 		"workers/**/*",
 		"shared/**/*",
 		"scripts/**/*",
