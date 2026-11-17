@@ -84,7 +84,9 @@ The method for each kind of work is a skill in `.claude/skills/`. Load the one t
 | Skill | Use it when |
 |---|---|
 | `podbay-change` | You start any change, are about to commit, or touch a decision. The order of work, what "done" means, and how to treat the developer's machine |
-| `podbay-security` | The change touches a trust boundary (hard rule 7). Built on the vendored `security-audit` skill, which is never edited |
+| `podbay-security` | The change touches a trust boundary (hard rule 7): Podbay's boundaries, their invariants and their proof |
+| `security-audit` | The method `podbay-security` applies: Cloudflare's security audit skill, vendored unedited (`pnpm static vendored`). Never changed here |
+| `podbay-audit` | The project lead asks for a full security audit: all six phases of `security-audit`, a record in `docs/security/audits/`. Never on your own |
 | `podbay-ui` | Anything under `app/` |
 | `podbay-cloudflare` | Anything that relies on how Cloudflare behaves (hard rule 8) |
 | `podbay-testing` | You write, change or debug a test |

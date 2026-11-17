@@ -1,7 +1,8 @@
 # ADR-0005: The client stays a single-page app on one JSON API; TanStack Start and Exact are not adopted now
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead
 - Sources: read on 2026-11-17 and listed at the end. Each finding below was read in the project's own documentation, repository or registry entry on that day.
 
 ## Context

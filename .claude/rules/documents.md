@@ -6,6 +6,7 @@ paths:
   - "CONTRIBUTING.md"
   - "SECURITY.md"
   - ".claude/skills/podbay-*/**"
+  - "docs/security/**"
 ---
 
 # This is a document people and agents rely on

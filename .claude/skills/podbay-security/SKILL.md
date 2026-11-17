@@ -185,7 +185,7 @@ If the boundary's code is not built yet, the rule still binds: a change in that 
 
 ## 4. Full audit
 
-A full audit is the vendored skill's **full audit mode**: all six phases, written artefacts, validated findings.
+A full audit is the vendored skill's **full audit mode**: all six phases, written artefacts, validated findings. How it is started and finished in this repository is the [`podbay-audit`](../podbay-audit/SKILL.md) skill.
 
 | When | Scope |
 |---|---|

@@ -17,7 +17,7 @@ To report a vulnerability, do not open an issue and do not write here. Follow [`
 | `audits/` | One dated record per full audit |
 | `README.md` | This page: the record template and the release gate |
 
-No full audit has run yet. The first one is due before v0.1.
+No full audit has run yet. The first one is due before v0.1. How one is run here, from the request to the record, is the [`podbay-audit`](../../.claude/skills/podbay-audit/SKILL.md) skill.
 
 ## Audit records
 

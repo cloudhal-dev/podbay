@@ -21,7 +21,7 @@ Self-hosted mail for a person, a family or a small organisation, running entirel
 
 ## 3. What comes next, in order
 
-1. Finish milestone 2: password change and sessions in the app, then the security review.
+1. Finish milestone 2: the first full security audit, with its record ([`podbay-audit`](../.claude/skills/podbay-audit/SKILL.md)), and password change and sessions in the app.
 2. Milestone 3, storage first: raw messages in R2, inbound through a queue, opaque storage ids. These change persisted formats, so each starts with an ADR.
 3. Search (full-text in the mailbox's own database), then exports and deletion that an owner can verify.
 4. The release: one build, attested and signed, and the full audit that gates version 0.1.
@@ -30,7 +30,7 @@ Work is done in rounds. A round has one subject, ends with every check green and
 
 ## 4. What is decided about the client
 
-The app is a single-page React app on TanStack Router, served as static assets, talking to one JSON API. [ADR-0005](adr/0005-client-stack.md) proposes to keep it so: two alternatives, TanStack Start and Exact, were looked at on 2026-11-17, and the ADR records why neither is adopted now and what would make the project look again. Until it is accepted, no work depends on it either way.
+The app is a single-page React app on TanStack Router, served as static assets, talking to one JSON API ([ADR-0005](adr/0005-client-stack.md)). Two alternatives, TanStack Start and Exact, were looked at on 2026-11-17 and are not adopted now; the ADR records why and the triggers that make the project look again. Exact is the first candidate when a native client is decided on. The triggers are read again at the end of each milestone, and the result is written here.
 
 ## 5. How the direction changes
 

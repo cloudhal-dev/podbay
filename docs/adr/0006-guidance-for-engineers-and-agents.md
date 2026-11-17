@@ -1,7 +1,8 @@
 # ADR-0006: How engineers and coding agents are guided
 
-- Status: **Proposed** (awaits the project lead; the files it describes exist and are checked)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead
 
 ## Context
 
