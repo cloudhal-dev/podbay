@@ -6,6 +6,7 @@
 import type { Context } from "hono";
 import { Folders } from "../../shared/folders";
 import { errorFields, log } from "../../shared/log";
+import type { ApiContext } from "../auth/middleware";
 import { sendEmail } from "../email-sender";
 import { storeAttachments } from "../lib/attachments";
 import {
@@ -16,11 +17,10 @@ import {
 	SenderValidationError,
 	validateSender,
 } from "../lib/email-helpers";
-import type { MailboxContext } from "../lib/mailbox";
 import type { EmailFull } from "../lib/schemas";
 import { SendEmailRequestSchema } from "../lib/schemas";
 
-type AppContext = Context<MailboxContext>;
+type AppContext = Context<ApiContext>;
 type RateLimitStub = { checkSendRateLimit: () => Promise<string | null> };
 
 export async function handleReplyEmail(c: AppContext) {

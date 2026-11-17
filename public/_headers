@@ -1,0 +1,10 @@
+# Generated from shared/security-headers.ts by `node scripts/checks/headers.ts --write`.
+# Do not edit by hand: `pnpm static headers` fails when this file and that list differ.
+/*
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Strict-Transport-Security: max-age=31536000
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()

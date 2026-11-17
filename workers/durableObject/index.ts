@@ -12,6 +12,7 @@ import * as schema from "../db/schema";
 import { parseSortColumn, type SearchFilterOptions, type SortColumn } from "../lib/list-options";
 import type { Env } from "../types";
 import { applyMigrations, mailboxMigrations } from "./migrations";
+import type { AttachmentData, EmailData, GetEmailsOptions } from "./shapes";
 
 /**
  * SQL expression to normalize email subjects by stripping common
@@ -38,43 +39,6 @@ const SORT_COLUMN_MAP = {
 	read: schema.emails.read,
 	starred: schema.emails.starred,
 } satisfies Record<SortColumn, (typeof schema.emails)[keyof typeof schema.emails]>;
-
-interface GetEmailsOptions {
-	folder?: string;
-	thread_id?: string;
-	page?: number;
-	limit?: number;
-	sortColumn?: SortColumn;
-	sortDirection?: "ASC" | "DESC";
-}
-
-interface EmailData {
-	id: string;
-	subject: string;
-	sender: string;
-	recipient: string;
-	cc?: string | null;
-	bcc?: string | null;
-	date: string;
-	body: string;
-	read?: boolean;
-	starred?: boolean;
-	in_reply_to?: string | null;
-	email_references?: string | null;
-	thread_id?: string | null;
-	message_id?: string | null;
-	raw_headers?: string | null;
-}
-
-interface AttachmentData {
-	id: string;
-	email_id: string;
-	filename: string;
-	mimetype: string;
-	size: number;
-	content_id?: string | null;
-	disposition?: string | null;
-}
 
 export class MailboxDO extends DurableObject<Env> {
 	declare __DURABLE_OBJECT_BRAND: never;
@@ -811,6 +775,21 @@ export class MailboxDO extends DurableObject<Env> {
 	}
 
 	// ── Email creation (Drizzle) ───────────────────────────────────
+
+	/**
+	 * Delete everything this mailbox holds (rule S13). Returns the R2 keys of its attachments so
+	 * the caller can delete those too; after this the object is empty.
+	 */
+	async purge(): Promise<string[]> {
+		const keys = [
+			...this.ctx.storage.sql.exec(`SELECT id, email_id, filename FROM attachments`),
+		].map((row) => `attachments/${row.email_id}/${row.id}/${row.filename}`);
+		await this.ctx.storage.deleteAll();
+		// The object may live on in memory. Leave it empty but usable, so a mailbox created again at
+		// the same address starts from a clean schema instead of from missing tables.
+		applyMigrations(this.ctx.storage.sql, mailboxMigrations, this.ctx.storage);
+		return keys;
+	}
 
 	async createEmail(folder: string, email: EmailData, attachments: AttachmentData[]) {
 		// Resolve folder name or ID to the actual folder ID.

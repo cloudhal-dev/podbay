@@ -14,16 +14,22 @@ import {
 	createRouter,
 	Outlet,
 	redirect,
+	useLocation,
+	useNavigate,
 	useRouter,
 } from "@tanstack/react-router";
-import { forwardRef } from "react";
+import { forwardRef, useEffect } from "react";
 import { errorFields, log } from "shared/log";
+import { useMe } from "~/lib/session";
+import AcceptRoute from "~/routes/accept";
 import EmailListRoute from "~/routes/email-list";
 import HomeRoute from "~/routes/home";
 import MailboxRoute from "~/routes/mailbox";
 import NotFoundRoute from "~/routes/not-found";
 import SearchResultsRoute from "~/routes/search-results";
 import SettingsRoute from "~/routes/settings";
+import SetupRoute from "~/routes/setup";
+import SignInRoute from "~/routes/sign-in";
 import { ApiError } from "~/services/api";
 
 const queryClient = new QueryClient({
@@ -71,13 +77,37 @@ const KumoLink = forwardRef<
 	);
 });
 
+const SIGNED_OUT_PATHS = ["/sign-in", "/setup"];
+const SIGNED_OUT_PREFIXES = ["/accept/"];
+
+/**
+ * Sends a visitor without a session to the sign-in screen. This is navigation, not protection:
+ * the Worker refuses every request that has no session, whatever the browser shows.
+ */
+function SessionGate() {
+	const { data: me, isPending } = useMe();
+	const { pathname } = useLocation();
+	const navigate = useNavigate();
+	const signedOutPage =
+		SIGNED_OUT_PATHS.includes(pathname) || SIGNED_OUT_PREFIXES.some((p) => pathname.startsWith(p));
+
+	useEffect(() => {
+		if (!isPending && me === null && !signedOutPage)
+			void navigate({ to: "/sign-in", replace: true });
+	}, [isPending, me, signedOutPage, navigate]);
+
+	if (signedOutPage) return <Outlet />;
+	if (isPending || me === null || me === undefined) return null;
+	return <Outlet />;
+}
+
 function RootLayout() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<LinkProvider component={KumoLink}>
 				<TooltipProvider>
 					<Toasty>
-						<Outlet />
+						<SessionGate />
 					</Toasty>
 				</TooltipProvider>
 			</LinkProvider>
@@ -123,6 +153,24 @@ const homeRoute = createRoute({
 	component: HomeRoute,
 });
 
+const signInRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/sign-in",
+	component: SignInRoute,
+});
+
+const setupRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/setup",
+	component: SetupRoute,
+});
+
+const acceptRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/accept/$token",
+	component: AcceptRoute,
+});
+
 const mailboxRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/mailbox/$mailboxId",
@@ -164,6 +212,9 @@ const searchRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
 	homeRoute,
+	signInRoute,
+	setupRoute,
+	acceptRoute,
 	mailboxRoute.addChildren([mailboxIndexRoute, emailListRoute, settingsRoute, searchRoute]),
 ]);
 

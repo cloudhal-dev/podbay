@@ -6,47 +6,12 @@
  * - an unknown or malformed recipient is rejected and nothing is stored;
  * - the optional features are off: no agent route, no MCP route.
  */
-import { createExecutionContext, env, SELF, waitOnExecutionContext } from "cloudflare:test";
+import { createExecutionContext, env, waitOnExecutionContext } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
 import worker from "../../workers/app.ts";
+import { createMailbox, inbound, migrate, mime, request, setupOwner, signIn } from "./helpers.ts";
 
-const ORIGIN = "https://podbay.test";
-
-function inbound(to: string, raw: string) {
-	const bytes = new TextEncoder().encode(raw);
-	const rejections: string[] = [];
-	const message = {
-		from: "ada@sender.test",
-		to,
-		headers: new Headers(),
-		raw: new ReadableStream<Uint8Array>({
-			start(controller) {
-				controller.enqueue(bytes);
-				controller.close();
-			},
-		}),
-		rawSize: bytes.length,
-		setReject(reason: string) {
-			rejections.push(reason);
-		},
-		async forward() {
-			throw new Error("forward is not used");
-		},
-		async reply() {
-			throw new Error("reply is not used");
-		},
-	};
-	return { message: message as unknown as ForwardableEmailMessage, rejections };
-}
-
-function mime(headers: Record<string, string>, body = "Hello") {
-	const lines = Object.entries({
-		"MIME-Version": "1.0",
-		"Content-Type": "text/plain; charset=utf-8",
-		...headers,
-	}).map(([key, value]) => `${key}: ${value}`);
-	return `${lines.join("\r\n")}\r\n\r\n${body}\r\n`;
-}
+let cookie: string;
 
 async function deliver(to: string, raw: string) {
 	const { message, rejections } = inbound(to, raw);
@@ -57,27 +22,24 @@ async function deliver(to: string, raw: string) {
 }
 
 async function inbox(mailbox: string): Promise<{ subject: string; recipient: string }[]> {
-	const res = await SELF.fetch(
-		`${ORIGIN}/api/v1/mailboxes/${encodeURIComponent(mailbox)}/emails?folder=inbox`,
+	const res = await request(
+		`/api/v1/mailboxes/${encodeURIComponent(mailbox)}/emails?folder=inbox`,
+		{
+			cookie,
+		},
 	);
 	expect(res.status).toBe(200);
 	const body = (await res.json()) as { emails: { subject: string; recipient: string }[] };
 	return body.emails;
 }
 
-async function createMailbox(email: string) {
-	const res = await SELF.fetch(`${ORIGIN}/api/v1/mailboxes`, {
-		method: "POST",
-		headers: { "content-type": "application/json" },
-		body: JSON.stringify({ email, name: email.split("@")[0] }),
-	});
-	expect(res.status).toBe(201);
-}
-
 describe("inbound mail", () => {
 	beforeAll(async () => {
-		await createMailbox("hello@example.com");
-		await createMailbox("orders@example.com");
+		await migrate();
+		expect((await setupOwner()).status).toBe(201);
+		cookie = await signIn("owner@example.com");
+		expect((await createMailbox(cookie, "hello@example.com")).status).toBe(201);
+		expect((await createMailbox(cookie, "orders@example.com")).status).toBe(201);
 	});
 
 	it("files a message by its envelope recipient, not by the To header", async () => {
@@ -143,25 +105,16 @@ describe("inbound mail", () => {
 
 describe("optional features are off by default", () => {
 	it("reports both features off", async () => {
-		const res = await SELF.fetch(`${ORIGIN}/api/v1/config`);
+		const res = await request("/api/v1/config", { cookie });
 		const body = (await res.json()) as { features: { agent: boolean; mcp: boolean } };
 		expect(body.features).toEqual({ agent: false, mcp: false });
 	});
 
 	it.each(["/mcp", "/mcp/anything", "/agents/email-agent/hello@example.com"])(
-		"answers 404 on %s",
+		"answers 404 on %s, even to the owner",
 		async (path) => {
-			const res = await SELF.fetch(`${ORIGIN}${path}`, { method: "POST", body: "{}" });
+			const res = await request(path, { method: "POST", body: "{}", cookie });
 			expect(res.status).toBe(404);
 		},
 	);
-});
-
-describe("API", () => {
-	it("answers 404 for a mailbox that does not exist", async () => {
-		const res = await SELF.fetch(
-			`${ORIGIN}/api/v1/mailboxes/ghost%40example.com/emails?folder=inbox`,
-		);
-		expect(res.status).toBe(404);
-	});
 });

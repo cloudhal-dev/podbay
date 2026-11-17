@@ -1,3 +1,11 @@
-# Cloudflare Access (required in production). TEAM_DOMAIN may be the base Access URL or the full /cdn-cgi/access/certs URL.
-POLICY_AUD=your-access-policy-audience-tag
-TEAM_DOMAIN=https://your-team.cloudflareaccess.com
+# Local development only. `pnpm dev` writes a real .dev.vars with generated values; this file
+# only shows the names. Never commit .dev.vars.
+
+# Signs session cookies. At least 32 characters.
+AUTH_SECRET=
+# Lets you create the first owner on the /setup screen, once. At least 24 characters.
+SETUP_TOKEN=
+
+# Optional: Cloudflare Access in front of the app. Set both or neither.
+# POLICY_AUD=
+# TEAM_DOMAIN=

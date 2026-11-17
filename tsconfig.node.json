@@ -3,7 +3,9 @@
 		"vite.config.ts",
 		"vitest.config.ts",
 		"test/workerd/vitest.config.ts",
-		"scripts/**/*"
+		"scripts/**/*",
+		"shared/**/*",
+		"test/workerd-agent/vitest.config.ts"
 	],
 	"compilerOptions": {
 		"composite": true,
@@ -18,5 +20,6 @@
 		"target": "ES2023",
 		"module": "ESNext",
 		"moduleResolution": "bundler"
-	}
+	},
+	"exclude": ["scripts/auth-ddl.ts"]
 }

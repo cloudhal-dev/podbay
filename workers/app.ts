@@ -4,11 +4,14 @@
 // Modified by the Podbay contributors.
 
 import { routeAgentRequest } from "agents";
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { errorFields, log } from "../shared/log";
+import { API_CACHE_CONTROL, SECURITY_HEADERS } from "../shared/security-headers";
+import { mailboxDecision, sessionActor } from "./auth/middleware";
 import { app as apiApp, receiveEmail } from "./index";
 import { features } from "./lib/features";
+import { secret } from "./lib/secrets";
 import { EmailMCP } from "./mcp";
 import type { Env } from "./types";
 
@@ -29,19 +32,28 @@ function getAccessUrls(teamDomain: string) {
 // static assets; only the paths in wrangler.jsonc `assets.run_worker_first` reach this Worker.
 const app = new Hono<{ Bindings: Env }>();
 
-// Cloudflare Access JWT validation middleware (production only)
+// Every answer of the Worker carries the security headers; API answers are never cached. The
+// static assets get the same headers from public/_headers.
 app.use("*", async (c, next) => {
-	// Skip validation in development
-	if (import.meta.env.DEV) {
-		return next();
+	await next();
+	// A WebSocket upgrade has no headers to set.
+	if (c.res.status === 101) return;
+	for (const [name, value] of Object.entries(SECURITY_HEADERS)) c.res.headers.set(name, value);
+	if (new URL(c.req.url).pathname.startsWith("/api/")) {
+		c.res.headers.set("Cache-Control", API_CACHE_CONTROL);
 	}
+});
 
-	const { POLICY_AUD, TEAM_DOMAIN } = c.env;
-
-	// Fail closed in production if Access is not configured.
+// Cloudflare Access is an optional outer layer. Podbay's own sign-in protects every route; when
+// the deployer also puts Access in front, its token is checked here as well. Setting only one of
+// the two values is a mistake, and the Worker refuses to run half-configured.
+app.use("*", async (c, next) => {
+	const POLICY_AUD = secret(c.env, "POLICY_AUD");
+	const TEAM_DOMAIN = secret(c.env, "TEAM_DOMAIN");
+	if (!POLICY_AUD && !TEAM_DOMAIN) return next();
 	if (!POLICY_AUD || !TEAM_DOMAIN) {
 		return c.text(
-			"Cloudflare Access must be configured in production. Set POLICY_AUD and TEAM_DOMAIN.",
+			"Cloudflare Access is half configured: set both POLICY_AUD and TEAM_DOMAIN.",
 			500,
 		);
 	}
@@ -61,23 +73,21 @@ app.use("*", async (c, next) => {
 	} catch {
 		return c.text("Invalid or expired Access token", 403);
 	}
-
-	// Authorization model note: once a teammate passes the shared Cloudflare
-	// Access policy, they can access all mailboxes in this app by design.
 	return next();
 });
 
-// MCP server endpoint — used by AI coding tools (ProtoAgent, Claude Code, Cursor, etc.)
-// Must be before the API routes
+// MCP server endpoint. Off unless MCP_ENABLED is "true". Its tools are not yet limited to the
+// caller's mailboxes, so until that lands only the instance owner may reach it at all.
 const mcpHandler = EmailMCP.serve("/mcp", { binding: "EMAIL_MCP" });
-app.use("/mcp", async (c, next) => {
+const mcpGate: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
 	if (!features(c.env).mcp) return c.json({ error: "Not found" }, 404);
+	const actor = await sessionActor(c.env, c.req.raw).catch(() => null);
+	if (actor === null) return c.json({ error: "Unauthorized" }, 401);
+	if (actor.instanceRole !== "owner") return c.json({ error: "Forbidden" }, 403);
 	return next();
-});
-app.use("/mcp/*", async (c, next) => {
-	if (!features(c.env).mcp) return c.json({ error: "Not found" }, 404);
-	return next();
-});
+};
+app.use("/mcp", mcpGate);
+app.use("/mcp/*", mcpGate);
 app.all("/mcp", async (c) => {
 	return mcpHandler.fetch(c.req.raw, c.env, c.executionCtx as ExecutionContext);
 });
@@ -89,8 +99,24 @@ app.all("/mcp/*", async (c) => {
 app.route("/", apiApp);
 
 // Agent WebSocket routing
+// The path is /agents/<agent>/<mailbox address>. The assistant reads the mailbox and writes
+// drafts, so the caller needs the right to change mail there; a reader does not get it.
 app.all("/agents/*", async (c) => {
 	if (!features(c.env).agent) return c.json({ error: "Not found" }, 404);
+	const name = new URL(c.req.url).pathname.split("/")[3] ?? "";
+	const decision = await mailboxDecision(
+		c.env,
+		c.req.raw,
+		decodeURIComponent(name),
+		"mailbox.write",
+	);
+	if (decision === "unauthorized") return c.json({ error: "Unauthorized" }, 401);
+	if (decision !== "allow") {
+		return c.json(
+			{ error: decision === "forbidden" ? "Forbidden" : "Not found" },
+			decision === "forbidden" ? 403 : 404,
+		);
+	}
 	const response = await routeAgentRequest(c.req.raw, c.env);
 	if (response) return response;
 	return c.text("Agent not found", 404);

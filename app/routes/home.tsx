@@ -3,20 +3,13 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import {
-	Button,
-	Dialog,
-	Empty,
-	Input,
-	Loader,
-	Select,
-	Text,
-	useKumoToastManager,
-} from "@cloudflare/kumo";
+import { Button, Dialog, Input, Loader, Select, Text, useKumoToastManager } from "@cloudflare/kumo";
 import { EnvelopeIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
-import { Link as RouterLink } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import InvitePerson from "~/components/InvitePerson";
+import { signOut, useMe } from "~/lib/session";
 import { queryKeys } from "~/queries/keys";
 import { useCreateMailbox, useDeleteMailbox, useMailboxes } from "~/queries/mailboxes";
 import api from "~/services/api";
@@ -44,6 +37,9 @@ export default function HomeRoute() {
 	const domains = configData?.domains ?? [];
 	const emailAddresses = configData?.emailAddresses ?? [];
 
+	const { data: me } = useMe();
+	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [newPrefix, setNewPrefix] = useState("");
 	const [selectedDomain, setSelectedDomain] = useState("");
@@ -139,6 +135,8 @@ export default function HomeRoute() {
 		: mailboxes;
 
 	const isLoading = !configData;
+	// Creating a mailbox is for owners and administrators; the Worker enforces it.
+	const canManage = me?.role === "owner" || me?.role === "admin";
 
 	return (
 		<div className="min-h-screen bg-kumo-recessed">
@@ -146,7 +144,7 @@ export default function HomeRoute() {
 				<div className="mb-8">
 					<div className="flex items-center justify-between">
 						<h1 className="text-2xl font-bold text-kumo-default">Mailboxes</h1>
-						{!isConfigured && (
+						{!isConfigured && canManage && (
 							<Button
 								variant="primary"
 								icon={<PlusIcon size={16} />}
@@ -156,6 +154,22 @@ export default function HomeRoute() {
 							</Button>
 						)}
 					</div>
+					{me && (
+						<p className="text-sm text-kumo-subtle mt-1">
+							Signed in as {me.user.email}.{" "}
+							<button
+								type="button"
+								className="underline cursor-pointer bg-transparent border-0 p-0 text-kumo-subtle"
+								onClick={async () => {
+									await signOut();
+									queryClient.clear();
+									await navigate({ to: "/sign-in" });
+								}}
+							>
+								Sign out
+							</button>
+						</p>
+					)}
 					{domains.length > 0 && (
 						<p className="text-sm text-kumo-subtle mt-1">{domains.join(", ")}</p>
 					)}
@@ -216,9 +230,11 @@ export default function HomeRoute() {
 							<p className="text-sm text-kumo-subtle max-w-sm mb-5">
 								{isConfigured
 									? "Your email routing is configured but no mailboxes have been created yet. They will appear here automatically."
-									: "Create a mailbox to start sending and receiving emails with your domain."}
+									: canManage
+										? "Create a mailbox to start sending and receiving emails with your domain."
+										: "You are not a member of any mailbox yet. A mailbox owner can add you."}
 							</p>
-							{!isConfigured && (
+							{!isConfigured && canManage && (
 								<Button
 									variant="primary"
 									icon={<PlusIcon size={16} />}
@@ -233,6 +249,12 @@ export default function HomeRoute() {
 			</div>
 
 			{/* Create Dialog */}
+			{canManage && (
+				<div className="mx-auto max-w-2xl px-4 pb-16 md:px-6">
+					<InvitePerson canInviteAdmin={me?.role === "owner"} />
+				</div>
+			)}
+
 			<Dialog.Root open={isCreateOpen} onOpenChange={setIsCreateOpen}>
 				<Dialog size="sm" className="p-6">
 					<Dialog.Title className="text-base font-semibold mb-5">Create New Mailbox</Dialog.Title>

@@ -11,6 +11,7 @@ import {
 	Folders,
 	MOVE_FOLDER_TOOL_DESCRIPTION,
 } from "../../shared/folders";
+import { mailboxExists } from "../auth/store";
 import {
 	toolDeleteEmail,
 	toolDraftEmail,
@@ -74,12 +75,11 @@ export class EmailMCP extends McpAgent<Env> {
 		const env = this.env;
 
 		/**
-		 * Verify a mailbox exists in R2 before operating on it.
+		 * Verify a mailbox exists in the index before operating on it.
 		 * Returns an MCP error response if the mailbox is not found, or null if valid.
 		 */
 		const verifyMailbox = async (mailboxId: string) => {
-			const obj = await env.BUCKET.head(`mailboxes/${mailboxId}.json`);
-			if (!obj) {
+			if (!(await mailboxExists(env.DB, mailboxId.toLowerCase()))) {
 				return mcpError(
 					`Mailbox "${mailboxId}" not found. Use list_mailboxes to see available mailboxes.`,
 				);

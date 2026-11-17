@@ -3,8 +3,8 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-export interface Env extends Cloudflare.Env {
-	/** Cloudflare Access audience and team domain. Unset in local development. */
-	POLICY_AUD?: string;
-	TEAM_DOMAIN?: string;
-}
+/**
+ * The Worker's bindings and variables, as generated from `wrangler.jsonc`. Secrets are not part
+ * of this type: read them with `secret()` from `workers/lib/secrets.ts`.
+ */
+export type Env = Cloudflare.Env;

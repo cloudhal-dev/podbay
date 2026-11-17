@@ -29,6 +29,16 @@
 			"name": "EMAIL"
 		}
 	],
+	// The index: accounts, sessions, mailboxes, memberships and the audit log. Mail content is not
+	// here. The deployer supplies the real database id; local development and tests ignore it.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "podbay",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "migrations"
+		}
+	],
 	"r2_buckets": [
 		{
 			"binding": "BUCKET",

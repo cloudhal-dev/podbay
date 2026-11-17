@@ -4,17 +4,17 @@
 // Modified by the Podbay contributors.
 
 import { type Context, Hono } from "hono";
-import { cors } from "hono/cors";
 import PostalMime from "postal-mime";
 import { z } from "zod";
 import { Folders } from "../shared/folders";
 import { errorFields, log } from "../shared/log";
+import { type ApiContext, guard } from "./auth/middleware";
+import { mailboxExists } from "./auth/store";
 import { sendEmail } from "./email-sender";
 import { type StoredAttachment, storeAttachments } from "./lib/attachments";
 import {
 	buildThreadingHeaders,
 	generateMessageId,
-	listMailboxes,
 	SenderValidationError,
 	validateSender,
 } from "./lib/email-helpers";
@@ -22,21 +22,17 @@ import { features } from "./lib/features";
 import { headerFilename, storageFilename } from "./lib/filenames";
 import { type InboundEnvelope, routeInbound } from "./lib/inbound";
 import { parseSortColumn, parseSortDirection, type SearchFilterOptions } from "./lib/list-options";
-import { type MailboxContext, requireMailbox } from "./lib/mailbox";
 import { mailboxQueries } from "./lib/mailbox-rpc";
 import { SendEmailRequestSchema } from "./lib/schemas";
+import { account } from "./routes/account";
+import { mailboxes } from "./routes/mailboxes";
+import { people } from "./routes/people";
 import { handleForwardEmail, handleReplyEmail } from "./routes/reply-forward";
 import type { Env } from "./types";
 
-type AppContext = Context<MailboxContext>;
+type AppContext = Context<ApiContext>;
 
 // -- Request body schemas (kept for validation) ---------------------
-
-const CreateMailboxBody = z.object({
-	email: z.string().email(),
-	name: z.string().min(1),
-	settings: z.record(z.string(), z.unknown()).optional(), // unvalidated — agentSystemPrompt goes straight to AI
-});
 
 const DraftBody = z.object({
 	to: z.string().optional(),
@@ -78,28 +74,16 @@ function boolQuery(c: AppContext, key: string): boolean | undefined {
 
 // -- App & middleware -----------------------------------------------
 
-const app = new Hono<MailboxContext>();
-app.use(
-	"/api/*",
-	cors({
-		origin: (origin) => {
-			// Same-origin requests have no Origin header — allow them.
-			if (!origin) return origin;
-			// In development, allow localhost for Vite dev server.
-			try {
-				const url = new URL(origin);
-				if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return origin;
-			} catch {
-				/* invalid origin */
-			}
-			// Block all other cross-origin requests. The app is served from the
-			// same origin as the API, so legitimate browser requests never send
-			// an Origin header. Returning undefined omits Access-Control-Allow-Origin.
-			return undefined;
-		},
-	}),
-);
-app.use("/api/v1/mailboxes/:mailboxId/*", requireMailbox);
+const app = new Hono<ApiContext>();
+
+// Every API route goes through the guard: it must be in the route table, a request that changes
+// state must come from the app's own origin, and unless the route is public there must be a
+// session with the right the table names. Nothing below checks access again.
+app.use("/api/*", guard);
+
+app.route("/", account);
+app.route("/", mailboxes);
+app.route("/", people);
 
 // -- Config ---------------------------------------------------------
 
@@ -111,62 +95,6 @@ app.get("/api/v1/config", (c) => {
 		.filter(Boolean);
 	const emailAddresses = c.env.EMAIL_ADDRESSES ?? [];
 	return c.json({ domains, emailAddresses, features: features(c.env) });
-});
-
-// -- Mailboxes ------------------------------------------------------
-
-app.get("/api/v1/mailboxes", async (c) => {
-	const allMailboxes = await listMailboxes(c.env.BUCKET);
-	return c.json(allMailboxes.map((m) => ({ ...m, name: m.id })));
-});
-
-app.post("/api/v1/mailboxes", async (c) => {
-	const { name, settings, email: rawEmail } = CreateMailboxBody.parse(await c.req.json());
-	const email = rawEmail.toLowerCase();
-	const allowedAddresses = (c.env.EMAIL_ADDRESSES ?? []) as string[];
-	if (
-		allowedAddresses.length > 0 &&
-		!allowedAddresses.map((a) => a.toLowerCase()).includes(email)
-	) {
-		return c.json({ error: "Mailbox creation is restricted to configured EMAIL_ADDRESSES" }, 403);
-	}
-	const key = `mailboxes/${email}.json`;
-	if (await c.env.BUCKET.head(key)) return c.json({ error: "Mailbox already exists" }, 409);
-	const defaultSettings = {
-		fromName: name,
-		forwarding: { enabled: false, email: "" },
-		signature: { enabled: false, text: "" },
-		autoReply: { enabled: false, subject: "", message: "" },
-	};
-	const finalSettings = { ...defaultSettings, ...settings };
-	await c.env.BUCKET.put(key, JSON.stringify(finalSettings));
-	const stub = c.env.MAILBOX.get(c.env.MAILBOX.idFromName(email));
-	await stub.getFolders();
-	return c.json({ id: email, email, name, settings: finalSettings }, 201);
-});
-
-app.get("/api/v1/mailboxes/:mailboxId", async (c) => {
-	const mailboxId = c.req.param("mailboxId")!;
-	const obj = await c.env.BUCKET.get(`mailboxes/${mailboxId}.json`);
-	if (!obj) return c.json({ error: "Not found" }, 404);
-	return c.json({ id: mailboxId, name: mailboxId, email: mailboxId, settings: await obj.json() });
-});
-
-app.put("/api/v1/mailboxes/:mailboxId", async (c) => {
-	const mailboxId = c.req.param("mailboxId")!;
-	const { settings } = (await c.req.json()) as { settings: Record<string, unknown> };
-	const key = `mailboxes/${mailboxId}.json`;
-	if (!(await c.env.BUCKET.head(key))) return c.json({ error: "Not found" }, 404);
-	await c.env.BUCKET.put(key, JSON.stringify(settings));
-	return c.json({ id: mailboxId, name: mailboxId, email: mailboxId, settings });
-});
-
-app.delete("/api/v1/mailboxes/:mailboxId", async (c) => {
-	const mailboxId = c.req.param("mailboxId")!;
-	const key = `mailboxes/${mailboxId}.json`;
-	if (!(await c.env.BUCKET.head(key))) return c.json({ error: "Not found" }, 404);
-	await c.env.BUCKET.delete(key); // TODO: also delete DO data and R2 attachment blobs
-	return c.body(null, 204);
 });
 
 // -- Emails ---------------------------------------------------------
@@ -465,7 +393,7 @@ async function receiveEmail(event: InboundEnvelope, env: Env, ctx: ExecutionCont
 	const decision = await routeInbound(
 		event.to,
 		(env.EMAIL_ADDRESSES ?? []) as string[],
-		async (id) => (await env.BUCKET.head(`mailboxes/${id}.json`)) !== null,
+		(address) => mailboxExists(env.DB, address),
 	);
 	if (!decision.deliver) {
 		event.setReject(decision.reason);
