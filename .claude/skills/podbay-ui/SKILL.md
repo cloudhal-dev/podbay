@@ -31,7 +31,7 @@ The app is a single-page app served as static assets. It shows strangers' mail i
 
 ## 3. How a mailbox behaves
 
-The mail screens follow what a person expects from a first-class web mail client (the bar is the mail people know from Gmail and Google Workspace). The behaviour was studied on the live product and written down here in our own words; nothing of it is copied: no code, no text, no asset. These are decisions; `test/e2e/mailbox.spec.ts` holds each one.
+The mail screens follow what a person expects from a first-class web mail client (the bar is the mail people know from Gmail and Google Workspace). The behaviour was studied on the live product and written down here in our own words; nothing of it is copied: no code, no text, no asset. These are decisions; `test/e2e/mailbox.spec.ts` holds each one, and `test/e2e/writing.spec.ts` the ones about writing a message.
 
 ### The frame
 
@@ -98,6 +98,9 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | Writing floats: the compose window sits at the bottom right over whatever is being read and never closes it. Its title bar shows the subject once there is one, and minimises, enlarges or closes the window | `ComposeWindow.tsx` |
 | **Closing keeps what was written** as a draft; only Discard (the bin at the right of the bottom row) throws it away. One window keeps one draft however often it is saved | `saveAndClose`, `discard` in `useComposeForm.ts` |
 | Fields have no boxes: To (with Cc and Bcc on demand), Subject, the message. Send is first in the bottom row | `ComposePanel.tsx` |
+| **An answer is written under its conversation**: Reply, Reply to all and Forward from an open conversation (its buttons, a message's menu, `r` `a` `f`) open the answer where the reply buttons were. It can be moved out to the window, and moves there by itself when the conversation is left. A new message, and an answer started from a line's menu, open in the window | `InlineReply.tsx`; the message being written is held above both places by `ComposeSession.tsx`, so moving it loses nothing |
+| **Files** are attached with the paperclip or by dropping them on the message. Each is listed with its size and can be taken off. Together they are held to what a message can carry (`shared/sending-limits.ts`), and the Worker holds the request to the same. A draft does not keep files, and the window says so | `ComposePanel.tsx`, `useComposeForm.ts` |
+| **An address is completed while it is typed** from the addresses in the lists this browser has already loaded: arrows choose, Enter or Tab takes, and Enter never sends the message while a suggestion is offered. It asks the Worker nothing and is not an address book | `AddressField.tsx`, `app/lib/address-suggestions.ts`, `useKnownAddresses.ts` |
 | A link is added in a dialog of the app. A dialog opened from inside the compose form stops its own submit and keys there: React passes events through a portal, and the form would send the message | `RichTextEditor.tsx` |
 | A new message starts in To; a reply starts in the text, above what it answers. Ctrl or Cmd with Enter sends | `ComposePanel.tsx` |
 
