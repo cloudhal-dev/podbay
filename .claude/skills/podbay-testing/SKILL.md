@@ -12,7 +12,7 @@ A rule without an automated check is not a rule. Tests here are the checks: they
 | Tier | Where | Runs in | Use it for | Command |
 |---|---|---|---|---|
 | 0 | `test/unit/` | Node (Vitest) | Pure functions, tables and lists that must not drift, the mail renderer (jsdom), the static checks | `pnpm test` |
-| 3 | `test/workerd/`, `test/workerd-agent/` | The real Workers runtime, every binding local | Routes, the guard, sign-in, D1 and Durable Object behaviour, headers, anything about who may do what | `pnpm test:workerd` |
+| 3 | `test/workerd/`, `test/workerd-agent/` | The real Workers runtime, every binding local | Routes, the guard, sign-in, D1 and Durable Object behaviour, headers, anything about who may do what | `pnpm test:workerd` (four files at a time; `pnpm test:workerd labels` runs only the files whose name holds "labels") |
 | 6 | `test/e2e/` | The built app in the installed Chrome | What only a browser can show: content policies, the mail frame, downloads, WebAuthn, whole journeys | `pnpm e2e` |
 
 Put a test in the lowest tier that can prove the rule. A rule about access is proven at tier 3 even when a tier 6 journey also passes through it.

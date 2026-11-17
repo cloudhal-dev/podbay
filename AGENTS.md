@@ -20,7 +20,8 @@ Podbay is self-hosted mail that runs entirely in the user's own Cloudflare accou
 ```bash
 pnpm install          # once; pnpm 12, Node 24 or newer
 pnpm check            # lint → static checks → typecheck → unit tests → build (what CI runs)
-pnpm test:workerd     # handlers in the real Workers runtime, every binding local, two suites (about 30 s)
+pnpm test:workerd [name]   # handlers in the real Workers runtime, every binding local, two suites, four files
+                      #   at a time (scripts/test-workerd.ts; about three minutes); with a name, only the files that hold it
 pnpm e2e              # the built app in the installed Chrome, under its real headers, on its own throwaway
                       #   instance; every binding local, all outside traffic caught by a proxy (about 1 min)
 pnpm dev              # local development on http://localhost:5173, simulated mail, no account;

@@ -20,7 +20,7 @@
 		"typecheck": "wrangler types && tsc -b",
 		"test": "vitest run",
 		"e2e": "playwright test --config test/e2e/playwright.config.ts",
-		"test:workerd": "vitest run --config test/workerd/vitest.config.ts && vitest run --config test/workerd-agent/vitest.config.ts",
+		"test:workerd": "node scripts/test-workerd.ts",
 		"check": "pnpm lint && pnpm static && pnpm typecheck && pnpm test && pnpm build",
 		"pins": "node scripts/pins.ts --check",
 		"pins:outdated": "node scripts/pins.ts --outdated",
