@@ -48,10 +48,10 @@ export const FOLDER_DISPLAY_NAMES: Record<string, string> = {
 };
 
 /** Formatted string for tool parameter descriptions (agent + MCP). */
-export const FOLDER_TOOL_DESCRIPTION = "Folder to list: inbox, sent, draft, archive, trash";
+export const FOLDER_TOOL_DESCRIPTION = "Folder to list: inbox, sent, draft, archive, spam, trash";
 
 /** Formatted string for move-email tool descriptions. */
-export const MOVE_FOLDER_TOOL_DESCRIPTION = "Target folder: inbox, sent, draft, archive, trash";
+export const MOVE_FOLDER_TOOL_DESCRIPTION = "Target folder: inbox, archive, spam, trash";
 
 /**
  * Look up a display name for a folder ID, falling back to the raw ID

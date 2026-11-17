@@ -16,7 +16,11 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
 import { z } from "zod";
-import { FOLDER_TOOL_DESCRIPTION, Folders } from "../../shared/folders";
+import {
+	FOLDER_TOOL_DESCRIPTION,
+	Folders,
+	MOVE_FOLDER_TOOL_DESCRIPTION,
+} from "../../shared/folders";
 import { MCP_TOOLS, type McpToolName } from "../../shared/mcp-tools";
 import { withoutSend } from "../agent/tools";
 import { type KeyCaller, type KeyNeed, keyAllows, keyMailboxes } from "../auth/keys";
@@ -260,7 +264,7 @@ export function buildMcpServer(callerEnv: Env, caller: KeyCaller): McpServer {
 			inputSchema: z.object({
 				mailboxId,
 				emailId: z.string().max(128),
-				folderId: z.string().max(64).describe(FOLDER_TOOL_DESCRIPTION),
+				folderId: z.string().max(64).describe(MOVE_FOLDER_TOOL_DESCRIPTION),
 			}),
 		},
 		async ({ mailboxId: raw, emailId, folderId }) => {
