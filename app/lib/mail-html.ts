@@ -14,8 +14,14 @@
  *    form submission and no `<base>`.
  * 3. The component shows that document in a sandboxed frame without same-origin access.
  *
+ * The frame is a `srcdoc` document, so the page's own content policy applies to it as well
+ * (shared/security-headers.ts): the two are designed together, and a test holds the page's
+ * policy to allowing exactly what this document needs.
+ *
  * Nothing else in the app may inject HTML from a message.
  */
+
+import { MAIL_FRAME_SCRIPT } from "shared/mail-frame";
 
 /** The part of DOMPurify this module uses. Tests pass an instance bound to their own DOM. */
 export interface Purifier {
@@ -109,7 +115,8 @@ export function mailContentPolicy(options: {
 	readonly allowRemote: boolean;
 	readonly nonce: string;
 }): string {
-	const images = options.allowRemote ? "img-src data: cid: https:" : "img-src data: cid:";
+	// Embedded images arrive as `data:` URLs (app/lib/attachments.ts); nothing is fetched for them.
+	const images = options.allowRemote ? "img-src data: https:" : "img-src data:";
 	return [
 		"default-src 'none'",
 		"style-src 'unsafe-inline'",
@@ -149,18 +156,6 @@ h1, h2, h3 { margin: 8px 0 4px; }
 ul, ol { padding-left: 20px; margin: 4px 0; }
 `;
 
-/** The one script in the document: it tells the parent how tall the content is. */
-const HEIGHT_SCRIPT = `
-function reportHeight() {
-	var h = document.body.scrollHeight;
-	if (h > 0) parent.postMessage({ __emailIframeHeight: true, height: h }, "*");
-}
-reportHeight();
-setTimeout(reportHeight, 50);
-setTimeout(reportHeight, 150);
-setTimeout(reportHeight, 400);
-`;
-
 /**
  * The full document for the sandboxed frame. `sanitizedBody` must come from `sanitizeMailHtml`.
  * `nonce` must be fresh random data for each document.
@@ -175,7 +170,7 @@ export function mailDocument(options: {
 	const policy = mailContentPolicy(options);
 	const bodyStyle = options.autoSize ? "padding: 0; overflow: hidden;" : "padding: 24px;";
 	const script = options.autoSize
-		? `<script nonce="${options.nonce}">${HEIGHT_SCRIPT}</script>`
+		? `<script nonce="${options.nonce}">${MAIL_FRAME_SCRIPT}</script>`
 		: "";
 	return `<!DOCTYPE html>
 <html>

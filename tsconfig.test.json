@@ -2,6 +2,7 @@
 	"include": [
 		"test/**/*",
 		"app/lib/mail-html.ts",
+		"app/lib/inline-images.ts",
 		"workers/**/*",
 		"shared/**/*",
 		"scripts/**/*",

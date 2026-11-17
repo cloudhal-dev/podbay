@@ -151,14 +151,14 @@ describe("mailContentPolicy", () => {
 	it("allows no network load while remote content is blocked", () => {
 		const policy = mailContentPolicy({ allowRemote: false, nonce });
 		expect(policy).toContain("default-src 'none'");
-		expect(policy).toContain("img-src data: cid:");
+		expect(policy.split("; ")).toContain("img-src data:");
 		expect(policy).not.toContain("https:");
 		expect(policy).not.toContain("http:");
 	});
 
 	it("allows only https images once the reader allowed remote content", () => {
 		const policy = mailContentPolicy({ allowRemote: true, nonce });
-		expect(policy).toContain("img-src data: cid: https:");
+		expect(policy).toContain("img-src data: https:");
 		expect(policy).not.toMatch(/(connect|font|media|frame|object)-src/);
 	});
 

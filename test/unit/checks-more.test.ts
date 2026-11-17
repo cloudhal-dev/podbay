@@ -4,7 +4,7 @@ import { compatProblems, MAX_AGE_DAYS } from "../../scripts/checks/compat.ts";
 import { headersProblems } from "../../scripts/checks/headers.ts";
 import { htmlProblems } from "../../scripts/checks/html.ts";
 import { secretProblems } from "../../scripts/checks/secrets.ts";
-import { headersFile, SECURITY_HEADERS } from "../../shared/security-headers.ts";
+import { API_HEADERS, headersFile, PAGE_HEADERS } from "../../shared/security-headers.ts";
 
 // Sample credentials are assembled at run time, so this file contains none.
 const join = (...parts: string[]) => parts.join("");
@@ -116,17 +116,20 @@ describe("headers", () => {
 	});
 
 	it("forbids framing, sniffing and referrers, and requires HTTPS", () => {
-		expect(SECURITY_HEADERS["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
-		expect(SECURITY_HEADERS["X-Frame-Options"]).toBe("DENY");
-		expect(SECURITY_HEADERS["X-Content-Type-Options"]).toBe("nosniff");
-		expect(SECURITY_HEADERS["Referrer-Policy"]).toBe("no-referrer");
-		expect(SECURITY_HEADERS["Strict-Transport-Security"]).toMatch(/^max-age=\d{8,}$/);
+		for (const headers of [PAGE_HEADERS, API_HEADERS]) {
+			expect(headers["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
+			expect(headers["X-Frame-Options"]).toBe("DENY");
+			expect(headers["X-Content-Type-Options"]).toBe("nosniff");
+			expect(headers["Referrer-Policy"]).toBe("no-referrer");
+			expect(headers["Strict-Transport-Security"]).toMatch(/^max-age=\d{8,}$/);
+			expect(headers["Cross-Origin-Resource-Policy"]).toBe("same-origin");
+		}
 	});
 
 	it("applies every header to every asset", () => {
 		const file = headersFile();
 		expect(file).toContain("\n/*\n");
-		for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+		for (const [name, value] of Object.entries(PAGE_HEADERS)) {
 			expect(file).toContain(`  ${name}: ${value}\n`);
 		}
 	});

@@ -124,11 +124,18 @@ describe("route table", () => {
 	});
 
 	it("needs a right stronger than reading for every route that changes a mailbox", () => {
-		for (const route of ROUTE_TABLE.filter(
-			(r) => r.path.includes(":mailboxId") && r.method !== "GET",
-		)) {
-			expect(route.right, `${route.method} ${route.path}`).not.toBe("mailbox.read");
+		// One POST changes nothing: it downloads an attachment the reader acknowledged. It is a
+		// POST so that only the app's own origin can make it, and a reader may read attachments.
+		const READS_BY_POST = [
+			`POST ${"/api/v1/mailboxes/:mailboxId"}/emails/:emailId/attachments/:attachmentId/download`,
+		];
+		const changing = ROUTE_TABLE.filter((r) => r.path.includes(":mailboxId") && r.method !== "GET");
+		for (const route of changing) {
+			const name = `${route.method} ${route.path}`;
+			if (READS_BY_POST.includes(name)) expect(route.right, name).toBe("mailbox.read");
+			else expect(route.right, name).not.toBe("mailbox.read");
 		}
+		expect(changing.filter((r) => r.right === "mailbox.read")).toHaveLength(READS_BY_POST.length);
 	});
 
 	it("does not know an unlisted route", () => {

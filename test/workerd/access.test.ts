@@ -12,7 +12,7 @@
  */
 import { createExecutionContext, env, waitOnExecutionContext } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { SECURITY_HEADERS } from "../../shared/security-headers.ts";
+import { API_HEADERS } from "../../shared/security-headers.ts";
 import worker from "../../workers/app.ts";
 import { ROUTE_TABLE } from "../../workers/auth/route-table.ts";
 import { app as api } from "../../workers/index.ts";
@@ -402,7 +402,7 @@ describe("response headers", () => {
 		["a path that is no route", "/api/v1/everything", "owner"],
 	])("%s carries the security headers and is never cached", async (_name, path, who) => {
 		const res = await request(path, who ? { cookie: cookies[who] } : {});
-		for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+		for (const [name, value] of Object.entries(API_HEADERS)) {
 			expect(res.headers.get(name), name).toBe(value);
 		}
 		expect(res.headers.get("cache-control")).toBe("no-store");

@@ -82,6 +82,12 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "POST", path: `${M}/emails/:id/reply`, right: "mailbox.send" },
 	{ method: "POST", path: `${M}/emails/:id/forward`, right: "mailbox.send" },
 	{ method: "GET", path: `${M}/emails/:emailId/attachments/:attachmentId`, right: "mailbox.read" },
+	// Downloading an attachment that can do harm: a POST, so only the app's own page can ask.
+	{
+		method: "POST",
+		path: `${M}/emails/:emailId/attachments/:attachmentId/download`,
+		right: "mailbox.read",
+	},
 
 	{ method: "GET", path: `${M}/threads/:threadId`, right: "mailbox.read" },
 	{ method: "POST", path: `${M}/threads/:threadId/read`, right: "mailbox.write" },

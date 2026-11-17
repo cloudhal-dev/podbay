@@ -6,6 +6,11 @@
 import { type Context, Hono } from "hono";
 import PostalMime from "postal-mime";
 import { z } from "zod";
+import {
+	attachmentRisk,
+	NEEDS_ACKNOWLEDGEMENT_CODE,
+	servedContentType,
+} from "../shared/attachment-risk";
 import { Folders } from "../shared/folders";
 import { errorFields, log } from "../shared/log";
 import { type ApiContext, guard } from "./auth/middleware";
@@ -345,25 +350,61 @@ app.get("/api/v1/mailboxes/:mailboxId/search", async (c: AppContext) => {
 
 // -- Attachments ----------------------------------------------------
 
-app.get(
-	"/api/v1/mailboxes/:mailboxId/emails/:emailId/attachments/:attachmentId",
+// -- Attachments (rule S5) -------------------------------------------
+//
+// An attachment is a download, never a page: it leaves with `Content-Disposition: attachment`,
+// a type the sender did not choose, `nosniff`, and the API's content policy, which sandboxes it
+// and lets it load nothing. One that is dangerous by design is not handed over by a plain link:
+// the reader has to ask for it, in a request only the app itself can make.
+
+const DownloadBody = z.object({ acknowledged: z.literal(true) });
+
+async function attachmentResponse(c: AppContext, acknowledged: boolean): Promise<Response> {
+	const emailId = c.req.param("emailId") ?? "";
+	const attachmentId = c.req.param("attachmentId") ?? "";
+	const attachment = await c.var.mailboxStub.getAttachment(attachmentId);
+	if (!attachment) return c.json({ error: "Attachment not found" }, 404);
+	const risk = attachmentRisk(attachment);
+	if (risk !== null && !acknowledged) {
+		return c.json(
+			{
+				error:
+					"This attachment can do harm when opened. It is downloaded only when you ask for it.",
+				code: NEEDS_ACKNOWLEDGEMENT_CODE,
+				risk,
+			},
+			409,
+		);
+	}
+	const obj = await c.env.BUCKET.get(
+		`attachments/${emailId}/${attachmentId}/${attachment.filename}`,
+	);
+	if (!obj) return c.json({ error: "Attachment file not found" }, 404);
+	const headers = new Headers();
+	// A risky file never leaves with a type a browser would show, whatever the sender called it.
+	headers.set(
+		"Content-Type",
+		risk === null ? servedContentType(attachment.mimetype) : "application/octet-stream",
+	);
+	headers.set(
+		"Content-Disposition",
+		`attachment; filename="${headerFilename(attachment.filename)}"; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`,
+	);
+	return new Response(obj.body, { headers });
+}
+
+app.get("/api/v1/mailboxes/:mailboxId/emails/:emailId/attachments/:attachmentId", (c: AppContext) =>
+	attachmentResponse(c, false),
+);
+
+// A POST is refused by the guard unless it comes from the app's own origin, so a link in a
+// message, or on another site, can never be the acknowledgement.
+app.post(
+	"/api/v1/mailboxes/:mailboxId/emails/:emailId/attachments/:attachmentId/download",
 	async (c: AppContext) => {
-		const emailId = c.req.param("emailId")!;
-		const attachmentId = c.req.param("attachmentId")!;
-		const attachment = await c.var.mailboxStub.getAttachment(attachmentId);
-		if (!attachment) return c.json({ error: "Attachment not found" }, 404);
-		const obj = await c.env.BUCKET.get(
-			`attachments/${emailId}/${attachmentId}/${attachment.filename}`,
-		);
-		if (!obj) return c.json({ error: "Attachment file not found" }, 404);
-		const headers = new Headers();
-		headers.set("Content-Type", attachment.mimetype);
-		const sanitized = headerFilename(attachment.filename);
-		headers.set(
-			"Content-Disposition",
-			`attachment; filename="${sanitized}"; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`,
-		);
-		return new Response(obj.body, { headers });
+		const parsed = DownloadBody.safeParse(await c.req.json().catch(() => null));
+		if (!parsed.success) return c.json({ error: "Invalid request" }, 400);
+		return attachmentResponse(c, true);
 	},
 );
 

@@ -7,7 +7,7 @@ import { routeAgentRequest } from "agents";
 import { Hono } from "hono";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { errorFields, log } from "../shared/log";
-import { API_CACHE_CONTROL, SECURITY_HEADERS } from "../shared/security-headers";
+import { API_CACHE_CONTROL, API_HEADERS } from "../shared/security-headers";
 import { callerForToken, touchKey } from "./auth/keys";
 import { mailboxDecision } from "./auth/middleware";
 import { app as apiApp, receiveEmail } from "./index";
@@ -32,8 +32,9 @@ function getAccessUrls(teamDomain: string) {
 // static assets; only the paths in wrangler.jsonc `assets.run_worker_first` reach this Worker.
 const app = new Hono<{ Bindings: Env }>();
 
-// Every answer of the Worker carries the security headers; API answers are never cached. The
-// static assets get the same headers from public/_headers.
+// Every answer of the Worker carries the security headers; API answers are never cached. None
+// of them is a page, so their content policy allows nothing. The app's pages and assets get
+// their own headers, with the page's content policy, from public/_headers.
 app.use("*", async (c, next) => {
 	await next();
 	// A WebSocket upgrade has no headers to set.
@@ -41,7 +42,7 @@ app.use("*", async (c, next) => {
 	// A response made elsewhere (the MCP handler, the agent runtime) can have fixed headers; it is
 	// rebuilt around the same body so the headers can be set.
 	const headers = new Headers(c.res.headers);
-	for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
+	for (const [name, value] of Object.entries(API_HEADERS)) headers.set(name, value);
 	const path = new URL(c.req.url).pathname;
 	if (path.startsWith("/api/") || path === MCP_ROUTE)
 		headers.set("Cache-Control", API_CACHE_CONTROL);
