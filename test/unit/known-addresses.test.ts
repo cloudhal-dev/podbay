@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
 	completeAddress,
+	joinTyped,
 	lastAddress,
+	looksLikeAddress,
+	splitTyped,
 	suggestAddresses,
+	typeInto,
 } from "../../app/lib/address-suggestions.ts";
 
 const KNOWN = ["ada@sender.test", "grace@navy.test", "adam@example.com", "bob@sender.test"];
@@ -32,5 +36,42 @@ describe("address suggestions", () => {
 		expect(completeAddress("ada@sender.test, gr", "grace@navy.test")).toBe(
 			"ada@sender.test, grace@navy.test, ",
 		);
+	});
+});
+
+describe("addresses as they are typed", () => {
+	it("splits a list into what is done and what is in hand, and writes it back the same", () => {
+		expect(splitTyped("ada@sender.test, gr")).toEqual({ done: ["ada@sender.test"], typing: "gr" });
+		expect(splitTyped("ada@sender.test, ")).toEqual({ done: ["ada@sender.test"], typing: "" });
+		expect(splitTyped("gr")).toEqual({ done: [], typing: "gr" });
+		expect(splitTyped("")).toEqual({ done: [], typing: "" });
+		expect(splitTyped("a@x.test, A@X.test, a@x.test, ").done).toEqual(["a@x.test"]);
+		for (const value of ["a@x.test, b@y.test, ", "a@x.test, b", "b", ""]) {
+			const { done, typing } = splitTyped(value);
+			expect(joinTyped(done, typing)).toBe(value);
+		}
+	});
+
+	it("ends an address at a comma, a semicolon or a line break, also when several are pasted", () => {
+		expect(typeInto([], "ada@sender.test,")).toBe("ada@sender.test, ");
+		expect(typeInto(["a@x.test"], "b@y.test; c@z.test\nd")).toBe("a@x.test, b@y.test, c@z.test, d");
+		expect(typeInto(["a@x.test"], " , ,")).toBe("a@x.test, ");
+	});
+
+	it("knows the shape of an address, and leaves the rest to the Worker", () => {
+		for (const good of ["ada@sender.test", " a.b+c@x.example.org "]) {
+			expect(looksLikeAddress(good), good).toBe(true);
+		}
+		for (const bad of [
+			"ada",
+			"ada@",
+			"@x.test",
+			"ada@x",
+			"a b@x.test",
+			"a@x.test, b@y.test",
+			"<a@x.test>",
+		]) {
+			expect(looksLikeAddress(bad), bad).toBe(false);
+		}
 	});
 });

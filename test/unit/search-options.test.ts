@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
 	buildSearchQuery,
+	hasOperator,
 	NO_SEARCH_OPTIONS,
 	parseSearchQuery,
 	searchOptionsOf,
+	toggleOperator,
 } from "../../app/lib/search-parser.ts";
 
 describe("search options", () => {
@@ -56,5 +58,24 @@ describe("search options", () => {
 			unreadOnly: true,
 			words: "hello",
 		});
+	});
+});
+
+describe("quick filters on a search", () => {
+	it("adds an operator, takes it out again, and leaves the rest as it was", () => {
+		const query = 'from:ada subject:"the plan" budget';
+		const with_ = toggleOperator(query, "has:attachment");
+		expect(with_).toBe('from:ada subject:"the plan" budget has:attachment');
+		expect(hasOperator(with_, "has:attachment")).toBe(true);
+		expect(parseSearchQuery(with_)).toMatchObject({ from: "ada", has_attachment: true });
+		expect(toggleOperator(with_, "has:attachment")).toBe(query);
+	});
+
+	it("sees an operator only as a word of its own, whatever its case", () => {
+		expect(hasOperator("is:unread", "is:unread")).toBe(true);
+		expect(hasOperator("IS:UNREAD budget", "is:unread")).toBe(true);
+		expect(hasOperator("this:unread", "is:unread")).toBe(false);
+		expect(hasOperator("", "is:unread")).toBe(false);
+		expect(toggleOperator("", "is:unread")).toBe("is:unread");
 	});
 });

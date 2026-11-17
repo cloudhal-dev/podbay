@@ -1,12 +1,21 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { type KeyboardEvent, type Ref, useId, useState } from "react";
-import { completeAddress, suggestAddresses } from "~/lib/address-suggestions";
+import { XIcon } from "@phosphor-icons/react";
+import { type KeyboardEvent, type Ref, useEffect, useId, useState } from "react";
+import {
+	joinTyped,
+	looksLikeAddress,
+	splitTyped,
+	suggestAddresses,
+	typeInto,
+} from "~/lib/address-suggestions";
 
 /**
- * A field for one or more addresses, separated by commas. While an address is being typed it
- * offers the ones the mailbox has exchanged mail with before; arrows choose, Enter or Tab takes.
+ * A field for one or more addresses. An address that is done becomes a chip that can be taken
+ * off; a comma, a semicolon, Enter or leaving the field ends the one in hand. While an address
+ * is typed, the ones the mailbox has exchanged mail with are offered: arrows choose, Enter or
+ * Tab takes. The value stays what it always was, addresses separated by commas.
  */
 export default function AddressField({
 	id,
@@ -29,40 +38,83 @@ export default function AddressField({
 	const listId = useId();
 	const [offered, setOffered] = useState<string[]>([]);
 	const [at, setAt] = useState(0);
+	const [focused, setFocused] = useState(false);
 	const open = offered.length > 0;
+	const { done, typing } = splitTyped(value);
 
-	function change(next: string) {
+	// An address the field was given (a reply's recipient), or one left when the field is, is done.
+	useEffect(() => {
+		if (!focused && typing.trim() !== "") onChange(joinTyped([...done, typing.trim()], ""));
+	}, [focused, typing, done, onChange]);
+
+	function type(text: string) {
+		const next = typeInto(done, text);
 		onChange(next);
 		setOffered(suggestAddresses(known(), next));
 		setAt(0);
 	}
 
 	function take(address: string) {
-		onChange(completeAddress(value, address));
+		onChange(joinTyped([...done, address], ""));
 		setOffered([]);
 	}
 
 	function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-		if (!open) return;
-		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+		if (open && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
 			event.preventDefault();
 			const step = event.key === "ArrowDown" ? 1 : -1;
 			setAt((at + step + offered.length) % offered.length);
-		} else if (event.key === "Enter" || event.key === "Tab") {
+		} else if (open && (event.key === "Enter" || event.key === "Tab")) {
 			const chosen = offered[at];
 			if (chosen === undefined) return;
 			event.preventDefault();
 			// Enter takes the suggestion; it must not also send the message.
 			event.stopPropagation();
 			take(chosen);
-		} else if (event.key === "Escape") {
+		} else if (open && event.key === "Escape") {
 			event.stopPropagation();
 			setOffered([]);
+		} else if (event.key === "Enter" && typing.trim() !== "") {
+			// Enter ends the address in hand, and only then is Enter anything else.
+			event.preventDefault();
+			event.stopPropagation();
+			take(typing.trim());
+		} else if (event.key === "Backspace" && typing === "" && done.length > 0) {
+			event.preventDefault();
+			onChange(joinTyped(done.slice(0, -1), ""));
 		}
 	}
 
 	return (
-		<div className="relative min-w-0 flex-1">
+		<div className="relative flex min-w-0 flex-1 flex-wrap items-center gap-1 py-1">
+			{done.map((address, index) => (
+				<span
+					key={address.toLowerCase()}
+					title={looksLikeAddress(address) ? undefined : "This does not look like an address"}
+					className={`flex max-w-full items-center gap-1 rounded-full border py-0.5 pl-2.5 pr-1 text-xs ${
+						looksLikeAddress(address)
+							? "border-kumo-line bg-kumo-recessed text-kumo-default"
+							: "border-kumo-danger text-kumo-danger"
+					}`}
+				>
+					<span className="truncate">{address}</span>
+					<button
+						type="button"
+						onClick={() =>
+							onChange(
+								joinTyped(
+									done.filter((_a, at) => at !== index),
+									typing,
+								),
+							)
+						}
+						aria-label={`Remove ${address}`}
+						className="shrink-0 cursor-pointer rounded-full border-0 bg-transparent p-0.5 text-kumo-subtle hover:bg-kumo-fill hover:text-kumo-default"
+					>
+						<XIcon size={10} />
+					</button>
+				</span>
+			))}
 			<input
 				ref={inputRef}
 				id={id}
@@ -73,12 +125,16 @@ export default function AddressField({
 				aria-autocomplete="list"
 				aria-activedescendant={open ? `${listId}-${at}` : undefined}
 				autoComplete="off"
-				className={`${className} w-full`}
-				value={value}
-				required={required}
-				onChange={(event) => change(event.target.value)}
+				className={`${className} min-w-32 py-1`}
+				value={typing}
+				required={required && done.length === 0}
+				onChange={(event) => type(event.target.value)}
 				onKeyDown={onKeyDown}
-				onBlur={() => setOffered([])}
+				onFocus={() => setFocused(true)}
+				onBlur={() => {
+					setFocused(false);
+					setOffered([]);
+				}}
 			/>
 			{open && (
 				<div

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useConfirm } from "~/components/Confirm";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useDropTarget } from "~/hooks/useDropTarget";
+import { labelTree } from "~/lib/label-tree";
 import { labelDot, labelSearch } from "~/lib/labels";
 import { useDeleteLabel, useLabels } from "~/queries/labels";
 import type { Label } from "~/types";
@@ -59,10 +60,12 @@ export default function RailLabels({
 				</Tooltip>
 			</div>
 			<ul className="m-0 list-none space-y-0.5 p-0">
-				{labels.map((label) => (
+				{labelTree(labels).map(({ item: label, depth, short }) => (
 					<RailLabel
 						key={label.id}
 						label={label}
+						depth={depth}
+						short={short}
 						mailboxId={mailboxId}
 						onNavigate={onNavigate}
 						onEdit={() => setEditing(label)}
@@ -83,14 +86,22 @@ export default function RailLabels({
 }
 
 /** One label of the rail. Dropping conversations on it moves them to it. */
+/** How far a label is set in for each label it is under. Written out so the stylesheet holds them. */
+const INDENT = ["pl-4", "pl-8", "pl-12", "pl-16"];
+
 function RailLabel({
 	label,
+	depth,
+	short,
 	mailboxId,
 	onNavigate,
 	onEdit,
 	onDelete,
 }: {
 	label: Label;
+	/** How many labels it is under, and its name without what they already say. */
+	depth: number;
+	short: string;
 	mailboxId: string;
 	onNavigate: () => void;
 	onEdit: () => void;
@@ -109,13 +120,14 @@ function RailLabel({
 				params={{ mailboxId }}
 				search={{ q: labelSearch(label.name) }}
 				onClick={onNavigate}
-				className="flex h-9 min-w-0 flex-1 items-center gap-4 rounded-full pl-4 text-sm text-kumo-strong no-underline"
+				aria-label={label.name}
+				className={`flex h-9 min-w-0 flex-1 items-center gap-4 rounded-full text-sm text-kumo-strong no-underline ${INDENT[Math.min(depth, INDENT.length - 1)]}`}
 				activeProps={{ className: "font-semibold text-kumo-default" }}
 			>
 				<span className="flex w-[18px] shrink-0 justify-center">
 					<span className={`h-2.5 w-2.5 rounded-full ${labelDot(label.color)}`} />
 				</span>
-				<span className="flex-1 truncate">{label.name}</span>
+				<span className="flex-1 truncate">{short}</span>
 				{label.unread > 0 && <span className="text-xs font-semibold">{label.unread}</span>}
 			</Link>
 			<DropdownMenu>

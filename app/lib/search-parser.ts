@@ -201,3 +201,16 @@ export function searchOptionsOf(query: string): SearchOptions {
 		before: parsed.date_end?.slice(0, 10) ?? "",
 	};
 }
+
+/** Whether a query carries an operator such as `has:attachment`, as a word of its own. */
+export function hasOperator(query: string, operator: string): boolean {
+	return query.split(/\s+/).some((word) => word.toLowerCase() === operator.toLowerCase());
+}
+
+/** The query with an operator added, or taken out when it is there. Nothing else changes. */
+export function toggleOperator(query: string, operator: string): string {
+	const words = query.split(/\s+/).filter((word) => word !== "");
+	return hasOperator(query, operator)
+		? words.filter((word) => word.toLowerCase() !== operator.toLowerCase()).join(" ")
+		: [...words, operator].join(" ");
+}

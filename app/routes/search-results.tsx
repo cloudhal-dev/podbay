@@ -4,12 +4,12 @@
 // Modified by the Podbay contributors.
 
 import { MagnifyingGlassIcon, StarIcon } from "@phosphor-icons/react";
-import { useParams, useSearch } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
 import { useDisplay } from "~/hooks/useDisplay";
-import { parseSearchQuery } from "~/lib/search-parser";
+import { hasOperator, parseSearchQuery, toggleOperator } from "~/lib/search-parser";
 import { useSearchEmails } from "~/queries/search";
 
 function highlightTerms(text: string, query: string): React.ReactNode {
@@ -41,11 +41,19 @@ function highlightTerms(text: string, query: string): React.ReactNode {
 	}
 }
 
+/** One press narrows the search on screen: each adds an operator to the query, or takes it out. */
+const QUICK_FILTERS: readonly (readonly [string, string])[] = [
+	["has:attachment", "Has an attachment"],
+	["is:unread", "Unread"],
+	["in:inbox", "In the inbox"],
+];
+
 export default function SearchResultsRoute() {
 	const { mailboxId } = useParams({ strict: false });
 	const search = useSearch({ strict: false }) as { q?: string };
 	const urlQuery = search.q ?? "";
 	const [page, setPage] = useState(1);
+	const navigate = useNavigate();
 	const pageSize = useDisplay((state) => state.pageSize);
 	const starred = urlQuery.trim() === "is:starred";
 	// A search that is only a label is that label's list.
@@ -65,6 +73,36 @@ export default function SearchResultsRoute() {
 
 	return (
 		<MailView emails={searchData?.results ?? []}>
+			{!starred && (
+				<div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-kumo-line px-4 py-2">
+					<span className="text-xs text-kumo-subtle">Narrow it down:</span>
+					{QUICK_FILTERS.map(([operator, label]) => {
+						const on = hasOperator(urlQuery, operator);
+						return (
+							<button
+								key={operator}
+								type="button"
+								aria-pressed={on}
+								onClick={() => {
+									if (!mailboxId) return;
+									void navigate({
+										to: "/mailbox/$mailboxId/search",
+										params: { mailboxId },
+										search: { q: toggleOperator(urlQuery, operator) },
+									});
+								}}
+								className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${
+									on
+										? "border-kumo-brand bg-kumo-brand/10 font-semibold text-kumo-default"
+										: "border-kumo-line bg-transparent text-kumo-strong hover:bg-kumo-tint"
+								}`}
+							>
+								{label}
+							</button>
+						);
+					})}
+				</div>
+			)}
 			<MessageList
 				title={
 					starred ? "Starred" : labelOnly ? `Label ${labelOnly}` : `Search results for ${urlQuery}`

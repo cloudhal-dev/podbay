@@ -81,7 +81,9 @@ test("an address is completed from the mail this mailbox has already exchanged",
 	await expect(offered.getByRole("option", { name: "ada@sender.test" })).toBeVisible();
 	// Enter takes the suggestion and does not send the message.
 	await to.press("Enter");
-	await expect(to).toHaveValue("ada@sender.test, ");
+	// The address is done: it is a chip, and the field is ready for the next one.
+	await expect(to).toHaveValue("");
+	await expect(compose.getByRole("button", { name: "Remove ada@sender.test" })).toBeVisible();
 	await expect(offered).toHaveCount(0);
 	await expect(compose).toBeVisible();
 	await expect(page.getByText("Message sent")).toHaveCount(0);
@@ -89,6 +91,19 @@ test("an address is completed from the mail this mailbox has already exchanged",
 	// An address already in the field is not offered again.
 	await to.pressSequentially("ada");
 	await expect(offered).toHaveCount(0);
+
+	// A comma ends an address; something that is not one is marked; a chip is taken off by its
+	// button or by Backspace in the empty field.
+	await to.fill("");
+	await to.pressSequentially("grace@navy.test,not an address,");
+	await expect(compose.getByRole("button", { name: "Remove grace@navy.test" })).toBeVisible();
+	await expect(compose.getByTitle("This does not look like an address")).toHaveText(
+		/not an address/,
+	);
+	await compose.getByRole("button", { name: "Remove not an address" }).click();
+	await to.press("Backspace");
+	await expect(compose.getByRole("button", { name: "Remove grace@navy.test" })).toHaveCount(0);
+	await expect(compose.getByRole("button", { name: "Remove ada@sender.test" })).toBeVisible();
 	await compose.getByRole("button", { name: "Discard" }).click();
 });
 
@@ -124,4 +139,44 @@ test("an answer is written under its conversation, and moves to the window witho
 	await expect(compose.getByLabel("Subject")).toHaveValue("Re: Behaviour: answer inline");
 	await compose.getByRole("button", { name: "Discard" }).click();
 	await expect(compose).toHaveCount(0);
+});
+
+test("a forward carries the files of the message, and leaves behind what can do harm", async ({
+	page,
+	app,
+}) => {
+	await app.deliver(
+		mime({
+			subject: "Behaviour: forward my files",
+			to: app.account.mailbox,
+			html: "<p>Two files.</p>",
+			parts: [
+				{ filename: "notes.txt", type: "text/plain", content: "some notes" },
+				{ filename: "setup.exe", type: "application/octet-stream", content: "MZ not a program" },
+			],
+		}),
+	);
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await row(page, "Behaviour: forward my files").click();
+	await page.getByRole("button", { name: "Forward", exact: true }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+
+	// The plain file travels; the program is named and stays.
+	const attached = compose.getByRole("list", { name: "Attached files" });
+	await expect(attached.getByRole("listitem")).toHaveCount(1);
+	await expect(attached).toContainText("notes.txt");
+	await expect(compose.getByRole("status")).toContainText("setup.exe (can do harm when opened)");
+
+	await compose.getByRole("combobox", { name: "To" }).fill("someone@elsewhere.test");
+	await compose.getByRole("button", { name: "Send", exact: true }).click();
+	await expect(page.getByText("Message sent")).toBeVisible();
+
+	await page.getByRole("button", { name: "Back to list" }).click();
+	await page
+		.getByRole("navigation", { name: "Folders" })
+		.getByRole("link", { name: /Sent/ })
+		.click();
+	await row(page, "Fwd: Behaviour: forward my files").click();
+	await expect(page.getByText("notes.txt")).toBeVisible();
+	await expect(page.getByText("setup.exe")).toHaveCount(0);
 });

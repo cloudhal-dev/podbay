@@ -372,6 +372,19 @@ test("search options write the query a person could type", async ({ page, app })
 	await expect(box).toHaveValue('subject:"find me by parts" in:inbox needle');
 	await expect(row(page, "Behaviour: find me by parts")).toBeVisible();
 
+	// One press narrows the search, and the box says what is searched; a second press undoes it.
+	const unread = page.getByRole("button", { name: "Unread", exact: true });
+	await unread.click();
+	await expect(unread).toHaveAttribute("aria-pressed", "true");
+	await expect(box).toHaveValue('subject:"find me by parts" in:inbox needle is:unread');
+	await expect(row(page, "Behaviour: find me by parts")).toBeVisible();
+	await expect(page.getByRole("button", { name: "In the inbox" })).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	await unread.click();
+	await expect(box).toHaveValue('subject:"find me by parts" in:inbox needle');
+
 	// The dialog opens with what the box says.
 	await page.getByRole("button", { name: "Search options" }).click();
 	await expect(options.getByLabel("Subject")).toHaveValue("find me by parts");
@@ -726,4 +739,25 @@ test("a conversation is dragged onto a label or a place, and the tab says how mu
 	await expect(row(page, "Behaviour: drag me")).toHaveCount(0);
 	await rail.getByRole("link", { name: /Inbox/ }).click();
 	await expect(row(page, "Behaviour: drag me").getByText("Dropzone")).toBeVisible();
+});
+
+test("a label with a slash in its name is shown under the label it names", async ({
+	page,
+	app,
+}) => {
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	const rail = page.getByRole("navigation", { name: "Folders" });
+	const dialog = page.getByRole("dialog", { name: "New label" });
+	for (const name of ["Trips", "Trips/Rome"]) {
+		await page.getByRole("button", { name: "Create a label" }).click();
+		await dialog.getByLabel("Name").fill(name);
+		await dialog.getByRole("button", { name: "Create" }).click();
+		await expect(dialog).toHaveCount(0);
+	}
+	// Its name is whole for assistive technology and in search; on screen it says what is new.
+	const child = rail.getByRole("link", { name: "Trips/Rome" });
+	await expect(child).toHaveText(/^Rome/);
+	const parentBox = await rail.getByRole("link", { name: "Trips", exact: true }).boundingBox();
+	const childBox = await child.locator("span").first().boundingBox();
+	expect(childBox?.x ?? 0).toBeGreaterThan((parentBox?.x ?? 0) + 20);
 });

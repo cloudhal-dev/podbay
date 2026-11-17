@@ -5,6 +5,7 @@
 
 import { useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { attachmentRisk } from "shared/attachment-risk";
 import { MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "shared/sending-limits";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { useUIStore } from "~/hooks/useUIStore";
@@ -26,6 +27,8 @@ import {
 	useSendEmail,
 } from "~/queries/emails";
 import { useMailbox } from "~/queries/mailboxes";
+import api from "~/services/api";
+import type { Attachment } from "~/types";
 
 function appendUniqueAddress(
 	addresses: string[],
@@ -41,6 +44,39 @@ function appendUniqueAddress(
 
 	seen.add(normalized);
 	addresses.push(trimmed);
+}
+
+/**
+ * The files of a message, fetched to travel with a forward of it. One that can do harm when
+ * opened is not fetched: the reader would have to ask for it, and a forward must not pass it on
+ * without that. Files beyond what a message can carry are left behind too.
+ */
+async function carryFiles(
+	mailboxId: string,
+	emailId: string,
+	attachments: readonly Attachment[],
+): Promise<{ files: File[]; left: string[] }> {
+	const files: File[] = [];
+	const left: string[] = [];
+	let total = 0;
+	for (const attachment of attachments) {
+		// A picture shown inside the message is part of its text, not a file of it.
+		if (attachment.disposition === "inline") continue;
+		if (attachmentRisk(attachment) !== null) {
+			left.push(`${attachment.filename} (can do harm when opened)`);
+		} else if (total + attachment.size > MAX_ATTACHMENTS_BYTES) {
+			left.push(`${attachment.filename} (too large to send with the rest)`);
+		} else {
+			try {
+				const blob = await api.getAttachment(mailboxId, emailId, attachment.id);
+				files.push(new File([blob], attachment.filename, { type: attachment.mimetype }));
+				total += attachment.size;
+			} catch {
+				left.push(`${attachment.filename} (could not be fetched)`);
+			}
+		}
+	}
+	return { files, left };
 }
 
 /** A file as the send request carries it: its bytes as base64, and what it is. */
@@ -209,6 +245,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const [touched, setTouched] = useState(false);
 	/** The files to send with the message. They live in this window only: a draft does not keep them. */
 	const [files, setFiles] = useState<File[]>([]);
+	/** Files of a forwarded message that are not carried, each with the reason. */
+	const [leftBehind, setLeftBehind] = useState<string[]>([]);
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
 	const isDraftEdit = !!composeOptions.draftEmail;
 
@@ -247,7 +285,21 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		setShowCcBcc(initialFields.showCcBcc);
 		setSubject(initialFields.subject);
 		setBody(initialFields.body);
-	}, [composeOptions, currentMailbox?.email, sigBlock]);
+		setLeftBehind([]);
+
+		// A forward carries the files of the message it forwards. They are fetched as the reader
+		// could download them, so one that can do harm when opened is left behind and named.
+		const original = composeOptions.originalEmail;
+		const carried = composeOptions.mode === "forward" ? (original?.attachments ?? []) : [];
+		if (mailboxId && original && carried.length > 0) {
+			void carryFiles(mailboxId, original.id, carried).then(({ files: fetched, left }) => {
+				// Only if this is still the message being written.
+				if (lastInitializedOptionsRef.current !== composeOptions) return;
+				setFiles(fetched);
+				setLeftBehind(left);
+			});
+		}
+	}, [composeOptions, currentMailbox?.email, sigBlock, mailboxId]);
 
 	const handleSaveDraft = async (): Promise<boolean> => {
 		if (!mailboxId || isSending) return false;
@@ -394,6 +446,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		handleSend,
 		knownAddresses,
 		files,
+		leftBehind,
 		addFiles,
 		removeFile,
 		saveAndClose,

@@ -134,6 +134,14 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 				<RichTextEditor value={form.body} onChange={form.setBody} focusOnLoad={startsInText} />
 			</div>
 
+			{form.leftBehind.length > 0 && (
+				<p
+					role="status"
+					className="m-0 shrink-0 border-t border-kumo-line px-3 pt-2 text-xs text-kumo-warning"
+				>
+					Not forwarded: {form.leftBehind.join(", ")}.
+				</p>
+			)}
 			{form.files.length > 0 && (
 				<div className="shrink-0 border-t border-kumo-line px-3 pt-2">
 					<ul aria-label="Attached files" className="m-0 flex list-none flex-wrap gap-1.5 p-0">
