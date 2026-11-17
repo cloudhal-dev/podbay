@@ -94,6 +94,8 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 
 	// The places of a mailbox are fixed: nobody makes, renames or removes one (ADR-0007).
 	{ method: "GET", path: `${M}/folders`, right: "mailbox.read" },
+	// Emptying Trash or Spam deletes for good; the route takes no other place (ADR-0009).
+	{ method: "POST", path: `${M}/folders/:folderId/empty`, right: "mailbox.write" },
 
 	// Labels: anyone who reads the mailbox sees them; changing one, or what carries it, is a change.
 	{ method: "GET", path: `${M}/labels`, right: "mailbox.read" },

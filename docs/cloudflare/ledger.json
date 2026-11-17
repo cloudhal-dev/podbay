@@ -282,7 +282,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "R2 deletes are strongly consistent. Once the Promise resolves, all subsequent read operations will no longer see the provided key value pairs globally.",
-			"code": ["workers/index.ts", "workers/routes/mailboxes.ts"]
+			"code": ["workers/index.ts", "workers/routes/mailboxes.ts", "workers/routes/places.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.namespace",

@@ -11,8 +11,10 @@ import { Folders } from "../../shared/folders";
 import * as schema from "../db/schema";
 import { parseSortColumn, type SearchFilterOptions, type SortColumn } from "../lib/list-options";
 import type { Env } from "../types";
+import { type EmptiedBatch, emptyBatch } from "./emptying";
 import * as labels from "./labels";
 import { applyMigrations, mailboxMigrations } from "./migrations";
+import { sendRefusal } from "./sending";
 import type { AttachmentData, EmailData, GetEmailsOptions } from "./shapes";
 import { threadOfReferences, threadOfSubject } from "./threads";
 
@@ -700,39 +702,14 @@ export class MailboxDO extends DurableObject<Env> {
 
 	// ── Rate limiting (raw SQL) ────────────────────────────────────
 
-	/**
-	 * Whether the mailbox has sent too much: 20 emails an hour, 100 a day.
-	 * Returns null if under limit, or an error message string if exceeded.
-	 * Dates are ISO text with a `T`; `datetime()` writes a space there, which sorts before it.
-	 */
+	/** Why the mailbox may not send now, or `null` (./sending). */
 	async checkSendRateLimit(): Promise<string | null> {
-		const hourRow = [
-			...this.ctx.storage.sql.exec(
-				`SELECT COUNT(*) as cnt FROM emails
-			 WHERE folder_id = ?1
-			   AND date >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour')`,
-				Folders.SENT,
-			),
-		][0] as { cnt: number } | undefined;
+		return sendRefusal(this.ctx.storage.sql);
+	}
 
-		if ((hourRow?.cnt ?? 0) >= 20) {
-			return "Rate limit exceeded: max 20 emails per hour per mailbox";
-		}
-
-		const dayRow = [
-			...this.ctx.storage.sql.exec(
-				`SELECT COUNT(*) as cnt FROM emails
-			 WHERE folder_id = ?1
-			   AND date >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')`,
-				Folders.SENT,
-			),
-		][0] as { cnt: number } | undefined;
-
-		if ((dayRow?.cnt ?? 0) >= 100) {
-			return "Rate limit exceeded: max 100 emails per day per mailbox";
-		}
-
-		return null;
+	/** Deletes one batch of what Trash or Spam held at `before` (ADR-0009, ./emptying). */
+	async emptyBatch(place: string, before: string): Promise<EmptiedBatch> {
+		return emptyBatch(this.ctx.storage, place, before);
 	}
 
 	// ── Email creation (Drizzle) ───────────────────────────────────

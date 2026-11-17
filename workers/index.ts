@@ -35,6 +35,7 @@ import { keys } from "./routes/keys";
 import { labels } from "./routes/labels";
 import { mailboxes } from "./routes/mailboxes";
 import { people } from "./routes/people";
+import { places } from "./routes/places";
 import { recovery } from "./routes/recovery";
 import { handleForwardEmail, handleReplyEmail } from "./routes/reply-forward";
 import type { Env } from "./types";
@@ -83,6 +84,7 @@ app.route("/", mailboxes);
 app.route("/", people);
 app.route("/", keys);
 app.route("/", labels);
+app.route("/", places);
 app.route("/", recovery);
 
 // -- Config ---------------------------------------------------------
