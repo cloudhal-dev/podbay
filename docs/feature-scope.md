@@ -42,7 +42,7 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 | Assistant | An agent panel that reads, searches and drafts with the user's rights, and never sends without confirmation | Yes, without per-user rights | A; limits and a usage view in B |
 | MCP | AI tools connect with a key limited to chosen mailboxes, to read or to read and draft; they never send. Consent by OAuth with per-tool grants follows in phase B | Yes, without limits | A |
 | Keyboard and mobile | Shortcuts for every common action; a phone layout | Partly | A |
-| Languages | English and Turkish, with message keys everywhere | English only | A; a wider list in B |
+| Languages | English and Turkish, with message keys everywhere | English and Turkish in the app; the Worker's own words are English | A; a wider list in B |
 | Rules | Sort, forward or reject incoming mail; a forwarding loop guard | None | B |
 | Contacts | An address book and notes on a conversation | None | B |
 | Import and export | IMAP, mailbox archives, `.eml` and `.mbox` | None | B |

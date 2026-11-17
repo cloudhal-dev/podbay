@@ -60,6 +60,7 @@
 | The auth tables equal what Better Auth generates | D3 (part) | `node scripts/auth-ddl.ts --check` (in `pnpm static`) |
 | Envelope routing, file names, feature switches, sender check, list options | S2, S3, S8, D2, D7 | `test/unit/`, `test/workerd/` |
 | Actions pinned by commit, read-only token | S16 | `.github/workflows/checks.yml` (by review until the workflow lint lands) |
+| The app's words are messages, in English and Turkish: every message the code names has a Turkish translation with the same values, the catalog holds nothing the code dropped, and no words stand bare in the markup of a screen; a person chooses the language in the settings or takes the device's, it takes effect at once and is kept in the browser, and dates follow it | D8 | `pnpm static messages`, `test/unit/messages.test.ts`; `pnpm e2e`: `language.spec.ts` |
 
 ## 2. Not enforced yet
 
@@ -70,7 +71,7 @@ These rules are accepted but their checks land with the code they guard. Until t
 | S10 (a recovery address outside Podbay with reset links by mail; sessions listed and ended in the app; changing a password in the app; a rate limit on Podbay's own public routes) | Milestone 2, remaining work |
 | S8, S12 (one send path, constrained outbound requests); keys for the HTTP API and management keys; OAuth 2.1 with a consent screen for MCP clients ([ADR-0004](adr/0004-mcp-keys-first.md)) | Milestone 3 |
 | S18 (audit records and the release gate; the skill and the hash check exist) | Before v0.1 |
-| D2, D3, D8, D9, D10, D13 (schemas at every entry point, migration tests, message keys, design lint, drift check, budgets) | Milestones 1 to 3 |
+| D2, D3, D9, D10, D13 (schemas at every entry point, migration tests, design lint, drift check, budgets) | Milestones 1 to 3 |
 
 ## 3. Known debt and known gaps
 
@@ -99,4 +100,5 @@ Gaps that are open on purpose until their milestone, all behind features that ar
 - **Labels: what is left.** The limit of 50 conversations in one labelling request (ADR-0007, decision 11) bounds nothing today, because the route labels one conversation per request; labelling a selection is one request per conversation. The tree of labels in the rail cannot be folded.
 - **Conversations formed before 2026-11-17 may still be split.** An incoming message now joins the conversation of the message it answers when that message is in the mailbox and has the same subject; before, the first message of a conversation that began with incoming mail was kept apart from its replies. Mail that is already stored was not regrouped.
 - **Before ADR-0007, deleting a custom folder deleted its messages for good.** The mailbox's database enforces foreign keys (tried in the Workers runtime on 2026-11-17), so `ON DELETE CASCADE` did what it says, without Trash. The route is removed and custom folders became labels; no instance in use is known to have called it.
+- **Languages: what is left.** The Turkish catalog (605 messages) was written with the code on 2026-11-17 and has not been read through by a second person. What the Worker says stays English: the reason a request was refused, and everything the assistant and the MCP tools answer. The built-in prompt of the assistant is English. `pnpm static messages` reads markup as text, so words handed to a toast or an error as a plain string are not caught by it; they were found once with a parser on 2026-11-17 and wired by hand. A change of language draws the whole app again, so the keyboard focus goes back to the page.
 - Search builds `LIKE` patterns from user text, and Durable Object SQL caps a pattern at 50 bytes; FTS5 replaces it in milestone 3.

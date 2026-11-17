@@ -118,7 +118,7 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | Behaviour | How it is built |
 |---|---|
 | Settings are one screen with tabs, as a mail client has them; the open tab is in the address (`?tab=`). **General** is the reader's own choices; the other tabs are about the mailbox | `app/routes/settings.tsx`, `app/components/settings/` |
-| A person's choices take effect at once, without a Save button, and are kept **in this browser only**: conversations on a page (10, 25, 50, 100), density, reading pane, conversation view on or off, snippets, actions on a line, what the Reply button of a message does, where to go after a conversation is filed, a "Send and archive" button, notifications of new mail, keyboard shortcuts on or off, light or dark. An unknown stored value falls back to its default | `useDisplay` (`app/hooks/useDisplay.ts`); never something the Worker decides by |
+| A person's choices take effect at once, without a Save button, and are kept **in this browser only**: conversations on a page (10, 25, 50, 100), density, reading pane, conversation view on or off, snippets, actions on a line, what the Reply button of a message does, where to go after a conversation is filed, a "Send and archive" button, notifications of new mail, keyboard shortcuts on or off, light or dark, the language of the app's own words. An unknown stored value falls back to its default | `useDisplay` (`app/hooks/useDisplay.ts`); never something the Worker decides by |
 | With **conversation view off** every message is its own line and is read by itself; the list is asked for without conversations, which the API has always offered | `useEmails`, `EmailPanel.tsx` |
 | **Send and archive**, when asked for, is a second button on an answer: it sends, files the answered conversation in Archive and returns to the list | `handleSend` in `useComposeForm.ts` |
 | **Notifications**, when asked for and allowed by the browser, announce mail that arrives while Podbay is open in a tab: the sender and the subject, nothing of the message, and nothing for what was already there. The app looks at the top of the inbox every half minute; it is not pushed anything | `NewMailNotifier.tsx` |
@@ -132,7 +132,7 @@ The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then 
 
 ### Not built yet
 
-Snooze, a reading pane below the list, importance markers, category tabs, scheduled send, undo of a send, drag and drop, and a context menu on a line. Add one with its line above and its test.
+Snooze, a reading pane below the list, importance markers, category tabs, scheduled send and undo of a send. Add one with its line above and its test.
 
 A new behaviour of this kind gets a line here and a test there, in the same change.
 
@@ -142,7 +142,26 @@ A new behaviour of this kind gets a line here and a test there, in the same chan
 - One sentence for a failed sign-in or a bad code, the same for every reason, so the answer does not say which part was wrong.
 - Say what a button will do before it does something that cannot be undone.
 - A term is used one way everywhere: owner, administrator, member (of the instance); owner, sender, reader (of a mailbox); key; recovery link; authenticator app; passkey.
-- English only for now. The experience to match is a first-class web mail client: fast, quiet, predictable. No other product is named in the app or the repository.
+- The experience to match is a first-class web mail client: fast, quiet, predictable. No other product is named in the app or the repository.
+
+### Words are messages (D8, `pnpm static messages`)
+
+The app speaks English and Turkish. Every word a person reads or hears goes through `app/i18n/`:
+
+| To show | Write | Why |
+|---|---|---|
+| Words | `t("Archive")`, `t("Remove {name}", { name })` | A message is named by its English text; a value goes in by name |
+| A count | `plural(count, "{count} attachment", "{count} attachments")` | Each form is a message; a language with one form translates both the same |
+| A sentence with an element in it | `rich("You were invited as {email}.", { email: <strong>…</strong> })` from `~/i18n/rich` | The sentence stays whole, so a language can put the element where its grammar wants it |
+| Words kept in a constant | `m("Reply")` in the constant, `t(value)` where it is shown | `t` reads the language when it is called; a module is loaded once |
+| A word that is two things | `m("place\|Archive")` and `t("Archive")` | The word before the bar says what the message is about; English is what follows it |
+| A date | `dateLanguage()` as the locale; `formatListDate(date, dateLanguage())` | English leaves the date order to the device; another language is named |
+
+- **Never join pieces of a sentence in code** (`{t("Signed in as")} {email}`): word order differs. Put the value in the message.
+- A new message gets its Turkish in `app/i18n/tr.ts` in the same change; the check fails without it, and fails for a translation the code no longer names.
+- Names and code are not messages: Podbay, MCP, a header name, a search operator inside `<code>`.
+- Mail is never translated, and neither is a name a person gave (a label, a mailbox). What the Worker answers is English for now.
+- The language is a choice of the person (`language` in `useDisplay`: this device's, English or Türkçe). Changing it draws the app again (`RootLayout` in `app/router.tsx`).
 
 ## 5. Patterns to reuse
 
@@ -174,3 +193,4 @@ A new behaviour of this kind gets a line here and a test there, in the same chan
 - [ ] `pnpm e2e` passes; a new page is in the policy test; a new journey has a browser test when it crosses a boundary.
 - [ ] You tried it in a browser on the built app, not only in development mode, and with the keyboard alone.
 - [ ] Empty, loading and error states exist and say something true.
+- [ ] Every new word is a message with its Turkish (`pnpm static messages`), and you read the screen once in Turkish: nothing cut off, nothing left in English.

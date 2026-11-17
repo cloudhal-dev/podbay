@@ -13,7 +13,7 @@ Self-hosted mail for a person, a family or a small organisation, running entirel
 
 | # | Milestone | State | What is left |
 |---|---|---|---|
-| 1 | Repository bootstrap | Done, except the checks listed | The developer rules without a check yet (D2, D3, D8, D9, D10, D13 in [status](status.md), section 2) |
+| 1 | Repository bootstrap | Done, except the checks listed | The developer rules without a check yet (D2, D3, D9, D10, D13 in [status](status.md), section 2) |
 | 2 | Accounts and roles | Built: sign-in with password, authenticator app and passkeys; invitations; recovery; fresh proof; memberships on every route, tool and key; member management; the audit log | A security review with a record; changing a password and ending sessions in the app; a rate limit on Podbay's own public routes; reading the audit log in the app |
 | 3 | Standalone version 0.1 | Started: the content policies, attachments as downloads, browser tests | Raw messages in R2 and queues; search; exports; the health endpoint for an installer; a signed release; every phase A row of the [feature matrix](feature-scope.md#3-feature-matrix); a full security audit record |
 | 4 | Installer support | Not started | The installer contract of the [architecture](architecture.md#5-the-installer-contract) |
@@ -44,7 +44,7 @@ The bar is the mail people know from Gmail and Google Workspace ([feature scope]
 | 6 | **Sending**: undo for a few seconds, send later | A queue for outgoing mail: milestone 3 |
 | 7 | **The original message**: download it, show it whole | Raw messages in R2: milestone 3 |
 | 8 | **Live**: built on 2026-11-17 without a connection: the unread count in the tab, and a notification of the device for mail that arrives while the app is open, found by looking every half minute. Still missing: new mail the moment it arrives, and notifications while the app is closed | A connection from the mailbox to the page, and push: an ADR |
-| 9 | **Languages**: Turkish beside English, with message keys everywhere | Its own round |
+| 9 | ~~Languages~~ **built 2026-11-17**: Turkish beside English on every screen, chosen in the settings or taken from the device; every word is a message and a check holds the catalog to the code (rule D8). Left: the Worker's own words (refusals, the assistant) stay English, and the Turkish has not been read by a second person | Done in the app |
 | 10 | Importance markers, categories as tabs, translation, reactions, tasks and calendar | Not planned; decided again after phase A |
 
 Known defects that stand in the way are in [status](status.md), section 3: conversations formed before the fix of 2026-11-17 are not regrouped.
