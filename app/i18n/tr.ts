@@ -59,6 +59,7 @@ export const tr: Readonly<Record<string, string>> = {
 	All: "Tümü",
 	"All mail": "Tüm postalar",
 	"All mailboxes": "Tüm posta kutuları",
+	"All spam is deleted": "Tüm spam silindi",
 	"Already set up": "Kurulum zaten yapılmış",
 	"An AI client can read the mailboxes you choose, organise them and prepare drafts. It can never send: a person opens the draft here and sends it. Each client gets its own key, and a key stops working the moment you revoke it or lose access to a mailbox.":
 		"Bir yapay zekâ istemcisi seçtiğiniz posta kutularını okuyabilir, düzenleyebilir ve taslak hazırlayabilir. Hiçbir zaman gönderemez: taslağı bir kişi burada açar ve gönderir. Her istemcinin kendi anahtarı olur; anahtarı iptal ettiğiniz ya da posta kutusuna erişiminizi yitirdiğiniz anda anahtar çalışmaz.",
@@ -170,6 +171,9 @@ export const tr: Readonly<Record<string, string>> = {
 	"Date:": "Tarih:",
 	Default: "Varsayılan",
 	Delete: "Sil",
+	"Delete all spam": "Tüm spam'i sil",
+	"Delete all spam now": "Tüm spam'i şimdi sil",
+	"Delete all spam?": "Tüm spam silinsin mi?",
 	"Delete forever": "Kalıcı olarak sil",
 	"Delete label": "Etiketi sil",
 	"Delete mailbox {name}": "{name} posta kutusunu sil",
@@ -181,6 +185,8 @@ export const tr: Readonly<Record<string, string>> = {
 	"Delete {count} conversations forever?": "{count} yazışma kalıcı olarak silinsin mi?",
 	"Deleted emails will appear here. You can restore them or permanently delete them.":
 		"Silinen e-postalar burada görünür. Geri yükleyebilir ya da kalıcı olarak silebilirsiniz.",
+	"Deleting: {count} message so far": "Siliniyor: şimdiye kadar {count} ileti",
+	"Deleting: {count} messages so far": "Siliniyor: şimdiye kadar {count} ileti",
 	Density: "Yoğunluk",
 	Discard: "Sil",
 	"Discard this draft?": "Bu taslak silinsin mi?",
@@ -209,6 +215,9 @@ export const tr: Readonly<Record<string, string>> = {
 	"Emails you send will show up here.": "Gönderdiğiniz e-postalar burada görünür.",
 	"Emails you're still working on will be saved here.":
 		"Üzerinde çalıştığınız e-postalar buraya kaydedilir.",
+	"Empty Trash": "Çöp Kutusu'nu boşalt",
+	"Empty Trash now": "Çöp Kutusu'nu şimdi boşalt",
+	"Empty Trash?": "Çöp Kutusu boşaltılsın mı?",
 	End: "Sonlandır",
 	"End all other sessions": "Diğer tüm oturumları sonlandır",
 	"End the session of {device}": "{device} oturumunu sonlandır",
@@ -368,6 +377,8 @@ export const tr: Readonly<Record<string, string>> = {
 	None: "Hiçbiri",
 	Normal: "Normal",
 	"Not a member": "Üye değilsiniz",
+	"Not everything could be deleted. What was deleted stays deleted.":
+		"Her şey silinemedi. Silinenler silinmiş olarak kalır.",
 	"Not forwarded: {files}.": "İletilmedi: {files}.",
 	"Not spam": "Spam değil",
 	"Nothing has changed yet.": "Henüz bir değişiklik yok.",
@@ -730,6 +741,8 @@ export const tr: Readonly<Record<string, string>> = {
 	"{by} removed {person}": "{by}, {person} kişisini çıkardı",
 	"{count} attachment": "{count} ek",
 	"{count} attachments": "{count} ek",
+	"{count} conversation": "{count} yazışma",
+	"{count} conversations": "{count} yazışma",
 	"{count} conversations archived": "{count} yazışma arşivlendi",
 	"{count} conversations deleted forever": "{count} yazışma kalıcı olarak silindi",
 	"{count} conversations marked as spam": "{count} yazışma spam olarak işaretlendi",
@@ -738,10 +751,18 @@ export const tr: Readonly<Record<string, string>> = {
 	"{count} conversations moved to {name}": "{count} yazışma şuraya taşındı: {name}",
 	"{count} member": "{count} üye",
 	"{count} members": "{count} üye",
+	"{count} message": "{count} ileti",
 	"{count} message in this conversation": "Bu yazışmada {count} ileti",
+	"{count} messages": "{count} ileti",
 	"{count} messages in this conversation": "Bu yazışmada {count} ileti",
 	"{count} selected": "{count} seçili",
 	"{first}–{last} of {total}": "{first}–{last} / {total}",
+	"{holds} in Spam. Nothing here is deleted by itself.":
+		"Spam'de {holds}. Buradaki hiçbir şey kendiliğinden silinmez.",
+	"{holds} in Trash. Nothing here is deleted by itself.":
+		"Çöp Kutusu'nda {holds}. Buradaki hiçbir şey kendiliğinden silinmez.",
+	"{holds} will be deleted for good, with every file in them. This cannot be undone.":
+		"{holds}, içlerindeki tüm dosyalarla birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz.",
 	"{mailbox} and every message in it will be deleted. This cannot be undone.":
 		"{mailbox} ve içindeki tüm iletiler silinir. Bu işlem geri alınamaz.",
 	"{name} (can do harm when opened)": "{name} (açıldığında zarar verebilir)",

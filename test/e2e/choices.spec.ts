@@ -265,3 +265,43 @@ test("the sender's name opens what can be done with the sender, and the settings
 	await expect(page.getByRole("heading", { name: "Where you are signed in" })).toBeVisible();
 	expect(app.watch.errors).toEqual([]);
 });
+
+test("Trash is emptied in one step, after a question that says how much goes", async ({
+	page,
+	app,
+}) => {
+	const base = `/mailbox/${encodeURIComponent(app.account.mailbox)}`;
+	for (const name of ["one", "two"]) {
+		await app.deliver(
+			mime({ subject: `Choices: thrown away ${name}`, to: app.account.mailbox, text: name }),
+		);
+	}
+	await page.goto(`${base}/emails/inbox`);
+	// The inbox offers no such thing.
+	await expect(page.getByRole("button", { name: "Empty Trash now" })).toHaveCount(0);
+	for (const name of ["one", "two"]) {
+		await row(page, `Choices: thrown away ${name}`).click({ button: "right" });
+		await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+		await expect(row(page, `Choices: thrown away ${name}`)).toHaveCount(0);
+	}
+
+	await page.goto(`${base}/emails/trash`);
+	await expect(row(page, "Choices: thrown away one")).toBeVisible();
+	await expect(page.getByText(/\d+ conversations? in Trash\./)).toBeVisible();
+	await page.getByRole("button", { name: "Empty Trash now" }).click();
+
+	// The app asks in its own dialog, and a no leaves everything.
+	const dialog = page.getByRole("alertdialog", { name: "Empty Trash?" });
+	await expect(dialog.getByText(/\d+ conversations? will be deleted for good/)).toBeVisible();
+	await dialog.getByRole("button", { name: "Cancel" }).click();
+	await expect(row(page, "Choices: thrown away one")).toBeVisible();
+
+	await page.getByRole("button", { name: "Empty Trash now" }).click();
+	await dialog.getByRole("button", { name: "Empty Trash", exact: true }).click();
+	// A note says it is done, and the place shows that nothing is left.
+	await expect(page.getByRole("heading", { name: "Trash is empty", level: 3 })).toBeVisible();
+	await expect(row(page, "Choices: thrown away one")).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "Empty Trash now" })).toHaveCount(0);
+	expect(app.watch.dialogs).toEqual([]);
+	expect(app.watch.errors).toEqual([]);
+});

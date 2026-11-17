@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Folders } from "shared/folders";
+import EmptyPlace from "~/components/EmptyPlace";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
 import { useDisplay } from "~/hooks/useDisplay";
@@ -137,6 +138,9 @@ export default function EmailListRoute() {
 
 	return (
 		<MailView emails={emailData?.emails ?? []}>
+			{mailboxId && (
+				<EmptyPlace mailboxId={mailboxId} place={folder} count={emailData?.totalCount ?? 0} />
+			)}
 			<MessageList
 				title={folderName}
 				emails={emailData?.emails ?? []}

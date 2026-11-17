@@ -172,6 +172,12 @@ const api = {
 		put<Email>(`/api/v1/mailboxes/${mailboxId}/emails/${id}`, data),
 	deleteEmail: (mailboxId: string, id: string) =>
 		del<void>(`/api/v1/mailboxes/${mailboxId}/emails/${id}`),
+	/** Deletes one batch of what Trash or Spam held at `before`; call again while `more`. */
+	emptyPlace: (mailboxId: string, place: string, before?: string) =>
+		post<{ deleted: number; more: boolean; before: string }>(
+			`/api/v1/mailboxes/${mailboxId}/folders/${place}/empty`,
+			before === undefined ? {} : { before },
+		),
 	moveEmail: (mailboxId: string, id: string, folderId: string) =>
 		post<void>(`/api/v1/mailboxes/${mailboxId}/emails/${id}/move`, { folderId }),
 	getThread: (mailboxId: string, threadId: string, opts?: { signal?: AbortSignal }) =>
