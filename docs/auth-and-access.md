@@ -79,7 +79,7 @@ Rules that follow:
 |---|---|---|
 | API key | Scripts and integrations | Stored hashed, shown once. Scoped to chosen mailboxes and actions (read, draft, send, manage). Optional expiry. Never more than its creator may do, and it loses rights when its creator does |
 | Management key | Automating accounts, domains and mailboxes | Cannot read or send mail at all |
-| MCP client | AI tools | OAuth 2.1 with PKCE and a consent screen that lists the mailboxes and tools being granted. A send or forward creates a request that a person confirms in Podbay (rule S9) |
+| MCP client | AI tools | Built: a key the person makes in Podbay for chosen mailboxes, to read or to read, organise and draft. Stored hashed, shown once, optional end date, revocable, and checked against the person's membership on every call. No MCP tool sends: a client leaves a draft and a person sends it in Podbay (rule S9). Planned: OAuth 2.1 with PKCE and a consent screen that lists the mailboxes and tools being granted ([ADR-0004](adr/0004-mcp-keys-first.md)) |
 | App password (with JMAP, phase B) | Mail apps | One per app, revocable, limited to mail |
 | The built-in agent | The assistant panel | Acts as the signed-in person in the open mailbox. Holds no credential of its own |
 | Setup and deploy tokens | The installer or the person who deployed | Not user credentials. A short, documented set of calls. Never returns message content |
@@ -92,8 +92,8 @@ The audit log records sign-ins and failures, credential changes, invitations, me
 
 | Phase | Included |
 |---|---|
-| A (v0.1) | Better Auth on D1; password, passkeys, authenticator app; invitations; the guarded first owner; sessions and step-up; instance roles and mailbox memberships; the audit log; OAuth for MCP clients; optional Cloudflare Access in front |
-| B | API keys and management keys; app passwords with JMAP; single sign-on with an external identity provider; trusting a Cloudflare Access identity as a sign-in method |
+| A (v0.1) | Better Auth on D1; password, passkeys, authenticator app; invitations; the guarded first owner; sessions and step-up; instance roles and mailbox memberships; the audit log; keys for MCP clients; optional Cloudflare Access in front |
+| B | OAuth 2.1 for MCP clients; API keys for the HTTP API and management keys; app passwords with JMAP; single sign-on with an external identity provider; trusting a Cloudflare Access identity as a sign-in method |
 
 ## 7. Decisions
 

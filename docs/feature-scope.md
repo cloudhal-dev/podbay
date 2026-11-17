@@ -40,7 +40,7 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 | Sign-in | Password, passkeys, authenticator app, recovery, step-up ([sign-in and access](auth-and-access.md)) | Cloudflare Access only | A |
 | Administration | Accounts, invitations, domains, mailboxes, memberships, audit log, exports | None | A |
 | Assistant | An agent panel that reads, searches and drafts with the user's rights, and never sends without confirmation | Yes, without per-user rights | A; limits and a usage view in B |
-| MCP | AI tools connect with consent limited to chosen mailboxes and tools | Yes, without limits | A |
+| MCP | AI tools connect with a key limited to chosen mailboxes, to read or to read and draft; they never send. Consent by OAuth with per-tool grants follows in phase B | Yes, without limits | A |
 | Keyboard and mobile | Shortcuts for every common action; a phone layout | Partly | A |
 | Languages | English and Turkish, with message keys everywhere | English only | A; a wider list in B |
 | Rules | Sort, forward or reject incoming mail; a forwarding loop guard | None | B |
