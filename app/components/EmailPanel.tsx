@@ -116,10 +116,13 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	// whatever is still unread, also when its other messages arrive after the first one.
 	const currentEmailId = email?.id;
 	const choseWhatIsOpen = useRef(false);
+	/** A long conversation keeps its middle folded into one line until the reader asks for it. */
+	const [showsMiddle, setShowsMiddle] = useState(false);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: a different conversation starts afresh
 	useEffect(() => {
 		choseWhatIsOpen.current = false;
 		setExpandedMessages(new Set());
+		setShowsMiddle(false);
 	}, [currentEmailId]);
 	const openByDefault = allMessages
 		.filter((msg, index) => index === allMessages.length - 1 || !msg.read)
@@ -338,6 +341,15 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		onShowHeaders: () => setSourceViewEmail(msg),
 	});
 	const allExpanded = allMessages.every((msg) => expandedMessages.has(msg.id));
+	// With five messages or more, the ones between the first and the last two that are folded
+	// anyway are put away behind one line.
+	const middle =
+		showsMiddle || allMessages.length < 5
+			? []
+			: allMessages
+					.slice(1, -2)
+					.filter((msg) => !expandedMessages.has(msg.id) && !draftMessageIds.has(msg.id));
+	const inMiddle = new Set(middle.map((msg) => msg.id));
 
 	return (
 		<div className="flex h-full flex-col print:block print:h-auto">
@@ -369,12 +381,16 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				onLabel={(labelId, give) => actions.label([email], labelId, give)}
 				onViewSource={() => setSourceViewEmail(email)}
 				onPrintAll={() => {
+					setShowsMiddle(true);
 					setExpanded(new Set(allMessages.map((msg) => msg.id)));
 					setPrinting("all");
 				}}
 				onToggleAll={
 					hasThread
-						? () => setExpanded(allExpanded ? new Set() : new Set(allMessages.map((msg) => msg.id)))
+						? () => {
+								setShowsMiddle(true);
+								setExpanded(allExpanded ? new Set() : new Set(allMessages.map((msg) => msg.id)));
+							}
 						: undefined
 				}
 				allExpanded={allExpanded}
@@ -392,6 +408,22 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				{hasThread ? (
 					allMessages.map((msg, idx) => {
 						const isDraft = draftMessageIds.has(msg.id);
+						if (inMiddle.has(msg.id)) {
+							// One line stands for all of them, where the first of them would be.
+							return msg.id === middle[0]?.id ? (
+								<button
+									key="middle"
+									type="button"
+									onClick={() => setShowsMiddle(true)}
+									className="flex w-full cursor-pointer items-center gap-3 border-0 border-b border-kumo-line bg-kumo-recessed/60 px-4 py-2 text-left text-xs text-kumo-subtle hover:bg-kumo-tint md:px-6 print:hidden"
+								>
+									<span className="flex h-6 w-10 items-center justify-center rounded-full border border-kumo-line bg-kumo-base font-semibold text-kumo-default">
+										{middle.length}
+									</span>
+									Show {middle.length} older messages
+								</button>
+							) : null;
+						}
 						return (
 							<ThreadMessage
 								key={msg.id}

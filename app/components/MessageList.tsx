@@ -10,7 +10,7 @@ import {
 	StarIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { formatListDate } from "shared/dates";
 import { Folders, getFolderDisplayName } from "shared/folders";
@@ -20,7 +20,9 @@ import { hasUnread, useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { getSnippetText } from "~/lib/utils";
+import api from "~/services/api";
 import type { Email } from "~/types";
+import ConversationMenu, { type MenuPoint } from "./ConversationMenu";
 import IconButton from "./IconButton";
 import { LabelChips } from "./LabelChip";
 import MessageListToolbar from "./MessageListToolbar";
@@ -125,6 +127,10 @@ export default function MessageList({
 	};
 	const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 	const [cursor, setCursor] = useState(0);
+	/** The line whose menu is open, and where it was opened. */
+	const [menu, setMenu] = useState<{ email: Email; at: MenuPoint } | null>(null);
+	const navigate = useNavigate();
+	const startCompose = useUIStore((state) => state.startCompose);
 	const mark = highlight ?? ((text: string) => text);
 
 	const ids = emails.map((email) => email.id).join(",");
@@ -154,6 +160,13 @@ export default function MessageList({
 		document.getElementById(`conversation-${email?.id}`)?.scrollIntoView({ block: "nearest" });
 		// Beside the list, moving through it reads it: the conversation under the cursor opens.
 		if (split && email && next !== cursor) open(email);
+	}
+
+	/** Answering from the list needs the whole message, which a line does not carry. */
+	async function answer(email: Email, mode: "reply" | "reply-all" | "forward") {
+		if (!mailboxId) return;
+		const whole = (await api.getEmail(mailboxId, email.id)) as Email;
+		startCompose({ mode, originalEmail: whole });
 	}
 
 	const openCurrent = () => current && open(current);
@@ -214,8 +227,13 @@ export default function MessageList({
 									? "bg-kumo-base"
 									: "bg-kumo-recessed/60";
 						return (
+							// biome-ignore lint/a11y/noStaticElementInteractions: the menu of the line; the keyboard reaches it through the menu key on the line's button
 							<div
 								key={email.id}
+								onContextMenu={(event) => {
+									event.preventDefault();
+									setMenu({ email, at: { x: event.clientX, y: event.clientY } });
+								}}
 								className={`group flex items-center gap-2 border-b border-l-2 border-b-kumo-line px-2.5 text-sm hover:relative hover:z-[1] hover:shadow-[0_1px_3px_rgb(0_0_0/0.18)] ${LINE[density]} ${
 									index === cursor ? "border-l-kumo-brand" : "border-l-transparent"
 								} ${tone}`}
@@ -326,6 +344,32 @@ export default function MessageList({
 					})
 				)}
 			</div>
+
+			{menu && (
+				<ConversationMenu
+					at={menu.at}
+					email={menu.email}
+					targets={selected.has(menu.email.id) && chosen.length > 1 ? chosen : [menu.email]}
+					unread={hasUnread(menu.email)}
+					folder={folder}
+					actions={actions}
+					onClose={() => setMenu(null)}
+					onOpen={() => open(menu.email)}
+					onAnswer={(mode) => void answer(menu.email, mode)}
+					onFindFromSender={() => {
+						if (!mailboxId) return;
+						void navigate({
+							to: "/mailbox/$mailboxId/search",
+							params: { mailboxId },
+							search: { q: `from:${menu.email.sender}` },
+						});
+					}}
+					href={`${window.location.pathname}?${new URLSearchParams({
+						...Object.fromEntries(new URLSearchParams(window.location.search)),
+						open: menu.email.id,
+					})}`}
+				/>
+			)}
 		</>
 	);
 }

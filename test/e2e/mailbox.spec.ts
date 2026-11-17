@@ -644,3 +644,54 @@ test("settings are in tabs; a person's choices take effect at once and stay, a m
 		page.getByRole("navigation", { name: "Folders" }).getByRole("link", { name: "From settings" }),
 	).toBeVisible();
 });
+
+test("a line has a menu on a right click, and a long conversation keeps its middle folded", async ({
+	page,
+	app,
+}) => {
+	const root = `behaviour-long-${Date.now()}@sender.test`;
+	for (let n = 1; n <= 6; n++) {
+		await app.deliver(
+			mime({
+				subject: "Re: Behaviour: long",
+				to: app.account.mailbox,
+				html: `<p>part ${n}</p>`,
+				inReplyTo: root,
+			}),
+		);
+	}
+	await app.deliver(
+		mime({ subject: "Behaviour: right click", to: app.account.mailbox, text: "x" }),
+	);
+	const inbox = `/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`;
+	await page.goto(inbox);
+
+	// The menu of a line does what the toolbar does, without selecting or opening anything.
+	await row(page, "Behaviour: right click").click({ button: "right" });
+	const menu = page.getByRole("menu");
+	await expect(menu.getByRole("menuitem", { name: "Open", exact: true })).toBeVisible();
+	await menu.getByRole("menuitem", { name: "Mark as read" }).click();
+	await row(page, "Behaviour: right click").click({ button: "right" });
+	await expect(menu.getByRole("menuitem", { name: "Mark as unread" })).toBeVisible();
+	await menu.getByRole("menuitem", { name: "Forward" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	await expect(compose.getByLabel("Subject")).toHaveValue("Fwd: Behaviour: right click");
+	await compose.getByRole("button", { name: "Discard" }).click();
+	await row(page, "Behaviour: right click").click({ button: "right" });
+	await menu.getByRole("menuitem", { name: "Archive" }).click();
+	await expect(row(page, "Behaviour: right click")).toHaveCount(0);
+	await expect(page.getByText("Conversation archived")).toBeVisible();
+
+	// Six messages: the first, one line for the middle, and the last two.
+	await row(page, "Re: Behaviour: long").first().click();
+	const frames = page.locator('iframe[title="Email content"]');
+	await expect(frames.last().contentFrame().getByText("part 6")).toBeVisible();
+	// Everything is read by now; a reload shows the conversation as it opens from then on.
+	await page.reload();
+	await expect(frames.last().contentFrame().getByText("part 6")).toBeVisible();
+	const fold = page.getByRole("button", { name: /Show \d older messages/ });
+	await expect(fold).toHaveText(/Show 3 older messages/);
+	await fold.click();
+	await expect(fold).toHaveCount(0);
+	await expect(page.getByRole("button", { name: /part 3/ })).toBeVisible();
+});
