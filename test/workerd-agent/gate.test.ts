@@ -3,7 +3,8 @@
  *
  * - the assistant's connection needs a session and the right to change mail in that mailbox;
  *   a reader, a non-member and an administrator without a membership do not get it;
- * - MCP is reachable by the instance owner only, until its tools are limited per mailbox.
+ * - MCP does not take a session at all: without a key every role is refused (the keys
+ *   themselves are covered in mcp.test.ts).
  *
  * No test here delivers mail or opens a chat, so no model is ever called.
  */
@@ -87,17 +88,14 @@ describe("the assistant's connection", () => {
 });
 
 describe("MCP", () => {
-	it("needs a session", async () => {
-		expect((await gate("/mcp")).status).toBe(401);
+	it("needs a key", async () => {
+		expect(await gate("/mcp")).toEqual({ status: 401, error: "Unauthorized" });
 	});
 
-	it.each(["admin", "sender", "reader", "outsider"])("is refused to %s", async (who) => {
-		expect(await gate("/mcp", who)).toEqual({ status: 403, error: "Forbidden" });
-		expect((await gate("/mcp/anything", who)).status).toBe(403);
-	});
-
-	it("lets the instance owner past the gate", async () => {
-		const result = await gate("/mcp", "owner");
-		expect([401, 403]).not.toContain(result.status);
-	});
+	it.each(["owner", "admin", "sender", "reader", "outsider"])(
+		"does not take the session of %s instead of a key",
+		async (who) => {
+			expect(await gate("/mcp", who)).toEqual({ status: 401, error: "Unauthorized" });
+		},
+	);
 });

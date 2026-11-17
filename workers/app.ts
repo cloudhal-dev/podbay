@@ -4,20 +4,20 @@
 // Modified by the Podbay contributors.
 
 import { routeAgentRequest } from "agents";
-import { Hono, type MiddlewareHandler } from "hono";
+import { Hono } from "hono";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { errorFields, log } from "../shared/log";
 import { API_CACHE_CONTROL, SECURITY_HEADERS } from "../shared/security-headers";
-import { mailboxDecision, sessionActor } from "./auth/middleware";
+import { callerForToken, touchKey } from "./auth/keys";
+import { mailboxDecision } from "./auth/middleware";
 import { app as apiApp, receiveEmail } from "./index";
 import { features } from "./lib/features";
 import { secret } from "./lib/secrets";
-import { EmailMCP } from "./mcp";
+import { handleMcp, MCP_ROUTE } from "./mcp/server";
 import type { Env } from "./types";
 
 export { EmailAgent } from "./agent";
 export { MailboxDO } from "./durableObject";
-export { EmailMCP } from "./mcp";
 
 function getAccessUrls(teamDomain: string) {
 	const certsPath = "/cdn-cgi/access/certs";
@@ -38,10 +38,22 @@ app.use("*", async (c, next) => {
 	await next();
 	// A WebSocket upgrade has no headers to set.
 	if (c.res.status === 101) return;
-	for (const [name, value] of Object.entries(SECURITY_HEADERS)) c.res.headers.set(name, value);
-	if (new URL(c.req.url).pathname.startsWith("/api/")) {
-		c.res.headers.set("Cache-Control", API_CACHE_CONTROL);
-	}
+	// A response made elsewhere (the MCP handler, the agent runtime) can have fixed headers; it is
+	// rebuilt around the same body so the headers can be set.
+	const headers = new Headers(c.res.headers);
+	for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
+	const path = new URL(c.req.url).pathname;
+	if (path.startsWith("/api/") || path === MCP_ROUTE)
+		headers.set("Cache-Control", API_CACHE_CONTROL);
+	const rebuilt = new Response(c.res.body, {
+		status: c.res.status,
+		statusText: c.res.statusText,
+		headers,
+	});
+	// Cleared first: assigning over an existing response keeps that response's headers, and a
+	// `Cache-Control` from behind this middleware would win over the one set here.
+	c.res = undefined;
+	c.res = rebuilt;
 });
 
 // Cloudflare Access is an optional outer layer. Podbay's own sign-in protects every route; when
@@ -76,23 +88,19 @@ app.use("*", async (c, next) => {
 	return next();
 });
 
-// MCP server endpoint. Off unless MCP_ENABLED is "true". Its tools are not yet limited to the
-// caller's mailboxes, so until that lands only the instance owner may reach it at all.
-const mcpHandler = EmailMCP.serve("/mcp", { binding: "EMAIL_MCP" });
-const mcpGate: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
+// The MCP endpoint. Off unless MCP_ENABLED is "true". A request is authenticated by its own key
+// (`Authorization: Bearer pbk_…`), never by a browser session, and every tool call checks the
+// mailbox against that key and its owner's membership (workers/mcp/server.ts).
+app.all(MCP_ROUTE, async (c) => {
 	if (!features(c.env).mcp) return c.json({ error: "Not found" }, 404);
-	const actor = await sessionActor(c.env, c.req.raw).catch(() => null);
-	if (actor === null) return c.json({ error: "Unauthorized" }, 401);
-	if (actor.instanceRole !== "owner") return c.json({ error: "Forbidden" }, 403);
-	return next();
-};
-app.use("/mcp", mcpGate);
-app.use("/mcp/*", mcpGate);
-app.all("/mcp", async (c) => {
-	return mcpHandler.fetch(c.req.raw, c.env, c.executionCtx as ExecutionContext);
-});
-app.all("/mcp/*", async (c) => {
-	return mcpHandler.fetch(c.req.raw, c.env, c.executionCtx as ExecutionContext);
+	const header = c.req.header("authorization") ?? "";
+	const token = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
+	const caller = token === "" ? null : await callerForToken(c.env.DB, token);
+	if (caller === null) {
+		return c.json({ error: "Unauthorized" }, 401, { "WWW-Authenticate": 'Bearer realm="podbay"' });
+	}
+	c.executionCtx.waitUntil(touchKey(c.env.DB, caller.keyId));
+	return handleMcp(c.req.raw, c.env, c.executionCtx as ExecutionContext, caller);
 });
 
 // Mount the API routes

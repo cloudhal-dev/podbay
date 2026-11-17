@@ -25,7 +25,8 @@ import {
 	isSavedDraft,
 	withoutSend,
 } from "../../workers/agent/tools.ts";
-import { toolSendEmail, toolSendReply } from "../../workers/lib/tools.ts";
+import { sendEmail } from "../../workers/email-sender.ts";
+import * as sharedTools from "../../workers/lib/tools.ts";
 import { asks, MAILBOX, STRANGER, says, world } from "../helpers/fake-ai.ts";
 
 const SEND_REPLY = {
@@ -296,42 +297,42 @@ describe("the environment the assistant's tools run with", () => {
 		expect(env.EMAIL).toBe(send);
 	});
 
-	it("stops even a sending function, should one ever be wired into a tool", async () => {
-		const { env, mailbox, send, ai } = world();
-		ai.script("<p>Prices</p>", "<p>Hi</p>");
+	it("stops the send helper itself, should a tool ever be wired to it", async () => {
+		const { env, mailbox, send } = world();
 		const guarded = withoutSend(env);
 
-		const email = await toolSendEmail(guarded, MAILBOX, {
-			to: "everyone@elsewhere.test",
-			subject: "Price list",
-			bodyHtml: "<p>Our full price list is attached for you.</p>",
-		});
-		const reply = await toolSendReply(guarded, MAILBOX, {
-			originalEmailId: "mail-1",
-			to: STRANGER,
-			subject: "Re: Invoice",
-			bodyHtml: "<p>Thank you, we received the invoice.</p>",
-		});
+		await expect(
+			sendEmail(guarded.EMAIL, {
+				from: MAILBOX,
+				to: "everyone@elsewhere.test",
+				subject: "Price list",
+				html: "<p>Our full price list is attached for you.</p>",
+			}),
+		).rejects.toBeInstanceOf(AgentSendRefused);
 
-		expect(email).toHaveProperty("error");
-		expect(reply).toHaveProperty("error");
 		expect(send.calls).toEqual([]);
 		expect(mailbox.in(Folders.SENT)).toEqual([]);
 	});
 
-	it("control: the same function does send with the caller's own environment", async () => {
-		// This is the MCP path, which this round does not change. It shows that the fake send
-		// binding records a send, so the empty logs above mean something.
-		const { env, send, ai } = world();
-		ai.script("<p>Prices</p>");
+	it("control: the same helper does send with the caller's own environment", async () => {
+		// This shows that the fake send binding records a send, so the empty logs above mean
+		// something.
+		const { env, send } = world();
 
-		const result = await toolSendEmail(env, MAILBOX, {
+		await sendEmail(env.EMAIL, {
+			from: MAILBOX,
 			to: "everyone@elsewhere.test",
 			subject: "Price list",
-			bodyHtml: "<p>Our full price list is attached for you.</p>",
+			html: "<p>Our full price list is attached for you.</p>",
 		});
 
-		expect(result).toMatchObject({ status: "sent" });
 		expect(send.calls).toHaveLength(1);
+	});
+});
+
+describe("the tools shared by the assistant and MCP", () => {
+	it("export no function that sends", () => {
+		const sending = Object.keys(sharedTools).filter((name) => /send|forward/i.test(name));
+		expect(sending).toEqual([]);
 	});
 });

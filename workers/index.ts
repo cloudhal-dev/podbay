@@ -25,6 +25,7 @@ import { parseSortColumn, parseSortDirection, type SearchFilterOptions } from ".
 import { mailboxQueries } from "./lib/mailbox-rpc";
 import { SendEmailRequestSchema } from "./lib/schemas";
 import { account } from "./routes/account";
+import { keys } from "./routes/keys";
 import { mailboxes } from "./routes/mailboxes";
 import { people } from "./routes/people";
 import { handleForwardEmail, handleReplyEmail } from "./routes/reply-forward";
@@ -84,6 +85,7 @@ app.use("/api/*", guard);
 app.route("/", account);
 app.route("/", mailboxes);
 app.route("/", people);
+app.route("/", keys);
 
 // -- Config ---------------------------------------------------------
 

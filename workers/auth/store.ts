@@ -135,14 +135,6 @@ export async function mailboxSettings(
 	return row ? parseSettings(row.settings) : null;
 }
 
-/** Every mailbox address. Only for a caller that is allowed to see them all. */
-export async function allMailboxAddresses(db: D1Database): Promise<string[]> {
-	const result = await db
-		.prepare(`select "address" from "mailboxes" order by "address" limit 1000`)
-		.all<{ address: string }>();
-	return result.results.map((row) => row.address);
-}
-
 /** The mailbox at `address` together with the user's membership, or null when there is none. */
 export async function mailboxAccess(
 	db: D1Database,

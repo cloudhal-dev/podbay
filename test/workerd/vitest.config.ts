@@ -21,6 +21,9 @@ export default defineConfig({
 					TEST_MIGRATIONS: await readD1Migrations(here("../../migrations")),
 					AUTH_SECRET: randomBytes(32).toString("hex"),
 					SETUP_TOKEN: randomBytes(24).toString("hex"),
+					// Stated here so a developer's own .dev.vars cannot switch a feature on in a test.
+					AGENT_ENABLED: "false",
+					MCP_ENABLED: "false",
 				},
 			},
 		})),

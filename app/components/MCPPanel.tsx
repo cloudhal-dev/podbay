@@ -3,90 +3,41 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Button, Tooltip } from "@cloudflare/kumo";
-import { CheckIcon, CopyIcon, PlugsIcon, WrenchIcon } from "@phosphor-icons/react";
+import { PencilSimpleIcon, PlugsIcon, WrenchIcon } from "@phosphor-icons/react";
 import { useParams } from "@tanstack/react-router";
-import { useState } from "react";
-
-function CopyButton({ text }: { text: string }) {
-	const [copied, setCopied] = useState(false);
-
-	const handleCopy = async () => {
-		try {
-			await navigator.clipboard.writeText(text);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		} catch {
-			// Clipboard API unavailable or permission denied — ignore silently
-		}
-	};
-
-	return (
-		<Tooltip content={copied ? "Copied!" : "Copy"} asChild>
-			<Button
-				variant="ghost"
-				shape="square"
-				size="sm"
-				icon={
-					copied ? (
-						<CheckIcon size={12} weight="bold" className="text-kumo-success" />
-					) : (
-						<CopyIcon size={12} />
-					)
-				}
-				onClick={handleCopy}
-				aria-label="Copy to clipboard"
-			/>
-		</Tooltip>
-	);
-}
-
-const TOOLS = [
-	{ name: "list_mailboxes", desc: "List all mailboxes" },
-	{ name: "list_emails", desc: "List emails in a folder" },
-	{ name: "get_email", desc: "Read a full email with body" },
-	{ name: "get_thread", desc: "Load a conversation thread" },
-	{ name: "search_emails", desc: "Search emails by query" },
-	{ name: "draft_reply", desc: "Draft a reply to an email" },
-	{ name: "send_reply", desc: "Send a reply" },
-	{ name: "send_email", desc: "Send a new email" },
-	{ name: "mark_email_read", desc: "Mark email as read/unread" },
-	{ name: "move_email", desc: "Move email to a folder" },
-];
+import { MCP_TOOLS } from "shared/mcp-tools";
+import AccessKeys from "./AccessKeys";
+import CopyButton from "./CopyButton";
 
 export default function MCPPanel() {
 	const { mailboxId } = useParams({ strict: false });
-	const baseUrl =
-		typeof window !== "undefined" ? window.location.origin : "https://your-app.workers.dev";
-	const mcpUrl = `${baseUrl}/mcp`;
+	const mcpUrl = `${window.location.origin}/mcp`;
 
 	return (
 		<div className="flex flex-col h-full">
-			{/* Content */}
-			<div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-				{/* Intro */}
+			<div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
 				<div className="space-y-2">
 					<div className="flex items-center gap-2">
 						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-kumo-brand/10">
 							<PlugsIcon size={20} weight="duotone" className="text-kumo-brand" />
 						</div>
 						<div>
-							<h3 className="text-sm font-semibold text-kumo-default">Connect via MCP</h3>
+							<h3 className="text-sm font-semibold text-kumo-default">Connect an AI client</h3>
 							<p className="text-xs text-kumo-subtle">Model Context Protocol</p>
 						</div>
 					</div>
 					<p className="text-xs text-kumo-subtle leading-relaxed">
-						This email agent exposes an MCP server so AI coding assistants can manage your inbox
-						directly — read emails, search, draft replies, and send messages using natural language.
+						An AI client can read the mailboxes you choose, organise them and prepare drafts. It can
+						never send: a person opens the draft here and sends it. Each client gets its own key,
+						and a key stops working the moment you revoke it or lose access to a mailbox.
 					</p>
 				</div>
 
-				{/* MCP URL */}
 				<div className="space-y-1.5">
-					<label className="text-xs font-medium text-kumo-strong block">Server URL</label>
-					<div className="relative group">
+					<p className="text-xs font-medium text-kumo-strong">Server URL</p>
+					<div className="relative">
 						<div className="absolute right-1.5 top-1/2 -translate-y-1/2">
-							<CopyButton text={mcpUrl} />
+							<CopyButton text={mcpUrl} label="Copy the server URL" />
 						</div>
 						<div className="bg-kumo-recessed text-kumo-default font-mono text-[11px] px-3 py-2.5 pr-10 rounded-lg border border-kumo-line break-all leading-relaxed">
 							{mcpUrl}
@@ -94,24 +45,29 @@ export default function MCPPanel() {
 					</div>
 				</div>
 
-				{/* Available tools */}
+				<AccessKeys currentMailbox={mailboxId} />
+
 				<div className="space-y-2">
-					<h4 className="text-xs uppercase tracking-wider font-semibold text-kumo-subtle px-0.5">
-						Available Tools
+					<h4 className="text-xs uppercase tracking-wider font-semibold text-kumo-subtle">
+						What a client can do
 					</h4>
-					<div className="border border-kumo-line rounded-lg divide-y divide-kumo-line">
-						{TOOLS.map((tool) => (
-							<div key={tool.name} className="flex items-center gap-2.5 px-3 py-2">
-								<WrenchIcon size={12} weight="bold" className="text-kumo-brand shrink-0" />
-								<div className="min-w-0 flex-1">
-									<span className="text-xs font-mono font-medium text-kumo-default">
-										{tool.name}
-									</span>
-								</div>
-								<span className="text-[11px] text-kumo-subtle shrink-0">{tool.desc}</span>
-							</div>
+					<ul className="border border-kumo-line rounded-lg divide-y divide-kumo-line">
+						{MCP_TOOLS.map((tool) => (
+							<li key={tool.name} className="flex items-center gap-2.5 px-3 py-2">
+								{tool.changes ? (
+									<PencilSimpleIcon size={12} weight="bold" className="text-kumo-brand shrink-0" />
+								) : (
+									<WrenchIcon size={12} weight="bold" className="text-kumo-subtle shrink-0" />
+								)}
+								<span className="text-xs text-kumo-default flex-1 min-w-0">{tool.summary}</span>
+								<span className="text-[11px] font-mono text-kumo-subtle shrink-0">{tool.name}</span>
+							</li>
 						))}
-					</div>
+					</ul>
+					<p className="text-[11px] text-kumo-subtle">
+						The marked actions need a key with "Read, organise, draft" and a mailbox you can write
+						in.
+					</p>
 				</div>
 			</div>
 		</div>

@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Cloudflare, Inc.
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
+// Modified by the Podbay contributors.
 
 export interface SignatureSettings {
 	enabled: boolean;
@@ -21,6 +22,28 @@ export interface Mailbox {
 	email: string;
 	name: string;
 	settings?: MailboxSettings;
+	/** The signed-in person's role in this mailbox. */
+	role?: "owner" | "sender" | "reader";
+}
+
+/** A key for a program (an AI client). The token itself is shown once, when the key is made. */
+export interface AccessKey {
+	id: string;
+	name: string;
+	/** The last characters of the token, to tell keys apart. */
+	hint: string;
+	access: "read" | "write";
+	mailboxes: string[];
+	createdAt: string;
+	expiresAt: string | null;
+	lastUsedAt: string | null;
+	state: "active" | "revoked" | "expired";
+}
+
+export interface CreatedAccessKey {
+	id: string;
+	token: string;
+	endpoint: string;
 }
 
 export interface Email {

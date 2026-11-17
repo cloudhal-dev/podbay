@@ -71,6 +71,12 @@
 					"status": "modified"
 				},
 				{
+					"path": "app/components/CopyButton.tsx",
+					"upstream": "app/components/MCPPanel.tsx",
+					"status": "modified",
+					"note": "the copy button, moved out of the panel into its own file"
+				},
+				{
 					"path": "app/components/MCPPanel.tsx",
 					"upstream": "app/components/MCPPanel.tsx",
 					"status": "modified"
@@ -223,7 +229,7 @@
 				{
 					"path": "app/types/index.ts",
 					"upstream": "app/types/index.ts",
-					"status": "verbatim"
+					"status": "modified"
 				},
 				{
 					"path": "demo_app.png",
@@ -351,9 +357,9 @@
 					"status": "modified"
 				},
 				{
-					"path": "workers/mcp/index.ts",
+					"path": null,
 					"upstream": "workers/mcp/index.ts",
-					"status": "modified"
+					"status": "removed"
 				},
 				{
 					"path": "workers/routes/reply-forward.ts",

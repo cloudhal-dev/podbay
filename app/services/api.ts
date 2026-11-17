@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import type { Email, Folder, Mailbox } from "~/types";
+import type { AccessKey, CreatedAccessKey, Email, Folder, Mailbox } from "~/types";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -103,6 +103,16 @@ const api = {
 			emailAddresses: string[];
 			features: { agent: boolean; mcp: boolean };
 		}>("/api/v1/config"),
+
+	// Keys for programs
+	listKeys: () => get<AccessKey[]>("/api/v1/keys"),
+	createKey: (key: {
+		name: string;
+		access: "read" | "write";
+		mailboxes: string[];
+		expiresInDays?: number;
+	}) => post<CreatedAccessKey>("/api/v1/keys", key),
+	revokeKey: (keyId: string) => del<void>(`/api/v1/keys/${encodeURIComponent(keyId)}`),
 
 	// Mailboxes
 	listMailboxes: () => get<Mailbox[]>("/api/v1/mailboxes"),

@@ -37,6 +37,11 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "GET", path: "/api/v1/mailboxes", right: "session" },
 	{ method: "POST", path: "/api/v1/mailboxes", right: "instance.manage" },
 
+	// The signed-in person's own keys for programs
+	{ method: "GET", path: "/api/v1/keys", right: "session" },
+	{ method: "POST", path: "/api/v1/keys", right: "session" },
+	{ method: "DELETE", path: "/api/v1/keys/:keyId", right: "session" },
+
 	// People: owners and administrators
 	{ method: "GET", path: "/api/v1/users", right: "instance.manage" },
 	{ method: "GET", path: "/api/v1/invitations", right: "instance.manage" },
