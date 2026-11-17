@@ -112,6 +112,25 @@ export interface StoredEmail {
 /** An in-memory mailbox with the methods the tools call on the mailbox Durable Object. */
 export class FakeMailbox {
 	readonly emails = new Map<string, StoredEmail>();
+	/** The labels of the mailbox, and which label each message carries. */
+	readonly labels = [
+		{ id: `lbl_${"a".repeat(24)}`, name: "Invoices", color: 0, total: 0, unread: 0 },
+	];
+	readonly labelled = new Map<string, Set<string>>();
+
+	async getLabels() {
+		return this.labels;
+	}
+	async labelConversation(emailId: string, add: string[], remove: string[]) {
+		if (!this.emails.has(emailId)) return "not_found" as const;
+		const known = new Set(this.labels.map((label) => label.id));
+		if (![...add, ...remove].every((id) => known.has(id))) return "not_found" as const;
+		const carried = this.labelled.get(emailId) ?? new Set<string>();
+		for (const id of add) carried.add(id);
+		for (const id of remove) carried.delete(id);
+		this.labelled.set(emailId, carried);
+		return { labels: [...carried] };
+	}
 
 	in(folder: string): StoredEmail[] {
 		return [...this.emails.values()].filter((email) => email.folder_id === folder);

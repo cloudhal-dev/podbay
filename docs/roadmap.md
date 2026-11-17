@@ -26,7 +26,7 @@ Self-hosted mail for a person, a family or a small organisation, running entirel
 3. Search (full-text in the mailbox's own database), then exports and deletion that an owner can verify.
 4. The release: one build, attested and signed, and the full audit that gates version 0.1.
 
-Built on 2026-11-17, ahead of the storage work because it converted custom folders and that is cheapest before any installation exists: labels ([ADR-0007](adr/0007-places-and-labels.md)). Left: label tools for the assistant, and nested labels shown as a tree.
+Built on 2026-11-17, ahead of the storage work because it converted custom folders and that is cheapest before any installation exists: labels ([ADR-0007](adr/0007-places-and-labels.md)). The assistant got its two label tools on the same day. Left: nested labels shown as a tree.
 
 Work is done in rounds. A round has one subject, ends with every check green and every document true, and is reported with what was not done ([`podbay-change`](../.claude/skills/podbay-change/SKILL.md)).
 
@@ -47,7 +47,7 @@ The bar is the mail people know from Gmail and Google Workspace ([feature scope]
 | 9 | **Languages**: Turkish beside English, with message keys everywhere | Its own round |
 | 10 | Importance markers, categories as tabs, translation, reactions, tasks and calendar | Not planned; decided again after phase A |
 
-Known defects that stand in the way are in [status](status.md), section 3: a conversation that starts with an incoming message is split from its replies, and labels are not offered to the assistant.
+Known defects that stand in the way are in [status](status.md), section 3: conversations formed before the fix of 2026-11-17 are not regrouped.
 
 ## 5. What is decided about the client
 

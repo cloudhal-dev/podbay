@@ -222,6 +222,11 @@ describe("a model that asks to send", () => {
 					{ name: "search_emails", input: { query: "price" } },
 					{ name: "mark_email_read", input: { emailId: "mail-1", read: true } },
 					{ name: "move_email", input: { emailId: "mail-1", folderId: "archive" } },
+					{ name: "list_labels", input: {} },
+					{
+						name: "label_email",
+						input: { emailId: "mail-1", add: [`lbl_${"a".repeat(24)}`], remove: [] },
+					},
 				),
 				asks(
 					{
@@ -255,6 +260,7 @@ describe("a model that asks to send", () => {
 		expect(mailbox.in(Folders.SENT)).toEqual([]);
 		expect(mailbox.in(Folders.DRAFT)).toHaveLength(2);
 		expect(mailbox.emails.get("mail-1")).toMatchObject({ folder_id: "archive", read: true });
+		expect([...(mailbox.labelled.get("mail-1") ?? [])]).toEqual([`lbl_${"a".repeat(24)}`]);
 
 		// discard_draft deletes a draft and nothing else.
 		const [draft] = mailbox.in(Folders.DRAFT);
@@ -334,5 +340,45 @@ describe("the tools shared by the assistant and MCP", () => {
 	it("export no function that sends", () => {
 		const sending = Object.keys(sharedTools).filter((name) => /send|forward/i.test(name));
 		expect(sending).toEqual([]);
+	});
+});
+
+describe("the assistant and labels (ADR-0007)", () => {
+	it("gives a label of this mailbox, and is told when a label is not one", async () => {
+		const { env, mailbox, send } = world();
+		const model = new MockLanguageModelV4({
+			doGenerate: [
+				asks(
+					{ name: "label_email", input: { emailId: "mail-1", add: ["inbox' OR 1=1"], remove: [] } },
+					{
+						name: "label_email",
+						input: { emailId: "mail-1", add: [`lbl_${"b".repeat(24)}`], remove: [] },
+					},
+					{
+						name: "label_email",
+						input: { emailId: "no-such-mail", add: [`lbl_${"a".repeat(24)}`], remove: [] },
+					},
+				),
+				says("Done."),
+			],
+		});
+		const result = await generateText({
+			model,
+			tools: createAgentTools(env, MAILBOX),
+			prompt: "Label the invoice mail.",
+			stopWhen: stepCountIs(5),
+		});
+		const outputs = result.steps.flatMap((step) => step.toolResults.map((r) => r.output));
+		expect(outputs).toHaveLength(3);
+		for (const output of outputs) expect(output).toHaveProperty("error");
+		expect(mailbox.labelled.size).toBe(0);
+		expect(send.calls).toEqual([]);
+	});
+
+	it("has no tool that makes, renames or deletes a label", () => {
+		expect(AGENT_TOOL_NAMES.filter((name) => name.includes("label")).sort()).toEqual([
+			"label_email",
+			"list_labels",
+		]);
 	});
 });
