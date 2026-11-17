@@ -5,14 +5,16 @@ import { Badge, Button, Input } from "@cloudflare/kumo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, useState } from "react";
 import CopyButton from "~/components/CopyButton";
 import { useFreshProof } from "~/components/FreshProof";
 import QrCode from "~/components/QrCode";
+import Password from "~/components/security/Password";
+import { message, Problem, Section } from "~/components/security/parts";
+import Sessions from "~/components/security/Sessions";
 import { dateLanguage, t } from "~/i18n";
 import { authClient, passkeysSupported, unwrap } from "~/lib/auth-client";
 import { sessionKeys, useMe } from "~/lib/session";
-import { ApiError } from "~/services/api";
 
 const PASSKEYS = ["security", "passkeys"] as const;
 
@@ -20,37 +22,6 @@ interface PasskeyRow {
 	id: string;
 	name?: string | null;
 	createdAt?: string | Date | null;
-}
-
-function Section({
-	title,
-	about,
-	children,
-}: {
-	title: string;
-	about: string;
-	children: ReactNode;
-}) {
-	return (
-		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
-			<h2 className="text-base font-semibold text-kumo-default">{title}</h2>
-			<p className="text-sm text-kumo-subtle mt-1">{about}</p>
-			<div className="mt-4 space-y-3">{children}</div>
-		</section>
-	);
-}
-
-function Problem({ text }: { text: string | null }) {
-	if (text === null) return null;
-	return (
-		<p role="alert" className="text-sm text-kumo-danger">
-			{text}
-		</p>
-	);
-}
-
-function message(error: unknown, fallback: string): string {
-	return error instanceof ApiError && error.message ? error.message : fallback;
 }
 
 function Passkeys() {
@@ -393,6 +364,8 @@ export default function SecurityRoute() {
 				>
 					<AuthenticatorApp enabled={me?.security.authenticatorApp === true} />
 				</Section>
+				<Password />
+				<Sessions />
 			</div>
 		</div>
 	);

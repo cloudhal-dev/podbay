@@ -14,6 +14,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"30 days": "30 gün",
 	"404 -- Page Not Found": "404 -- Sayfa bulunamadı",
 	"90 days": "90 gün",
+	"A browser or a program": "Bir tarayıcı ya da program",
 	"A conversation can carry several labels, and everyone with access to this mailbox sees the same ones. {count} of {limit}.":
 		"Bir yazışma birden çok etiket taşıyabilir ve bu posta kutusuna erişimi olan herkes aynı etiketleri görür. {count} / {limit}.",
 	"A conversation can carry several labels. A slash in the name nests it, as in Clients/Acme.":
@@ -105,6 +106,9 @@ export const tr: Readonly<Record<string, string>> = {
 		"Oturum açamıyor musunuz? Bu kurulumun bir sahibinden ya da yöneticisinden kurtarma bağlantısı isteyin. Tek sahip sizseniz, kurulumu yapan kişi {link}.",
 	Cc: "Bilgi",
 	"Cc Bcc": "Bilgi Gizli",
+	"Change password": "Parolayı değiştir",
+	"Changing it signs you out of every other browser. Keys for programs, your authenticator app and your passkeys stay as they are.":
+		"Parolayı değiştirmek diğer tüm tarayıcılardaki oturumunuzu kapatır. Programlar için anahtarlar, kimlik doğrulama uygulamanız ve geçiş anahtarlarınız olduğu gibi kalır.",
 	"Chat message input": "Sohbet iletisi girişi",
 	"Choose a new password": "Yeni bir parola seçin",
 	Clear: "Temizle",
@@ -155,6 +159,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Create owner": "Sahibi oluştur",
 	"Create the first owner. You need the setup token that was set when this instance was deployed.":
 		"İlk sahibi oluşturun. Bu kurulum yapılırken belirlenen kurulum anahtarı gerekir.",
+	"Current password": "Geçerli parola",
 	Custom: "Özel",
 	Dark: "Koyu",
 	Date: "Tarih",
@@ -200,6 +205,11 @@ export const tr: Readonly<Record<string, string>> = {
 	"Emails you send will show up here.": "Gönderdiğiniz e-postalar burada görünür.",
 	"Emails you're still working on will be saved here.":
 		"Üzerinde çalıştığınız e-postalar buraya kaydedilir.",
+	End: "Sonlandır",
+	"End all other sessions": "Diğer tüm oturumları sonlandır",
+	"End the session of {device}": "{device} oturumunu sonlandır",
+	"Every browser that is signed in to your account. End one you do not recognise, then change your password.":
+		"Hesabınızda oturumu açık olan her tarayıcı. Tanımadığınız birini sonlandırın, ardından parolanızı değiştirin.",
 	"Every change to who has access, newest first. It cannot be edited.":
 		"Kimin erişimi olduğuna ilişkin her değişiklik, en yenisi en üstte. Düzenlenemez.",
 	"Everyone with an account here. A recovery link lets a person who cannot sign in choose a new password; make one only when you are sure who is asking.":
@@ -476,6 +486,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Show images": "Görselleri göster",
 	"Show me the latest inbox emails": "Gelen kutusundaki son e-postaları göster",
 	"Show message headers": "İleti üstbilgilerini göster",
+	"Show my sessions": "Oturumlarımı göster",
 	"Show quoted text": "Alıntılanan metni göster",
 	"Show the button": "Düğmeyi göster",
 	"Show the shortcuts": "Kısayolları göster",
@@ -491,6 +502,7 @@ export const tr: Readonly<Record<string, string>> = {
 	Signature: "İmza",
 	"Signature saved": "İmza kaydedildi",
 	"Signed in as {email}.": "{email} olarak oturum açıldı.",
+	"Signed in {date}": "Oturum açıldı: {date}",
 	"Single keys that act on mail, such as c to write.":
 		"Postada işlem yapan tek tuşlar; örneğin yazmak için c.",
 	Size: "Boyut",
@@ -544,6 +556,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"The page you're looking for doesn't exist.": "Aradığınız sayfa yok.",
 	"The passkey could not be added.": "Geçiş anahtarı eklenemedi.",
 	"The passkey could not be removed.": "Geçiş anahtarı kaldırılamadı.",
+	"The password could not be changed.": "Parola değiştirilemedi.",
 	"The password could not be set.": "Parola belirlenemedi.",
 	"The person could not be added.": "Kişi eklenemedi.",
 	"The prompt could not be saved": "İstem kaydedilemedi",
@@ -555,6 +568,8 @@ export const tr: Readonly<Record<string, string>> = {
 	"The second step could not be turned off.": "İkinci adım kapatılamadı.",
 	"The selected text will open this address. Leave it empty to remove the link.":
 		"Seçili metin bu adresi açar. Bağlantıyı kaldırmak için boş bırakın.",
+	"The session could not be ended.": "Oturum sonlandırılamadı.",
+	"The sessions could not be ended.": "Oturumlar sonlandırılamadı.",
 	"The signature belongs to the mailbox: everyone who writes from it gets the same one, and a message already written keeps what it has.":
 		"İmza posta kutusuna aittir: buradan yazan herkes aynı imzayı alır, yazılmış bir ileti ise kendi imzasını korur.",
 	"The signature could not be saved": "İmza kaydedilemedi",
@@ -572,6 +587,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"They will be gone from this mailbox for good. This cannot be undone.":
 		"Bu posta kutusundan tümüyle silinirler. Bu işlem geri alınamaz.",
 	"Thinking...": "Düşünüyor...",
+	"This browser": "Bu tarayıcı",
 	"This browser cannot use passkeys.": "Bu tarayıcı geçiş anahtarlarını kullanamıyor.",
 	"This browser does not allow notifications for Podbay. Allow them in the browser's settings for this site, then choose again.":
 		"Bu tarayıcı Podbay için bildirimlere izin vermiyor. Tarayıcının bu siteye ait ayarlarından izin verin, sonra yeniden seçin.",
@@ -623,6 +639,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"Where this key will be used": "Bu anahtarın kullanılacağı yer",
 	"Where to go after the open conversation is archived, deleted, moved or reported.":
 		"Açık yazışma arşivlendikten, silindikten, taşındıktan ya da bildirildikten sonra nereye gidileceği.",
+	"Where you are signed in": "Oturum açtığınız yerler",
 	"Whether a message and the answers to it are one line and one screen.":
 		"Bir iletinin ve yanıtlarının tek satırda ve tek ekranda gösterilip gösterilmeyeceği.",
 	"Who has access": "Kimlerin erişimi var",
@@ -636,6 +653,7 @@ export const tr: Readonly<Record<string, string>> = {
 		"Henüz hiçbir posta kutusunun üyesi değilsiniz. Bir posta kutusu sahibi sizi ekleyebilir.",
 	"You are not a member of this mailbox, so you cannot read its mail. You manage who is. If you add yourself, that is recorded and its owners see it below.":
 		"Bu posta kutusunun üyesi değilsiniz, bu yüzden postalarını okuyamazsınız. Kimlerin üye olduğunu siz yönetirsiniz. Kendinizi eklerseniz bu kaydedilir ve sahipleri aşağıda görür.",
+	"You are signed in nowhere else.": "Başka hiçbir yerde oturumunuz açık değil.",
 	"You can narrow a search with {from}, {unread}, {attachment} or {before}.":
 		"Aramayı {from}, {unread}, {attachment} ya da {before} ile daraltabilirsiniz.",
 	"You can only read {mailboxes}, so this key will only read there too.":
@@ -652,7 +670,10 @@ export const tr: Readonly<Record<string, string>> = {
 	"Your keys could not be loaded.": "Anahtarlarınız yüklenemedi.",
 	"Your name": "Adınız",
 	"Your password": "Parolanız",
+	"Your password is changed. Every other browser was signed out.":
+		"Parolanız değiştirildi. Diğer tüm tarayıcılardaki oturumlar kapatıldı.",
 	"Your password is set": "Parolanız belirlendi",
+	"Your sessions could not be loaded.": "Oturumlarınız yüklenemedi.",
 	"a person whose account is gone": "hesabı artık olmayan bir kişi",
 	"added {date}": "{date} tarihinde eklendi",
 	"added {date} by themselves": "{date} tarihinde kendisi ekledi",
@@ -682,6 +703,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"reads, sends, and manages settings and members": "okur, gönderir, ayarları ve üyeleri yönetir",
 	"to {names}": "alıcı: {names}",
 	"to {names} and {count} more": "alıcı: {names} ve {count} kişi daha",
+	"{browser} on {system}": "{system} üzerinde {browser}",
 	"{by} left the mailbox": "{by} posta kutusundan ayrıldı",
 	"{by} made themselves a member": "{by} kendisini üye yaptı",
 	"{by} made themselves a reader": "{by} kendisini okuyucu yaptı",

@@ -8,6 +8,7 @@
 		"app/lib/address-suggestions.ts",
 		"app/lib/label-tree.ts",
 		"app/lib/unsubscribe.ts",
+		"app/lib/user-agent.ts",
 		"workers/**/*",
 		"shared/**/*",
 		"scripts/**/*",
