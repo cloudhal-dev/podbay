@@ -26,7 +26,7 @@ Self-hosted mail for a person, a family or a small organisation, running entirel
 3. Search (full-text in the mailbox's own database), then exports and deletion that an owner can verify.
 4. The release: one build, attested and signed, and the full audit that gates version 0.1.
 
-Built on 2026-11-17, ahead of the storage work because it converted custom folders and that is cheapest before any installation exists: labels ([ADR-0007](adr/0007-places-and-labels.md)). The assistant got its two label tools on the same day. Left: nested labels shown as a tree.
+Built on 2026-11-17, ahead of the storage work because it converted custom folders and that is cheapest before any installation exists: labels ([ADR-0007](adr/0007-places-and-labels.md)). The assistant got its two label tools, and the rail shows nested labels as a tree, on the same day.
 
 Work is done in rounds. A round has one subject, ends with every check green and every document true, and is reported with what was not done ([`podbay-change`](../.claude/skills/podbay-change/SKILL.md)).
 
@@ -38,7 +38,7 @@ The bar is the mail people know from Gmail and Google Workspace ([feature scope]
 |---|---|---|
 | 1 | ~~A menu on each message~~ **built 2026-11-17**: each message has its header, details, star, Reply and its own menu; the conversation prints, expands and collapses, and opens in a new tab. Left out because they need the server: block the sender, report phishing, download the message | Done in the app |
 | 2 | ~~Settings like a mail client's~~ **built 2026-11-17**: tabs for general choices, signature, labels, the mailbox and the assistant. A person's choices stay in their browser; giving them a home on the server needs an ADR. Not offered because nothing acts on them: forwarding, an automatic reply | Done in the app |
-| 3 | **Writing**: built on 2026-11-17: files attached to a message (the send request always took them), addresses completed from mail already loaded in the browser, an answer written under its conversation. Still missing: recipients as chips, an address book that knows more than the loaded lists, files kept in a draft, the original's files carried by a forward, send and archive | Drafts with files, forwarding files and an address book need the Worker: an ADR |
+| 3 | **Writing**: built on 2026-11-17: files attached to a message, recipients as chips, addresses completed from mail already loaded in the browser, an answer written under its conversation, a forward that carries the original's files. Still missing: an address book that knows more than the loaded lists, files kept in a draft, send and archive | Drafts with files and an address book need the Worker: an ADR |
 | 4 | **The list**: built on 2026-11-17: a menu on a line (right click), quoted text folded away, the middle of a long conversation folded, a conversation dragged onto a place or a label, the unread count in the tab. Still missing: empty Trash and empty Spam, select everything a search or a folder holds | Emptying Trash and Spam is proposed in [ADR-0009](adr/0009-emptying-trash-and-spam.md) and waits for the project lead; acting on a whole folder needs its own record |
 | 5 | **Mail that manages itself**: blocked senders, filters and an automatic reply while away are proposed in [ADR-0008](adr/0008-rules-for-incoming-mail.md). Snooze and mute are not proposed yet | Waiting for the project lead; nothing of it is built |
 | 6 | **Sending**: undo for a few seconds, send later | A queue for outgoing mail: milestone 3 |

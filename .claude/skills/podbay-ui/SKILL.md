@@ -42,6 +42,7 @@ The mail screens follow what a person expects from a first-class web mail client
 | One list **or** one conversation by default. Opening a conversation is a navigation (`?open=<id>`), so Back returns to the list and a reload shows the conversation again | `MailView.tsx`: the address is the truth |
 | The reader can choose a **reading pane**: on a screen at least 1024px wide the conversation opens beside the list. Then moving through the list with `j` and `k` opens what the cursor is on, the list keeps the keys that file a conversation, and filing the open one closes the pane | `useSplit` in `app/hooks/useDisplay.ts`, `MailView.tsx`, `MessageList.tsx` |
 | The reader chooses how tall a line is: Default (40px), Comfortable (48px), Compact (32px). Both choices live in the Display menu of the top bar and are remembered in this browser only | `DisplayMenu.tsx`, `useDisplay.ts` |
+| A search has **quick filters** above its results: one press adds an operator to the query (has an attachment, unread, in the inbox) and a second takes it out; the search box always says what is searched | `routes/search-results.tsx`; `toggleOperator` in `app/lib/search-parser.ts` |
 | The search box has **search options**: who, subject, words, folder, dates, attachment, unread. They write the query a person could type, so the box always shows what is searched, and they open filled with what the box says | `SearchOptions.tsx`; `buildSearchQuery` and `searchOptionsOf` in `app/lib/search-parser.ts` |
 | The browser tab says how much of the inbox is unread: `(3) address - Podbay` | `app/routes/mailbox.tsx` |
 | Starred is a search (`is:starred`), not a folder | The rail links to the search screen |
@@ -74,6 +75,7 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | Behaviour | How it is built |
 |---|---|
 | Labels are listed in the rail under the places, each with its colour and unread count. A label is made, renamed, recoloured and deleted there; deleting one asks first and deletes no mail | `RailLabels.tsx`, `LabelDialog.tsx` |
+| A `/` in a label's name puts it under the label named before it: the rail shows the labels as a tree, each with the part of its name its parent does not already say. Where no such parent exists the label stands at the top with its whole name | `app/lib/label-tree.ts`, `RailLabels.tsx` |
 | A label's list is a search (`label:<name>`), as Starred is. It never shows what is in Spam or Trash | The rail links to the search screen; `useSearchEmails` sends the label by id |
 | A line and an open conversation show the labels the conversation carries as chips: a dot of the label's colour and its name | `LabelChip.tsx` |
 | **"Label as"** gives or takes labels and leaves the conversation where it is; the menu stays open so several are set in one visit. **"Move to"** a label gives it and takes the conversation out of the inbox, with one Undo | `LabelMenu.tsx`, `MoveMenu.tsx`; `label` and `moveToLabel` in `useConversationActions.ts` |
@@ -102,6 +104,8 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | Fields have no boxes: To (with Cc and Bcc on demand), Subject, the message. Send is first in the bottom row | `ComposePanel.tsx` |
 | **An answer is written under its conversation**: Reply, Reply to all and Forward from an open conversation (its buttons, a message's menu, `r` `a` `f`) open the answer where the reply buttons were. It can be moved out to the window, and moves there by itself when the conversation is left. A new message, and an answer started from a line's menu, open in the window | `InlineReply.tsx`; the message being written is held above both places by `ComposeSession.tsx`, so moving it loses nothing |
 | **Files** are attached with the paperclip or by dropping them on the message. Each is listed with its size and can be taken off. Together they are held to what a message can carry (`shared/sending-limits.ts`), and the Worker holds the request to the same. A draft does not keep files, and the window says so | `ComposePanel.tsx`, `useComposeForm.ts` |
+| **An address that is done is a chip** that can be taken off; a comma, a semicolon, Enter or leaving the field ends the one in hand, and Backspace in the empty field takes the last chip off. Something that does not look like an address is marked. The value stays addresses separated by commas | `AddressField.tsx`; the rules of typing are pure functions in `app/lib/address-suggestions.ts` |
+| **A forward carries the files** of the message it forwards, fetched as the reader could download them. One that can do harm when opened is left behind and named, as is what would not fit | `carryFiles` in `useComposeForm.ts` |
 | **An address is completed while it is typed** from the addresses in the lists this browser has already loaded: arrows choose, Enter or Tab takes, and Enter never sends the message while a suggestion is offered. It asks the Worker nothing and is not an address book | `AddressField.tsx`, `app/lib/address-suggestions.ts`, `useKnownAddresses.ts` |
 | A link is added in a dialog of the app. A dialog opened from inside the compose form stops its own submit and keys there: React passes events through a portal, and the form would send the message | `RichTextEditor.tsx` |
 | A new message starts in To; a reply starts in the text, above what it answers. Ctrl or Cmd with Enter sends | `ComposePanel.tsx` |
@@ -122,7 +126,7 @@ The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then 
 
 ### Not built yet
 
-Nested labels shown as a tree (a `/` is only part of the name today), snooze, a reading pane below the list, importance markers, category tabs, scheduled send, undo of a send, drag and drop, and a context menu on a line. Add one with its line above and its test.
+Snooze, a reading pane below the list, importance markers, category tabs, scheduled send, undo of a send, drag and drop, and a context menu on a line. Add one with its line above and its test.
 
 A new behaviour of this kind gets a line here and a test there, in the same change.
 
