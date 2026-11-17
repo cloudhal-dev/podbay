@@ -524,6 +524,16 @@
 			"code": ["docs/architecture.md"]
 		},
 		{
+			"id": "limit.durable_objects.bound_parameters",
+			"kind": "limit",
+			"relies": "One query in a Durable Object takes at most 100 bound parameters and a statement is at most 100 KB, so a change to many messages at once (labelling a selection) is made in batches.",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| Maximum bound parameters per query | 100 |",
+			"code": ["docs/adr/0007-places-and-labels.md"]
+		},
+		{
 			"id": "limit.durable_objects.like_pattern",
 			"kind": "limit",
 			"relies": "A `LIKE` pattern is at most 50 bytes. The mailbox search builds `LIKE` patterns from the search text.",

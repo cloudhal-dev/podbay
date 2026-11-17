@@ -26,6 +26,8 @@ Self-hosted mail for a person, a family or a small organisation, running entirel
 3. Search (full-text in the mailbox's own database), then exports and deletion that an owner can verify.
 4. The release: one build, attested and signed, and the full audit that gates version 0.1.
 
+Proposed and waiting for the project lead: labels ([ADR-0007](adr/0007-places-and-labels.md)). It changes the mailbox's database and one row of the feature matrix, so nothing of it is built, and its place in this order is not set, until it is accepted.
+
 Work is done in rounds. A round has one subject, ends with every check green and every document true, and is reported with what was not done ([`podbay-change`](../.claude/skills/podbay-change/SKILL.md)).
 
 ## 4. What is decided about the client
