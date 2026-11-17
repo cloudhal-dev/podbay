@@ -317,13 +317,36 @@ describe("a key never does more than its access and its owner's membership allow
 		});
 		expect(changed.isError).toBe(false);
 		const { newDraftId } = changed.value as { newDraftId: string };
+		// The draft keeps its id: it is changed in place (ADR-0011).
+		expect(newDraftId).toBe(made.draftId);
 		const read = (await tool(key, "get_email", { mailboxId: TEAM, emailId: newDraftId })).value as {
 			body: string;
 			subject: string;
 		};
 		expect(read.body).toBe(body);
 		expect(read.subject).toBe("To be changed");
-		await tool(key, "update_draft", { mailboxId: TEAM, draftId: newDraftId, subject: "x" });
+
+		// Once a person gave the draft a file, no tool changes it: a tool that could change its
+		// recipient would be one click away from sending that file to a stranger.
+		const declared = await request(
+			`/api/v1/mailboxes/${encodeURIComponent(TEAM)}/drafts/${newDraftId}/attachments`,
+			{
+				method: "POST",
+				cookie: cookies.owner,
+				body: JSON.stringify({ filename: "contract.pdf", type: "application/pdf", size: 4 }),
+			},
+		);
+		expect(declared.status).toBe(201);
+		const held = await tool(key, "update_draft", {
+			mailboxId: TEAM,
+			draftId: newDraftId,
+			to: "stranger@elsewhere.test",
+		});
+		expect(held.isError).toBe(true);
+		expect(held.text).toContain("holds files");
+		const still = (await tool(key, "get_email", { mailboxId: TEAM, emailId: newDraftId }))
+			.value as { recipient: string };
+		expect(still.recipient).toBe("someone@elsewhere.test");
 	});
 
 	it("cannot make a message look sent", async () => {

@@ -12,14 +12,7 @@
  * Zod schemas: used across route handlers to eliminate duplication.
  */
 import { z } from "zod";
-import {
-	base64Bytes,
-	MAX_ATTACHMENTS,
-	MAX_ATTACHMENTS_BYTES,
-	MAX_MESSAGE_BYTES,
-	MAX_RECIPIENTS,
-	messageBytes,
-} from "../../shared/sending-limits";
+import { MAX_MESSAGE_BYTES, MAX_RECIPIENTS, messageBytes } from "../../shared/sending-limits";
 
 // ── TypeScript Interfaces ──────────────────────────────────────────
 
@@ -73,17 +66,11 @@ export const SendEmailRequestSchema = z
 		subject: z.string(),
 		html: z.string().optional(),
 		text: z.string().optional(),
-		attachments: z
-			.array(
-				z.object({
-					content: z.string(), // base64 encoded
-					filename: z.string(),
-					type: z.string(),
-					disposition: z.enum(["attachment", "inline"]),
-					contentId: z.string().optional(),
-				}),
-			)
-			.optional(),
+		/**
+		 * The draft this message is sent from (ADR-0011). Its stored files are the message's
+		 * files, and its row becomes the sent message. A message without files needs none.
+		 */
+		draft_id: z.string().max(128).optional(),
 		in_reply_to: z.string().optional(),
 		references: z.array(z.string()).optional(),
 		thread_id: z.string().optional(),
@@ -99,15 +86,6 @@ export const SendEmailRequestSchema = z
 		},
 		{ message: `A message goes to at most ${MAX_RECIPIENTS} recipients` },
 	)
-	.refine(
-		(data) =>
-			(data.attachments ?? []).reduce((sum, file) => sum + base64Bytes(file.content), 0) <=
-			MAX_ATTACHMENTS_BYTES,
-		{ message: "The attached files are too large to send together" },
-	)
-	.refine((data) => (data.attachments ?? []).length <= MAX_ATTACHMENTS, {
-		message: `A message carries at most ${MAX_ATTACHMENTS} files`,
-	})
 	// The whole message, so that nothing is stored as sent that the sending service will refuse.
 	.refine((data) => messageBytes(data) <= MAX_MESSAGE_BYTES, {
 		message: "The message is too large to send",

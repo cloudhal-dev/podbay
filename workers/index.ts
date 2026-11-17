@@ -16,21 +16,18 @@ import { isLabelId } from "../shared/labels";
 import { errorFields, log } from "../shared/log";
 import { type ApiContext, guard } from "./auth/middleware";
 import { mailboxExists } from "./auth/store";
-import { sendEmail } from "./email-sender";
-import { type StoredAttachment, storeAttachments } from "./lib/attachments";
-import {
-	buildThreadingHeaders,
-	generateMessageId,
-	SenderValidationError,
-	validateSender,
-} from "./lib/email-helpers";
+import { fileKey } from "./durableObject/drafts";
+import type { StoredAttachment } from "./lib/attachments";
 import { features } from "./lib/features";
 import { headerFilename, storageFilename } from "./lib/filenames";
 import { type InboundEnvelope, routeInbound } from "./lib/inbound";
 import { parseSortColumn, parseSortDirection, type SearchFilterOptions } from "./lib/list-options";
 import { mailboxQueries } from "./lib/mailbox-rpc";
+import { deleteMessage } from "./lib/messages";
+import { storeAndSend } from "./lib/outgoing";
 import { SendEmailRequestSchema } from "./lib/schemas";
 import { account } from "./routes/account";
+import { drafts } from "./routes/drafts";
 import { keys } from "./routes/keys";
 import { labels } from "./routes/labels";
 import { mailboxes } from "./routes/mailboxes";
@@ -43,17 +40,6 @@ import type { Env } from "./types";
 type AppContext = Context<ApiContext>;
 
 // -- Request body schemas (kept for validation) ---------------------
-
-const DraftBody = z.object({
-	to: z.string().optional(),
-	cc: z.string().optional(),
-	bcc: z.string().optional(),
-	subject: z.string().optional(),
-	body: z.string(),
-	in_reply_to: z.string().optional(),
-	thread_id: z.string().optional(),
-	draft_id: z.string().optional(),
-});
 
 // -- Helpers --------------------------------------------------------
 
@@ -83,6 +69,7 @@ app.route("/", account);
 app.route("/", mailboxes);
 app.route("/", people);
 app.route("/", keys);
+app.route("/", drafts);
 app.route("/", labels);
 app.route("/", places);
 app.route("/", recovery);
@@ -132,124 +119,12 @@ app.get("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 });
 
 app.post("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
-	const mailboxId = c.req.param("mailboxId")!;
 	const body = SendEmailRequestSchema.parse(await c.req.json());
-	const {
-		to,
-		cc,
-		bcc,
-		from,
-		subject,
-		html,
-		text,
-		attachments,
-		in_reply_to,
-		references,
-		thread_id,
-	} = body;
-
-	let toStr: string, fromEmail: string, fromDomain: string;
-	try {
-		({ toStr, fromEmail, fromDomain } = validateSender(to, from, mailboxId));
-	} catch (e) {
-		if (e instanceof SenderValidationError) return c.json({ error: e.message }, 400);
-		throw e;
-	}
-
-	const { messageId, outgoingMessageId } = generateMessageId(fromDomain);
-	const stub = c.var.mailboxStub;
-	const rateLimitError = await mailboxQueries(stub).checkSendRateLimit();
-	if (rateLimitError) return c.json({ error: rateLimitError }, 429);
-	const attachmentData = await storeAttachments(c.env.BUCKET, messageId, attachments);
-
-	await stub.createEmail(
-		Folders.SENT,
-		{
-			id: messageId,
-			subject,
-			sender: fromEmail,
-			recipient: toStr,
-			cc: cc ? (Array.isArray(cc) ? cc.join(", ") : cc).toLowerCase() : null,
-			bcc: bcc ? (Array.isArray(bcc) ? bcc.join(", ") : bcc).toLowerCase() : null,
-			date: new Date().toISOString(),
-			body: html || text || "",
-			in_reply_to: in_reply_to || null,
-			email_references: references ? JSON.stringify(references) : null,
-			thread_id: thread_id || in_reply_to || messageId,
-			message_id: outgoingMessageId,
-			raw_headers: JSON.stringify([
-				{ key: "from", value: typeof from === "string" ? from : `${from.name} <${from.email}>` },
-				{ key: "to", value: Array.isArray(to) ? to.join(", ") : to },
-				...(cc ? [{ key: "cc", value: Array.isArray(cc) ? cc.join(", ") : cc }] : []),
-				...(bcc ? [{ key: "bcc", value: Array.isArray(bcc) ? bcc.join(", ") : bcc }] : []),
-				{ key: "subject", value: subject },
-				{ key: "date", value: new Date().toISOString() },
-				{ key: "message-id", value: `<${outgoingMessageId}>` },
-			]),
-		},
-		attachmentData,
-	);
-
-	c.executionCtx.waitUntil(
-		sendEmail(c.env.EMAIL, {
-			to,
-			cc,
-			bcc,
-			from,
-			subject,
-			html,
-			text,
-			attachments: attachments?.map((att) => ({
-				content: att.content,
-				filename: att.filename,
-				type: att.type,
-				disposition: att.disposition || "attachment",
-				contentId: att.contentId,
-			})),
-			...(in_reply_to ? { headers: buildThreadingHeaders(in_reply_to, references || []) } : {}),
-		}).catch((e) => log.error("send.deferred_failed", errorFields(e))),
-	);
-	return c.json({ id: messageId, status: "sent" }, 202);
-});
-
-app.post("/api/v1/mailboxes/:mailboxId/drafts", async (c: AppContext) => {
-	const mailboxId = c.req.param("mailboxId")!;
-	const { to, cc, bcc, subject, body, in_reply_to, thread_id, draft_id } = DraftBody.parse(
-		await c.req.json(),
-	);
-	const stub = c.var.mailboxStub;
-	// Saving again replaces the draft that was saved before. Only a draft is replaced: an id
-	// of a message anywhere else is refused, or saving a draft could delete mail for good.
-	if (draft_id) {
-		const old = (await stub.getEmail(draft_id)) as { folder_id?: string } | null;
-		if (old && old.folder_id !== Folders.DRAFT) {
-			return c.json({ error: "Only a draft can be replaced by a draft" }, 409);
-		}
-		if (old) await stub.deleteEmail(draft_id); // not atomic — create-then-delete would be safer
-	}
-	const messageId = crypto.randomUUID();
-	const now = new Date().toISOString();
-	await stub.createEmail(
-		Folders.DRAFT,
-		{
-			id: messageId,
-			subject: subject || "",
-			sender: mailboxId.toLowerCase(),
-			recipient: (to || "").toLowerCase(),
-			cc: cc?.toLowerCase() || null,
-			bcc: bcc?.toLowerCase() || null,
-			date: now,
-			body,
-			in_reply_to: in_reply_to || null,
-			email_references: null,
-			thread_id: thread_id || in_reply_to || messageId,
-		},
-		[],
-	);
-	return c.json(
-		{ id: messageId, status: "draft", subject: subject || "", recipient: to || "", date: now },
-		201,
-	);
+	return storeAndSend(c, body, {
+		inReplyTo: body.in_reply_to || null,
+		references: body.references || [],
+		threadId: body.thread_id || null,
+	});
 });
 
 app.get("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
@@ -267,14 +142,8 @@ app.put("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
 });
 
 app.delete("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
-	const id = c.req.param("id")!;
-	const attachments = await c.var.mailboxStub.deleteEmail(id);
-	if (attachments === null) return c.json({ error: "Not found" }, 404);
-	if (attachments.length > 0)
-		await c.env.BUCKET.delete(
-			attachments.map((att) => `attachments/${id}/${att.id}/${att.filename}`),
-		);
-	return c.body(null, 204);
+	const deleted = await deleteMessage(c.env.BUCKET, c.var.mailboxStub, c.req.param("id")!);
+	return deleted ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
 });
 
 app.post("/api/v1/mailboxes/:mailboxId/emails/:id/move", async (c: AppContext) => {
@@ -350,7 +219,10 @@ async function attachmentResponse(c: AppContext, acknowledged: boolean): Promise
 	const emailId = c.req.param("emailId") ?? "";
 	const attachmentId = c.req.param("attachmentId") ?? "";
 	const attachment = await c.var.mailboxStub.getAttachment(attachmentId);
-	if (!attachment) return c.json({ error: "Attachment not found" }, 404);
+	// The file must be one of the message in the address; the key below comes from its row.
+	if (!attachment || attachment.email_id !== emailId) {
+		return c.json({ error: "Attachment not found" }, 404);
+	}
 	const risk = attachmentRisk(attachment);
 	if (risk !== null && !acknowledged) {
 		return c.json(
@@ -363,9 +235,7 @@ async function attachmentResponse(c: AppContext, acknowledged: boolean): Promise
 			409,
 		);
 	}
-	const obj = await c.env.BUCKET.get(
-		`attachments/${emailId}/${attachmentId}/${attachment.filename}`,
-	);
+	const obj = await c.env.BUCKET.get(fileKey(attachment));
 	if (!obj) return c.json({ error: "Attachment file not found" }, 404);
 	const headers = new Headers();
 	// A risky file never leaves with a type a browser would show, whatever the sender called it.

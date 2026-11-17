@@ -5,15 +5,17 @@
 
 import { DurableObject } from "cloudflare:workers";
 import type { SQL } from "drizzle-orm";
-import { and, asc, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/durable-sqlite";
 import { Folders } from "../../shared/folders";
 import * as schema from "../db/schema";
 import { parseSortColumn, type SearchFilterOptions, type SortColumn } from "../lib/list-options";
 import type { Env } from "../types";
+import * as drafts from "./drafts";
 import { type EmptiedBatch, emptyBatch } from "./emptying";
 import * as labels from "./labels";
 import { applyMigrations, mailboxMigrations } from "./migrations";
+import { countSearchResults, searchEmails } from "./search";
 import { sendRefusal } from "./sending";
 import type { AttachmentData, EmailData, GetEmailsOptions } from "./shapes";
 import { threadOfReferences, threadOfSubject } from "./threads";
@@ -379,10 +381,11 @@ export class MailboxDO extends DurableObject<Env> {
 
 		if (!email) return null;
 
+		// A file whose bytes have not arrived is not part of the message (ADR-0011).
 		const emailAttachments = this.db
 			.select()
 			.from(schema.attachments)
-			.where(eq(schema.attachments.email_id, id))
+			.where(and(eq(schema.attachments.email_id, id), isNull(schema.attachments.uploading_since)))
 			.all();
 
 		const one = { ...email, read: !!email.read, starred: !!email.starred };
@@ -410,7 +413,7 @@ export class MailboxDO extends DurableObject<Env> {
 		const placeholders = emailIds.map((_, i) => `?${i + 1}`).join(",");
 		const attachmentRows = [
 			...this.ctx.storage.sql.exec(
-				`SELECT * FROM attachments WHERE email_id IN (${placeholders})`,
+				`SELECT * FROM attachments WHERE email_id IN (${placeholders}) AND uploading_since IS NULL`,
 				...emailIds,
 			),
 		];
@@ -483,10 +486,39 @@ export class MailboxDO extends DurableObject<Env> {
 		return emailAttachments;
 	}
 
+	/** A stored file by its id. One whose bytes have not arrived does not exist yet. */
 	async getAttachment(id: string) {
 		return (
-			this.db.select().from(schema.attachments).where(eq(schema.attachments.id, id)).get() ?? null
+			this.db
+				.select()
+				.from(schema.attachments)
+				.where(and(eq(schema.attachments.id, id), isNull(schema.attachments.uploading_since)))
+				.get() ?? null
 		);
+	}
+
+	// ── Drafts and their files (ADR-0011, ./drafts) ────────────────
+
+	async saveDraft(id: string, fields: drafts.DraftFields) {
+		return drafts.saveDraft(this.ctx.storage, id, fields);
+	}
+	async declareFile(draftId: string, file: Parameters<typeof drafts.declareFile>[2]) {
+		return drafts.declareFile(this.ctx.storage, draftId, file, Date.now());
+	}
+	async draftFile(draftId: string, fileId: string) {
+		return drafts.draftFile(this.ctx.storage, draftId, fileId);
+	}
+	async markStored(draftId: string, fileId: string) {
+		return drafts.markStored(this.ctx.storage, draftId, fileId);
+	}
+	async removeFile(draftId: string, fileId: string) {
+		return drafts.removeFile(this.ctx.storage, draftId, fileId);
+	}
+	async holdsFiles(id: string) {
+		return drafts.holdsFiles(this.ctx.storage, id);
+	}
+	async sendDraft(id: string, fields: drafts.SentFields) {
+		return drafts.sendDraft(this.ctx.storage, id, fields);
 	}
 
 	// ── Folders (Drizzle) ──────────────────────────────────────────
@@ -553,140 +585,15 @@ export class MailboxDO extends DurableObject<Env> {
 		return true;
 	}
 
-	// ── Search (raw SQL — dynamic condition builder) ───────────────
-
-	/**
-	 * Build WHERE conditions and params for search queries.
-	 * Shared between searchEmails and countSearchResults.
-	 */
-	#buildSearchConditions(
-		options: SearchFilterOptions,
-		tableAlias = "",
-	): { conditions: string[]; params: (string | number)[] } {
-		const {
-			query,
-			folder,
-			from,
-			to,
-			subject,
-			date_start,
-			date_end,
-			is_read,
-			is_starred,
-			has_attachment,
-		} = options;
-		const prefix = tableAlias ? `${tableAlias}.` : "";
-		const conditions: string[] = [];
-		const params: (string | number)[] = [];
-		let paramIdx = 0;
-
-		const addParam = (value: string | number) => {
-			paramIdx++;
-			params.push(value);
-			return `?${paramIdx}`;
-		};
-
-		if (query) {
-			const p1 = addParam(`%${query}%`);
-			const p2 = addParam(`%${query}%`);
-			const p3 = addParam(`%${query}%`);
-			const p4 = addParam(`%${query}%`);
-			conditions.push(
-				`(${prefix}subject LIKE ${p1} OR ${prefix}body LIKE ${p2} OR ${prefix}sender LIKE ${p3} OR ${prefix}recipient LIKE ${p4} OR ${prefix}cc LIKE ${p4} OR ${prefix}bcc LIKE ${p4})`,
-			);
-		}
-		if (folder) {
-			const p = addParam(folder);
-			conditions.push(
-				`${prefix}folder_id = (SELECT id FROM folders WHERE name = ${p} OR id = ${p} LIMIT 1)`,
-			);
-		} else conditions.push(`${prefix}folder_id NOT IN ${labels.HIDDEN}`);
-		if (from) {
-			const p = addParam(`%${from}%`);
-			conditions.push(`${prefix}sender LIKE ${p}`);
-		}
-		if (to) {
-			const p = addParam(`%${to}%`);
-			conditions.push(
-				`(${prefix}recipient LIKE ${p} OR ${prefix}cc LIKE ${p} OR ${prefix}bcc LIKE ${p})`,
-			);
-		}
-		if (subject) {
-			const p = addParam(`%${subject}%`);
-			conditions.push(`${prefix}subject LIKE ${p}`);
-		}
-		if (date_start) {
-			const p = addParam(date_start);
-			conditions.push(`${prefix}date >= ${p}`);
-		}
-		if (date_end) {
-			const p = addParam(date_end);
-			conditions.push(`${prefix}date <= ${p}`);
-		}
-		if (is_read !== undefined) {
-			const p = addParam(is_read ? 1 : 0);
-			conditions.push(`${prefix}read = ${p}`);
-		}
-		if (is_starred !== undefined) {
-			const p = addParam(is_starred ? 1 : 0);
-			conditions.push(`${prefix}starred = ${p}`);
-		}
-		if (has_attachment) {
-			conditions.push(`${prefix}id IN (SELECT DISTINCT email_id FROM attachments)`);
-		}
-		if (options.label) {
-			// A label's list never shows what is in Spam or Trash (ADR-0007, decision 8).
-			const p = addParam(options.label);
-			conditions.push(
-				`${prefix}id IN (SELECT email_id FROM email_labels WHERE label_id = ${p}) AND ${prefix}folder_id NOT IN ('spam', 'trash')`,
-			);
-		}
-
-		return { conditions, params };
-	}
+	// ── Search (./search) ──────────────────────────────────────────
 
 	async searchEmails(options: SearchFilterOptions & { page?: number; limit?: number }) {
-		const { page = 1, limit: rawLimit = 25 } = options;
-		const limit = Math.min(Math.max(rawLimit, 1), 100);
-		const { conditions, params } = this.#buildSearchConditions(options, "e");
-
-		const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-		const offset = (page - 1) * limit;
-
-		const query = `
-			SELECT e.id, e.subject, e.sender, e.recipient, e.cc, e.bcc, e.date,
-				e.read, e.starred, e.in_reply_to, e.email_references,
-				e.thread_id, e.folder_id,
-				SUBSTR(e.body, 1, 300) as snippet,
-				f.name as folder_name
-			FROM emails e
-			LEFT JOIN folders f ON e.folder_id = f.id
-			${where}
-			ORDER BY e.date DESC LIMIT ?${params.length + 1} OFFSET ?${params.length + 2}`;
-		params.push(limit, offset);
-
-		const result = this.ctx.storage.sql.exec(query, ...params);
-		const list = [...result].map((row) => ({
-			...row,
-			read: !!row.read,
-			starred: !!row.starred,
-		}));
-		return this.#labelled(list);
+		return this.#labelled(searchEmails(this.ctx.storage.sql, options));
 	}
 
-	/**
-	 * Count total search results matching the given filters (for pagination).
-	 */
+	/** Count total search results matching the given filters (for pagination). */
 	async countSearchResults(options: SearchFilterOptions) {
-		const { conditions, params } = this.#buildSearchConditions(options);
-
-		const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-		const query = `SELECT COUNT(*) as total FROM emails ${where}`;
-
-		const row = [...this.ctx.storage.sql.exec(query, ...params)][0] as
-			| { total: number }
-			| undefined;
-		return row?.total ?? 0;
+		return countSearchResults(this.ctx.storage.sql, options);
 	}
 
 	// ── Threading helpers (raw SQL) ────────────────────────────────

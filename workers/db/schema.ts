@@ -42,4 +42,9 @@ export const attachments = sqliteTable("attachments", {
 	size: integer("size").notNull(),
 	content_id: text("content_id"),
 	disposition: text("disposition"),
+	/**
+	 * Empty for a stored file. For a file of a draft whose bytes have not arrived yet, the time
+	 * it was declared (ADR-0011): such a file is not part of the message.
+	 */
+	uploading_since: text("uploading_since"),
 });

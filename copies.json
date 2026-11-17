@@ -398,6 +398,12 @@
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified",
 					"note": "Holds the subject matching moved out of index.ts, beside Podbay's own matching by Message-ID."
+				},
+				{
+					"path": "workers/durableObject/search.ts",
+					"upstream": "workers/durableObject/index.ts",
+					"status": "modified",
+					"note": "Holds the search conditions, the search list and its count, moved out of index.ts; a search that names no place leaves out Spam and Trash."
 				}
 			]
 		}

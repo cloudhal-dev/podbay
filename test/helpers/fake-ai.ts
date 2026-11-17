@@ -165,8 +165,20 @@ export class FakeMailbox {
 		email.folder_id = folderId;
 		return true;
 	}
-	async deleteEmail(id: string) {
-		return this.emails.delete(id) ? { id } : null;
+	/** The files a deleted message had, as the mailbox names them; this fake keeps none. */
+	async deleteEmail(id: string): Promise<{ id: string; filename: string }[] | null> {
+		return this.emails.delete(id) ? [] : null;
+	}
+	/** Whether a person gave the draft files. A tool does not touch such a draft (ADR-0011). */
+	readonly withFiles = new Set<string>();
+	async holdsFiles(id: string) {
+		return this.withFiles.has(id);
+	}
+	async saveDraft(id: string, fields: { subject: string; recipient: string; body: string }) {
+		const email = this.emails.get(id);
+		if (email?.folder_id !== "draft") return false;
+		Object.assign(email, fields);
+		return true;
 	}
 	async checkSendRateLimit() {
 		return null;

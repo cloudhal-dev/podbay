@@ -75,6 +75,16 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "GET", path: `${M}/emails`, right: "mailbox.read" },
 	{ method: "POST", path: `${M}/emails`, right: "mailbox.send" },
 	{ method: "POST", path: `${M}/drafts`, right: "mailbox.write" },
+	// A draft keeps its id and its files (ADR-0011). Sending them is a send, not this.
+	{ method: "PUT", path: `${M}/drafts/:draftId`, right: "mailbox.write" },
+	{ method: "POST", path: `${M}/drafts/:draftId/attachments`, right: "mailbox.write" },
+	{ method: "POST", path: `${M}/drafts/:draftId/attachments/copy`, right: "mailbox.write" },
+	{ method: "PUT", path: `${M}/drafts/:draftId/attachments/:attachmentId`, right: "mailbox.write" },
+	{
+		method: "DELETE",
+		path: `${M}/drafts/:draftId/attachments/:attachmentId`,
+		right: "mailbox.write",
+	},
 	{ method: "GET", path: `${M}/emails/:id`, right: "mailbox.read" },
 	{ method: "PUT", path: `${M}/emails/:id`, right: "mailbox.write" },
 	{ method: "DELETE", path: `${M}/emails/:id`, right: "mailbox.write" },

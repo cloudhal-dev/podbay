@@ -281,6 +281,19 @@ describe("a model that asks to send", () => {
 		});
 		expect(mailbox.in(Folders.DRAFT)).toHaveLength(1);
 		expect(mailbox.emails.has("mail-1")).toBe(true);
+
+		// A draft a person gave files to is that person's: no tool discards it (ADR-0011).
+		const [kept] = mailbox.in(Folders.DRAFT);
+		mailbox.withFiles.add(kept?.id ?? "");
+		await generateText({
+			model: new MockLanguageModelV4({
+				doGenerate: [asks({ name: "discard_draft", input: { draftId: kept?.id } }), says("Done.")],
+			}),
+			tools: createAgentTools(env, MAILBOX),
+			prompt: "Discard.",
+			stopWhen: stepCountIs(5),
+		});
+		expect(mailbox.in(Folders.DRAFT)).toHaveLength(1);
 		expect(send.calls).toEqual([]);
 	});
 });

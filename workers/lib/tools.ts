@@ -26,6 +26,7 @@ import {
 	getMailboxStub,
 	textToHtml,
 } from "./email-helpers";
+import { deleteMessage } from "./messages";
 import type { EmailFull } from "./schemas";
 
 // ── Type casts for DO methods not on the base stub type ────────────
@@ -265,7 +266,8 @@ export async function toolUpdateDraft(
 		runVerifyDraft?: boolean;
 	},
 ): Promise<
-	{ status: string; newDraftId: string; oldDraftId: string; message: string } | { error: string }
+	| { status: string; draftId: string; newDraftId: string; oldDraftId: string; message: string }
+	| { error: string }
 > {
 	const stub = getMailboxStub(env, mailboxId);
 
@@ -273,46 +275,43 @@ export async function toolUpdateDraft(
 	if (!oldDraft) {
 		return { error: "Draft not found" };
 	}
-	// Changing a draft replaces it, and replacing deletes: a message anywhere but Drafts is
-	// never touched, or this tool would delete mail for good.
+	// Only a draft is changed: a message anywhere else is never touched by this tool.
 	if (oldDraft.folder_id !== Folders.DRAFT) {
 		return { error: "Cannot update: email is not a draft" };
+	}
+	// A draft a person gave files to is that person's: a tool that could change its recipient
+	// would be one click away from sending those files to a stranger (ADR-0011, decision 14).
+	if (await stub.holdsFiles(params.draftId)) {
+		return { error: "Cannot update: this draft holds files. A person changes it in the app." };
 	}
 
 	// The body goes to the model only when the caller asks (the assistant). An MCP client's
 	// draft is saved as it was given, so a key works with the assistant off and no mail of the
 	// mailbox reaches a model by this path.
-	const newDraftId = crypto.randomUUID();
 	const rawBody = params.bodyHtml ?? oldDraft.body ?? "";
 	const verifiedBody = params.runVerifyDraft ? await verifyDraft(env.AI, rawBody) : rawBody;
-
-	// Checked BEFORE the old draft is deleted, so nothing is lost.
 	if (params.runVerifyDraft && !verifiedBody) {
 		return {
 			error: "Draft verification failed — keeping existing draft unchanged. Please try again.",
 		};
 	}
 
-	await stub.deleteEmail(params.draftId);
-	await stub.createEmail(
-		Folders.DRAFT,
-		{
-			id: newDraftId,
-			subject: params.subject ?? oldDraft.subject,
-			sender: mailboxId.toLowerCase(),
-			recipient: (params.to ?? oldDraft.recipient).toLowerCase(),
-			date: new Date().toISOString(),
-			body: verifiedBody,
-			in_reply_to: oldDraft.in_reply_to || null,
-			email_references: oldDraft.email_references || null,
-			thread_id: oldDraft.thread_id || newDraftId,
-		},
-		[],
-	);
+	// The draft keeps its id: it is saved in place (ADR-0011, decision 1).
+	const saved = await stub.saveDraft(params.draftId, {
+		subject: params.subject ?? oldDraft.subject,
+		recipient: (params.to ?? oldDraft.recipient).toLowerCase(),
+		cc: oldDraft.cc ?? null,
+		bcc: oldDraft.bcc ?? null,
+		date: new Date().toISOString(),
+		body: verifiedBody,
+	});
+	if (!saved) return { error: "Draft not found" };
 
 	return {
 		status: "draft_updated",
-		newDraftId,
+		draftId: params.draftId,
+		// Kept for clients written when changing a draft replaced it: both name the same draft.
+		newDraftId: params.draftId,
 		oldDraftId: params.draftId,
 		message: "Draft updated in Drafts folder.",
 	};
@@ -358,7 +357,11 @@ export async function toolDiscardDraft(env: Env, mailboxId: string, draftId: str
 	if (email.folder_id !== Folders.DRAFT) {
 		return { error: "Cannot discard: email is not a draft" };
 	}
-	await stub.deleteEmail(draftId);
+	if (await stub.holdsFiles(draftId)) {
+		return { error: "Cannot discard: this draft holds files. A person discards it in the app." };
+	}
+	// The one deletion of a message: its rows, and any object under its keys (S13).
+	await deleteMessage(env.BUCKET, stub, draftId);
 	return { status: "discarded", draftId };
 }
 

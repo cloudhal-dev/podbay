@@ -262,7 +262,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "`get` `(key: string, options?: R2GetOptions): Promise<R2ObjectBody | R2Object | null>`",
-			"code": ["workers/index.ts"]
+			"code": ["workers/index.ts", "workers/lib/outgoing.ts", "workers/routes/drafts.ts"]
 		},
 		{
 			"id": "runtime.r2.put",
@@ -272,7 +272,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Stores the given `value` and metadata under the associated `key`. Once the write succeeds, returns an `R2Object` containing metadata about the stored Object.",
-			"code": ["workers/index.ts", "workers/lib/attachments.ts"]
+			"code": ["workers/index.ts", "workers/lib/attachments.ts", "workers/routes/drafts.ts"]
 		},
 		{
 			"id": "runtime.r2.delete",
@@ -282,7 +282,14 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "R2 deletes are strongly consistent. Once the Promise resolves, all subsequent read operations will no longer see the provided key value pairs globally.",
-			"code": ["workers/index.ts", "workers/routes/mailboxes.ts", "workers/routes/places.ts"]
+			"code": [
+				"workers/index.ts",
+				"workers/lib/messages.ts",
+				"workers/lib/outgoing.ts",
+				"workers/routes/drafts.ts",
+				"workers/routes/mailboxes.ts",
+				"workers/routes/places.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.namespace",
@@ -716,7 +723,43 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "`attachments` array exceeds 32 entries",
-			"code": ["shared/sending-limits.ts", "workers/lib/schemas.ts", "app/hooks/useComposeForm.ts"]
+			"code": [
+				"shared/sending-limits.ts",
+				"workers/durableObject/drafts.ts",
+				"workers/lib/outgoing.ts",
+				"app/hooks/useDraftFiles.ts"
+			]
+		},
+		{
+			"id": "runtime.r2.put.stream_length",
+			"kind": "runtime",
+			"relies": "A file of a draft goes to the bucket as a stream, never held whole in the Worker; the stream is passed through a `FixedLengthStream` of the declared size, so the bucket knows its length and more or fewer bytes fail.",
+			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
+			"pageUpdated": "2026-11-04",
+			"verifiedAt": "2026-11-17",
+			"evidence": "If `value` is a `ReadableStream`, its length must be known",
+			"code": ["workers/routes/drafts.ts"]
+		},
+		{
+			"id": "limit.workers.subrequests",
+			"kind": "limit",
+			"relies": "Copying the files of a forwarded message into a draft is a read and a write to the bucket for each file; one request copies at most 16, to stay under the number of calls a request may make on the Free plan.",
+			"source": "https://developers.cloudflare.com/workers/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Subrequests per invocation | 50 | 10,000 (up to 10M)",
+			"code": ["shared/sending-limits.ts", "workers/routes/drafts.ts"],
+			"note": "The page does not say plainly whether a call to a bucket counts against this number or against the larger one for internal services; the limit is chosen under the smaller."
+		},
+		{
+			"id": "limit.workers.request_body",
+			"kind": "limit",
+			"relies": "One file of a message (at most 18 MiB) is sent in one request, on every plan.",
+			"source": "https://developers.cloudflare.com/workers/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "request body size limits depend on the domain's Cloudflare plan, not your Workers plan",
+			"code": ["workers/routes/drafts.ts", "shared/sending-limits.ts"]
 		}
 	]
 }

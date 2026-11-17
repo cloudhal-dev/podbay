@@ -213,4 +213,14 @@ export const mailboxMigrations: Migration[] = [
 		name: "11_message_id_index",
 		sql: `CREATE INDEX IF NOT EXISTS idx_emails_message_id ON emails(message_id);`,
 	},
+	{
+		// A draft keeps its files (ADR-0011): a file is declared, then its bytes arrive. Every
+		// row that exists is a stored file, so nothing is rewritten. The index is the one the
+		// table lacked: every read of a message asks for its files by the message.
+		name: "12_draft_files",
+		sql: `
+			ALTER TABLE attachments ADD COLUMN uploading_since TEXT;
+			CREATE INDEX IF NOT EXISTS idx_attachments_email ON attachments(email_id);
+		`,
+	},
 ];
