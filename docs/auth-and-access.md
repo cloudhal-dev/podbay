@@ -68,7 +68,7 @@ Two layers, checked together on every request.
 
 Rules that follow:
 
-- **Managing is not reading.** An owner or administrator without a membership cannot open a mailbox. They can grant themselves one; that grant needs step-up, is written to the audit log and is visible to the mailbox's owners.
+- **Managing is not reading.** An owner or administrator without a membership cannot open a mailbox. They see every mailbox in a registry (its address, its owners, how many members) and manage who its members are; nothing of its mail or its settings. They can grant themselves a membership; that grant needs step-up, is written to the audit log and is visible to the mailbox's owners in the record of member changes, which keeps the entry after the membership is removed again.
 - **A personal mailbox has one owner; a shared mailbox has several members.** The same model serves both.
 - **A non-member gets "not found".** The existence of a mailbox is not revealed.
 - **One function decides.** Every route, tool and connection calls the same `authorize(actor, action, resource)`. A table lists every entry point with its required right, and a test fails when one is missing (rule S1).
