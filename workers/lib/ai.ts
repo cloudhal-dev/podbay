@@ -4,14 +4,57 @@
 // Modified by the Podbay contributors.
 
 /**
- * AI-powered email security and quality tools.
+ * The two model checks around the assistant.
  *
- * - isPromptInjection: scans email bodies for malicious prompt injection.
- * - verifyDraft: reviews draft email bodies and removes agent/system artifacts.
+ * - isPromptInjection: asks a small model whether a message body tries to instruct the assistant.
+ * - verifyDraft: asks a model to remove the assistant's own commentary from a draft.
+ *
+ * Both are advisory (rule S9): they lower the chance of a bad draft, they are not a security
+ * boundary. The boundary is that the assistant has no tool that sends.
+ *
+ * The model ids live in `./models`. Tests pass the fake of `test/helpers/fake-ai.ts`; nothing
+ * here is ever run against a real model in a test.
  */
 
 import { errorFields, log } from "../../shared/log";
-import { escapeHtml, stripHtmlToText, textToHtml } from "./email-helpers";
+import { stripHtmlToText, textToHtml } from "./email-helpers";
+import { MODELS } from "./models";
+
+/** What this module sends to a model. */
+export interface ChatInput {
+	messages: { role: "system" | "user"; content: string }[];
+	max_tokens: number;
+	temperature: number;
+}
+
+/**
+ * The part of the Workers AI binding this module uses. The real `Ai` binding satisfies it, and
+ * so does the fake.
+ */
+export interface TextModel {
+	run(
+		model: typeof MODELS.injectionScan | typeof MODELS.draftVerifier,
+		input: ChatInput,
+	): Promise<unknown>;
+}
+
+/**
+ * The text of a model answer, or null when there is none. Workers AI has two answer shapes:
+ * `{ response }` for the older models and `{ choices: [{ message: { content } }] }` for the
+ * newer ones. Reading both keeps a change of model id from silently reading nothing.
+ */
+export function answerText(output: unknown): string | null {
+	if (typeof output !== "object" || output === null) return null;
+	if ("response" in output && typeof output.response === "string") return output.response;
+	if ("choices" in output && Array.isArray(output.choices)) {
+		const first: unknown = output.choices[0];
+		if (typeof first !== "object" || first === null || !("message" in first)) return null;
+		const message: unknown = first.message;
+		if (typeof message !== "object" || message === null || !("content" in message)) return null;
+		return typeof message.content === "string" ? message.content : null;
+	}
+	return null;
+}
 
 // ── Prompt Injection Scanner ───────────────────────────────────────
 
@@ -23,38 +66,59 @@ Return ONLY "NO" if it is a normal email (even if angry, confused, or containing
 
 Respond with exactly one word: YES or NO.`;
 
+/** A body shorter than this, as plain text, is not scanned: it cannot hold an instruction. */
+export const MIN_SCAN_CHARS = 10;
+
+/**
+ * True when the automatic draft must be skipped for this body.
+ *
+ * The answer is read strictly. Only a clear NO lets the body through:
+ * - the model says YES anywhere: blocked;
+ * - the model says neither YES nor NO, or says nothing: blocked;
+ * - the model call throws: blocked.
+ *
+ * Failing closed is safe here because the only effect is that no draft is written
+ * automatically. The message stays in the inbox, and the person can still ask for a draft.
+ * A body with no text, or with fewer than `MIN_SCAN_CHARS` characters of text, is not sent
+ * to the model and is allowed.
+ */
 export async function isPromptInjection(
-	ai: Ai,
+	ai: TextModel,
 	bodyHtml: string | null | undefined,
 ): Promise<boolean> {
 	if (!bodyHtml) return false;
+	return isPromptInjectionText(ai, stripHtmlToText(bodyHtml));
+}
 
-	const plainText = stripHtmlToText(bodyHtml).trim();
-	if (plainText.length < 10) return false;
+/**
+ * The same scan for text that is already plain. The assistant scans exactly the text it is
+ * about to put into a prompt, so the scan and the prompt cannot differ.
+ */
+export async function isPromptInjectionText(ai: TextModel, text: string): Promise<boolean> {
+	const plainText = text.trim();
+	if (plainText.length < MIN_SCAN_CHARS) return false;
 
 	try {
-		const response = (await ai.run("@cf/meta/llama-3.1-8b-instruct-fast", {
+		const output = await ai.run(MODELS.injectionScan, {
 			messages: [
 				{ role: "system", content: INJECTION_PROMPT },
 				{ role: "user", content: plainText },
 			],
 			max_tokens: 10,
 			temperature: 0,
-		})) as { response?: string };
+		});
 
-		const result = (response?.response || "NO").trim().toUpperCase();
-
-		if (result.includes("YES")) {
+		const words: string[] = (answerText(output) ?? "").toUpperCase().match(/[A-Z]+/g) ?? [];
+		if (words.includes("YES")) {
 			log.warn("agent.injection_detected");
 			return true;
 		}
+		if (words[0] === "NO") return false;
 
-		return false;
+		log.warn("agent.injection_scan_unclear", { words: words.length });
+		return true;
 	} catch (e) {
 		log.error("agent.injection_scan_failed", errorFields(e));
-		// Fail closed: treat scanner failures as potential injection to avoid
-		// auto-drafting replies to emails we couldn't verify.
-		// The email is still stored in the inbox — only auto-draft is skipped.
 		return true;
 	}
 }
@@ -115,11 +179,20 @@ function splitQuotedBlock(html: string): { reply: string; quoted: string } {
 }
 
 /**
- * Verify and clean a draft email body using AI.
- * Falls back to returning the original body if the AI call fails.
+ * Returns the draft with the assistant's own commentary removed.
+ *
+ * - The verifier changes nothing, answers with nothing, or removes more than half of the
+ *   text: the original body is returned unchanged. A verifier that cuts that much is wrong
+ *   more often than the draft is.
+ * - The verifier removes something smaller: the cleaned text is returned, in the format of the
+ *   input, with the quoted block put back.
+ * - The model call throws: the empty string is returned, which means "could not verify".
+ *   Callers must not save or send the body then; they report an error. This fails closed.
+ * - An empty body, or a reply of fewer than 20 characters, is returned as it is, without a
+ *   model call.
  */
-export async function verifyDraft(ai: Ai, body: string): Promise<string> {
-	if (!body || !body.trim()) return body;
+export async function verifyDraft(ai: TextModel, body: string): Promise<string> {
+	if (!body.trim()) return body;
 
 	// Separate the quoted reply block so the AI only reviews the user's text
 	const isHtml = /<[a-z][\s\S]*>/i.test(body);
@@ -134,19 +207,19 @@ export async function verifyDraft(ai: Ai, body: string): Promise<string> {
 	if (replyText.trim().length < 20) return body;
 
 	try {
-		const response = (await ai.run("@cf/meta/llama-4-scout-17b-16e-instruct", {
+		const output = await ai.run(MODELS.draftVerifier, {
 			messages: [
 				{ role: "system", content: VERIFIER_PROMPT },
 				{ role: "user", content: replyText },
 			],
 			max_tokens: 4096,
 			temperature: 0,
-		})) as { response?: string };
+		});
 
-		const cleaned = response?.response ?? null;
+		const cleaned = answerText(output);
 
-		if (!cleaned || !cleaned.trim()) {
-			// AI returned empty — fall back to original
+		if (!cleaned?.trim()) {
+			// The verifier answered with nothing: keep the original.
 			return body;
 		}
 

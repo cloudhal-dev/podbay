@@ -17,6 +17,7 @@
 
 import { Folders } from "../../shared/folders";
 import { errorFields, log } from "../../shared/log";
+import { allMailboxAddresses } from "../auth/store";
 import { sendEmail } from "../email-sender";
 import type { Env } from "../types";
 import { verifyDraft } from "./ai";
@@ -28,7 +29,6 @@ import {
 	getFullEmail,
 	getFullThread,
 	getMailboxStub,
-	listMailboxes,
 	textToHtml,
 } from "./email-helpers";
 import type { EmailFull } from "./schemas";
@@ -45,7 +45,8 @@ type RateLimitStub = {
 // ── list_mailboxes ─────────────────────────────────────────────────
 
 export async function toolListMailboxes(env: Env) {
-	return listMailboxes(env.BUCKET);
+	const addresses = await allMailboxAddresses(env.DB);
+	return addresses.map((address) => ({ id: address, email: address }));
 }
 
 // ── list_emails ────────────────────────────────────────────────────

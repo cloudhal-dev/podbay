@@ -20,12 +20,14 @@ import {
 	WrenchIcon,
 } from "@phosphor-icons/react";
 import { useParams } from "@tanstack/react-router";
-import type { UIMessage } from "ai";
+import type { DynamicToolUIPart, ToolUIPart, UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { errorFields, log } from "shared/log";
 import { useUIStore } from "~/hooks/useUIStore";
+import { escapeHtml } from "~/lib/utils";
+import type { Email } from "~/types";
 
 const TOOL_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
 	list_emails: {
@@ -71,7 +73,8 @@ function ToolCallBadge({ toolName, state }: { toolName: string; state: string })
 		label: toolName,
 		icon: <WrenchIcon size={14} weight="bold" />,
 	};
-	const isDone = state === "output-available" || state === "result" || state === "output-error";
+	const isDone =
+		state === "output-available" || state === "output-error" || state === "output-denied";
 
 	return (
 		<div className="flex items-center gap-1.5 py-1 px-2 rounded bg-kumo-fill/50 text-xs">
@@ -86,17 +89,60 @@ function ToolCallBadge({ toolName, state }: { toolName: string; state: string })
 	);
 }
 
-function getToolNameFromPart(part: UIMessage["parts"][number]): string | null {
-	if (part.type === "dynamic-tool") return (part as any).toolName ?? null;
-	if (part.type.startsWith("tool-")) return part.type.replace("tool-", "");
+type MessagePart = UIMessage["parts"][number];
+type ToolPart = ToolUIPart | DynamicToolUIPart;
+
+/** A tool call of the assistant: a tool the server defines (`tool-<name>`) or a dynamic one. */
+function isToolPart(part: MessagePart): part is ToolPart {
+	return part.type === "dynamic-tool" || part.type.startsWith("tool-");
+}
+
+function toolNameOf(part: ToolPart): string {
+	return part.type === "dynamic-tool" ? part.toolName : part.type.slice("tool-".length);
+}
+
+/**
+ * The draft that the `draft_reply` tool saved, read from the tool's output. The output is made
+ * by the Worker; the UI does not import Worker code, so the shape is checked here.
+ */
+function savedDraft(output: unknown, mailboxId: string): Email | null {
+	if (typeof output !== "object" || output === null) return null;
+	if (!("draftId" in output) || typeof output.draftId !== "string") return null;
+	if (!("draft" in output) || typeof output.draft !== "object" || output.draft === null) {
+		return null;
+	}
+	const fields = new Map<string, unknown>(Object.entries(output.draft));
+	const text = (key: string): string => {
+		const value = fields.get(key);
+		return typeof value === "string" ? value : "";
+	};
+	return {
+		id: output.draftId,
+		subject: text("subject"),
+		sender: mailboxId,
+		recipient: text("to"),
+		date: new Date().toISOString(),
+		read: true,
+		starred: false,
+		// The tool returns the reply as plain text; the composer edits HTML.
+		body: escapeHtml(text("body")).replace(/\n/g, "<br>"),
+		in_reply_to: text("originalEmailId") || null,
+	};
+}
+
+/** The draft of the first finished `draft_reply` call in a message, or null. */
+function draftReplyOf(message: UIMessage, mailboxId: string): Email | null {
+	for (const part of message.parts) {
+		if (!isToolPart(part) || toolNameOf(part) !== "draft_reply") continue;
+		if (part.state !== "output-available") continue;
+		const draft = savedDraft(part.output, mailboxId);
+		if (draft) return draft;
+	}
 	return null;
 }
 
 function hasDraftReplyTool(message: UIMessage): boolean {
-	return message.parts.some((part) => {
-		const toolName = getToolNameFromPart(part);
-		return toolName === "draft_reply";
-	});
+	return message.parts.some((part) => isToolPart(part) && toolNameOf(part) === "draft_reply");
 }
 
 function DraftActions({ onEdit, disabled }: { onEdit: () => void; disabled: boolean }) {
@@ -222,15 +268,8 @@ function MessageBubble({
 							</div>
 						);
 					}
-					const toolName = getToolNameFromPart(part);
-					if (toolName) {
-						return (
-							<ToolCallBadge
-								key={key}
-								toolName={toolName}
-								state={(part as any).state ?? "running"}
-							/>
-						);
+					if (isToolPart(part)) {
+						return <ToolCallBadge key={key} toolName={toolNameOf(part)} state={part.state} />;
 					}
 					return null;
 				})}
@@ -261,9 +300,10 @@ function AgentChatConnected({
 	const { messages, sendMessage, status, setMessages, stop } = useAgentChat({ agent });
 	const isStreaming = status === "streaming" || status === "submitted";
 
+	// Keep the newest message in view; a streamed answer changes `messages` without adding one.
 	useEffect(() => {
 		const el = scrollRef.current;
-		if (el) el.scrollTop = el.scrollHeight;
+		if (el && messages.length > 0) el.scrollTop = el.scrollHeight;
 	}, [messages]);
 
 	useEffect(() => {
@@ -352,35 +392,10 @@ function AgentChatConnected({
 								isStreaming={isStreaming}
 								onAction={(action) => {
 									if (action === "edit") {
-										// Extract draft data from the draft_reply tool result
-										let draftData: {
-											to?: string;
-											subject?: string;
-											body?: string;
-											id?: string;
-										} | null = null;
-										for (const part of msg.parts) {
-											if ((part as any).toolName === "draft_reply" && (part as any).result) {
-												draftData = (part as any).result;
-												break;
-											}
-										}
-										if (draftData) {
-											const draftEmail = {
-												id: draftData.id || "",
-												subject: draftData.subject || "",
-												sender: mailboxId,
-												recipient: draftData.to || "",
-												date: new Date().toISOString(),
-												read: true,
-												starred: false,
-												body: draftData.body || "",
-											};
-											startCompose({
-												mode: "reply",
-												originalEmail: null,
-												draftEmail,
-											});
+										// Open the saved draft in the composer. Sending stays the person's action.
+										const draftEmail = draftReplyOf(msg, mailboxId);
+										if (draftEmail) {
+											startCompose({ mode: "reply", originalEmail: null, draftEmail });
 										} else {
 											sendMessage({
 												text: "Let me edit this draft first. Show me what you have so I can modify it.",
