@@ -32,7 +32,6 @@ export default function ComposePanel() {
 		handleSaveDraft,
 		handleSend,
 		closeCompose,
-		closePanel,
 	} = useComposeForm(mailboxId, folder);
 
 	return (
@@ -53,7 +52,7 @@ export default function ComposePanel() {
 			</div>
 
 			<form
-				onSubmit={(e) => handleSend(e, closePanel)}
+				onSubmit={(e) => handleSend(e, closeCompose)}
 				className="flex flex-col flex-1 min-h-0 overflow-y-auto"
 			>
 				<div className="p-4 md:p-6 space-y-4">
@@ -61,16 +60,25 @@ export default function ComposePanel() {
 
 					<div className="space-y-3">
 						<div className="flex items-center gap-2">
-							<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">To</label>
+							<label
+								htmlFor="compose-to"
+								className="text-sm font-medium text-kumo-subtle w-14 shrink-0"
+							>
+								To
+							</label>
 							<div className="flex-1 flex items-center gap-2 min-w-0">
-								<Input
-									type="text"
-									placeholder="recipient@example.com"
-									size="sm"
-									value={to}
-									onChange={(e) => setTo(e.target.value)}
-									required
-								/>
+								<div className="min-w-0 flex-1">
+									<Input
+										id="compose-to"
+										className="w-full"
+										type="text"
+										placeholder="recipient@example.com"
+										size="sm"
+										value={to}
+										onChange={(e) => setTo(e.target.value)}
+										required
+									/>
+								</div>
 								{!showCcBcc && (
 									<button
 										type="button"
@@ -85,9 +93,16 @@ export default function ComposePanel() {
 
 						{showCcBcc && (
 							<div className="flex items-center gap-2">
-								<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">CC</label>
+								<label
+									htmlFor="compose-cc"
+									className="text-sm font-medium text-kumo-subtle w-14 shrink-0"
+								>
+									CC
+								</label>
 								<div className="flex-1">
 									<Input
+										id="compose-cc"
+										className="w-full"
 										type="text"
 										size="sm"
 										value={cc}
@@ -100,9 +115,16 @@ export default function ComposePanel() {
 
 						{showCcBcc && (
 							<div className="flex items-center gap-2">
-								<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">BCC</label>
+								<label
+									htmlFor="compose-bcc"
+									className="text-sm font-medium text-kumo-subtle w-14 shrink-0"
+								>
+									BCC
+								</label>
 								<div className="flex-1">
 									<Input
+										id="compose-bcc"
+										className="w-full"
 										type="text"
 										size="sm"
 										value={bcc}
@@ -114,9 +136,16 @@ export default function ComposePanel() {
 						)}
 
 						<div className="flex items-center gap-2">
-							<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">Subject</label>
+							<label
+								htmlFor="compose-subject"
+								className="text-sm font-medium text-kumo-subtle w-14 shrink-0"
+							>
+								Subject
+							</label>
 							<div className="flex-1">
 								<Input
+									id="compose-subject"
+									className="w-full"
 									type="text"
 									placeholder="Email subject"
 									size="sm"

@@ -134,12 +134,17 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 			closePanel();
 		}
 	};
+	// Delete moves to Trash. Only inside Trash is it for good, and then it asks first.
 	const handleDelete = () => {
-		if (mailboxId) {
-			if (!window.confirm("Are you sure you want to delete this email?")) return;
-			deleteEmailMut.mutate({ mailboxId, id: email.id });
+		if (!mailboxId) return;
+		if ((folder || email.folder_id) !== Folders.TRASH) {
+			moveEmailMut.mutate({ mailboxId, id: email.id, folderId: Folders.TRASH });
 			closePanel();
+			return;
 		}
+		if (!window.confirm("Delete this conversation forever? This cannot be undone.")) return;
+		deleteEmailMut.mutate({ mailboxId, id: email.id });
+		closePanel();
 	};
 
 	const handleEditDraft = (draftMsg?: Email) => {

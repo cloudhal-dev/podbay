@@ -82,9 +82,10 @@
 					"status": "modified"
 				},
 				{
-					"path": "app/components/MailboxSplitView.tsx",
+					"path": "app/components/MailView.tsx",
 					"upstream": "app/components/MailboxSplitView.tsx",
-					"status": "modified"
+					"status": "modified",
+					"note": "renamed: the list or the open conversation, no longer side by side"
 				},
 				{
 					"path": "app/components/RichTextEditor.tsx",

@@ -220,9 +220,15 @@ const mailboxIndexRoute = createRoute({
 	},
 });
 
+/** `?open=<id>`: the conversation that is open, so Back returns to the list. */
+function openConversation(search: Record<string, unknown>): { open?: string } {
+	return typeof search.open === "string" && search.open !== "" ? { open: search.open } : {};
+}
+
 const emailListRoute = createRoute({
 	getParentRoute: () => mailboxRoute,
 	path: "emails/$folder",
+	validateSearch: openConversation,
 	component: EmailListRoute,
 });
 
@@ -235,8 +241,9 @@ const settingsRoute = createRoute({
 const searchRoute = createRoute({
 	getParentRoute: () => mailboxRoute,
 	path: "search",
-	validateSearch: (search: Record<string, unknown>): { q: string } => ({
+	validateSearch: (search: Record<string, unknown>): { q: string; open?: string } => ({
 		q: typeof search.q === "string" ? search.q : "",
+		...openConversation(search),
 	}),
 	component: SearchResultsRoute,
 });

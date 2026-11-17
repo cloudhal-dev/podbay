@@ -3,49 +3,48 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Button, Input, Tooltip } from "@cloudflare/kumo";
+import { Button, Tooltip } from "@cloudflare/kumo";
 import {
 	GearSixIcon,
+	KeyboardIcon,
 	ListIcon,
 	MagnifyingGlassIcon,
 	RobotIcon,
+	ShieldCheckIcon,
 	XIcon,
 } from "@phosphor-icons/react";
-import { useLocation, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { type KeyboardEvent, useEffect, useState } from "react";
 import { useUIStore } from "~/hooks/useUIStore";
 import { useFeatures } from "~/queries/config";
 
+/** The id the `/` shortcut focuses. */
+export const SEARCH_INPUT_ID = "mail-search";
+
+/**
+ * The top bar: the rail's toggle, the product, one wide search box, and the few things that are
+ * about the whole mailbox rather than a message.
+ */
 export default function Header() {
 	const [searchQuery, setSearchQuery] = useState("");
-	const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 	const { mailboxId } = useParams({ strict: false });
 	const navigate = useNavigate();
 	const location = useLocation();
-	const search = useSearch({ strict: false });
-	const { toggleSidebar, toggleAgentPanel, isAgentPanelOpen } = useUIStore();
+	const search = useSearch({ strict: false }) as { q?: string };
+	const { toggleSidebar, toggleRail, toggleAgentPanel, isAgentPanelOpen, setShortcutHelpOpen } =
+		useUIStore();
 	const enabled = useFeatures();
 	const hasAssistant = enabled.agent || enabled.mcp;
+	const onSearchPage = location.pathname.includes("/search");
 
-	// Sync search input with URL query param so it stays populated
+	// The box shows the search the page is showing.
 	const urlQuery = search.q ?? "";
 	useEffect(() => {
-		if (location.pathname.includes("/search") && urlQuery) {
-			setSearchQuery(urlQuery);
-		}
-	}, [urlQuery, location.pathname]);
+		setSearchQuery(onSearchPage ? urlQuery : "");
+	}, [urlQuery, onSearchPage]);
 
-	const performSearch = () => {
-		if (mailboxId && searchQuery.trim()) {
-			const q = searchQuery.trim();
-			void navigate({ to: "/mailbox/$mailboxId/search", params: { mailboxId }, search: { q } });
-			setIsSearchExpanded(false);
-		}
-	};
-
-	const clearSearch = () => {
-		setSearchQuery("");
-		if (location.pathname.includes("/search") && mailboxId) {
+	const toInbox = () => {
+		if (mailboxId) {
 			void navigate({
 				to: "/mailbox/$mailboxId/emails/$folder",
 				params: { mailboxId, folder: "inbox" },
@@ -53,85 +52,90 @@ export default function Header() {
 		}
 	};
 
-	const handleKeyDown = (e: KeyboardEvent) => {
-		if (e.key === "Enter") {
-			performSearch();
+	const performSearch = () => {
+		const q = searchQuery.trim();
+		if (mailboxId && q) {
+			void navigate({ to: "/mailbox/$mailboxId/search", params: { mailboxId }, search: { q } });
 		}
+	};
+
+	const clearSearch = () => {
+		setSearchQuery("");
+		if (onSearchPage) toInbox();
+	};
+
+	const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") performSearch();
 		if (e.key === "Escape") {
-			if (searchQuery) {
-				clearSearch();
-			} else {
-				setIsSearchExpanded(false);
-			}
+			if (searchQuery) clearSearch();
+			else e.currentTarget.blur();
 		}
 	};
 
 	const isSettingsActive = location.pathname.includes("/settings");
 
 	return (
-		<header className="flex items-center gap-2 px-3 py-2.5 bg-kumo-base border-b border-kumo-line sticky top-0 z-10 md:px-5 md:gap-4">
-			{/* Hamburger menu - mobile only */}
-			<Button
-				variant="ghost"
-				shape="square"
-				size="sm"
-				icon={<ListIcon size={20} />}
-				onClick={toggleSidebar}
-				aria-label="Toggle sidebar"
-				className="md:hidden shrink-0"
-			/>
-
-			{/* Search - full on desktop, collapsible on mobile */}
-			<div
-				className={`flex-1 max-w-lg transition-all flex items-center gap-1 ${
-					isSearchExpanded ? "flex" : "hidden md:flex"
-				}`}
-			>
-				<div className="flex-1 relative flex items-center">
-					<Input
-						className="w-full"
-						aria-label="Search emails"
-						placeholder="Search emails... (try from:name, is:unread, has:attachment)"
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						onKeyDown={handleKeyDown}
-					/>
-					{searchQuery && (
-						<button
-							type="button"
-							onClick={clearSearch}
-							className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-kumo-subtle hover:text-kumo-default hover:bg-kumo-tint transition-colors"
-							aria-label="Clear search"
-						>
-							<XIcon size={14} />
-						</button>
-					)}
-				</div>
-				<Tooltip content="Search" side="bottom" asChild>
-					<Button
-						variant="ghost"
-						shape="square"
-						icon={<MagnifyingGlassIcon size={20} />}
-						onClick={performSearch}
-						aria-label="Search"
-					/>
-				</Tooltip>
-			</div>
-
-			{/* Search toggle button - mobile only, hidden when search is expanded */}
-			{!isSearchExpanded && (
+		<header className="flex h-14 shrink-0 items-center gap-2 bg-kumo-recessed px-2 md:gap-3 md:px-3">
+			{/* One button: slides the rail in on a phone, collapses it on a wide screen */}
+			<Tooltip content="Main menu" side="bottom" asChild>
 				<Button
 					variant="ghost"
 					shape="square"
-					size="sm"
-					icon={<MagnifyingGlassIcon size={20} />}
-					onClick={() => setIsSearchExpanded(true)}
-					aria-label="Search"
-					className="md:hidden shrink-0"
+					icon={<ListIcon size={20} />}
+					onClick={() => {
+						if (window.matchMedia("(min-width: 768px)").matches) toggleRail();
+						else toggleSidebar();
+					}}
+					aria-label="Main menu"
+					className="shrink-0"
 				/>
-			)}
+			</Tooltip>
+			<Link
+				to="/"
+				className="hidden shrink-0 pr-2 text-lg font-semibold text-kumo-default no-underline sm:block md:w-44"
+			>
+				Podbay
+			</Link>
 
-			<div className="flex items-center gap-1 ml-auto shrink-0">
+			<div className="relative flex min-w-0 flex-1 items-center md:max-w-2xl">
+				<MagnifyingGlassIcon
+					size={18}
+					className="pointer-events-none absolute left-4 text-kumo-subtle"
+				/>
+				<input
+					id={SEARCH_INPUT_ID}
+					type="search"
+					aria-label="Search emails"
+					placeholder="Search mail"
+					autoComplete="off"
+					value={searchQuery}
+					onChange={(e) => setSearchQuery(e.target.value)}
+					onKeyDown={handleKeyDown}
+					className="h-10 w-full rounded-full border border-transparent bg-kumo-fill pl-11 pr-10 text-sm text-kumo-default placeholder:text-kumo-subtle focus:border-kumo-line focus:bg-kumo-base focus:outline-none focus:ring-1 focus:ring-kumo-ring [&::-webkit-search-cancel-button]:hidden"
+				/>
+				{searchQuery && (
+					<button
+						type="button"
+						onClick={clearSearch}
+						className="absolute right-3 rounded-full p-1 bg-transparent border-0 text-kumo-subtle hover:bg-kumo-tint hover:text-kumo-default cursor-pointer"
+						aria-label="Clear search"
+					>
+						<XIcon size={16} />
+					</button>
+				)}
+			</div>
+
+			<div className="ml-auto flex shrink-0 items-center gap-0.5">
+				<Tooltip content="Keyboard shortcuts" side="bottom" asChild>
+					<Button
+						variant="ghost"
+						shape="square"
+						icon={<KeyboardIcon size={20} />}
+						onClick={() => setShortcutHelpOpen(true)}
+						aria-label="Keyboard shortcuts"
+						className="hidden md:inline-flex"
+					/>
+				</Tooltip>
 				{hasAssistant && (
 					<Tooltip
 						content={isAgentPanelOpen ? "Hide agent panel" : "Show agent panel"}
@@ -155,16 +159,19 @@ export default function Header() {
 						icon={<GearSixIcon size={20} />}
 						onClick={() => {
 							if (!mailboxId) return;
-							if (isSettingsActive) {
-								void navigate({
-									to: "/mailbox/$mailboxId/emails/$folder",
-									params: { mailboxId, folder: "inbox" },
-								});
-							} else {
-								void navigate({ to: "/mailbox/$mailboxId/settings", params: { mailboxId } });
-							}
+							if (isSettingsActive) toInbox();
+							else void navigate({ to: "/mailbox/$mailboxId/settings", params: { mailboxId } });
 						}}
 						aria-label="Settings"
+					/>
+				</Tooltip>
+				<Tooltip content="Sign-in and security" side="bottom" asChild>
+					<Button
+						variant="ghost"
+						shape="square"
+						icon={<ShieldCheckIcon size={20} />}
+						onClick={() => void navigate({ to: "/account/security" })}
+						aria-label="Sign-in and security"
 					/>
 				</Tooltip>
 			</div>

@@ -15,24 +15,50 @@ export interface ComposeOptions {
 	draftEmail?: Email | null;
 }
 
+const RAIL_KEY = "podbay.rail";
+
+/** Whether the reader left the rail collapsed last time. A convenience kept in this browser only. */
+function railCollapsedBefore(): boolean {
+	try {
+		return window.localStorage.getItem(RAIL_KEY) === "collapsed";
+	} catch {
+		return false;
+	}
+}
+
+function rememberRail(collapsed: boolean): void {
+	try {
+		window.localStorage.setItem(RAIL_KEY, collapsed ? "collapsed" : "open");
+	} catch {
+		// Private windows and blocked storage: the rail simply opens expanded next time.
+	}
+}
+
 interface UIState {
-	// Side panel state
+	/** The open conversation. The address bar is the truth (`?open=`); `MailView` keeps the two in step. */
 	selectedEmailId: string | null;
+	/** Whether the compose window is open. It floats over whatever is on screen. */
 	isComposing: boolean;
-	_previousEmailId: string | null;
 	selectEmail: (id: string | null) => void;
 	startCompose: (options?: ComposeOptions) => void;
+	/** Close the open conversation and go back to the list. */
 	closePanel: () => void;
 	closeCompose: () => void;
 
 	// Compose options
 	composeOptions: ComposeOptions;
 
-	// Mobile sidebar
+	// The rail: an overlay on a phone, collapsible to icons on a wide screen
 	isSidebarOpen: boolean;
 	openSidebar: () => void;
 	closeSidebar: () => void;
 	toggleSidebar: () => void;
+	isRailCollapsed: boolean;
+	toggleRail: () => void;
+
+	// Keyboard shortcut help
+	isShortcutHelpOpen: boolean;
+	setShortcutHelpOpen: (open: boolean) => void;
 
 	// Agent panel
 	isAgentPanelOpen: boolean;
@@ -47,47 +73,38 @@ interface UIState {
 export const useUIStore = create<UIState>((set, get) => ({
 	selectedEmailId: null,
 	isComposing: false,
-	_previousEmailId: null,
 	composeOptions: { mode: "new", originalEmail: null },
 	isComposeModalOpen: false,
 	isSidebarOpen: false,
+	isRailCollapsed: railCollapsedBefore(),
+	isShortcutHelpOpen: false,
 	isAgentPanelOpen: true,
 
-	selectEmail: (id) => set({ selectedEmailId: id, isComposing: false }),
+	selectEmail: (id) => set({ selectedEmailId: id }),
 
+	// Writing a message never closes what is being read: the window floats above it.
 	startCompose: (options) =>
-		set((state) => {
-			const mode = options?.mode || "new";
-			const isReplyOrForward = mode === "reply" || mode === "reply-all" || mode === "forward";
-			return {
-				isComposing: true,
-				_previousEmailId: state.selectedEmailId,
-				// Keep selectedEmailId when replying/forwarding so the thread stays visible
-				selectedEmailId: isReplyOrForward ? state.selectedEmailId : null,
-				composeOptions: options || { mode: "new", originalEmail: null },
-				isSidebarOpen: false,
-			};
+		set({
+			isComposing: true,
+			composeOptions: options || { mode: "new", originalEmail: null },
+			isSidebarOpen: false,
 		}),
 
-	closePanel: () =>
-		set({
-			selectedEmailId: null,
-			isComposing: false,
-			_previousEmailId: null,
-			composeOptions: { mode: "new" as const, originalEmail: null },
-		}),
+	closePanel: () => set({ selectedEmailId: null }),
 
 	closeCompose: () =>
-		set((state) => ({
-			isComposing: false,
-			selectedEmailId: state._previousEmailId,
-			_previousEmailId: null,
-			composeOptions: { mode: "new" as const, originalEmail: null },
-		})),
+		set({ isComposing: false, composeOptions: { mode: "new" as const, originalEmail: null } }),
 
 	openSidebar: () => set({ isSidebarOpen: true }),
 	closeSidebar: () => set({ isSidebarOpen: false }),
 	toggleSidebar: () => set({ isSidebarOpen: !get().isSidebarOpen }),
+	toggleRail: () => {
+		const collapsed = !get().isRailCollapsed;
+		rememberRail(collapsed);
+		set({ isRailCollapsed: collapsed });
+	},
+
+	setShortcutHelpOpen: (open) => set({ isShortcutHelpOpen: open }),
 
 	toggleAgentPanel: () => set({ isAgentPanelOpen: !get().isAgentPanelOpen }),
 
