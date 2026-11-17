@@ -41,9 +41,15 @@ const server = createServer((request, response) => {
 
 // `CONNECT host:443` is how a browser asks a proxy for a tunnel to an https site.
 server.on("connect", (request, socket) => {
+	// The browser may drop the connection while it is being refused. That is its business: an
+	// error on one socket must not take the proxy, and with it every later test, down.
+	socket.on("error", () => {});
 	contacts.push((request.url ?? "").replace(/:\d+$/, ""));
 	socket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
 });
+
+// The same for a request that is cut off or malformed before it is one.
+server.on("clientError", (_error, socket) => socket.destroy());
 
 server.listen(PROXY_PORT, "127.0.0.1");
 process.on("SIGTERM", () => server.close());
