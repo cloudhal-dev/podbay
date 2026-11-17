@@ -35,7 +35,7 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 | Sender authentication | SPF, DKIM and DMARC results shown on each message; failures treated as suspicious | None | A |
 | Spam | Authentication results, allow and block lists, Report spam and Not spam | An empty Spam folder | A; scoring that learns per mailbox in B |
 | Attachments | Download only; risky types flagged and held until the user acknowledges, enforced by the server | Plain download | A |
-| Original message | The raw message is kept and can be downloaded | Not kept | A |
+| Original message | The raw message is kept and can be downloaded. Built on 2026-11-17 for mail that arrives from then on: shown as text, saved as a `.eml` file ([ADR-0015](adr/0015-the-original-message-is-kept.md)) | Not kept | A |
 | Live updates | New mail appears without a refresh | None | A |
 | Sign-in | Password, passkeys, authenticator app, recovery, step-up ([sign-in and access](auth-and-access.md)) | Cloudflare Access only | A |
 | Administration | Accounts, invitations, domains, mailboxes, memberships, audit log, exports | None | A |
