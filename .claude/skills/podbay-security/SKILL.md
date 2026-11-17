@@ -103,13 +103,13 @@ Each boundary below has the same five lines: what crosses it, the invariant, the
 - **Invariant:** one send path. A message leaves only if `From` is an address of a mailbox the caller may send as, and the per-mailbox and per-instance caps allow it. The real binding is reachable only through the adapter. Tests and local development never send real mail.
 - **Code today:** `validateSender` in `workers/lib/email-helpers.ts`; `workers/email-sender.ts`; the send, reply and forward routes; the per-mailbox cap `checkSendRateLimit` in the Durable Object.
 - **Proof today:** `test/unit/sender.test.ts` (`From` must be the mailbox's own address). `test/workerd/vitest.config.ts` sets `remoteBindings: false`, so no test can send.
-- **Open:** the single send function with its static check (the tool path in `workers/lib/tools.ts` sends without `validateSender`), tests for the caps, the per-instance cap, the outbound queue with an idempotency key.
+- **Open:** the single send function with its static check, the per-instance cap, the outbound queue with an idempotency key. The per-mailbox cap is tested in `test/workerd/sending-limit.test.ts`; the tools in `workers/lib/tools.ts` only save drafts (B5).
 
 ### B7. The setup and operator tokens
 
 - **Crosses:** the setup token (the first-owner call) and the deploy token (operator calls), from the person who deployed or an installer acting for them.
 - **Invariant:** these are not user credentials. They authorise a short, documented set of calls and never return message content. The health answer shows version and schema state only. The Worker holds bindings only: no Cloudflare account credential, no call to a Cloudflare REST API, no call home. No secret is in the repository, a fixture, a log or a snapshot.
-- **Code today:** the tokens are not built. There is no setup token, no deploy token and no health route. `.dev.vars.example` holds placeholders only. `scripts/checks/account.ts` and `scripts/checks/secrets.ts` guard the two rules that already apply.
+- **Code today:** the setup token is built: it guards the first-owner call and the operator's recovery call (`workers/routes/account.ts`). There is no deploy token and no health route. `.dev.vars.example` holds placeholders only. `scripts/checks/account.ts` and `scripts/checks/secrets.ts` guard the two rules that already apply.
 - **Proof today:** `pnpm static account` (shipped code and the Worker configuration name no Cloudflare API host and no credential variable) and `pnpm static secrets` (no credential shape, no tracked environment file), with their tests in `test/unit/checks-more.test.ts`. The secrets check is a net: a secret in an unknown format passes.
 - **Open:** the tokens themselves, the closed-instance test (S10), the health route and its test, a scan over test output (S6).
 

@@ -23,7 +23,7 @@ export type MailboxRole = (typeof MAILBOX_ROLES)[number];
 export const ACTIONS = [
 	/** Any signed-in person: their own account, the instance configuration, their mailbox list. */
 	"session",
-	/** Create a mailbox, and later manage accounts and invitations. */
+	/** Create a mailbox, and manage accounts, invitations and recovery links. */
 	"instance.manage",
 	/** Read messages, threads, folders, attachments and search. */
 	"mailbox.read",
