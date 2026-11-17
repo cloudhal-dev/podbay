@@ -1,7 +1,8 @@
 # ADR-0010: A conversation can be snoozed, and a conversation can be muted
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: read on 2026-11-17 and listed at the end. Each quoted finding was read in the document's own text on that day.
 
 ## Context
@@ -28,7 +29,7 @@ Both are in the IANA registries JMAP takes its roles and keywords from, so a mai
 
 A mailbox is a Durable Object, and "Each Durable Object is able to schedule a single alarm at a time by calling `setAlarm()`. Alarms have guaranteed at-least-once execution and are retried automatically when the `alarm()` handler throws." For more than one event: "you can manage many scheduled and recurring events by storing your event schedule in storage and having the `alarm()` handler process due events, then reschedule itself for the next one" (Cloudflare, Durable Objects alarms; recorded in the [ledger](../cloudflare/ledger.json)).
 
-## Decision (proposed)
+## Decision
 
 1. **Snoozed is a seventh place.** A snoozed conversation is in Snoozed, as the registry has it, and nowhere else; [ADR-0007](0007-places-and-labels.md)'s "exactly one place" stands, with one place more. Its rail entry sits under Starred and lists what is snoozed by the time it comes back, soonest first.
 2. **Snoozing takes a time.** Each message of the conversation that is in the Inbox is moved to Snoozed, with the time it comes back and the place it came from. The app offers later today, tomorrow, next week and a date and time. A time in the past is refused.

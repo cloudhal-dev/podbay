@@ -1,7 +1,8 @@
 # ADR-0012: A person's choices are kept with their account, and a mailbox remembers the addresses it has written to
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: read on 2026-11-17 and listed at the end. Each finding about a standard or about Cloudflare was read in its own text on that day. Nothing of this record is built.
 
 ## Context
@@ -73,7 +74,7 @@ RFC 8620 defines the session, the standard methods, binary data and push. RFC 86
 | B5 | **Learned from received mail as well** | Fuller, sooner | Anyone can plant an address, and a name beside it, by sending mail (constraint 4) |
 | B6 | **A full address book now**: people with several addresses, groups, import and export | The complete answer | Phase B work with its own model, rights, screens and JMAP mapping. Not needed to complete an address |
 
-## Decision (proposed)
+## Decision
 
 Options A4 and B4.
 

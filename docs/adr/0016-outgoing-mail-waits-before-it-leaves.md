@@ -1,7 +1,8 @@
 # ADR-0016: Outgoing mail waits before it leaves
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: read on 2026-11-17 and listed at the end. Each finding was read in the standard's or the platform's own text on that day; a quote is a few words.
 
 ## Context
@@ -106,7 +107,7 @@ An attempt that got no answer:
 | H | **Try again** | A message is never lost | A message may arrive twice, and nobody is told |
 | I | **Never by itself**: the person is asked | Nothing is sent twice by Podbay's own doing | A message that did arrive may stand as "not sent" until the person looks |
 
-## Decision (proposed)
+## Decision
 
 Options D, G and I.
 

@@ -1,7 +1,8 @@
 # ADR-0014: One request acts on many conversations, and a list has an order a person chooses
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: read on 2026-11-17 and listed at the end. Each finding was read in the standard's or the platform's own text on that day and is retold here in Podbay's words; names in `code` are the source's own.
 
 ## Context
@@ -86,7 +87,7 @@ For taking it back:
 | G | **No undo above one page**, and the app says so first | Nothing stored | The largest deeds are the ones a person most needs to take back |
 | H | **The mailbox keeps a short record** of what each deed changed | Exact for any size. Undo no longer needs a request that moves mail into Sent. It can cover marks and labels | A persisted format. A row for each changed message while the record lives |
 
-## Decision (proposed)
+## Decision
 
 Options D and H.
 

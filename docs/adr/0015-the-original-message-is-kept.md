@@ -1,7 +1,8 @@
 # ADR-0015: The original message is kept
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: read on 2026-11-17 and listed at the end. Each finding was read in the standard's or the platform's own text on that day and is retold here in Podbay's words; names in `code` are the source's own.
 
 ## Context
@@ -113,7 +114,7 @@ Reading:
 | P | **The bytes through a POST from the app's own origin, and the first part as text in a JSON answer** | No link starts a download. Nothing is ever served that a browser would show | The app holds the file in memory before it saves it |
 | Q | **Shown in the mail frame, or as a page** | None | It is the one thing this record must never do |
 
-## Decision (proposed)
+## Decision
 
 Options E, I, K and P.
 

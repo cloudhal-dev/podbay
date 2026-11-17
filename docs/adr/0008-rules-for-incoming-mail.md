@@ -1,7 +1,8 @@
 # ADR-0008: A mailbox has rules for its incoming mail: blocked senders, filters, an automatic reply
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: read on 2026-11-17 and listed at the end. Each quoted finding was read in the standard's own text on that day.
 
 ## Context
@@ -49,7 +50,7 @@ JMAP describes it as one object for the account: "A vacation response sends an a
 | B | **Store and run Sieve scripts** | The standard; what JMAP's filtering extension carries | An interpreter in the path of every incoming message, for scripts no person at a screen will write. The app would have to generate scripts and parse them back to show them |
 | C | **Rules as data in a closed vocabulary**, matched by one pure function; the automatic reply as the JMAP object | Nothing is interpreted. The vocabulary is what the screens offer, so the screens and the store cannot disagree. Every condition and action has a Sieve equivalent, so an export, or JMAP's filtering extension later, is a translation | Less than Sieve can say. A rule a mail app writes in Sieve cannot be taken in until then |
 
-## Decision (proposed)
+## Decision
 
 Option C.
 

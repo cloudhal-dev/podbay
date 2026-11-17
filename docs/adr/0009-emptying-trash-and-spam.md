@@ -1,7 +1,8 @@
 # ADR-0009: Trash and Spam can be emptied in one step
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: the repository, and the Cloudflare facts already recorded in the [ledger](../cloudflare/ledger.json) on 2026-11-17.
 
 ## Context
@@ -12,7 +13,7 @@ The app could loop over the pages itself, but that is a loop of requests the pag
 
 It is a decision because it adds a route that deletes for good (boundary B4, rule S13) and that other programs can call.
 
-## Decision (proposed)
+## Decision
 
 1. **One route empties a place**: `POST …/folders/:folderId/empty`. It takes only `trash` and `spam`; any other place is refused, so there is no way to empty the inbox by a mistaken id.
 2. **It needs `mailbox.write`**, as deleting one message does. It is not marked for fresh proof: what it removes was already thrown away or reported, and the app asks first, in its own dialog, saying how many conversations go.

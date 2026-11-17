@@ -1,7 +1,8 @@
 # ADR-0011: A draft keeps its files
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: read on 2026-11-17 and listed at the end. Each quoted finding was read in the standard's or the vendor's own text on that day.
 
 ## Context
@@ -77,7 +78,7 @@ Where the stored file lives:
 | G | **A place of its own** for draft files (a table, a key prefix) | Draft files are easy to tell apart | Sending must move them. The bucket has no rename and the binding no copy, so each file is read and written again, and a failure in the middle leaves two half sets |
 | H | **The draft's own attachments**, and the draft becomes the sent message | Nothing moves when the message is sent: same row, same key. It is what the standard's example does | Sending changes a row instead of adding one |
 
-## Decision (proposed)
+## Decision
 
 Options F and H.
 

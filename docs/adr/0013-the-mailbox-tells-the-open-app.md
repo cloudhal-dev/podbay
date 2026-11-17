@@ -1,7 +1,8 @@
 # ADR-0013: The mailbox tells the open app that something changed, and nothing more
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead, as proposed
 - Sources: read on 2026-11-17 and listed at the end. Each quoted finding was read in the document's own text on that day; a quote is a few words.
 
 ## Context
@@ -70,7 +71,7 @@ What the answer has to respect:
 | D | **A WebSocket to the mailbox object, hibernating, that carries only "this changed"** | The object sleeps; an idle tab costs a connection now and then. Nothing on it is mail, so the ordinary API stays the only way to read, with its rights. It is JMAP's model | A new kind of route for the guard. The app must reconnect and must not trust the connection to be there |
 | E | **One connection per person**, to an object of its own, for all their mailboxes | One connection per tab whatever is open; counts of the other mailboxes could be live | A new Durable Object class. Every write in a mailbox would have to find its members and call each one's object, which puts the index on the path of incoming mail. The mailbox stops being the unit |
 
-## Decision (proposed)
+## Decision
 
 Option D.
 
