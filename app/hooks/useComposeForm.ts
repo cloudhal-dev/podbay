@@ -10,6 +10,7 @@ import { MAX_RECIPIENTS } from "shared/sending-limits";
 import { useDisplay } from "~/hooks/useDisplay";
 import { type DraftFile, type LeftBehind, useDraftFiles } from "~/hooks/useDraftFiles";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
+import { type SendRoute, useSending } from "~/hooks/useSending";
 import { useUIStore } from "~/hooks/useUIStore";
 import { quoteLanguage, t } from "~/i18n";
 import {
@@ -22,14 +23,7 @@ import {
 	stripHtml,
 	toEmailListValue,
 } from "~/lib/utils";
-import {
-	useDeleteEmail,
-	useForwardEmail,
-	useInvalidateEmailData,
-	useReplyToEmail,
-	useSaveDraft,
-	useSendEmail,
-} from "~/queries/emails";
+import { useDeleteEmail, useInvalidateEmailData, useSaveDraft } from "~/queries/emails";
 import { useMailbox } from "~/queries/mailboxes";
 import api, { ApiError } from "~/services/api";
 
@@ -183,10 +177,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const { composeOptions, closePanel, closeCompose } = useUIStore();
 	const { data: currentMailbox } = useMailbox(mailboxId);
 	const knownAddresses = useKnownAddresses(mailboxId, currentMailbox?.email);
-	const sendEmailMutation = useSendEmail();
+	const sending = useSending(mailboxId);
 	const saveDraftMutation = useSaveDraft();
-	const replyMutation = useReplyToEmail();
-	const forwardMutation = useForwardEmail();
 	const deleteEmailMutation = useDeleteEmail();
 	const invalidate = useInvalidateEmailData();
 	const conversations = useDisplay((state) => state.conversationView);
@@ -369,13 +361,16 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	};
 
 	/**
-	 * Sends the message. With `archive`, an answer also files the conversation it answers in
-	 * Archive once it is sent, and goes back to the list.
+	 * Sends the message: the mailbox takes it, and it leaves after the undo window, or at
+	 * `sendAt` when the person chose a time (ADR-0016). The notes that follow, Undo and what
+	 * became of the message, are `useSending`'s. With `archive`, an answer also files the
+	 * conversation it answers in Archive, and goes back to the list.
 	 */
 	const handleSend = async (
 		e: Pick<FormEvent, "preventDefault">,
 		onClose: () => void,
 		archive = false,
+		sendAt?: string,
 	) => {
 		e.preventDefault();
 		if (isSending) return;
@@ -419,13 +414,23 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		};
 		const mode = composeOptions.mode;
 		const originalId = composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to;
+		const route: SendRoute =
+			(mode === "reply" || mode === "reply-all") && originalId
+				? { kind: "reply", emailId: originalId }
+				: mode === "forward" && originalId
+					? { kind: "forward", emailId: originalId }
+					: { kind: "new" };
 		setIsSending(true);
 		try {
-			if ((mode === "reply" || mode === "reply-all") && originalId)
-				await replyMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
-			else if (mode === "forward" && originalId)
-				await forwardMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
-			else await sendEmailMutation.mutateAsync({ mailboxId, email: emailData });
+			await sending.send({
+				route,
+				email: emailData,
+				sendAt,
+				compose: { mode, originalEmail: composeOptions.originalEmail },
+				said: archive ? t("Message sent and conversation archived") : undefined,
+			});
+			// What was written is the mailbox's now: closing must not save it as a draft again.
+			setTouched(false);
 			const answered = composeOptions.originalEmail;
 			if (archive && answered && answered.folder_id === Folders.INBOX) {
 				// The answered conversation goes whole, as a line of a list does (ADR-0014).
@@ -437,9 +442,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 					})
 					.finally(() => invalidate(mailboxId));
 				closePanel();
-				toastManager.add({ title: t("Message sent and conversation archived") });
-			} else {
-				toastManager.add({ title: t("Message sent") });
 			}
 			onClose();
 		} catch (err: unknown) {
@@ -487,6 +489,11 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		touch,
 		/** Whether what is written is saved as it stands. */
 		isSaved: savedAt !== null && !touched,
+		/** Why the draft being edited was not sent when it was sent before, if it was not. */
+		notSent:
+			composeOptions.draftEmail?.submission?.state === "failed"
+				? (composeOptions.draftEmail.submission.error ?? "")
+				: undefined,
 		mode: composeOptions.mode,
 		isDraftEdit,
 		closeCompose,

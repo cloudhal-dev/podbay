@@ -6,7 +6,7 @@
  * announced, as they do in a mail client, and the keyboard reaches what the pointer reaches.
  */
 import type { Page } from "@playwright/test";
-import { expect, mime, test } from "./fixtures.ts";
+import { expect, mime, SENT_WITHIN, test } from "./fixtures.ts";
 
 const row = (page: Page, subject: string) =>
 	page.getByRole("button", { name: new RegExp(subject) });
@@ -74,7 +74,7 @@ test("an answer is sent and its conversation archived in one press, when the per
 	await compose.locator(".ProseMirror").click();
 	await page.keyboard.type("The answer.");
 	await compose.getByRole("button", { name: "Send and archive" }).click();
-	await expect(page.getByText("Message sent and conversation archived")).toBeVisible();
+	await expect(page.getByText("Message sent and conversation archived")).toBeVisible(SENT_WITHIN);
 	await expect(compose).toHaveCount(0);
 	await expect(row(page, "Choices: send and file")).toHaveCount(0);
 	await page

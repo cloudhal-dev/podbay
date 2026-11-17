@@ -16,13 +16,15 @@ import { EnvelopeIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Folders } from "shared/folders";
 import { useFreshProof } from "~/components/FreshProof";
 import InvitePerson from "~/components/InvitePerson";
 import People from "~/components/People";
 import Registry from "~/components/Registry";
-import { t } from "~/i18n";
+import { plural, t } from "~/i18n";
 import { rich } from "~/i18n/rich";
 import { signOut, useMe } from "~/lib/session";
+import { useFolders } from "~/queries/folders";
 import { queryKeys } from "~/queries/keys";
 import { useCreateMailbox, useDeleteMailbox, useMailboxes } from "~/queries/mailboxes";
 import api from "~/services/api";
@@ -123,6 +125,11 @@ export default function HomeRoute() {
 			setIsCreating(false);
 		}
 	};
+
+	// How many messages wait to leave the mailbox that is about to be deleted.
+	const { data: placesOfDoomed = [] } = useFolders(isDeleteOpen ? mailboxToDelete?.id : undefined);
+	const waitingToLeave =
+		placesOfDoomed.find((place) => place.id === Folders.SCHEDULED)?.waiting ?? 0;
 
 	const handleDelete = async () => {
 		if (!mailboxToDelete) return;
@@ -365,6 +372,16 @@ export default function HomeRoute() {
 								mailbox: <strong className="text-kumo-default">{mailboxToDelete?.email}</strong>,
 							})}
 						</p>
+						{/* A deleted mailbox sends nothing: what waits in it is said first (ADR-0016). */}
+						{waitingToLeave > 0 && (
+							<p className="mt-2 text-sm text-kumo-strong">
+								{plural(
+									waitingToLeave,
+									"{count} message is waiting to be sent from it. It will not be sent.",
+									"{count} messages are waiting to be sent from it. They will not be sent.",
+								)}
+							</p>
+						)}
 					</LayerDialog.Body>
 					<LayerDialog.Actions dismissLabel={t("Cancel")}>
 						<LayerDialog.Action variant="destructive" loading={isDeleting} onClick={handleDelete}>

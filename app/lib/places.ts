@@ -13,6 +13,7 @@ const NAMES: Record<string, string> = {
 	[Folders.INBOX]: m("place|Inbox"),
 	[Folders.SENT]: m("place|Sent"),
 	[Folders.DRAFT]: m("place|Drafts"),
+	[Folders.SCHEDULED]: m("place|Scheduled"),
 	[Folders.ARCHIVE]: m("place|Archive"),
 	[Folders.SPAM]: m("place|Spam"),
 	[Folders.TRASH]: m("place|Trash"),

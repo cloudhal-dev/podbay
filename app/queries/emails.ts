@@ -100,15 +100,6 @@ export function useInvalidateEmailData() {
 	};
 }
 
-export function useSendEmail() {
-	const invalidate = useInvalidateEmailData();
-	return useMutation({
-		mutationFn: ({ mailboxId, email }: { mailboxId: string; email: unknown }) =>
-			api.sendEmail(mailboxId, email),
-		onSuccess: (_data, { mailboxId }) => invalidate(mailboxId),
-	});
-}
-
 export function useUpdateEmail() {
 	const qc = useQueryClient();
 	return useMutation({
@@ -228,38 +219,6 @@ export function useSaveDraft() {
 			draft: DraftToSave;
 			id?: string;
 		}) => api.saveDraft(mailboxId, draft, id),
-		onSuccess: (_data, { mailboxId }) => invalidate(mailboxId),
-	});
-}
-
-export function useReplyToEmail() {
-	const invalidate = useInvalidateEmailData();
-	return useMutation({
-		mutationFn: ({
-			mailboxId,
-			emailId,
-			email,
-		}: {
-			mailboxId: string;
-			emailId: string;
-			email: unknown;
-		}) => api.replyToEmail(mailboxId, emailId, email),
-		onSuccess: (_data, { mailboxId }) => invalidate(mailboxId),
-	});
-}
-
-export function useForwardEmail() {
-	const invalidate = useInvalidateEmailData();
-	return useMutation({
-		mutationFn: ({
-			mailboxId,
-			emailId,
-			email,
-		}: {
-			mailboxId: string;
-			emailId: string;
-			email: unknown;
-		}) => api.forwardEmail(mailboxId, emailId, email),
 		onSuccess: (_data, { mailboxId }) => invalidate(mailboxId),
 	});
 }

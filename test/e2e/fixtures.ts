@@ -18,6 +18,12 @@ import { PROXY } from "./proxy-address.ts";
 
 export { expect };
 export const BASE = "http://localhost:4174";
+/**
+ * How long a test waits for the note that a message was sent. A message leaves when its undo
+ * window is over (ADR-0016): ten seconds when nobody chose, two more in the mailbox, and the
+ * app says "sent" when the mailbox does, not at the press.
+ */
+export const SENT_WITHIN = { timeout: 30_000 } as const;
 const root = (path: string) => fileURLToPath(new URL(`../../${path}`, import.meta.url));
 
 /**

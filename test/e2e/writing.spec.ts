@@ -7,7 +7,7 @@
  * and an answer is written under the conversation it answers.
  */
 import type { Page } from "@playwright/test";
-import { expect, mime, test } from "./fixtures.ts";
+import { expect, mime, SENT_WITHIN, test } from "./fixtures.ts";
 
 const row = (page: Page, subject: string) =>
 	page.getByRole("button", { name: new RegExp(subject) });
@@ -65,7 +65,7 @@ test("files are attached to a message, kept by its draft, held to what a message
 	await expect(attached).toContainText("report.txt");
 
 	await compose.getByRole("button", { name: "Send", exact: true }).click();
-	await expect(page.getByText("Message sent")).toBeVisible();
+	await expect(page.getByText("Message sent")).toBeVisible(SENT_WITHIN);
 	await expect(compose).toHaveCount(0);
 
 	await page
@@ -204,7 +204,7 @@ test("a forward carries the files of the message, and what can do harm only when
 
 	await compose.getByRole("combobox", { name: "To" }).fill("someone@elsewhere.test");
 	await compose.getByRole("button", { name: "Send", exact: true }).click();
-	await expect(page.getByText("Message sent")).toBeVisible();
+	await expect(page.getByText("Message sent")).toBeVisible(SENT_WITHIN);
 
 	await page.getByRole("button", { name: "Back to list" }).click();
 	await page
@@ -252,7 +252,7 @@ test("what is written is saved by itself, and sending or discarding leaves no dr
 
 	// Sending takes the draft away.
 	await compose.getByRole("button", { name: "Send", exact: true }).click();
-	await expect(page.getByText("Message sent")).toBeVisible();
+	await expect(page.getByText("Message sent")).toBeVisible(SENT_WITHIN);
 	await page.getByRole("button", { name: "Refresh" }).click();
 	await expect(row(page, "Behaviour: saved by itself")).toHaveCount(0);
 

@@ -34,3 +34,13 @@ body {
 [data-kumo-component="DropdownMenu"][data-kumo-part="positioner"] {
 	z-index: 50;
 }
+
+/*
+ * A dialog lies over whatever it was opened from, the compose window too (z-40): "Send later"
+ * and the link of the editor are asked from inside it. A menu of a dialog stays above the
+ * dialog.
+ */
+[data-layer-dialog-backdrop],
+[data-layer-dialog-backdrop] + * {
+	z-index: 45;
+}

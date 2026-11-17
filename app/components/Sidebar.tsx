@@ -6,6 +6,7 @@
 import { Button, Tooltip } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
+	ClockIcon,
 	FileIcon,
 	PaperPlaneTiltIcon,
 	PencilSimpleIcon,
@@ -21,7 +22,7 @@ import { Folders } from "shared/folders";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useDropTarget } from "~/hooks/useDropTarget";
 import { useUIStore } from "~/hooks/useUIStore";
-import { t } from "~/i18n";
+import { plural, t } from "~/i18n";
 import { placeName } from "~/lib/places";
 import { useFolders } from "~/queries/folders";
 import { useMailbox } from "~/queries/mailboxes";
@@ -36,6 +37,8 @@ const SYSTEM_FOLDERS: { id: string; icon: ReactNode }[] = [
 	{ id: Folders.INBOX, icon: <TrayIcon size={18} /> },
 	{ id: Folders.SENT, icon: <PaperPlaneTiltIcon size={18} /> },
 	{ id: Folders.DRAFT, icon: <FileIcon size={18} /> },
+	// What was sent and has not left yet (ADR-0016): under Drafts.
+	{ id: Folders.SCHEDULED, icon: <ClockIcon size={18} /> },
 	{ id: Folders.ARCHIVE, icon: <ArchiveIcon size={18} /> },
 	{ id: Folders.SPAM, icon: <WarningOctagonIcon size={18} /> },
 	{ id: Folders.TRASH, icon: <TrashIcon size={18} /> },
@@ -46,23 +49,35 @@ function Item({
 	icon,
 	label,
 	count,
+	notSent,
 	children,
 }: {
 	collapsed: boolean;
 	icon: ReactNode;
 	label: string;
 	count?: number;
+	/** In Drafts: how many messages came back unsent (ADR-0016, decision 9). */
+	notSent?: number;
 	children: (className: string, content: ReactNode) => ReactNode;
 }) {
 	const content = (
 		<>
 			<span className="relative shrink-0">
 				{icon}
-				{collapsed && count ? (
-					<span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-kumo-brand" />
+				{collapsed && (count || notSent) ? (
+					<span
+						className={`absolute -right-1 -top-1 h-2 w-2 rounded-full ${
+							notSent ? "bg-kumo-danger" : "bg-kumo-brand"
+						}`}
+					/>
 				) : null}
 			</span>
 			{!collapsed && <span className="flex-1 truncate">{label}</span>}
+			{!collapsed && notSent ? (
+				<span className="rounded-full bg-kumo-danger/10 px-1.5 text-xs font-semibold text-kumo-danger">
+					{plural(notSent, "{count} not sent", "{count} not sent")}
+				</span>
+			) : null}
 			{!collapsed && count ? <span className="text-xs font-semibold">{count}</span> : null}
 		</>
 	);
@@ -70,7 +85,13 @@ function Item({
 	const node = children(className, content);
 	return collapsed ? (
 		<Tooltip
-			content={count ? t("{name} ({count} unread)", { name: label, count }) : label}
+			content={
+				notSent
+					? t("{name} ({count} not sent)", { name: label, count: notSent })
+					: count
+						? t("{name} ({count} unread)", { name: label, count })
+						: label
+			}
 			side="right"
 			asChild
 		>
@@ -81,8 +102,11 @@ function Item({
 	);
 }
 
-/** Only a real send fills Sent, and drafts are made by writing: nothing is dropped on them. */
-const NO_DROP: readonly string[] = [Folders.SENT, Folders.DRAFT];
+/**
+ * Only a real send fills Sent and Scheduled, and drafts are made by writing: nothing is
+ * dropped on them.
+ */
+const NO_DROP: readonly string[] = [Folders.SENT, Folders.DRAFT, Folders.SCHEDULED];
 
 /** One place of the rail. Conversations dragged from a list can be dropped on it. */
 function Place({
@@ -90,6 +114,7 @@ function Place({
 	label,
 	icon,
 	count,
+	notSent,
 	collapsed,
 	mailboxId,
 	onNavigate,
@@ -98,6 +123,7 @@ function Place({
 	label: string;
 	icon: ReactNode;
 	count?: number;
+	notSent?: number;
 	collapsed: boolean;
 	mailboxId: string;
 	onNavigate: () => void;
@@ -107,7 +133,7 @@ function Place({
 	const drop = useDropTarget((conversations) => actions.moveTo(conversations, id));
 	const takes = !NO_DROP.includes(id) && id !== folder;
 	return (
-		<Item collapsed={collapsed} icon={icon} label={label} count={count}>
+		<Item collapsed={collapsed} icon={icon} label={label} count={count} notSent={notSent}>
 			{(className, content) => (
 				<Link
 					to="/mailbox/$mailboxId/emails/$folder"
@@ -138,7 +164,12 @@ export default function Sidebar() {
 	// The phone overlay always shows the full rail.
 	const collapsed = isRailCollapsed && !isSidebarOpen;
 
-	const unread = (folderId: string) => folders.find((f) => f.id === folderId)?.unreadCount || 0;
+	const placeOf = (folderId: string) => folders.find((f) => f.id === folderId);
+	/** Beside a place: what is unread in it; beside Scheduled, how many messages wait. */
+	const unread = (folderId: string) =>
+		(folderId === Folders.SCHEDULED
+			? placeOf(folderId)?.waiting
+			: placeOf(folderId)?.unreadCount) || 0;
 
 	const folderLink = (id: string, label: string, icon: ReactNode, count?: number) => (
 		<Place
@@ -147,6 +178,7 @@ export default function Sidebar() {
 			label={label}
 			icon={icon}
 			count={count}
+			notSent={id === Folders.DRAFT ? placeOf(id)?.notSent : undefined}
 			collapsed={collapsed}
 			mailboxId={mailboxId}
 			onNavigate={closeSidebar}

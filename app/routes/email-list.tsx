@@ -6,6 +6,7 @@
 import { Button } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
+	ClockIcon,
 	EnvelopeSimpleIcon,
 	FileIcon,
 	PaperPlaneTiltIcon,
@@ -20,6 +21,7 @@ import { Folders } from "shared/folders";
 import EmptyPlace from "~/components/EmptyPlace";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
+import ScheduledList from "~/components/ScheduledList";
 import { useDisplay } from "~/hooks/useDisplay";
 import { useAskEvery } from "~/hooks/useLive";
 import { useUIStore } from "~/hooks/useUIStore";
@@ -57,6 +59,11 @@ const FOLDER_EMPTY_STATES: Record<
 		title: m("No drafts"),
 		description: m("Emails you're still working on will be saved here."),
 		showCompose: true,
+	},
+	[Folders.SCHEDULED]: {
+		icon: <ClockIcon size={48} weight="thin" className="text-kumo-subtle" />,
+		title: m("Nothing is waiting to be sent"),
+		description: m("A message you send later waits here until its time."),
 	},
 	[Folders.ARCHIVE]: {
 		icon: <ArchiveIcon size={48} weight="thin" className="text-kumo-subtle" />,
@@ -107,16 +114,18 @@ export default function EmailListRoute() {
 	const order = useDisplay((state) => state.order);
 	const queryClient = useQueryClient();
 
+	const isScheduled = folder === Folders.SCHEDULED;
 	const params = useMemo(
 		() => ({
 			folder: folder || "",
-			page: String(page),
-			limit: String(pageSize),
+			// What waits is one page: a mailbox holds a hundred waiting messages at most.
+			page: isScheduled ? "1" : String(page),
+			limit: isScheduled ? "100" : String(pageSize),
 			threaded: String(conversations),
 			// Newest first needs no word; the Worker acts on the request, never on a stored choice.
 			...(order === "newest" ? {} : { order }),
 		}),
-		[folder, page, pageSize, conversations, order],
+		[folder, isScheduled, page, pageSize, conversations, order],
 	);
 	// The mailbox says when something changed (ADR-0013); the list still asks by itself, every
 	// half minute while nothing is telling it and every five minutes while something is.
@@ -142,6 +151,19 @@ export default function EmailListRoute() {
 		queryClient.invalidateQueries({ queryKey: ["emails", mailboxId] });
 		queryClient.invalidateQueries({ queryKey: queryKeys.folders.list(mailboxId) });
 	};
+
+	if (isScheduled) {
+		return (
+			<MailView emails={emailData?.emails ?? []}>
+				<ScheduledList
+					title={folderName}
+					emails={emailData?.emails ?? []}
+					isLoading={isRefreshing}
+					empty={<FolderEmptyState folder={folder} onCompose={() => startCompose()} />}
+				/>
+			</MailView>
+		);
+	}
 
 	return (
 		<MailView emails={emailData?.emails ?? []}>

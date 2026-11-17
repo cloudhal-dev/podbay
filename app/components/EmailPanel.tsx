@@ -15,24 +15,20 @@ import EmailPanelToolbar from "~/components/email-panel/EmailPanelToolbar";
 import type { MessageActions } from "~/components/email-panel/MessageHeader";
 import OriginalMessage from "~/components/email-panel/OriginalMessage";
 import SingleMessageView from "~/components/email-panel/SingleMessageView";
+import SubmissionNotice from "~/components/email-panel/SubmissionNotice";
 import ThreadMessage from "~/components/email-panel/ThreadMessage";
 import InlineReply from "~/components/InlineReply";
 import { LabelChips } from "~/components/LabelChip";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useDisplay } from "~/hooks/useDisplay";
 import { useOpenConversation } from "~/hooks/useOpenConversation";
+import { useSending } from "~/hooks/useSending";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { plural, t } from "~/i18n";
 import { unsubscribeOf } from "~/lib/unsubscribe";
 import { splitEmailList, toEmailListValue } from "~/lib/utils";
-import {
-	useDeleteEmail,
-	useEmail,
-	useReplyToEmail,
-	useSendEmail,
-	useThreadReplies,
-} from "~/queries/emails";
+import { useDeleteEmail, useEmail, useThreadReplies } from "~/queries/emails";
 import { useMailbox } from "~/queries/mailboxes";
 import api from "~/services/api";
 import type { Email, Mailbox } from "~/types";
@@ -73,8 +69,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		data?: Email[];
 	};
 	const deleteEmailMut = useDeleteEmail();
-	const sendEmailMut = useSendEmail();
-	const replyMut = useReplyToEmail();
+	const sending = useSending(mailboxId);
 	const { data: currentMailbox } = useMailbox(mailboxId) as {
 		data?: Mailbox;
 	};
@@ -97,6 +92,9 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
 	const [previewImage, setPreviewImage] = useState<{ url: string; filename: string } | null>(null);
 	const isDraftFolder = folder === Folders.DRAFT;
+	/** What waits to leave is read, and nothing but its own deeds changes it (ADR-0016). */
+	const waits = (msg: Email) =>
+		msg.submission?.state === "waiting" || msg.submission?.state === "sending";
 
 	// With conversations turned off, a message is read by itself.
 	const conversations = useDisplay((state) => state.conversationView);
@@ -186,7 +184,8 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		};
 	}, [printing]);
 
-	const isOpen = email !== undefined && !isDraftFolder;
+	const isScheduled = email !== undefined && (folder === Folders.SCHEDULED || waits(email));
+	const isOpen = email !== undefined && !isDraftFolder && !isScheduled;
 	/**
 	 * After the conversation is filed away: back to the list, or on to the next one, as the reader
 	 * chose in the settings.
@@ -325,10 +324,13 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				html: target.body || "",
 				text: target.body ? target.body.replace(/<[^>]*>/g, "").trim() : "",
 			};
-			if (originalEmail)
-				await replyMut.mutateAsync({ mailboxId, emailId: originalEmail.id, email: emailData });
-			else await sendEmailMut.mutateAsync({ mailboxId, email: emailData });
-			toastManager.add({ title: t("Message sent") });
+			// The mailbox takes it; the notes that follow, Undo and what became of it, are the
+			// hook's. Nothing here says "sent" (ADR-0016).
+			await sending.send({
+				route: originalEmail ? { kind: "reply", emailId: originalEmail.id } : { kind: "new" },
+				email: emailData,
+				compose: { mode: originalEmail ? "reply" : "new", originalEmail },
+			});
 			if (isDraftFolder) closePanel();
 		} catch (err) {
 			const message = (err instanceof Error ? err.message : null) || t("Failed to send email.");
@@ -426,6 +428,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				moveToFolders={actions.moveTargets}
 				labels={actions.labels}
 				inPane={inPane}
+				waiting={isScheduled}
 				onBack={closePanel}
 				onNewer={newer ? () => openConversation(newer) : undefined}
 				onOlder={older ? () => openConversation(older) : undefined}
@@ -469,6 +472,20 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				showThreadCount={hasThread}
 			/>
 
+			{allMessages
+				.filter((msg) => waits(msg) || msg.submission?.state === "failed")
+				.map((msg) => (
+					<SubmissionNotice
+						key={msg.id}
+						email={msg}
+						mailboxId={mailboxId}
+						maySend={currentMailbox?.role !== "reader"}
+						onLeft={(id) => {
+							if (id === emailId) closePanel();
+						}}
+					/>
+				))}
+
 			<div className="flex-1 overflow-y-auto print:overflow-visible">
 				{hasThread ? (
 					allMessages.map((msg, idx) => {
@@ -507,7 +524,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 								onSendDraft={isDraft ? () => handleSendDraft(msg) : undefined}
 								onEditDraft={isDraft ? () => handleEditDraft(msg) : undefined}
 								onDeleteDraft={isDraft ? () => handleDeleteDraft(msg) : undefined}
-								actions={isDraft ? undefined : messageActions(msg)}
+								actions={isDraft || waits(msg) ? undefined : messageActions(msg)}
 								inTrash={msg.folder_id === Folders.TRASH}
 								hiddenInPrint={printing !== null && printing !== "all" && printing !== msg.id}
 								onPreviewImage={(url, filename) => setPreviewImage({ url, filename })}
@@ -521,12 +538,12 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 						mailboxEmail={currentMailbox?.email}
 						isDraft={isDraftFolder}
 						inTrash={place === Folders.TRASH}
-						actions={isDraftFolder ? undefined : messageActions(email)}
+						actions={isDraftFolder || isScheduled ? undefined : messageActions(email)}
 						onPreviewImage={(url, filename) => setPreviewImage({ url, filename })}
 					/>
 				)}
 				{answering && <InlineReply />}
-				{!isDraftFolder && !answering && (
+				{!isDraftFolder && !isScheduled && !answering && (
 					<div className="flex flex-wrap gap-2 px-4 py-5 md:px-6 print:hidden">
 						<Button
 							variant="outline"

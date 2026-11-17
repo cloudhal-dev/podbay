@@ -3,6 +3,8 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import type { Submission } from "shared/sending";
+
 export interface SignatureSettings {
 	enabled: boolean;
 	text: string;
@@ -106,6 +108,11 @@ export interface Email {
 	/** Set when Podbay could not read the message: it has its original and nothing else. */
 	unparsed?: "parser" | "too_large" | "interrupted" | null;
 	attachments?: Attachment[];
+	/**
+	 * What a message says about its way out (ADR-0016), when it was sent from here: it waits
+	 * in Scheduled, has left, or came back to Drafts with the reason.
+	 */
+	submission?: Submission;
 	snippet?: string | null;
 	// Thread aggregate fields (only present in threaded list view)
 	thread_count?: number;
@@ -139,4 +146,8 @@ export interface Folder {
 	id: string;
 	name: string;
 	unreadCount: number;
+	/** In Scheduled: how many messages wait to leave (ADR-0016). */
+	waiting?: number;
+	/** In Drafts: how many messages came back unsent, with the reason. */
+	notSent?: number;
 }

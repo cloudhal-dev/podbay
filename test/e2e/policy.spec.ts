@@ -34,6 +34,7 @@ test("no page of the app breaks its own content policy", async ({ page, app }) =
 	const pages: [string, string][] = [
 		["/", "Mailboxes"],
 		[`/mailbox/${mailbox}/emails/inbox`, "Inbox"],
+		[`/mailbox/${mailbox}/emails/scheduled`, "Scheduled"],
 		[`/mailbox/${mailbox}/settings`, "Settings"],
 		[`/members/${mailbox}`, "Members"],
 		["/account/security", "Sign-in and security"],

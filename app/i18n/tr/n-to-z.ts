@@ -494,4 +494,63 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 		"{name} aktarılmadı: açıldığında zarar verebilir.",
 	"{name} was not carried over: it is too large to send with the rest.":
 		"{name} aktarılmadı: diğerleriyle birlikte gönderilemeyecek kadar büyük.",
+	"To: {recipients}": "Kime: {recipients}",
+	"Pick a date and time": "Tarih ve saat seç",
+	"The time is in this device's time zone. Until then the message waits in Scheduled.":
+		"Saat, bu cihazın saat dilimindedir. İleti o zamana kadar Zamanlananlar'da bekler.",
+	"The message will be sent {time}.": "İleti şu zamanda gönderilecek: {time}.",
+	"This message was not sent.": "Bu ileti gönderilmedi.",
+	"This message is being sent.": "Bu ileti gönderiliyor.",
+	"This message will be sent {time}.": "Bu ileti şu zamanda gönderilecek: {time}.",
+	"Send now": "Şimdi gönder",
+	"The message has already gone.": "İleti çoktan gitti.",
+	"The message could not be taken back.": "İleti geri alınamadı.",
+	"The message has not left yet": "İleti henüz gitmedi",
+	"Sending undone. The message is a draft again.":
+		"Gönderim geri alındı. İleti yeniden bir taslak.",
+	"Sending…": "Gönderiliyor…",
+	"You can still take it back.": "Hâlâ geri alabilirsiniz.",
+	"Send scheduled for {time}": "Gönderim zamanlandı: {time}",
+	"The time could not be changed.": "Saat değiştirilemedi.",
+	"This domain is not set up for sending yet. Whoever runs Podbay can fix that.":
+		"Bu alan adı henüz gönderim için ayarlanmamış. Podbay'i işleten kişi bunu düzeltebilir.",
+	"The message does not fit what can be sent: too many recipients, too many files, or too large.":
+		"İleti gönderilebilecek olana sığmıyor: çok fazla alıcı, çok fazla dosya ya da çok büyük.",
+	"The sending service does not take the message as it is written.":
+		"Gönderim hizmeti iletiyi yazıldığı hâliyle kabul etmiyor.",
+	"The sending service does not send to one of the recipients.":
+		"Gönderim hizmeti alıcılardan birine göndermiyor.",
+	"The sending service could not take the message for hours. Try again later.":
+		"Gönderim hizmeti iletiyi saatlerce alamadı. Daha sonra yeniden deneyin.",
+	"Whoever sent this may no longer send from this mailbox, or their account was recovered since.":
+		"Bunu gönderen kişi artık bu posta kutusundan gönderemiyor ya da hesabı o zamandan beri kurtarıldı.",
+	"The address this message is from is no longer the address of this mailbox.":
+		"Bu iletinin gönderen adresi artık bu posta kutusunun adresi değil.",
+	"The message could not leave within a day of its time.":
+		"İleti, zamanından sonraki bir gün içinde gidemedi.",
+	"The sending service gave no answer, so the message may have been sent. Check with the recipient before you send it again.":
+		"Gönderim hizmeti yanıt vermedi; ileti gönderilmiş olabilir. Yeniden göndermeden önce alıcıya sorun.",
+	"The message could not be delivered. The sending service does not say whether another recipient got it.":
+		"İleti teslim edilemedi. Gönderim hizmeti, başka bir alıcının iletiyi alıp almadığını söylemiyor.",
+	"This instance has sent as much mail as it may today.":
+		"Bu kurulum bugün gönderebileceği kadar posta gönderdi.",
+	"Sending is paused for this instance.": "Bu kurulum için gönderim duraklatıldı.",
+	"One of the recipients does not take mail from this domain any more.":
+		"Alıcılardan biri artık bu alan adından posta kabul etmiyor.",
+	"The sending service refused the message.": "Gönderim hizmeti iletiyi reddetti.",
+	"Tomorrow morning": "Yarın sabah",
+	"Tomorrow afternoon": "Yarın öğleden sonra",
+	"This message was not sent. {reason}": "Bu ileti gönderilmedi. {reason}",
+	"Send later": "Daha sonra gönder",
+	"Schedule send": "Gönderimi zamanla",
+	"Not sent": "Gönderilmedi",
+	"{name} ({count} not sent)": "{name} ({count} gönderilmedi)",
+	"{count} not sent": "{count} gönderilmedi",
+	"Undo send": "Gönderimi geri al",
+	"place|Scheduled": "Zamanlananlar",
+	"Nothing is waiting to be sent": "Gönderilmeyi bekleyen ileti yok",
+	"{count} message is waiting to be sent from it. It will not be sent.":
+		"Bu kutudan gönderilmeyi bekleyen {count} ileti var. Gönderilmeyecek.",
+	"{count} messages are waiting to be sent from it. They will not be sent.":
+		"Bu kutudan gönderilmeyi bekleyen {count} ileti var. Gönderilmeyecekler.",
 };

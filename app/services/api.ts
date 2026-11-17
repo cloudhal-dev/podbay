@@ -13,6 +13,7 @@ import type {
 } from "shared/bulk";
 import type { KnownAddressesAnswer } from "shared/known-addresses";
 import type { OriginalAnswer } from "shared/original";
+import type { SendAnswer } from "shared/sending";
 import { t } from "~/i18n";
 import type {
 	AccessKey,
@@ -229,8 +230,18 @@ const api = {
 			params,
 			signal: opts?.signal,
 		}),
+	/** The mailbox takes the message: it waits, and has not left yet (ADR-0016). */
 	sendEmail: (mailboxId: string, email: unknown) =>
-		post<void>(`/api/v1/mailboxes/${mailboxId}/emails`, email),
+		post<SendAnswer>(`/api/v1/mailboxes/${mailboxId}/emails`, email),
+	/** Takes a waiting message back into Drafts, or the mark off one that was not sent. */
+	unsend: (mailboxId: string, id: string) =>
+		post<{ id: string; status: "draft" }>(`/api/v1/mailboxes/${mailboxId}/emails/${id}/unsend`),
+	/** Gives a waiting message a new time; without one it is sent now. */
+	reschedule: (mailboxId: string, id: string, sendAt?: string) =>
+		post<SendAnswer>(
+			`/api/v1/mailboxes/${mailboxId}/emails/${id}/reschedule`,
+			sendAt === undefined ? {} : { send_at: sendAt },
+		),
 	getEmail: (mailboxId: string, id: string, opts?: { signal?: AbortSignal }) =>
 		get<Email>(`/api/v1/mailboxes/${mailboxId}/emails/${id}`, { signal: opts?.signal }),
 	/** The first part of a received message's original, as text (ADR-0015). */
@@ -296,9 +307,9 @@ const api = {
 			body,
 		),
 	replyToEmail: (mailboxId: string, emailId: string, email: unknown) =>
-		post<void>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/reply`, email),
+		post<SendAnswer>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/reply`, email),
 	forwardEmail: (mailboxId: string, emailId: string, email: unknown) =>
-		post<void>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/forward`, email),
+		post<SendAnswer>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/forward`, email),
 
 	// Folders
 	listFolders: (mailboxId: string) => get<Folder[]>(`/api/v1/mailboxes/${mailboxId}/folders`),

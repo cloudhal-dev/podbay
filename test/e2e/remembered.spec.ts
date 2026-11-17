@@ -8,7 +8,7 @@
  * address is typed, whatever is on screen; mail that arrives teaches it nothing.
  */
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { expect, test } from "./fixtures.ts";
+import { expect, SENT_WITHIN, test } from "./fixtures.ts";
 
 const CHOICES = "/api/v1/me/choices";
 
@@ -164,7 +164,7 @@ test("an address a message was sent to is offered when writing later, whatever i
 	await compose.locator(".ProseMirror").click();
 	await page.keyboard.type("Hello.");
 	await compose.getByRole("button", { name: "Send", exact: true }).click();
-	await expect(page.getByText("Message sent")).toBeVisible();
+	await expect(page.getByText("Message sent")).toBeVisible(SENT_WITHIN);
 
 	// The mailbox remembers whom it wrote to, and not who wrote to it.
 	expect(await known(`nilufer-${stamp}`)).toEqual([written]);
@@ -210,7 +210,7 @@ test("an address a message was sent to is offered when writing later, whatever i
 	await compose.locator(".ProseMirror").click();
 	await page.keyboard.type("Hello again.");
 	await compose.getByRole("button", { name: "Send", exact: true }).click();
-	await expect(page.getByText("Message sent")).toBeVisible();
+	await expect(page.getByText("Message sent")).toBeVisible(SENT_WITHIN);
 	expect(await known(`nilufer-${stamp}`)).toEqual([written]);
 
 	await page.goto(`${base}/settings?tab=mailbox`);

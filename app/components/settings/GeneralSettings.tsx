@@ -3,6 +3,7 @@
 
 import { Button } from "@cloudflare/kumo";
 import { useEffect, useRef, useState } from "react";
+import { UNDO_SECONDS, type UndoSeconds } from "shared/sending";
 import { PAGE_SIZES, type PageSize, useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";
 import { LANGUAGE_NAMES, LANGUAGES, m, t } from "~/i18n";
@@ -18,6 +19,13 @@ import Row, { Choice } from "./Row";
  * where it was.
  */
 let languageJustChosen = false;
+
+/** The undo window of a send (ADR-0016, decision 10). There is no "off". */
+const UNDO_WORDS: Record<UndoSeconds, string> = {
+	5: m("5 seconds"),
+	10: m("10 seconds"),
+	30: m("30 seconds"),
+};
 
 export default function GeneralSettings() {
 	const choices = useDisplay();
@@ -199,6 +207,20 @@ export default function GeneralSettings() {
 						["off", m("Hide it")],
 					]}
 					onChange={(value) => choices.choose({ sendAndArchive: value === "on" })}
+				/>
+			</Row>
+
+			<Row
+				name={t("Undo send")}
+				about={t(
+					"How long a message you sent can still be taken back. It leaves when this time is over.",
+				)}
+			>
+				<Choice
+					legend={t("Undo send")}
+					value={choices.undoSeconds}
+					options={UNDO_SECONDS.map((seconds) => [seconds, UNDO_WORDS[seconds]] as const)}
+					onChange={(undoSeconds) => choices.choose({ undoSeconds })}
 				/>
 			</Row>
 

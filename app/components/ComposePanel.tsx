@@ -9,10 +9,12 @@ import { type DragEvent, type KeyboardEvent, type ReactNode, useEffect, useRef }
 import type { ComposeForm } from "~/hooks/useComposeForm";
 import { useDisplay } from "~/hooks/useDisplay";
 import { m, t } from "~/i18n";
+import { reasonWords } from "~/lib/sending-words";
 import { formatBytes } from "~/lib/utils";
 import AddressField from "./AddressField";
 import { useConfirm } from "./Confirm";
 import RichTextEditor from "./RichTextEditor";
+import SendLater from "./SendLater";
 
 /** Why a file of a forwarded message was not carried into the draft. */
 const LEFT_BEHIND = {
@@ -44,6 +46,7 @@ function Line({ label, id, children }: { label: string; id: string; children: Re
 export default function ComposePanel({ form }: { form: ComposeForm }) {
 	const toField = useRef<HTMLInputElement>(null);
 	const filePicker = useRef<HTMLInputElement>(null);
+	const formElement = useRef<HTMLFormElement>(null);
 	const confirm = useConfirm();
 
 	/** Files dropped anywhere on the message are attached to it. */
@@ -70,6 +73,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 
 	return (
 		<form
+			ref={formElement}
 			onSubmit={(event) => form.handleSend(event, form.closeCompose)}
 			onInput={form.touch}
 			onKeyDown={onKeyDown}
@@ -82,6 +86,14 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 			{form.error && (
 				<div className="px-4 pt-3">
 					<Banner variant="error" text={form.error} />
+				</div>
+			)}
+			{form.notSent !== undefined && !form.error && (
+				<div className="px-4 pt-3">
+					<Banner
+						variant="alert"
+						text={t("This message was not sent. {reason}", { reason: reasonWords(form.notSent) })}
+					/>
 				</div>
 			)}
 
@@ -231,6 +243,17 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						{t("Send and archive")}
 					</Button>
 				)}
+				{/* A time later on: the message waits in Scheduled until then (ADR-0016). */}
+				<SendLater
+					label={t("Send later")}
+					action={t("Schedule send")}
+					disabled={form.isSavingDraft || form.isSending}
+					onChoose={(sendAt) => {
+						// The same fields must be filled as for Send.
+						if (formElement.current?.reportValidity() === false) return;
+						void form.handleSend({ preventDefault() {} }, form.closeCompose, false, sendAt);
+					}}
+				/>
 				<input
 					ref={filePicker}
 					type="file"

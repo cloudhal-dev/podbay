@@ -398,4 +398,29 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	info: "bilgi",
 	"make one with the setup token": "kurulum anahtarıyla bir bağlantı oluşturabilir",
 	me: "ben",
+	"Messages here have not left yet. Each leaves at its time.":
+		"Buradaki iletiler henüz gitmedi. Her biri kendi saatinde gider.",
+	"Being sent": "Gönderiliyor",
+	"Date and time": "Tarih ve saat",
+	"Choose a date and a time.": "Bir tarih ve saat seçin.",
+	"It is a draft again: send it again, change it or discard it.":
+		"Yeniden bir taslak: tekrar gönderin, değiştirin ya da atın.",
+	Dismiss: "Kapat",
+	"Change the time": "Saati değiştir",
+	"Cancel send": "Gönderimi iptal et",
+	"Message not sent. It is in Drafts again.": "İleti gönderilmedi. Yeniden Taslaklar'da.",
+	"It waits in Scheduled and leaves as soon as it can.":
+		"Zamanlananlar'da bekliyor; gidebildiği anda gidecek.",
+	"In an hour": "Bir saat sonra",
+	"Monday morning": "Pazartesi sabahı",
+	"Choose a time that is still to come.": "Henüz gelmemiş bir zaman seçin.",
+	"A message can be sent later by a year at most.":
+		"Bir ileti en çok bir yıl sonrasına zamanlanabilir.",
+	"5 seconds": "5 saniye",
+	"10 seconds": "10 saniye",
+	"30 seconds": "30 saniye",
+	"How long a message you sent can still be taken back. It leaves when this time is over.":
+		"Gönderdiğiniz bir iletinin ne kadar süre geri alınabileceği. Bu süre dolunca ileti gider.",
+	"A message you send later waits here until its time.":
+		"Daha sonra gönderdiğiniz bir ileti, zamanı gelene kadar burada bekler.",
 };

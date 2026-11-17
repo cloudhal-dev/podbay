@@ -390,6 +390,12 @@ export default function MessageList({
 												{t("Draft")}
 											</span>
 										)}
+										{/* A message that came back unsent, with the reason inside (ADR-0016). */}
+										{email.submission?.state === "failed" && (
+											<span className="shrink-0 text-xs font-medium text-kumo-danger">
+												{t("Not sent")}
+											</span>
+										)}
 									</span>
 									<span className="block truncate @2xl:flex-1">
 										{showFolder && place && (

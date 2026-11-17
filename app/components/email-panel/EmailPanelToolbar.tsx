@@ -42,6 +42,8 @@ interface EmailPanelToolbarProps {
 	labels: readonly Label[];
 	/** Shown beside the list: there is no list to go back to, only a pane to close. */
 	inPane: boolean;
+	/** The open message waits to leave (ADR-0016): nothing here files it. */
+	waiting?: boolean;
 	onBack: () => void;
 	/** Steps to the conversation above or below this one in the list it was opened from. */
 	onNewer?: () => void;
@@ -78,6 +80,7 @@ export default function EmailPanelToolbar({
 	moveToFolders,
 	labels,
 	inPane,
+	waiting,
 	onBack,
 	onNewer,
 	onOlder,
@@ -112,76 +115,89 @@ export default function EmailPanelToolbar({
 			)}
 			<span className="w-2" aria-hidden="true" />
 
-			{isDraftFolder ? (
+			{/* A message that waits to leave is filed by nothing: its own deeds are above it. */}
+			{waiting ? null : (
 				<>
-					<Button
-						variant="primary"
-						size="sm"
-						icon={<PaperPlaneTiltIcon size={16} />}
-						onClick={onSendDraft}
-						loading={isSending}
-					>
-						{isSending ? t("Sending") : t("Send")}
-					</Button>
-					<Button
-						variant="secondary"
-						size="sm"
-						icon={<PencilSimpleIcon size={16} />}
-						onClick={onEditDraft}
-					>
-						{t("Edit")}
-					</Button>
-				</>
-			) : (
-				<>
-					{/* A conversation in Sent goes only to Trash (ADR-0014, decision 5). */}
-					{folder !== Folders.ARCHIVE && folder !== Folders.SENT && (
-						<IconButton label={t("Archive")} icon={<ArchiveIcon size={18} />} onClick={onArchive} />
-					)}
-					{folder === Folders.SPAM ? (
-						<IconButton label={t("Not spam")} icon={<TrayIcon size={18} />} onClick={onNotSpam} />
+					{isDraftFolder ? (
+						<>
+							<Button
+								variant="primary"
+								size="sm"
+								icon={<PaperPlaneTiltIcon size={16} />}
+								onClick={onSendDraft}
+								loading={isSending}
+							>
+								{isSending ? t("Sending") : t("Send")}
+							</Button>
+							<Button
+								variant="secondary"
+								size="sm"
+								icon={<PencilSimpleIcon size={16} />}
+								onClick={onEditDraft}
+							>
+								{t("Edit")}
+							</Button>
+						</>
 					) : (
-						folder !== Folders.SENT && (
-							<IconButton
-								label={t("Report spam")}
-								icon={<WarningOctagonIcon size={18} />}
-								onClick={onSpam}
-							/>
-						)
+						<>
+							{/* A conversation in Sent goes only to Trash (ADR-0014, decision 5). */}
+							{folder !== Folders.ARCHIVE && folder !== Folders.SENT && (
+								<IconButton
+									label={t("Archive")}
+									icon={<ArchiveIcon size={18} />}
+									onClick={onArchive}
+								/>
+							)}
+							{folder === Folders.SPAM ? (
+								<IconButton
+									label={t("Not spam")}
+									icon={<TrayIcon size={18} />}
+									onClick={onNotSpam}
+								/>
+							) : (
+								folder !== Folders.SENT && (
+									<IconButton
+										label={t("Report spam")}
+										icon={<WarningOctagonIcon size={18} />}
+										onClick={onSpam}
+									/>
+								)
+							)}
+						</>
 					)}
+					<IconButton
+						label={folder === Folders.TRASH ? t("Delete forever") : t("Delete")}
+						icon={<TrashIcon size={18} />}
+						onClick={onDelete}
+					/>
+					<span className="mx-1 h-5 w-px bg-kumo-line" aria-hidden="true" />
+					{!isDraftFolder && (
+						<IconButton
+							label={t("Mark as unread")}
+							icon={<EnvelopeSimpleIcon size={18} />}
+							onClick={onMarkUnread}
+						/>
+					)}
+					<MoveMenu
+						folders={moveToFolders}
+						labels={labels}
+						onMove={onMove}
+						onMoveToLabel={onMoveToLabel}
+					/>
+					{!isDraftFolder && <LabelMenu labels={labels} targets={[email]} onChange={onLabel} />}
+					<IconButton
+						label={email.starred ? t("Unstar") : t("Star")}
+						icon={
+							<StarIcon
+								size={18}
+								weight={email.starred ? "fill" : "regular"}
+								className={email.starred ? "text-kumo-warning" : ""}
+							/>
+						}
+						onClick={onToggleStar}
+					/>
 				</>
 			)}
-			<IconButton
-				label={folder === Folders.TRASH ? t("Delete forever") : t("Delete")}
-				icon={<TrashIcon size={18} />}
-				onClick={onDelete}
-			/>
-			<span className="mx-1 h-5 w-px bg-kumo-line" aria-hidden="true" />
-			{!isDraftFolder && (
-				<IconButton
-					label={t("Mark as unread")}
-					icon={<EnvelopeSimpleIcon size={18} />}
-					onClick={onMarkUnread}
-				/>
-			)}
-			<MoveMenu
-				folders={moveToFolders}
-				labels={labels}
-				onMove={onMove}
-				onMoveToLabel={onMoveToLabel}
-			/>
-			{!isDraftFolder && <LabelMenu labels={labels} targets={[email]} onChange={onLabel} />}
-			<IconButton
-				label={email.starred ? t("Unstar") : t("Star")}
-				icon={
-					<StarIcon
-						size={18}
-						weight={email.starred ? "fill" : "regular"}
-						className={email.starred ? "text-kumo-warning" : ""}
-					/>
-				}
-				onClick={onToggleStar}
-			/>
 
 			<div className="ml-auto flex items-center gap-1">
 				{showSteps && (

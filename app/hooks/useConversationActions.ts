@@ -18,8 +18,11 @@ import { useLabels } from "~/queries/labels";
 import api, { ApiError } from "~/services/api";
 import type { Email, Folder, Label } from "~/types";
 
-/** Only a real send fills Sent, and drafts are made by writing: neither is a place to move mail to. */
-const NOT_A_MOVE_TARGET: readonly string[] = [Folders.SENT, Folders.DRAFT];
+/**
+ * Only a real send fills Sent and Scheduled, and drafts are made by writing: none of them is a
+ * place to move mail to.
+ */
+const NOT_A_MOVE_TARGET: readonly string[] = [Folders.SENT, Folders.DRAFT, Folders.SCHEDULED];
 /** Where one request may move lines (ADR-0014, decision 2). */
 const MOVES: readonly BulkMove[] = ["inbox", "archive", "spam", "trash"];
 const MOVED: Record<BulkMove, AskedDeed> = {
