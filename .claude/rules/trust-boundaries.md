@@ -25,6 +25,7 @@ paths:
   - "shared/mail-frame.ts"
   - "shared/attachment-risk.ts"
   - "shared/original.ts"
+  - "shared/live.ts"
   - "migrations/**"
   - ".github/**"
   - ".claude/settings.json"
@@ -38,5 +39,5 @@ paths:
 Load the `podbay-security` skill before you edit, and find the boundary in its section 1.
 
 - A change here ships a regression test that fails without the control (hard rule 7).
-- A new route goes into `workers/auth/route-table.ts` with its right; a sensitive one is marked `fresh`.
+- A new route goes into `workers/auth/route-table.ts` with its right; a sensitive one is marked `fresh`, and one that opens a WebSocket is marked `upgrade`.
 - Update section 2 of the skill and `docs/status.md` in the same change.

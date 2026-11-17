@@ -36,7 +36,7 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 | Spam | Authentication results, allow and block lists, Report spam and Not spam | An empty Spam folder | A; scoring that learns per mailbox in B |
 | Attachments | Download only; risky types flagged and held until the user acknowledges, enforced by the server | Plain download | A |
 | Original message | The raw message is kept and can be downloaded. Built on 2026-11-17 for mail that arrives from then on: shown as text, saved as a `.eml` file ([ADR-0015](adr/0015-the-original-message-is-kept.md)) | Not kept | A |
-| Live updates | New mail appears without a refresh | None | A |
+| Live updates | New mail appears without a refresh. Built on 2026-11-17: the mailbox tells the open app that something changed, and the app reads what changed as it always did ([ADR-0013](adr/0013-the-mailbox-tells-the-open-app.md)) | None | A; notifications while the app is closed in B |
 | Sign-in | Password, passkeys, authenticator app, recovery, step-up ([sign-in and access](auth-and-access.md)) | Cloudflare Access only | A |
 | Administration | Accounts, invitations, domains, mailboxes, memberships, audit log, exports | None | A |
 | Assistant | An agent panel that reads, searches and drafts with the user's rights, and never sends without confirmation | Yes, without per-user rights | A; limits and a usage view in B |
