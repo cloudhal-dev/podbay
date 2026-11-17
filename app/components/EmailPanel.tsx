@@ -15,6 +15,7 @@ import EmailPanelToolbar from "~/components/email-panel/EmailPanelToolbar";
 import SingleMessageView from "~/components/email-panel/SingleMessageView";
 import ThreadMessage from "~/components/email-panel/ThreadMessage";
 import { useConversationActions } from "~/hooks/useConversationActions";
+import { useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { splitEmailList, toEmailListValue } from "~/lib/utils";
@@ -51,7 +52,15 @@ function EmailPanelSkeleton() {
 	);
 }
 
-export default function EmailPanel({ emailId }: { emailId: string }) {
+interface EmailPanelProps {
+	emailId: string;
+	/** The list this conversation was opened from, newest first, to step to the next one. */
+	siblings?: Email[];
+	/** Shown beside the list: the list keeps the keys that file a conversation. */
+	inPane?: boolean;
+}
+
+export default function EmailPanel({ emailId, siblings = [], inPane = false }: EmailPanelProps) {
 	const { mailboxId, folder } = useParams({ strict: false });
 	const { data: email } = useEmail(mailboxId, emailId) as { data?: Email };
 	const { data: threadRepliesRaw } = useThreadReplies(mailboxId, email?.thread_id) as {
@@ -70,6 +79,10 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 	/** The folder this conversation is in: the one on screen, or its own in search results. */
 	const place = folder || email?.folder_id || undefined;
 	const actions = useConversationActions(mailboxId, place);
+	const openConversation = useOpenConversation(mailboxId);
+	const position = siblings.findIndex((sibling) => sibling.id === emailId);
+	const newer = position > 0 ? siblings[position - 1] : undefined;
+	const older = position >= 0 ? siblings[position + 1] : undefined;
 	const [isSending, setIsSending] = useState(false);
 	const [sourceViewEmail, setSourceViewEmail] = useState<Email | null>(null);
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
@@ -128,11 +141,18 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 	};
 	const reply = (mode: "reply" | "reply-all" | "forward") =>
 		startCompose({ mode, originalEmail: mode === "forward" ? email : lastReceivedMessage });
+	// Beside the list only the keys that answer live here; the list has the rest.
+	useShortcuts(
+		{ r: () => reply("reply"), a: () => reply("reply-all"), f: () => reply("forward") },
+		isOpen && inPane,
+	);
 	useShortcuts(
 		{
 			r: () => reply("reply"),
 			a: () => reply("reply-all"),
 			f: () => reply("forward"),
+			k: () => newer && openConversation(newer),
+			j: () => older && openConversation(older),
 			e: () => email && place !== Folders.ARCHIVE && away(actions.archive([email])),
 			"#": () => email && void actions.remove([email]).then(away),
 			"!": () => email && place !== Folders.SPAM && away(actions.reportSpam([email])),
@@ -142,7 +162,7 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 				closePanel();
 			},
 		},
-		isOpen,
+		isOpen && !inPane,
 	);
 
 	if (!email) return <EmailPanelSkeleton />;
@@ -242,7 +262,11 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 				isDraftFolder={isDraftFolder}
 				isSending={isSending}
 				moveToFolders={actions.moveTargets}
+				inPane={inPane}
 				onBack={closePanel}
+				onNewer={newer ? () => openConversation(newer) : undefined}
+				onOlder={older ? () => openConversation(older) : undefined}
+				showSteps={siblings.length > 0}
 				onSendDraft={() => handleSendDraft()}
 				onEditDraft={() => handleEditDraft()}
 				onArchive={() => away(actions.archive([email]))}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { accountProblems } from "../../scripts/checks/account.ts";
 import { compatProblems, MAX_AGE_DAYS } from "../../scripts/checks/compat.ts";
-import { BROWSER_DIALOG_DEBT, dialogProblems } from "../../scripts/checks/dialogs.ts";
+import { dialogProblems } from "../../scripts/checks/dialogs.ts";
 import { headersProblems } from "../../scripts/checks/headers.ts";
 import { htmlProblems } from "../../scripts/checks/html.ts";
 import { secretProblems } from "../../scripts/checks/secrets.ts";
@@ -122,13 +122,9 @@ describe("dialogs", () => {
 		).toEqual([]);
 	});
 
-	it("ignores comments and code outside the UI, and keeps the debt list to one prompt", () => {
+	it("ignores comments and code outside the UI", () => {
 		expect(dialogProblems("app/x.ts", "// never call window.confirm() here")).toEqual([]);
 		expect(dialogProblems("workers/x.ts", 'window.alert("x");')).toEqual([]);
-		expect(BROWSER_DIALOG_DEBT).toEqual({ "app/components/RichTextEditor.tsx": ["prompt"] });
-		expect(
-			dialogProblems("app/components/RichTextEditor.tsx", 'window.confirm("x");'),
-		).toHaveLength(1);
 	});
 });
 

@@ -3,26 +3,39 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { EnvelopeSimpleOpenIcon } from "@phosphor-icons/react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef } from "react";
 import EmailPanel from "~/components/EmailPanel";
+import { useSplit } from "~/hooks/useDisplay";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
+import type { Email } from "~/types";
 
 /**
- * The main area of a mailbox: the list, or the conversation that was opened from it, never both.
- * Opening a conversation is a navigation (`?open=<id>`), so the browser's Back returns to the
- * list and a conversation can be reloaded or bookmarked.
+ * The main area of a mailbox. By default it is the list, or the conversation that was opened
+ * from it, never both. When the reader chose the reading pane and the screen has room, the
+ * conversation opens beside the list instead.
  *
- * The address is the truth. Code that opens or closes a conversation through the store (a row,
- * the toolbar's back arrow, a move or a delete) is followed here by a navigation.
+ * Opening a conversation is a navigation (`?open=<id>`) either way, so the browser's Back
+ * returns to the list and a conversation can be reloaded or bookmarked. The address is the
+ * truth: code that opens or closes a conversation through the store (a row, the toolbar's back
+ * arrow, a move or a delete) is followed here by a navigation.
  */
-export default function MailView({ children }: { children: ReactNode }) {
+export default function MailView({
+	children,
+	emails = [],
+}: {
+	children: ReactNode;
+	/** The conversations of the list on screen, so an open one can step to the next. */
+	emails?: Email[];
+}) {
 	const search = useSearch({ strict: false }) as { open?: string };
 	const navigate = useNavigate();
 	const open = search.open;
 	const selectedEmailId = useUIStore((state) => state.selectedEmailId);
 	const inStep = useRef<string | null>(null);
+	const split = useSplit();
 
 	useEffect(() => {
 		inStep.current = open ?? null;
@@ -46,9 +59,29 @@ export default function MailView({ children }: { children: ReactNode }) {
 	// `u` goes back to the list, as the toolbar's arrow does.
 	useShortcuts({ u: () => useUIStore.getState().closePanel() }, open !== undefined);
 
+	if (split) {
+		return (
+			<div className="flex h-full min-w-0">
+				<div className="@container flex w-[38%] min-w-[360px] max-w-[520px] shrink-0 flex-col border-r border-kumo-line">
+					{children}
+				</div>
+				<div className="flex min-w-0 flex-1 flex-col">
+					{open ? (
+						<EmailPanel emailId={open} inPane />
+					) : (
+						<div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+							<EnvelopeSimpleOpenIcon size={48} weight="thin" className="text-kumo-subtle" />
+							<p className="text-sm text-kumo-subtle">No conversation is open.</p>
+						</div>
+					)}
+				</div>
+			</div>
+		);
+	}
+
 	return (
-		<div className="flex h-full flex-col min-w-0">
-			{open ? <EmailPanel emailId={open} /> : children}
+		<div className="@container flex h-full min-w-0 flex-col">
+			{open ? <EmailPanel emailId={open} siblings={emails} /> : children}
 		</div>
 	);
 }

@@ -126,7 +126,7 @@ export default function EmailListRoute() {
 	};
 
 	return (
-		<MailView>
+		<MailView emails={emailData?.emails ?? []}>
 			<MessageList
 				title={folderName}
 				emails={emailData?.emails ?? []}

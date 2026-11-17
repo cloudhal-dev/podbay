@@ -276,3 +276,131 @@ test("the rail collapses to icons and stays that way", async ({ page, app }) => 
 	await page.getByRole("button", { name: "Main menu" }).click();
 	await expect(rail.getByText("Inbox")).toBeVisible();
 });
+
+test("an open conversation steps to the newer and the older one", async ({ page, app }) => {
+	for (const name of ["older", "newer"]) {
+		await app.deliver(
+			mime({ subject: `Behaviour: step ${name}`, to: app.account.mailbox, text: name }),
+		);
+	}
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await row(page, "Behaviour: step newer").click();
+	const subject = page.getByRole("heading", { level: 2 });
+	await expect(subject.filter({ hasText: "Behaviour: step newer" })).toBeVisible();
+
+	await page.getByRole("button", { name: "Older", exact: true }).click();
+	await expect(subject.filter({ hasText: "Behaviour: step older" })).toBeVisible();
+	await page.keyboard.press("k");
+	await expect(subject.filter({ hasText: "Behaviour: step newer" })).toBeVisible();
+
+	// Stepping reads: both are read when the list comes back.
+	await page.keyboard.press("u");
+	await select(page, "Behaviour: step older").check();
+	await expect(page.getByRole("button", { name: "Mark as unread" }).first()).toBeVisible();
+});
+
+test("the reader chooses the height of a line and a reading pane, and the choice stays", async ({
+	page,
+	app,
+}) => {
+	for (const name of ["below", "above"]) {
+		await app.deliver(
+			mime({ subject: `Behaviour: pane ${name}`, to: app.account.mailbox, html: `<p>${name}</p>` }),
+		);
+	}
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	const line = row(page, "Behaviour: pane above");
+	await expect(line).toBeVisible();
+	const height = async () => (await line.locator("..").boundingBox())?.height ?? 0;
+	expect(await height()).toBe(40);
+
+	await page.getByRole("button", { name: "Display" }).click();
+	await page.getByRole("menuitemradio", { name: "Compact" }).click();
+	await page.keyboard.press("Escape");
+	expect(await height()).toBe(32);
+
+	// With the reading pane a conversation opens beside the list, and the list stays.
+	await page.getByRole("button", { name: "Display" }).click();
+	await page.getByRole("menuitemradio", { name: "Right of the list" }).click();
+	await page.keyboard.press("Escape");
+	await expect(page.getByText("No conversation is open.")).toBeVisible();
+	await line.click();
+	await expect(page.locator('iframe[title="Email content"]')).toBeVisible();
+	await expect(line).toBeVisible();
+
+	// Moving through the list reads it, and filing the open conversation closes the pane.
+	await page.keyboard.press("j");
+	await expect(
+		page.getByRole("heading", { level: 2 }).filter({ hasText: "Behaviour: pane below" }),
+	).toBeVisible();
+	await page.keyboard.press("e");
+	await expect(row(page, "Behaviour: pane below")).toHaveCount(0);
+	await expect(page.getByText("No conversation is open.")).toBeVisible();
+
+	// Both choices are still there after a reload. Beside a pane the list is narrow, and a line
+	// is two rows of text whatever the density.
+	await page.reload();
+	await expect(page.getByText("No conversation is open.")).toBeVisible();
+	await expect(line).toBeVisible();
+	expect(await height()).toBeGreaterThan(32);
+
+	// On a narrow screen there is no room for a pane: the conversation replaces the list.
+	await page.setViewportSize({ width: 800, height: 800 });
+	await expect(page.getByText("No conversation is open.")).toHaveCount(0);
+	await page.setViewportSize({ width: 1280, height: 800 });
+	await page.getByRole("button", { name: "Display" }).click();
+	await page.getByRole("menuitemradio", { name: "No split" }).click();
+	await page.keyboard.press("Escape");
+	await expect(page.getByText("No conversation is open.")).toHaveCount(0);
+	expect(await height()).toBe(32);
+});
+
+test("search options write the query a person could type", async ({ page, app }) => {
+	await app.deliver(
+		mime({ subject: "Behaviour: find me by parts", to: app.account.mailbox, text: "needle" }),
+	);
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await page.getByRole("button", { name: "Search options" }).click();
+	const options = page.getByRole("dialog", { name: "Search options" });
+	await options.getByLabel("Subject").fill("find me by parts");
+	await options.getByLabel("Has the words").fill("needle");
+	await options.getByLabel("Search in").selectOption({ label: "Inbox" });
+	await options.getByRole("button", { name: "Search", exact: true }).click();
+
+	await expect(options).toHaveCount(0);
+	const box = page.getByRole("searchbox", { name: "Search emails" });
+	await expect(box).toHaveValue('subject:"find me by parts" in:inbox needle');
+	await expect(row(page, "Behaviour: find me by parts")).toBeVisible();
+
+	// The dialog opens with what the box says.
+	await page.getByRole("button", { name: "Search options" }).click();
+	await expect(options.getByLabel("Subject")).toHaveValue("find me by parts");
+	await expect(options.getByLabel("Has the words")).toHaveValue("needle");
+});
+
+test("a link is added in the app's own dialog, and adding it does not send the message", async ({
+	page,
+	app,
+}) => {
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await page.getByRole("button", { name: "Compose" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	await compose.getByLabel("To", { exact: true }).fill("someone@example.com");
+	await compose.getByLabel("Subject").fill("A link");
+	const text = compose.locator(".ProseMirror");
+	await text.click();
+	await page.keyboard.type("our page");
+	await page.keyboard.press("ControlOrMeta+a");
+
+	await compose.getByRole("button", { name: "Link", exact: true }).click();
+	const dialog = page.getByRole("dialog", { name: "Link" });
+	await dialog.getByLabel("Address").fill("https://example.com/page");
+	await dialog.getByLabel("Address").press("Enter");
+	await expect(dialog).toHaveCount(0);
+
+	await expect(text.locator('a[href="https://example.com/page"]')).toHaveText("our page");
+	await expect(compose).toBeVisible();
+	await expect(page.getByText("Message sent")).toHaveCount(0);
+	expect(app.watch.dialogs).toEqual([]);
+	await compose.getByRole("button", { name: "Discard" }).click();
+});

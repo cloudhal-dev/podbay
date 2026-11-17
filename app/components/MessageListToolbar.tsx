@@ -174,7 +174,10 @@ export default function MessageListToolbar({
 						folders={actions.moveTargets}
 						onMove={(target) => actions.moveTo(chosen, target)}
 					/>
-					<span className="ml-2 text-sm text-kumo-subtle max-sm:sr-only" aria-live="polite">
+					<span
+						className="sr-only ml-2 text-sm text-kumo-subtle @xl:not-sr-only"
+						aria-live="polite"
+					>
 						{chosen.length} selected
 					</span>
 				</>

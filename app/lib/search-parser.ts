@@ -123,3 +123,70 @@ function normalizeDate(value: string): string | undefined {
 		return undefined;
 	}
 }
+
+/** What the search options dialog collects. Dates are days, as a date field gives them. */
+export interface SearchOptions {
+	words: string;
+	from: string;
+	to: string;
+	subject: string;
+	/** A folder id, or "" for everywhere. */
+	folder: string;
+	hasAttachment: boolean;
+	unreadOnly: boolean;
+	after: string;
+	before: string;
+}
+
+export const NO_SEARCH_OPTIONS: SearchOptions = {
+	words: "",
+	from: "",
+	to: "",
+	subject: "",
+	folder: "",
+	hasAttachment: false,
+	unreadOnly: false,
+	after: "",
+	before: "",
+};
+
+/** A value as an operator takes it: quoted when it has a space, never with a quote inside. */
+function operand(value: string): string {
+	const clean = value.replace(/"/g, "").trim();
+	return /\s/.test(clean) ? `"${clean}"` : clean;
+}
+
+/** The query that says the same as the options, in the form `parseSearchQuery` reads. */
+export function buildSearchQuery(options: SearchOptions): string {
+	const parts: string[] = [];
+	const add = (operator: string, value: string) => {
+		if (operand(value) !== "") parts.push(`${operator}:${operand(value)}`);
+	};
+	add("from", options.from);
+	add("to", options.to);
+	add("subject", options.subject);
+	add("in", options.folder);
+	if (options.hasAttachment) parts.push("has:attachment");
+	if (options.unreadOnly) parts.push("is:unread");
+	add("after", options.after);
+	add("before", options.before);
+	const words = options.words.replace(/\s+/g, " ").trim();
+	if (words !== "") parts.push(words);
+	return parts.join(" ");
+}
+
+/** The options a query stands for, to fill the dialog with what the search box already says. */
+export function searchOptionsOf(query: string): SearchOptions {
+	const parsed = parseSearchQuery(query);
+	return {
+		words: parsed.query,
+		from: parsed.from ?? "",
+		to: parsed.to ?? "",
+		subject: parsed.subject ?? "",
+		folder: parsed.folder ?? "",
+		hasAttachment: parsed.has_attachment === true,
+		unreadOnly: parsed.is_read === false,
+		after: parsed.date_start?.slice(0, 10) ?? "",
+		before: parsed.date_end?.slice(0, 10) ?? "",
+	};
+}

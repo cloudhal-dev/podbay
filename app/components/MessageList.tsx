@@ -14,11 +14,12 @@ import { useParams } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { formatListDate } from "shared/dates";
 import { Folders, getFolderDisplayName } from "shared/folders";
-import { useConversationActions } from "~/hooks/useConversationActions";
+import { type ConversationActions, useConversationActions } from "~/hooks/useConversationActions";
+import { type Density, useDisplay, useSplit } from "~/hooks/useDisplay";
+import { hasUnread, useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { getSnippetText } from "~/lib/utils";
-import { useMarkThreadRead, useUpdateEmail } from "~/queries/emails";
 import type { Email } from "~/types";
 import IconButton from "./IconButton";
 import MessageListToolbar from "./MessageListToolbar";
@@ -44,9 +45,6 @@ interface MessageListProps {
 	showFolder?: boolean;
 }
 
-const hasUnread = (email: Email): boolean =>
-	email.thread_unread_count !== undefined ? email.thread_unread_count > 0 : !email.read;
-
 function participants(email: Email): string {
 	if (!email.participants) return email.sender.split("@")[0] ?? email.sender;
 	const names = email.participants
@@ -57,6 +55,13 @@ function participants(email: Email): string {
 		? names.join(", ")
 		: `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
+
+/** How tall a line is. On a narrow list a line is two rows of text whatever the density. */
+const LINE: Record<Density, string> = {
+	default: "min-h-10 @2xl:h-10",
+	comfortable: "min-h-12 @2xl:h-12",
+	compact: "min-h-8 @2xl:h-8",
+};
 
 const SKELETON_ROWS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
 
@@ -97,10 +102,25 @@ export default function MessageList({
 	showFolder,
 }: MessageListProps) {
 	const { mailboxId } = useParams({ strict: false });
-	const { selectEmail } = useUIStore();
-	const updateEmail = useUpdateEmail();
-	const markThreadRead = useMarkThreadRead();
-	const actions = useConversationActions(mailboxId, folder);
+	const openId = useUIStore((state) => state.selectedEmailId);
+	const open = useOpenConversation(mailboxId);
+	const density = useDisplay((state) => state.density);
+	const split = useSplit();
+	const base = useConversationActions(mailboxId, folder);
+	/** Beside the list, a conversation that was filed away must not stay open. */
+	const closeIfOpen = (list: Email[], did: boolean) => {
+		const { selectedEmailId, closePanel } = useUIStore.getState();
+		if (did && list.some((email) => email.id === selectedEmailId)) closePanel();
+		return did;
+	};
+	const actions: ConversationActions = {
+		...base,
+		moveTo: (list, target, said) => closeIfOpen(list, base.moveTo(list, target, said)),
+		archive: (list) => closeIfOpen(list, base.archive(list)),
+		reportSpam: (list) => closeIfOpen(list, base.reportSpam(list)),
+		notSpam: (list) => closeIfOpen(list, base.notSpam(list)),
+		remove: async (list) => closeIfOpen(list, await base.remove(list)),
+	};
 	const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 	const [cursor, setCursor] = useState(0);
 	const mark = highlight ?? ((text: string) => text);
@@ -125,22 +145,13 @@ export default function MessageList({
 		setSelected(next);
 	}
 
-	function open(email: Email) {
-		selectEmail(email.id);
-		if (!mailboxId || !hasUnread(email)) return;
-		if (email.thread_id && (email.thread_count ?? 1) > 1) {
-			markThreadRead.mutate({ mailboxId, threadId: email.thread_id });
-		} else {
-			updateEmail.mutate({ mailboxId, id: email.id, data: { read: true } });
-		}
-	}
-
 	function move(by: number) {
 		const next = Math.min(Math.max(cursor + by, 0), emails.length - 1);
 		setCursor(next);
-		document
-			.getElementById(`conversation-${emails[next]?.id}`)
-			?.scrollIntoView({ block: "nearest" });
+		const email = emails[next];
+		document.getElementById(`conversation-${email?.id}`)?.scrollIntoView({ block: "nearest" });
+		// Beside the list, moving through it reads it: the conversation under the cursor opens.
+		if (split && email && next !== cursor) open(email);
 	}
 
 	const openCurrent = () => current && open(current);
@@ -195,13 +206,15 @@ export default function MessageList({
 							(email as Email & { folder_name?: string }).folder_name ?? email.folder_id;
 						const tone = isSelected
 							? "bg-kumo-brand/10"
-							: unread
-								? "bg-kumo-base"
-								: "bg-kumo-recessed/60";
+							: email.id === openId
+								? "bg-kumo-brand/15"
+								: unread
+									? "bg-kumo-base"
+									: "bg-kumo-recessed/60";
 						return (
 							<div
 								key={email.id}
-								className={`group flex min-h-10 items-center gap-2 border-b border-l-2 border-b-kumo-line px-2.5 text-sm hover:relative hover:z-[1] hover:shadow-[0_1px_3px_rgb(0_0_0/0.18)] md:h-10 ${
+								className={`group flex items-center gap-2 border-b border-l-2 border-b-kumo-line px-2.5 text-sm hover:relative hover:z-[1] hover:shadow-[0_1px_3px_rgb(0_0_0/0.18)] ${LINE[density]} ${
 									index === cursor ? "border-l-kumo-brand" : "border-l-transparent"
 								} ${tone}`}
 							>
@@ -236,10 +249,10 @@ export default function MessageList({
 									id={`conversation-${email.id}`}
 									onClick={() => open(email)}
 									onFocus={() => setCursor(index)}
-									className="min-w-0 flex-1 cursor-pointer self-stretch border-0 bg-transparent p-0 py-1.5 text-left text-sm md:flex md:items-center md:gap-3 md:py-0"
+									className="min-w-0 flex-1 cursor-pointer self-stretch border-0 bg-transparent p-0 py-1 text-left text-sm @2xl:flex @2xl:items-center @2xl:gap-3 @2xl:py-0"
 								>
 									<span
-										className={`flex min-w-0 items-center gap-1.5 md:w-48 md:shrink-0 ${
+										className={`flex min-w-0 items-center gap-1.5 @2xl:w-48 @2xl:shrink-0 ${
 											unread ? "font-semibold text-kumo-default" : "text-kumo-strong"
 										}`}
 									>
@@ -253,7 +266,7 @@ export default function MessageList({
 											<span className="shrink-0 text-xs font-medium text-kumo-danger">Draft</span>
 										)}
 									</span>
-									<span className="block truncate md:flex-1">
+									<span className="block truncate @2xl:flex-1">
 										{showFolder && place && (
 											<Badge variant="outline" className="mr-2 align-middle">
 												{getFolderDisplayName(place)}

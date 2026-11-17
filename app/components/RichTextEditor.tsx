@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Button, Tooltip } from "@cloudflare/kumo";
+import { Button, Input, LayerDialog, Tooltip } from "@cloudflare/kumo";
 import {
 	ArrowClockwiseIcon,
 	ArrowCounterClockwiseIcon,
@@ -27,7 +27,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useCallback, useEffect } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 interface RichTextEditorProps {
 	value: string;
@@ -78,17 +78,20 @@ export default function RichTextEditor({
 		}
 	}, [value, editor, focusOnLoad]);
 
-	const setLink = useCallback(() => {
-		if (!editor) return;
-		const previousUrl = editor.getAttributes("link").href;
-		const url = window.prompt("URL", previousUrl);
-		if (url === null) return;
-		if (url === "") {
-			editor.chain().focus().extendMarkRange("link").unsetLink().run();
-			return;
-		}
-		editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-	}, [editor]);
+	/** The address being edited in the link dialog; `null` while the dialog is closed. */
+	const [linkAddress, setLinkAddress] = useState<string | null>(null);
+
+	function applyLink(event: FormEvent) {
+		event.preventDefault();
+		// The dialog is drawn outside the compose form, but its events still pass through it.
+		event.stopPropagation();
+		if (!editor || linkAddress === null) return;
+		const address = linkAddress.trim();
+		const chain = editor.chain().focus().extendMarkRange("link");
+		if (address === "") chain.unsetLink().run();
+		else chain.setLink({ href: address }).run();
+		setLinkAddress(null);
+	}
 
 	if (!editor) return null;
 
@@ -181,7 +184,7 @@ export default function RichTextEditor({
 						shape="square"
 						size="sm"
 						icon={<LinkSimpleIcon size={16} />}
-						onClick={setLink}
+						onClick={() => setLinkAddress(editor.getAttributes("link").href ?? "")}
 						aria-label="Link"
 					/>
 				</Tooltip>
@@ -239,6 +242,40 @@ export default function RichTextEditor({
 			<div className="flex-1 overflow-y-auto">
 				<EditorContent editor={editor} />
 			</div>
+
+			<LayerDialog.Root
+				open={linkAddress !== null}
+				onOpenChange={(open) => {
+					if (!open) setLinkAddress(null);
+				}}
+			>
+				<LayerDialog.Content size="sm">
+					<LayerDialog.Title>Link</LayerDialog.Title>
+					<LayerDialog.Description>
+						The selected text will open this address. Leave it empty to remove the link.
+					</LayerDialog.Description>
+					<LayerDialog.Body>
+						{/* biome-ignore lint/a11y/noStaticElementInteractions: only keeps the dialog's keys from the compose form */}
+						<div onKeyDown={(event) => event.stopPropagation()}>
+							<form id="editor-link" onSubmit={applyLink}>
+								<Input
+									label="Address"
+									type="text"
+									inputMode="url"
+									placeholder="https://example.com"
+									value={linkAddress ?? ""}
+									onChange={(event) => setLinkAddress(event.target.value)}
+								/>
+							</form>
+						</div>
+					</LayerDialog.Body>
+					<LayerDialog.Actions dismissLabel="Cancel">
+						<LayerDialog.Action type="submit" form="editor-link">
+							Apply
+						</LayerDialog.Action>
+					</LayerDialog.Actions>
+				</LayerDialog.Content>
+			</LayerDialog.Root>
 		</div>
 	);
 }

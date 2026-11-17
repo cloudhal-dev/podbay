@@ -11,12 +11,15 @@ import {
 	MagnifyingGlassIcon,
 	RobotIcon,
 	ShieldCheckIcon,
+	SlidersIcon,
 	XIcon,
 } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { type KeyboardEvent, useEffect, useState } from "react";
 import { useUIStore } from "~/hooks/useUIStore";
 import { useFeatures } from "~/queries/config";
+import DisplayMenu from "./DisplayMenu";
+import SearchOptions from "./SearchOptions";
 
 /** The id the `/` shortcut focuses. */
 export const SEARCH_INPUT_ID = "mail-search";
@@ -27,6 +30,7 @@ export const SEARCH_INPUT_ID = "mail-search";
  */
 export default function Header() {
 	const [searchQuery, setSearchQuery] = useState("");
+	const [optionsOpen, setOptionsOpen] = useState(false);
 	const { mailboxId } = useParams({ strict: false });
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -52,8 +56,8 @@ export default function Header() {
 		}
 	};
 
-	const performSearch = () => {
-		const q = searchQuery.trim();
+	const performSearch = (wanted = searchQuery) => {
+		const q = wanted.trim();
 		if (mailboxId && q) {
 			void navigate({ to: "/mailbox/$mailboxId/search", params: { mailboxId }, search: { q } });
 		}
@@ -111,18 +115,37 @@ export default function Header() {
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					onKeyDown={handleKeyDown}
-					className="h-12 w-full rounded-full border border-transparent bg-kumo-fill pl-12 pr-10 text-sm text-kumo-default placeholder:text-kumo-subtle focus:border-kumo-line focus:bg-kumo-base focus:outline-none focus:ring-1 focus:ring-kumo-ring [&::-webkit-search-cancel-button]:hidden"
+					className="h-12 w-full rounded-full border border-transparent bg-kumo-fill pl-12 pr-20 text-sm text-kumo-default placeholder:text-kumo-subtle focus:border-kumo-line focus:bg-kumo-base focus:outline-none focus:ring-1 focus:ring-kumo-ring [&::-webkit-search-cancel-button]:hidden"
 				/>
 				{searchQuery && (
 					<button
 						type="button"
 						onClick={clearSearch}
-						className="absolute right-3 rounded-full p-1 bg-transparent border-0 text-kumo-subtle hover:bg-kumo-tint hover:text-kumo-default cursor-pointer"
+						className="absolute right-11 rounded-full p-1 bg-transparent border-0 text-kumo-subtle hover:bg-kumo-tint hover:text-kumo-default cursor-pointer"
 						aria-label="Clear search"
 					>
 						<XIcon size={16} />
 					</button>
 				)}
+				<button
+					type="button"
+					onClick={() => setOptionsOpen(true)}
+					className="absolute right-3 rounded-full p-1.5 bg-transparent border-0 text-kumo-subtle hover:bg-kumo-tint hover:text-kumo-default cursor-pointer"
+					aria-label="Search options"
+					title="Search options"
+				>
+					<SlidersIcon size={16} />
+				</button>
+				<SearchOptions
+					open={optionsOpen}
+					onOpenChange={setOptionsOpen}
+					mailboxId={mailboxId}
+					query={searchQuery}
+					onSearch={(built) => {
+						setSearchQuery(built);
+						performSearch(built);
+					}}
+				/>
 			</div>
 
 			<div className="ml-auto flex shrink-0 items-center gap-0.5">
@@ -136,6 +159,7 @@ export default function Header() {
 						className="hidden md:inline-flex"
 					/>
 				</Tooltip>
+				<DisplayMenu />
 				{hasAssistant && (
 					<Tooltip
 						content={isAgentPanelOpen ? "Hide agent panel" : "Show agent panel"}

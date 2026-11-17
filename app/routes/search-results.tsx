@@ -55,7 +55,7 @@ export default function SearchResultsRoute() {
 	const { data: searchData, isLoading } = useSearchEmails(mailboxId, urlQuery, page);
 
 	return (
-		<MailView>
+		<MailView emails={searchData?.results ?? []}>
 			<MessageList
 				title={starred ? "Starred" : `Search results for ${urlQuery}`}
 				emails={searchData?.results ?? []}

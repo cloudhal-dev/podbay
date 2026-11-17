@@ -7,6 +7,8 @@ import { Button, DropdownMenu } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
 	ArrowLeftIcon,
+	CaretLeftIcon,
+	CaretRightIcon,
 	CodeIcon,
 	DotsThreeVerticalIcon,
 	EnvelopeSimpleIcon,
@@ -16,6 +18,7 @@ import {
 	TrashIcon,
 	TrayIcon,
 	WarningOctagonIcon,
+	XIcon,
 } from "@phosphor-icons/react";
 import { Folders } from "shared/folders";
 import IconButton from "~/components/IconButton";
@@ -29,7 +32,13 @@ interface EmailPanelToolbarProps {
 	isDraftFolder: boolean;
 	isSending: boolean;
 	moveToFolders: Folder[];
+	/** Shown beside the list: there is no list to go back to, only a pane to close. */
+	inPane: boolean;
 	onBack: () => void;
+	/** Steps to the conversation above or below this one in the list it was opened from. */
+	onNewer?: () => void;
+	onOlder?: () => void;
+	showSteps: boolean;
 	onSendDraft: () => void;
 	onEditDraft: () => void;
 	onArchive: () => void;
@@ -52,7 +61,11 @@ export default function EmailPanelToolbar({
 	isDraftFolder,
 	isSending,
 	moveToFolders,
+	inPane,
 	onBack,
+	onNewer,
+	onOlder,
+	showSteps,
 	onSendDraft,
 	onEditDraft,
 	onArchive,
@@ -66,7 +79,11 @@ export default function EmailPanelToolbar({
 }: EmailPanelToolbarProps) {
 	return (
 		<div className="flex h-12 shrink-0 items-center gap-1 border-b border-kumo-line px-3">
-			<IconButton label="Back to list" icon={<ArrowLeftIcon size={18} />} onClick={onBack} />
+			{inPane ? (
+				<IconButton label="Close the conversation" icon={<XIcon size={18} />} onClick={onBack} />
+			) : (
+				<IconButton label="Back to list" icon={<ArrowLeftIcon size={18} />} onClick={onBack} />
+			)}
 			<span className="w-2" aria-hidden="true" />
 
 			{isDraftFolder ? (
@@ -131,7 +148,23 @@ export default function EmailPanelToolbar({
 				onClick={onToggleStar}
 			/>
 
-			<div className="ml-auto">
+			<div className="ml-auto flex items-center gap-1">
+				{showSteps && (
+					<>
+						<IconButton
+							label="Newer"
+							icon={<CaretLeftIcon size={16} />}
+							onClick={() => onNewer?.()}
+							disabled={!onNewer}
+						/>
+						<IconButton
+							label="Older"
+							icon={<CaretRightIcon size={16} />}
+							onClick={() => onOlder?.()}
+							disabled={!onOlder}
+						/>
+					</>
+				)}
 				<DropdownMenu>
 					<DropdownMenu.Trigger
 						render={

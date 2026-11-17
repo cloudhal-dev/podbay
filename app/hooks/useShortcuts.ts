@@ -13,6 +13,7 @@ export const SHORTCUT_HELP: { keys: string; does: string }[] = [
 	{ keys: "j  /  k", does: "Next or previous conversation in the list" },
 	{ keys: "o  or  Enter", does: "Open the conversation" },
 	{ keys: "u", does: "Back to the list" },
+	{ keys: "k  /  j", does: "Newer or older conversation, when one is open" },
 	{ keys: "r  /  a  /  f", does: "Reply, reply to all or forward the open conversation" },
 	{ keys: "x", does: "Select the conversation" },
 	{ keys: "*  then  a  /  n", does: "Select all or none" },
