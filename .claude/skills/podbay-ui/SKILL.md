@@ -39,7 +39,10 @@ The mail screens follow what a person expects from a first-class web mail client
 |---|---|
 | A top bar across the width (64px) with one wide, rounded search box (48px); a rail on the left; the mail in one surface | `app/routes/mailbox.tsx`, `Header.tsx`, `Sidebar.tsx` |
 | The rail collapses to icons and stays that way; on a phone it slides over the list. Folder names stay as tooltips and accessible names | `isRailCollapsed` in `useUIStore`, remembered in this browser only |
-| One list **or** one conversation, never both. Opening a conversation is a navigation (`?open=<id>`), so Back returns to the list and a reload shows the conversation again | `MailView.tsx`: the address is the truth |
+| One list **or** one conversation by default. Opening a conversation is a navigation (`?open=<id>`), so Back returns to the list and a reload shows the conversation again | `MailView.tsx`: the address is the truth |
+| The reader can choose a **reading pane**: on a screen at least 1024px wide the conversation opens beside the list. Then moving through the list with `j` and `k` opens what the cursor is on, the list keeps the keys that file a conversation, and filing the open one closes the pane | `useSplit` in `app/hooks/useDisplay.ts`, `MailView.tsx`, `MessageList.tsx` |
+| The reader chooses how tall a line is: Default (40px), Comfortable (48px), Compact (32px). Both choices live in the Display menu of the top bar and are remembered in this browser only | `DisplayMenu.tsx`, `useDisplay.ts` |
+| The search box has **search options**: who, subject, words, folder, dates, attachment, unread. They write the query a person could type, so the box always shows what is searched, and they open filled with what the box says | `SearchOptions.tsx`; `buildSearchQuery` and `searchOptionsOf` in `app/lib/search-parser.ts` |
 | Starred is a search (`is:starred`), not a folder | The rail links to the search screen |
 | Every screen has a heading, shown or not | `<h1 className="sr-only">` in `MessageList.tsx` |
 
@@ -47,7 +50,7 @@ The mail screens follow what a person expects from a first-class web mail client
 
 | Behaviour | How it is built |
 |---|---|
-| A conversation is one dense line (40px): checkbox, star, sender, subject and the start of the text, date. Unread is bold. The line under the pointer lifts, and it or the line the keyboard is on shows quick actions in place of the date | `MessageList.tsx`, shared by folders and search results |
+| A conversation is one dense line: checkbox, star, sender, subject and the start of the text, date. Where the list is narrow (a phone, or beside the reading pane) a line is two rows of text; this follows the width of the list, not of the screen (container queries). Unread is bold. The line under the pointer lifts, and it or the line the keyboard is on shows quick actions in place of the date | `MessageList.tsx`, shared by folders and search results |
 | Each line is one real button, with a checkbox and a star beside it. No clickable `div` | `MessageList.tsx` |
 | The box above the list selects the page; the menu beside it selects by kind: All, None, Read, Unread, Starred, Unstarred | `MessageListToolbar.tsx` |
 | With nothing selected the bar refreshes, pages, and offers "Mark this page as read". With a selection it shows, in this order: Archive, Report spam (Not spam inside Spam), Delete; then Mark as read or unread (whichever applies), Move to | `MessageListToolbar.tsx` |
@@ -68,6 +71,7 @@ The mail screens follow what a person expects from a first-class web mail client
 | The bar keeps the same order as the list's: Back; Archive, Report spam, Delete; Mark as unread, Move to, Star; a More menu at the right | `email-panel/EmailPanelToolbar.tsx` |
 | Filing a conversation away (archive, spam, delete, move, mark as unread) returns to the list | `away` in `EmailPanel.tsx` |
 | The subject is a large, plain heading; Reply, Reply all and Forward are buttons under the last message | `EmailPanelHeader.tsx`, `EmailPanel.tsx` |
+| Newer and Older step to the conversation above or below in the list it was opened from (the page on screen), and read it as opening it from the list does | `useOpenConversation.ts`, `EmailPanel.tsx` |
 
 ### Writing
 
@@ -76,15 +80,16 @@ The mail screens follow what a person expects from a first-class web mail client
 | Writing floats: the compose window sits at the bottom right over whatever is being read and never closes it. Its title bar shows the subject once there is one, and minimises, enlarges or closes the window | `ComposeWindow.tsx` |
 | **Closing keeps what was written** as a draft; only Discard (the bin at the right of the bottom row) throws it away. One window keeps one draft however often it is saved | `saveAndClose`, `discard` in `useComposeForm.ts` |
 | Fields have no boxes: To (with Cc and Bcc on demand), Subject, the message. Send is first in the bottom row | `ComposePanel.tsx` |
+| A link is added in a dialog of the app. A dialog opened from inside the compose form stops its own submit and keys there: React passes events through a portal, and the form would send the message | `RichTextEditor.tsx` |
 | A new message starts in To; a reply starts in the text, above what it answers. Ctrl or Cmd with Enter sends | `ComposePanel.tsx` |
 
 ### The keyboard
 
-The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then `a` or `n`, `e`, `#`, `!`, `s`, `Shift+I` `Shift+U`, `r` `a` `f` in an open conversation, `g` then a letter, `?` (`useShortcuts`). Shortcuts never fire while typing, with a modifier held, or while a dialog or a menu is open.
+The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then `a` or `n`, `e`, `#`, `!`, `s`, `Shift+I` `Shift+U`, `r` `a` `f` and `k` `j` in an open conversation, `g` then a letter, `?` (`useShortcuts`). Shortcuts never fire while typing, with a modifier held, or while a dialog or a menu is open.
 
 ### Not built yet
 
-Labels, snooze, a reading pane beside the list, list density, importance markers, category tabs, a search-options panel, scheduled send, and a context menu on a line. Add one with its line above and its test.
+Labels, snooze, a reading pane below the list, importance markers, category tabs, scheduled send, undo of a send, drag and drop, and a context menu on a line. Add one with its line above and its test.
 
 A new behaviour of this kind gets a line here and a test there, in the same change.
 
