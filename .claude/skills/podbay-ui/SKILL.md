@@ -64,7 +64,7 @@ The mail screens follow what a person expects from a first-class web mail client
 
 | Behaviour | How it is built |
 |---|---|
-| Every move (archive, spam, Trash, a folder) says what happened in a toast with **Undo**, which puts each conversation back where it was | `moveTo` in `app/hooks/useConversationActions.ts`, used by the list and the open conversation alike |
+| Every move (archive, spam, Trash, a folder) says what happened in a toast with **Undo**, which puts each conversation back where it was; `z` does the same while the toast is there | `moveTo` in `app/hooks/useConversationActions.ts`, used by the list and the open conversation alike |
 | **Delete means Trash.** Only inside Trash is a message deleted for good, and then the app asks first in its own dialog | `remove` in `useConversationActions.ts` |
 | Mail cannot be moved into Sent or Drafts: only sending fills Sent, only writing makes a draft | `moveTargets` in `useConversationActions.ts` |
 
@@ -115,14 +115,17 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | Behaviour | How it is built |
 |---|---|
 | Settings are one screen with tabs, as a mail client has them; the open tab is in the address (`?tab=`). **General** is the reader's own choices; the other tabs are about the mailbox | `app/routes/settings.tsx`, `app/components/settings/` |
-| A person's choices take effect at once, without a Save button, and are kept **in this browser only**: conversations on a page (10, 25, 50, 100), density, reading pane, what the Reply button of a message does, where to go after a conversation is filed, keyboard shortcuts on or off, light or dark. An unknown stored value falls back to its default | `useDisplay` (`app/hooks/useDisplay.ts`); never something the Worker decides by |
+| A person's choices take effect at once, without a Save button, and are kept **in this browser only**: conversations on a page (10, 25, 50, 100), density, reading pane, conversation view on or off, snippets, actions on a line, what the Reply button of a message does, where to go after a conversation is filed, a "Send and archive" button, notifications of new mail, keyboard shortcuts on or off, light or dark. An unknown stored value falls back to its default | `useDisplay` (`app/hooks/useDisplay.ts`); never something the Worker decides by |
+| With **conversation view off** every message is its own line and is read by itself; the list is asked for without conversations, which the API has always offered | `useEmails`, `EmailPanel.tsx` |
+| **Send and archive**, when asked for, is a second button on an answer: it sends, files the answered conversation in Archive and returns to the list | `handleSend` in `useComposeForm.ts` |
+| **Notifications**, when asked for and allowed by the browser, announce mail that arrives while Podbay is open in a tab: the sender and the subject, nothing of the message, and nothing for what was already there. The app looks at the top of the inbox every half minute; it is not pushed anything | `NewMailNotifier.tsx` |
 | Light or dark is the `data-mode` attribute on the document, set before the first paint; "as this device" follows the device while the app is open. A message keeps the colours its sender gave it | `showAppearance` in `useDisplay.ts` |
 | What belongs to the mailbox is saved to it with its own button, by an owner; others see it and are told who can change it: the name mail is sent under, the signature, the assistant's prompt. Labels are managed here as well as in the rail | `MailboxDetails.tsx`, `SignatureSettings.tsx`, `AssistantSettings.tsx`, `LabelSettings.tsx` |
 | A setting is never shown for something the Worker does not do. Forwarding and an automatic reply have a stored shape and no behaviour, so they have no screen | The roadmap, section 4 |
 
 ### The keyboard
 
-The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then `a` or `n`, `e`, `#`, `!`, `s`, `Shift+I` `Shift+U`, `r` `a` `f` and `k` `j` in an open conversation, `g` then a letter, `?` (`useShortcuts`). Shortcuts never fire while typing, with a modifier held, or while a dialog or a menu is open.
+The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then `a` or `n`, `e`, `#`, `!`, `s`, `Shift+I` `Shift+U`, `r` `a` `f`, `k` `j`, `]` `[` (archive and go on) and `;` `:` (open or fold all) in an open conversation, `z` to take back the last move while its note is on screen, `g` then a letter, `?` (`useShortcuts`). Shortcuts never fire while typing, with a modifier held, or while a dialog or a menu is open.
 
 ### Not built yet
 
