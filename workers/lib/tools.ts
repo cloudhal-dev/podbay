@@ -34,6 +34,14 @@ type MailboxSearchStub = {
 	searchEmails: (options: { query: string; folder?: string }) => Promise<unknown>;
 };
 
+/**
+ * What a tool answers for a message that waits to leave (ADR-0016, decision 20). No tool
+ * sends, sends later, takes back or changes a time: scheduling is sending. A tool reads
+ * Scheduled as it reads any place and changes nothing in it.
+ */
+const WAITING =
+	"This message is waiting to be sent. Nothing changes it from here; a person takes it back in the app.";
+
 // ── What a tool answers about a message ────────────────────────────
 
 /**
@@ -414,7 +422,8 @@ export async function toolMarkEmailRead(
 	read: boolean,
 ) {
 	const stub = getMailboxStub(env, mailboxId);
-	await stub.updateEmail(emailId, { read });
+	const updated = await stub.updateEmail(emailId, { read });
+	if (updated === "scheduled") return { error: WAITING };
 	return { status: "updated", emailId, read };
 }
 
@@ -427,8 +436,10 @@ export async function toolMoveEmail(
 	folderId: string,
 ) {
 	const stub = getMailboxStub(env, mailboxId);
-	const success = await stub.moveEmail(emailId, folderId);
-	if (success) {
+	const moved = await stub.moveEmail(emailId, folderId);
+	// Scheduled is neither a source nor a target of a move (ADR-0016, decision 2).
+	if (moved === "scheduled") return { error: WAITING };
+	if (moved === true) {
 		return { status: "moved", emailId, folder: folderId };
 	}
 	return { error: "Failed to move email" };
@@ -471,6 +482,7 @@ export async function toolLabelEmail(
 	}
 	const stub = getMailboxStub(env, mailboxId);
 	const done = await stub.labelConversation(emailId, change.add, change.remove);
+	if (done === "scheduled") return { error: WAITING };
 	if (done === "limit") return { error: "This message has as many labels as it can hold." };
 	if (typeof done === "string") {
 		return { error: "No such label or email. Call list_labels to see the labels of this mailbox." };

@@ -364,10 +364,13 @@ describe("deleting", () => {
 describe("places", () => {
 	it("are fixed: nobody makes, renames or removes one", async () => {
 		const places = await json<{ id: string }[]>(await as("owner").fetch(`${M}/folders`));
+		// ADR-0007 fixed six places; ADR-0016 (decision 2) adds the seventh, for mail that was
+		// sent and has not left yet.
 		expect(places.map((place) => place.id).sort()).toEqual([
 			"archive",
 			"draft",
 			"inbox",
+			"scheduled",
 			"sent",
 			"spam",
 			"trash",
@@ -378,7 +381,7 @@ describe("places", () => {
 			await remove("owner", `${M}/folders/archive`),
 		];
 		for (const res of tries) expect(res.status).toBe(404);
-		expect(await json<{ id: string }[]>(await as("owner").fetch(`${M}/folders`))).toHaveLength(6);
+		expect(await json<{ id: string }[]>(await as("owner").fetch(`${M}/folders`))).toHaveLength(7);
 	});
 
 	it("turns the folders people made before into labels, and loses no message", async () => {

@@ -8,14 +8,12 @@ import type { SQL } from "drizzle-orm";
 import { and, asc, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/durable-sqlite";
 import { Folders } from "../../shared/folders";
-import { log } from "../../shared/log";
+import { SENDING } from "../../shared/sending";
 import * as schema from "../db/schema";
-import {
-	conversationOrderSql,
-	type ListOrder,
-	type SearchFilterOptions,
-} from "../lib/list-options";
+import type { ListOrder, SearchFilterOptions } from "../lib/list-options";
 import type { Env } from "../types";
+import * as alarm from "./alarm";
+import { countConversations, listConversations } from "./conversations";
 import * as steps from "./deed-steps";
 import * as deeds from "./deeds";
 import * as drafts from "./drafts";
@@ -26,31 +24,26 @@ import * as live from "./live";
 import { applyMigrations, mailboxMigrations } from "./migrations";
 import * as originals from "./originals";
 import { countSearchResults, searchEmails } from "./search";
-import { sendRefusal } from "./sending";
 import type { AttachmentData, EmailData, GetEmailsOptions } from "./shapes";
+import * as submissions from "./submissions";
 import { threadOfReferences, threadOfSubject } from "./threads";
 
-/**
- * SQL expression to normalize email subjects by stripping common
- * reply/forward prefixes (Re:, Fwd:, FW:, AW:, WG:, Réf:, SV:).
- * Used for conversation grouping. Hardcoded to the `subject` column.
- */
-const NORMALIZED_SUBJECT_SQL = `LOWER(TRIM(
-	REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
-		LOWER(subject),
-		'aw: ', ''), 'wg: ', ''), 'réf: ', ''), 'sv: ', ''),
-		're: ', ''), 'fwd: ', ''), 'fw: ', '')
-))`;
+/** What a method answers for a message that waits to leave: nothing else changes it. */
+const SCHEDULED = "scheduled" as const;
 
 export class MailboxDO extends DurableObject<Env> {
 	declare __DURABLE_OBJECT_BRAND: never;
 	db: ReturnType<typeof drizzle>;
+	/** How long the sending service is waited for. A test shortens it; nothing else sets it. */
+	answerWithinMs: number = SENDING.answerWithinMs;
 
 	constructor(state: DurableObjectState, env: Env) {
 		super(state, env);
 		this.db = drizzle(this.ctx.storage, { schema });
 		applyMigrations(this.ctx.storage.sql, mailboxMigrations, this.ctx.storage);
 		live.answerPings(this.ctx);
+		// Whenever the object wakes: something waits and no alarm is set, so it is set (ADR-0016).
+		alarm.repair(this.ctx);
 	}
 
 	// ── Telling the open app (ADR-0013, ./live) ────────────────────
@@ -88,6 +81,12 @@ export class MailboxDO extends DurableObject<Env> {
 
 	async getEmails(options: GetEmailsOptions = {}) {
 		const { folder, thread_id, page = 1, limit: rawLimit = 25, order } = options;
+		// What waits is listed soonest first, whatever order was asked for (ADR-0016, decision 2).
+		if (folder === Folders.SCHEDULED && !thread_id) {
+			return this.#shown(
+				submissions.listScheduled(this.ctx.storage.sql, { page, limit: rawLimit }),
+			);
+		}
 
 		// Cap pagination limit to prevent unbounded queries
 		const limit = Math.min(Math.max(rawLimit, 1), 100);
@@ -142,7 +141,7 @@ export class MailboxDO extends DurableObject<Env> {
 			read: !!email.read,
 			starred: !!email.starred,
 		}));
-		return this.#labelled(list);
+		return this.#shown(list);
 	}
 
 	/**
@@ -171,242 +170,20 @@ export class MailboxDO extends DurableObject<Env> {
 		return row?.total ?? 0;
 	}
 
-	// ── Threaded queries (raw SQL — too complex for Drizzle's builder) ──
+	// ── Lists by conversation (./conversations) ────────────────────
 
 	async getThreadedEmails(options: GetEmailsOptions = {}) {
-		const { folder, page = 1, limit: rawLimit = 25, order } = options;
-		const limit = Math.min(Math.max(rawLimit, 1), 100);
-
-		if (!folder) {
-			// Fallback to regular getEmails if no folder specified
-			return this.getEmails(options);
-		}
-
-		const offset = (page - 1) * limit;
-
-		// Thread grouping strategy:
-		// For DRAFT folder: group by in_reply_to (the email being replied to).
-		//   This ensures reply-drafts to different emails stay separate, even if
-		//   they share a thread_id or subject. New drafts (no in_reply_to) each
-		//   get their own group via their unique id.
-		// For other folders:
-		//   1. Primary: group by thread_id (from email threading headers)
-		//   2. Fallback: group by normalized subject (strips Re:/Fwd:/FW: prefixes)
-		//      for legacy emails that lack threading headers (thread_id IS NULL).
-		const isDraftFolder = folder === Folders.DRAFT;
-
-		if (isDraftFolder) {
-			const result = this.ctx.storage.sql.exec(
-				`WITH
-				folder_emails AS (
-					SELECT *,
-						COALESCE(in_reply_to, id) as draft_group_key
-					FROM emails
-					WHERE folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)
-				),
-				draft_stats AS (
-					SELECT
-						draft_group_key,
-						COUNT(*) as thread_count,
-						SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END) as thread_unread_count,
-						SUM(CASE WHEN starred = 1 THEN 1 ELSE 0 END) as thread_starred_count,
-						GROUP_CONCAT(DISTINCT sender) as participants
-					FROM folder_emails
-					GROUP BY draft_group_key
-				),
-				latest_per_group AS (
-					SELECT
-						fe.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY fe.draft_group_key
-							ORDER BY fe.date DESC
-						) as rn
-					FROM folder_emails fe
-				)
-				SELECT
-					lp.id, lp.subject, lp.sender, lp.recipient, lp.date,
-					lp.read, lp.starred, lp.thread_id, lp.folder_id,
-					lp.in_reply_to, lp.email_references,
-					SUBSTR(lp.body, 1, 300) as snippet,
-					ds.thread_count, ds.thread_unread_count, ds.participants
-				FROM latest_per_group lp
-				JOIN draft_stats ds ON lp.draft_group_key = ds.draft_group_key
-				WHERE lp.rn = 1
-				ORDER BY ${conversationOrderSql(order, {
-					unread: "ds.thread_unread_count",
-					starred: "ds.thread_starred_count",
-					date: "lp.date",
-				})}
-				LIMIT ?2 OFFSET ?3`,
-				folder,
-				limit,
-				offset,
-			);
-
-			const rows = [...result];
-			const list = rows.map((row) => ({
-				...row,
-				read: !!row.read,
-				starred: !!row.starred,
-				thread_count: row.thread_count || 1,
-				thread_unread_count: row.thread_unread_count || 0,
-				participants: row.participants || row.sender,
-			}));
-			return this.#labelled(list);
-		}
-
-		// Non-draft folders: full threading logic
-		const result = this.ctx.storage.sql.exec(
-			`WITH
-			folder_emails AS (
-				SELECT *,
-					COALESCE(thread_id, id) as raw_thread_id,
-					${NORMALIZED_SUBJECT_SQL} as normalized_subject
-				FROM emails
-				WHERE folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)
-			),
-			thread_to_conversation AS (
-				SELECT
-					raw_thread_id,
-					normalized_subject,
-					CASE
-						WHEN thread_id IS NOT NULL THEN raw_thread_id
-						ELSE MIN(raw_thread_id) OVER (PARTITION BY normalized_subject)
-					END as conversation_id
-				FROM folder_emails
-				GROUP BY raw_thread_id, normalized_subject, thread_id
-			),
-			all_emails_with_conversation AS (
-				SELECT
-					e.*,
-					COALESCE(tc.conversation_id, COALESCE(e.thread_id, e.id)) as conversation_id
-				FROM emails e
-				LEFT JOIN thread_to_conversation tc
-					ON COALESCE(e.thread_id, e.id) = tc.raw_thread_id
-			),
-			conversation_stats AS (
-				SELECT
-					conversation_id,
-					COUNT(*) as thread_count,
-					SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END) as thread_unread_count,
-					SUM(CASE WHEN read = 1 THEN 1 ELSE 0 END) as thread_read_count,
-					SUM(CASE WHEN starred = 1 THEN 1 ELSE 0 END) as thread_starred_count,
-					GROUP_CONCAT(DISTINCT sender) as participants,
-					SUM(CASE WHEN folder_id = (SELECT id FROM folders WHERE name = 'draft' LIMIT 1) THEN 1 ELSE 0 END) as has_draft
-				FROM all_emails_with_conversation
-				WHERE conversation_id IN (
-					SELECT DISTINCT conversation_id FROM all_emails_with_conversation
-					WHERE folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)
-				)
-				GROUP BY conversation_id
-			),
-			latest_message_per_conversation AS (
-				SELECT
-					conversation_id,
-					folder_id,
-					ROW_NUMBER() OVER (PARTITION BY conversation_id ORDER BY date DESC) as rn
-				FROM all_emails_with_conversation
-			),
-			latest_in_folder AS (
-				SELECT
-					fe.*,
-					COALESCE(tc.conversation_id, fe.raw_thread_id) as conversation_id,
-					ROW_NUMBER() OVER (
-						PARTITION BY COALESCE(tc.conversation_id, fe.raw_thread_id)
-						ORDER BY fe.date DESC
-					) as rn
-				FROM folder_emails fe
-				LEFT JOIN thread_to_conversation tc
-					ON fe.raw_thread_id = tc.raw_thread_id
-			)
-			SELECT
-				lif.id, lif.subject, lif.sender, lif.recipient, lif.date,
-				lif.read, lif.starred, lif.thread_id, lif.folder_id,
-				lif.in_reply_to, lif.email_references,
-				SUBSTR(lif.body, 1, 300) as snippet,
-				cs.thread_count, cs.thread_unread_count, cs.participants,
-				CASE WHEN lmc.folder_id != (SELECT id FROM folders WHERE name = 'sent' LIMIT 1)
-					AND lmc.folder_id != (SELECT id FROM folders WHERE name = 'draft' LIMIT 1)
-					AND cs.thread_read_count > 0
-					THEN 1 ELSE 0 END as needs_reply,
-				CASE WHEN cs.has_draft > 0 THEN 1 ELSE 0 END as has_draft
-			FROM latest_in_folder lif
-			JOIN conversation_stats cs ON lif.conversation_id = cs.conversation_id
-			LEFT JOIN latest_message_per_conversation lmc
-				ON lmc.conversation_id = lif.conversation_id AND lmc.rn = 1
-			WHERE lif.rn = 1
-			ORDER BY ${conversationOrderSql(order, {
-				unread: "cs.thread_unread_count",
-				starred: "cs.thread_starred_count",
-				date: "lif.date",
-			})}
-			LIMIT ?2 OFFSET ?3`,
-			folder,
-			limit,
-			offset,
-		);
-
-		const rows = [...result];
-		const list = rows.map((row) => ({
-			...row,
-			read: !!row.read,
-			starred: !!row.starred,
-			thread_count: row.thread_count || 1,
-			thread_unread_count: row.thread_unread_count || 0,
-			participants: row.participants || row.sender,
-			needs_reply: !!row.needs_reply,
-			has_draft: !!row.has_draft,
-		}));
-		return this.#labelled(list);
+		const { folder } = options;
+		if (!folder) return this.getEmails(options);
+		// What waits is listed by its time, each message a line of its own (ADR-0016).
+		if (folder === Folders.SCHEDULED) return this.getEmails(options);
+		return this.#shown(listConversations(this.ctx.storage.sql, { ...options, folder }));
 	}
 
-	/**
-	 * Count threaded conversations in a folder (for pagination).
-	 * Returns the number of conversation groups, not individual emails.
-	 */
+	/** How many lines a place has by conversation (for pagination). */
 	async countThreadedEmails(folder: string) {
-		const isDraftFolder = folder === Folders.DRAFT;
-
-		if (isDraftFolder) {
-			const row = [
-				...this.ctx.storage.sql.exec(
-					`SELECT COUNT(DISTINCT COALESCE(in_reply_to, id)) as total
-					 FROM emails
-					 WHERE folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)`,
-					folder,
-				),
-			][0] as { total: number } | undefined;
-			return row?.total ?? 0;
-		}
-
-		const row = [
-			...this.ctx.storage.sql.exec(
-				`WITH
-				folder_emails AS (
-					SELECT
-						COALESCE(thread_id, id) as raw_thread_id,
-						thread_id,
-					${NORMALIZED_SUBJECT_SQL} as normalized_subject
-					FROM emails
-					WHERE folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)
-				),
-				thread_to_conversation AS (
-					SELECT
-						raw_thread_id,
-						CASE
-							WHEN thread_id IS NOT NULL THEN raw_thread_id
-							WHEN normalized_subject != '' THEN MIN(raw_thread_id) OVER (PARTITION BY normalized_subject)
-							ELSE raw_thread_id
-						END as conversation_id
-					FROM folder_emails
-					GROUP BY raw_thread_id, normalized_subject, thread_id
-				)
-				SELECT COUNT(DISTINCT conversation_id) as total
-				FROM thread_to_conversation`,
-				folder,
-			),
-		][0] as { total: number } | undefined;
-		return row?.total ?? 0;
+		if (folder === Folders.SCHEDULED) return this.countEmails({ folder });
+		return countConversations(this.ctx.storage.sql, folder);
 	}
 
 	// ── Single email operations (Drizzle) ──────────────────────────
@@ -425,7 +202,7 @@ export class MailboxDO extends DurableObject<Env> {
 
 		// The key of the original stays here: the answer says `has_original` (ADR-0015).
 		const one = originals.shownMessage({ ...email, read: !!email.read, starred: !!email.starred });
-		return this.#labelled([{ ...one, attachments: emailAttachments }])[0] ?? null;
+		return this.#shown([{ ...one, attachments: emailAttachments }])[0] ?? null;
 	}
 
 	/**
@@ -469,7 +246,7 @@ export class MailboxDO extends DurableObject<Env> {
 			starred: !!email.starred,
 			attachments: attachmentsByEmail.get(String(email.id)) || [],
 		}));
-		return this.#labelled(list);
+		return this.#shown(list);
 	}
 
 	async updateEmail(id: string, { read, starred }: { read?: boolean; starred?: boolean }) {
@@ -484,6 +261,8 @@ export class MailboxDO extends DurableObject<Env> {
 		if (Object.keys(data).length === 0) {
 			return this.getEmail(id);
 		}
+		// A message that waits to leave is changed by nothing but its own way out (ADR-0016).
+		if (submissions.inScheduled(this.ctx.storage.sql, id)) return SCHEDULED;
 
 		this.db.update(schema.emails).set(data).where(eq(schema.emails.id, id)).run();
 
@@ -500,10 +279,12 @@ export class MailboxDO extends DurableObject<Env> {
 
 	/**
 	 * Deletes a message's rows and names the objects it had at that moment. The caller has
-	 * deleted its objects first (`messageKeys`, `workers/lib/messages.ts`).
+	 * deleted its objects first (`messageKeys`, `workers/lib/messages.ts`). A message that waits
+	 * to leave is not deleted: it is taken back first.
 	 */
 	async deleteEmail(id: string) {
 		return this.ctx.storage.transactionSync(() => {
+			if (submissions.inScheduled(this.ctx.storage.sql, id)) return SCHEDULED;
 			const keys = originals.messageKeys(this.ctx.storage, id);
 			if (keys === null) return null;
 			labels.forgetLabelsOf(this.ctx.storage.sql, id);
@@ -538,6 +319,7 @@ export class MailboxDO extends DurableObject<Env> {
 	}
 	/** The keys of every object a message has, to delete them before its rows. */
 	async messageKeys(id: string) {
+		if (submissions.inScheduled(this.ctx.storage.sql, id)) return SCHEDULED;
 		return originals.messageKeys(this.ctx.storage, id);
 	}
 	/** The keys of everything this mailbox has in the bucket. */
@@ -576,22 +358,42 @@ export class MailboxDO extends DurableObject<Env> {
 	async holdsFiles(id: string) {
 		return drafts.holdsFiles(this.ctx.storage, id);
 	}
-	async sendDraft(id: string, fields: drafts.SentFields) {
-		const sent = drafts.sendDraft(this.ctx.storage, id, fields);
-		if (!("refused" in sent)) this.#learn(fields);
-		return sent;
+
+	// ── Outgoing mail (ADR-0016, ./submissions, ./leaving, ./alarm) ─
+
+	/**
+	 * Takes a message a person sent: it waits in Scheduled and leaves at its time. Nothing is
+	 * handed to the sending service here. The assistant and MCP get a handle on the mailbox
+	 * without this method and the three after it (`workers/agent/tools.ts`).
+	 */
+	async submit(message: submissions.ToTake) {
+		const taken = submissions.take(this.ctx.storage, message, Date.now());
+		if (!("refused" in taken)) await alarm.set(this.ctx.storage, Date.now());
+		return taken;
+	}
+	/** Takes a waiting message back into Drafts, or the mark off a message that failed. */
+	async unsend(id: string) {
+		const back = submissions.takeBack(this.ctx.storage, id, Date.now());
+		if (back === "draft") await alarm.set(this.ctx.storage, Date.now());
+		return back;
+	}
+	/** Gives a waiting message a new time; `by` is whose right is asked when it leaves. */
+	async reschedule(id: string, sendAt: number, by: string) {
+		const given = submissions.giveTime(this.ctx.storage, id, sendAt, by, Date.now());
+		if (typeof given !== "string") await alarm.set(this.ctx.storage, Date.now());
+		return given;
+	}
+	/**
+	 * The alarm: mail whose time has come leaves, and the alarm is set to the next time. It
+	 * catches its own errors (`./alarm`), and like every write it tells the open app.
+	 */
+	async alarm() {
+		await alarm.wake({ ctx: this.ctx, env: this.env, answerWithinMs: this.answerWithinMs });
 	}
 
 	// ── Known addresses (ADR-0012, ./known) ────────────────────────
+	// A mailbox learns an address in one place: where a message has left (`./leaving`).
 
-	/**
-	 * A message a person sent teaches the mailbox whom it writes to. It is called where a sent
-	 * message is stored, here and in `createEmail`, and nowhere else, and it cannot fail a send.
-	 */
-	#learn(message: known.SentTo) {
-		const { skipped } = known.learn(this.ctx.storage.sql, message, Date.now());
-		if (skipped > 0) log.warn("known_addresses.skipped", { skipped });
-	}
 	/** The known addresses that what is typed could become: a handful, best first. */
 	async completeAddress(typed: string) {
 		return known.complete(this.ctx.storage.sql, typed);
@@ -619,14 +421,26 @@ export class MailboxDO extends DurableObject<Env> {
 			.leftJoin(schema.emails, eq(schema.emails.folder_id, schema.folders.id))
 			.groupBy(schema.folders.id, schema.folders.name)
 			.all();
-		return result;
+		// How many wait to leave, and how many drafts came back unsent (ADR-0016, decision 9).
+		const marks = submissions.placeMarks(this.ctx.storage.sql);
+		return result.map((place) =>
+			place.id === Folders.SCHEDULED
+				? { ...place, waiting: marks.waiting }
+				: place.id === Folders.DRAFT
+					? { ...place, notSent: marks.notSent }
+					: place,
+		);
 	}
 
 	// ── Labels (ADR-0007; the SQL is in ./labels) ─────────────────
 
-	/** The same rows, each with the labels its conversation carries. */
-	#labelled<T extends object>(list: T[]) {
-		return labels.withLabels(this.ctx.storage.sql, list);
+	/**
+	 * The same rows, each with the labels its conversation carries, and with what a message
+	 * says about its way out when it has a row in `submissions` (ADR-0016).
+	 */
+	#shown<T extends object>(list: T[]) {
+		const { sql } = this.ctx.storage;
+		return submissions.withSubmissions(sql, labels.withLabels(sql, list));
 	}
 
 	async getLabels() {
@@ -646,10 +460,17 @@ export class MailboxDO extends DurableObject<Env> {
 	}
 
 	async labelConversation(emailId: string, add: string[], remove: string[]) {
+		if (submissions.inScheduled(this.ctx.storage.sql, emailId)) return SCHEDULED;
 		return labels.labelConversation(this.ctx.storage, emailId, add, remove);
 	}
 
+	/**
+	 * Moves one message. Scheduled is neither a source nor a target: a message enters and
+	 * leaves it only by being sent, taken back or let go (ADR-0016, decision 2).
+	 */
 	async moveEmail(id: string, folderId: string) {
+		if (folderId === Folders.SCHEDULED) return SCHEDULED;
+		if (submissions.inScheduled(this.ctx.storage.sql, id)) return SCHEDULED;
 		const folder = this.db
 			.select({ id: schema.folders.id })
 			.from(schema.folders)
@@ -687,7 +508,7 @@ export class MailboxDO extends DurableObject<Env> {
 	async searchEmails(
 		options: SearchFilterOptions & { page?: number; limit?: number; order?: ListOrder },
 	) {
-		return this.#labelled(searchEmails(this.ctx.storage.sql, options));
+		return this.#shown(searchEmails(this.ctx.storage.sql, options));
 	}
 
 	/** Count total search results matching the given filters (for pagination). */
@@ -706,12 +527,7 @@ export class MailboxDO extends DurableObject<Env> {
 		return threadOfSubject(this.ctx.storage.sql, subject, senderAddress);
 	}
 
-	// ── Rate limiting (raw SQL) ────────────────────────────────────
-
-	/** Why the mailbox may not send now, or `null` (./sending). */
-	async checkSendRateLimit(): Promise<string | null> {
-		return sendRefusal(this.ctx.storage.sql);
-	}
+	// ── Emptying (ADR-0009, ./emptying) ────────────────────────────
 
 	/** Names one batch of what Trash or Spam held at `before`, and its objects (./emptying). */
 	async batchToEmpty(place: string, before: string): Promise<BatchToEmpty> {
@@ -733,6 +549,9 @@ export class MailboxDO extends DurableObject<Env> {
 		const keys = originals.allKeys(this.ctx.storage);
 		// A mailbox that is gone tells nobody anything (ADR-0013, decision 12).
 		live.end(this.ctx);
+		// A deleted mailbox sends nothing: the rows that wait go with everything else, and the
+		// alarm with them (ADR-0016, decision 21; docs/cloudflare/ledger.json).
+		await this.ctx.storage.deleteAlarm();
 		await this.ctx.storage.deleteAll();
 		// The object may live on in memory. Leave it empty but usable, so a mailbox created again at
 		// the same address starts from a clean schema instead of from missing tables.
@@ -757,10 +576,12 @@ export class MailboxDO extends DurableObject<Env> {
 		}
 
 		const folderId = folderRow.id;
-		const isSent = folderId === Folders.SENT;
+		// Sent holds only mail that left, and Scheduled only mail on its way: neither is filled
+		// by storing a message (ADR-0016, decision 2).
+		if (folderId === Folders.SENT || folderId === Folders.SCHEDULED) {
+			throw new Error(`createEmail: nothing is stored into "${folderId}".`);
+		}
 
-		// Sent emails are always read — the sender obviously knows what they wrote.
-		// This prevents sent replies from inflating thread_unread_count.
 		this.db
 			.insert(schema.emails)
 			.values({
@@ -772,7 +593,7 @@ export class MailboxDO extends DurableObject<Env> {
 				cc: email.cc ?? null,
 				bcc: email.bcc ?? null,
 				date: email.date,
-				read: isSent ? 1 : email.read ? 1 : 0,
+				read: email.read ? 1 : 0,
 				starred: email.starred ? 1 : 0,
 				body: email.body,
 				in_reply_to: email.in_reply_to ?? null,
@@ -786,7 +607,5 @@ export class MailboxDO extends DurableObject<Env> {
 		if (attachments.length > 0) {
 			this.db.insert(schema.attachments).values(attachments).run();
 		}
-		// Only a message stored as sent teaches an address: never a draft, never mail that arrived.
-		if (isSent) this.#learn(email);
 	}
 }

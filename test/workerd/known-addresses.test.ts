@@ -6,6 +6,8 @@
  *   and in Spam; neither does a draft;
  * - each of the three sending routes, with and without a draft, records To, Cc and Bcc once,
  *   and never the mailbox's own address; a recording that fails still sends;
+ * - an address is learned when the message has left (ADR-0016): not when it is taken, taken
+ *   back or refused;
  * - completing is part of writing: 404 to someone without a membership, whatever they manage,
  *   403 to a reader; forgetting them all is the owner's and is on the record without an address;
  * - one mailbox never shows another's addresses;
@@ -37,6 +39,7 @@ import {
 	setupOwner,
 	testEnv,
 } from "./helpers.ts";
+import { fakeSender, letLeave } from "./sending-helpers.ts";
 
 const DESK = "desk@example.com";
 const OTHER = "other@example.com";
@@ -79,8 +82,9 @@ const known = (mailbox = DESK) =>
 const forgetEverything = (mailbox = DESK) =>
 	inMailbox((sql) => {
 		sql.exec(`DELETE FROM known_addresses`);
-		// The sending limit counts what is in Sent; this test is not about it.
+		// The sending limit counts what left; this test is not about it.
 		sql.exec(`DELETE FROM emails WHERE folder_id = 'sent'`);
+		sql.exec(`DELETE FROM send_log`);
 	}, mailbox);
 
 /** A row put there directly, for what no route can make today (a name, an old date). */
@@ -123,11 +127,14 @@ interface Sending {
 	draft_id?: string;
 }
 
-/** Sends, answers or forwards as a person does, and gives the id of the sent message. */
+/**
+ * Sends, answers or forwards as a person does, lets the message leave, and gives its id. A
+ * mailbox learns an address when the message has left, not when it is taken (ADR-0016).
+ */
 async function send(
 	who: string,
 	message: Sending,
-	how: { route?: string; mailbox?: string } = {},
+	how: { route?: string; mailbox?: string; wait?: boolean } = {},
 ): Promise<string> {
 	const mailbox = how.mailbox ?? DESK;
 	const res = await as(who).post(`${path(mailbox)}/${how.route ?? "emails"}`, {
@@ -137,7 +144,9 @@ async function send(
 		...message,
 	});
 	expect(res.status, `sending by ${how.route ?? "emails"}`).toBe(202);
-	return (await json<{ id: string }>(res)).id;
+	const { id } = await json<{ id: string }>(res);
+	if (how.wait !== true) await letLeave(mailbox);
+	return id;
 }
 
 async function draft(to: string, mailbox = DESK): Promise<string> {
@@ -241,6 +250,54 @@ describe("what teaches a mailbox nothing", () => {
 	});
 });
 
+describe("when a mailbox learns (ADR-0016)", () => {
+	it("is when the message has left, once: not when it is taken, taken back or refused", async () => {
+		await forgetEverything();
+		const fake = await fakeSender(DESK);
+		const later = { send_at: new Date(Date.now() + 3_600_000).toISOString() };
+		const send_ = (to: string, more: Record<string, unknown> = {}) =>
+			as("owner").post(`${M}/emails`, { from: DESK, subject: "Later", text: "x", to, ...more });
+
+		// Taken, and waiting: nothing is learned yet.
+		const waiting = await json<{ id: string }>(await send_("waiting@later.test", later));
+		expect(await placeOf(waiting.id)).toBe("scheduled");
+		expect(await known()).toEqual([]);
+		// Taken back: nothing was ever learned.
+		const back = await json<{ id: string }>(await send_("taken-back@later.test", later));
+		expect((await as("owner").post(`${M}/emails/${back.id}/unsend`)).status).toBe(200);
+		// Refused for good, and without any answer: the mailbox does not know that it wrote.
+		fake.next = [{ code: "E_RECIPIENT_SUPPRESSED" }, "no-code"];
+		await send_("refused@later.test");
+		await send_("unanswered@later.test");
+		await inMailbox((sql) =>
+			sql.exec(
+				`UPDATE submissions SET send_at = ?1 WHERE state = 'waiting' AND email_id != ?2`,
+				new Date(Date.now() - 1000).toISOString(),
+				waiting.id,
+			),
+		);
+		const stub = testEnv.MAILBOX.get(testEnv.MAILBOX.idFromName(DESK));
+		await runInDurableObject(stub, (instance) =>
+			(instance as unknown as { alarm(): Promise<void> }).alarm(),
+		);
+		expect(fake.calls).toHaveLength(2);
+		expect(await known()).toEqual([]);
+
+		// It leaves: now the mailbox has written to the address, once, however often it wakes.
+		await letLeave(DESK);
+		expect(await placeOf(waiting.id)).toBe("sent");
+		expect(await known()).toEqual([{ address: "waiting@later.test", name: null, use_count: 1 }]);
+		for (let run = 0; run < 2; run++) {
+			await runInDurableObject(stub, (instance) =>
+				(instance as unknown as { alarm(): Promise<void> }).alarm(),
+			);
+		}
+		expect(await known()).toEqual([{ address: "waiting@later.test", name: null, use_count: 1 }]);
+		await inMailbox((sql) => sql.exec(`DELETE FROM emails WHERE folder_id = 'draft'`));
+		await forgetEverything();
+	});
+});
+
 describe("what teaches a mailbox an address", () => {
 	it("is each of the three sending routes, with and without a draft: its To, Cc and Bcc, once", async () => {
 		const answered = await received("Planted: stays");
@@ -326,28 +383,27 @@ describe("what teaches a mailbox an address", () => {
 		// What is no whole address, or is longer than an address may be, is skipped; the rest of
 		// the message is recorded and the message is stored.
 		const long = `${"a".repeat(KNOWN_LIMITS.address)}@plain.test`;
-		await runInDurableObject(
-			testEnv.MAILBOX.get(testEnv.MAILBOX.idFromName(DESK)),
-			async (object) => {
-				await (
-					object as unknown as {
-						createEmail(folder: string, email: object, files: unknown[]): Promise<void>;
-					}
-				).createEmail(
-					"sent",
-					{
-						id: "odd-recipients",
-						subject: "Odd",
-						sender: DESK,
-						recipient: `kept@plain.test, ${long}, not-an-address, Named <named@plain.test>`,
-						cc: "also-kept@plain.test",
-						date: new Date().toISOString(),
-						body: "x",
-					},
-					[],
-				);
-			},
-		);
+		await fakeSender(DESK);
+		const owner = await testEnv.DB.prepare(`select "id" from "user" where "email" = ?1`)
+			.bind("owner@example.com")
+			.first<{ id: string }>();
+		await inMailbox((sql) => {
+			const now = new Date().toISOString();
+			sql.exec(
+				`INSERT INTO emails (id, folder_id, subject, sender, recipient, cc, date, body, read)
+				 VALUES ('odd-recipients', 'scheduled', 'Odd', ?1, ?2, 'also-kept@plain.test', ?3, 'x', 1)`,
+				DESK,
+				`kept@plain.test, ${long}, not-an-address, Named <named@plain.test>`,
+				now,
+			);
+			sql.exec(
+				`INSERT INTO submissions (email_id, state, send_at, requested_at, requested_by)
+				 VALUES ('odd-recipients', 'waiting', ?1, ?1, ?2)`,
+				now,
+				owner?.id ?? "",
+			);
+		});
+		await letLeave(DESK);
 		expect(await placeOf("odd-recipients")).toBe("sent");
 		expect((await known()).map((row) => row.address)).toEqual([
 			"also-kept@plain.test",

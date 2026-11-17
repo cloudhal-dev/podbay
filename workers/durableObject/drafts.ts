@@ -5,7 +5,7 @@
  * A draft and its files (ADR-0011).
  *
  * A draft keeps its id for its whole life: it is saved in place, and when it is sent its row
- * becomes the sent message. A file of a draft is a row in `attachments` like any message's
+ * becomes the message that waits and then leaves (`./submissions`). A file of a draft is a row in `attachments` like any message's
  * file, with the same storage key. The row is written before the bytes, so nothing of a draft
  * is ever in the bucket without a row that names it: `uploading_since` says a file was
  * declared and its bytes have not arrived, and such a file is not part of the message.
@@ -182,42 +182,19 @@ export function removeFile(storage: Storage, draftId: string, fileId: string): s
 	});
 }
 
-export type Sent = { files: FileRow[]; swept: string[] } | { refused: "not_found" };
-
 /**
- * The draft becomes the sent message, in one transaction: same row, same id, so its files keep
- * their rows and their keys. A file whose bytes never arrived is not part of the message and
- * is removed. Returns the files that went with it.
+ * Removes the files of a message whose bytes never arrived: they are not part of it. Gives
+ * the keys their bytes would be under. Called when a draft is sent (ADR-0016): the draft's
+ * row becomes the message, so its stored files keep their rows and their keys.
  */
-export function sendDraft(storage: Storage, id: string, fields: SentFields): Sent {
-	const { sql } = storage;
-	return storage.transactionSync((): Sent => {
-		if (!isDraft(sql, id)) return { refused: "not_found" };
-		const all = filesOf(sql, id);
-		const swept = drop(
-			sql,
-			all.filter((one) => one.uploading_since !== null),
-		);
-		sql.exec(
-			`UPDATE emails SET folder_id = ?1, subject = ?2, sender = ?3, recipient = ?4, cc = ?5, bcc = ?6,
-				date = ?7, body = ?8, in_reply_to = ?9, email_references = ?10, thread_id = COALESCE(?11, thread_id, id),
-				message_id = ?12, raw_headers = ?13, read = 1
-			 WHERE id = ?14`,
-			Folders.SENT,
-			fields.subject,
-			fields.sender,
-			fields.recipient,
-			fields.cc,
-			fields.bcc,
-			fields.date,
-			fields.body,
-			fields.in_reply_to ?? null,
-			fields.email_references,
-			fields.thread_id ?? null,
-			fields.message_id,
-			fields.raw_headers,
-			id,
-		);
-		return { files: all.filter((one) => one.uploading_since === null), swept };
-	});
+export function dropUnfinished(sql: SqlStorage, id: string): string[] {
+	return drop(
+		sql,
+		filesOf(sql, id).filter((one) => one.uploading_since !== null),
+	);
+}
+
+/** The stored files of a message: the ones whose bytes have arrived. */
+export function storedFiles(sql: SqlStorage, id: string): FileRow[] {
+	return filesOf(sql, id).filter((one) => one.uploading_since === null);
 }

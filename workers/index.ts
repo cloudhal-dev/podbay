@@ -18,8 +18,7 @@ import { headerFilename } from "./lib/filenames";
 import { parseListOrder, type SearchFilterOptions } from "./lib/list-options";
 import { mailboxQueries } from "./lib/mailbox-rpc";
 import { deleteMessage } from "./lib/messages";
-import { storeAndSend } from "./lib/outgoing";
-import { SendEmailRequestSchema } from "./lib/schemas";
+import { sendRequest, takeMessage, WAITS } from "./lib/outgoing";
 import { account } from "./routes/account";
 import { bulk } from "./routes/bulk";
 import { choices } from "./routes/choices";
@@ -34,6 +33,7 @@ import { people } from "./routes/people";
 import { places } from "./routes/places";
 import { recovery } from "./routes/recovery";
 import { handleForwardEmail, handleReplyEmail } from "./routes/reply-forward";
+import { sending } from "./routes/sending";
 
 type AppContext = Context<ApiContext>;
 
@@ -84,6 +84,7 @@ app.route("/", original);
 app.route("/", bulk);
 app.route("/", knownAddresses);
 app.route("/", live);
+app.route("/", sending);
 app.route("/", recovery);
 
 // -- Config ---------------------------------------------------------
@@ -131,8 +132,9 @@ app.get("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 });
 
 app.post("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
-	const body = SendEmailRequestSchema.parse(await c.req.json());
-	return storeAndSend(c, body, {
+	const body = await sendRequest(c);
+	if (body instanceof Response) return body;
+	return takeMessage(c, body, {
 		inReplyTo: body.in_reply_to || null,
 		references: body.references || [],
 		threadId: body.thread_id || null,
@@ -150,18 +152,23 @@ app.get("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
 app.put("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
 	const { read, starred } = (await c.req.json()) as { read?: boolean; starred?: boolean };
 	const email = await c.var.mailboxStub.updateEmail(c.req.param("id")!, { read, starred });
+	if (email === "scheduled") return c.json(WAITS, 409);
 	return email ? c.json(email) : c.json({ error: "Email not found" }, 404);
 });
 
 app.delete("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
 	const deleted = await deleteMessage(c.env.BUCKET, c.var.mailboxStub, c.req.param("id")!);
+	// A message that waits to leave is taken back first: it is not deleted from under its send.
+	if (deleted === "scheduled") return c.json(WAITS, 409);
 	return deleted ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
 });
 
 app.post("/api/v1/mailboxes/:mailboxId/emails/:id/move", async (c: AppContext) => {
 	const { folderId } = (await c.req.json()) as { folderId: string };
-	const success = await c.var.mailboxStub.moveEmail(c.req.param("id")!, folderId);
-	return success ? c.json({ status: "moved" }) : c.json({ error: "Folder not found" }, 400);
+	const moved = await c.var.mailboxStub.moveEmail(c.req.param("id")!, folderId);
+	// Scheduled is neither a source nor a target: only a send fills it (ADR-0016, decision 2).
+	if (moved === "scheduled") return c.json(WAITS, 409);
+	return moved ? c.json({ status: "moved" }) : c.json({ error: "Folder not found" }, 400);
 });
 
 // -- Threads --------------------------------------------------------

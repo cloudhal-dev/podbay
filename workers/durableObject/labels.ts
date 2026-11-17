@@ -141,7 +141,8 @@ export function labelConversation(
 		// A label of another mailbox does not exist here.
 		if (known.length !== wanted.length) return "not_found";
 	}
-	const members = `SELECT id FROM emails WHERE COALESCE(thread_id, id) = ? AND folder_id NOT IN ${HIDDEN}`;
+	// A message that waits to leave is changed by nothing but its own way out (ADR-0016).
+	const members = `SELECT id FROM emails WHERE COALESCE(thread_id, id) = ? AND folder_id NOT IN ${HIDDEN} AND folder_id != '${Folders.SCHEDULED}'`;
 	try {
 		storage.transactionSync(() => {
 			for (const label of add) {

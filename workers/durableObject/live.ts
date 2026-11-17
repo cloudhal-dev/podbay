@@ -18,9 +18,10 @@
  * tag and, as its attachment, the time the guard allowed it and the message it was last sent:
  * both survive the object's sleep, so the same state is never sent twice, also after a wake.
  *
- * **No timer and no alarm.** A connection is good for five minutes; the ones that are older
- * are closed whenever the object is awake to tell something or to take a new connection, and
- * before anything is sent. `ping` is answered by the platform without waking the object.
+ * **No timer and no alarm of its own.** A connection is good for five minutes; the ones that
+ * are older are closed whenever the object is awake to tell something or to take a new
+ * connection, and before anything is sent. (The object's one alarm is for outgoing mail,
+ * `./alarm`; it is watched like any method, so mail that leaves is told.) `ping` is answered by the platform without waking the object.
  */
 import {
 	LIVE_CLOSE_CODE,
@@ -117,7 +118,7 @@ type Method<T> = (this: T, ...args: unknown[]) => unknown;
 
 /**
  * Wraps every method of a mailbox object's class: the RPC methods, `fetch`, the WebSocket
- * handlers and, later, the alarm. Called once, where the class is defined.
+ * handlers and the alarm. Called once, where the class is defined.
  */
 export function watch<T extends object>(
 	prototype: T,

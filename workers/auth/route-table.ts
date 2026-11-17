@@ -104,6 +104,10 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "POST", path: `${M}/emails/:id/move`, right: "mailbox.write" },
 	{ method: "POST", path: `${M}/emails/:id/reply`, right: "mailbox.send" },
 	{ method: "POST", path: `${M}/emails/:id/forward`, right: "mailbox.send" },
+	// A message between the press and the handover (ADR-0016): taking it back and giving it a
+	// new time are sending, so they need the right to send. Seeing Scheduled is reading.
+	{ method: "POST", path: `${M}/emails/:id/unsend`, right: "mailbox.send" },
+	{ method: "POST", path: `${M}/emails/:id/reschedule`, right: "mailbox.send" },
 	{ method: "GET", path: `${M}/emails/:emailId/attachments/:attachmentId`, right: "mailbox.read" },
 	// Downloading an attachment that can do harm: a POST, so only the app's own page can ask.
 	{

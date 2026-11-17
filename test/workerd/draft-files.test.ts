@@ -7,7 +7,8 @@
  * - a reader is refused, someone without a membership is told nothing, and a file of another
  *   draft does not exist here;
  * - a forward's files are copied inside the account, a risky one only when the person agreed;
- * - sending names the draft: its row becomes the sent message, its files keep their keys;
+ * - sending names the draft: its row becomes the message that waits and then is sent, and
+ *   its files keep their keys;
  * - deleting leaves nothing behind in the bucket.
  */
 import { env, runInDurableObject } from "cloudflare:test";
@@ -23,6 +24,7 @@ import {
 	setupOwner,
 	testEnv,
 } from "./helpers.ts";
+import { letLeave } from "./sending-helpers.ts";
 
 const MAILBOX = "writer@example.com";
 const M = `/api/v1/mailboxes/${encodeURIComponent(MAILBOX)}`;
@@ -378,6 +380,11 @@ describe("sending a draft", () => {
 		const sent = await send({ draft_id: id });
 		expect(sent.status).toBe(202);
 		expect((await json<{ id: string }>(sent)).id).toBe(id);
+		// The draft's row is the message from the press on: it waits in Scheduled with its
+		// files, and is in Sent when it has left (ADR-0016).
+		expect((await read(id)).folder_id).toBe("scheduled");
+		expect((await keys(id)).length).toBe(2);
+		await letLeave(MAILBOX);
 
 		const message = await read(id);
 		expect([message.folder_id, message.subject]).toEqual(["sent", "Sent with files"]);

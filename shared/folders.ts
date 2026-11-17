@@ -15,6 +15,8 @@ export const Folders = {
 	INBOX: "inbox",
 	SENT: "sent",
 	DRAFT: "draft",
+	/** Mail that was sent and has not left yet (ADR-0016). Only a send puts a message there. */
+	SCHEDULED: "scheduled",
 	ARCHIVE: "archive",
 	TRASH: "trash",
 	SPAM: "spam",
@@ -30,6 +32,7 @@ export const SYSTEM_FOLDER_IDS: readonly FolderId[] = [
 	Folders.INBOX,
 	Folders.SENT,
 	Folders.DRAFT,
+	Folders.SCHEDULED,
 	Folders.ARCHIVE,
 	Folders.TRASH,
 ];
@@ -42,13 +45,15 @@ export const FOLDER_DISPLAY_NAMES: Record<string, string> = {
 	[Folders.INBOX]: "Inbox",
 	[Folders.SENT]: "Sent",
 	[Folders.DRAFT]: "Drafts",
+	[Folders.SCHEDULED]: "Scheduled",
 	[Folders.ARCHIVE]: "Archive",
 	[Folders.TRASH]: "Trash",
 	[Folders.SPAM]: "Spam",
 };
 
 /** Formatted string for tool parameter descriptions (agent + MCP). */
-export const FOLDER_TOOL_DESCRIPTION = "Folder to list: inbox, sent, draft, archive, spam, trash";
+export const FOLDER_TOOL_DESCRIPTION =
+	"Folder to list: inbox, sent, draft, scheduled, archive, spam, trash";
 
 /** Formatted string for move-email tool descriptions. */
 export const MOVE_FOLDER_TOOL_DESCRIPTION = "Target folder: inbox, archive, spam, trash";

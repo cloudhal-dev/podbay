@@ -23,9 +23,11 @@ import {
 	DRAFT_SAVED_MESSAGE,
 	DRAFT_TOOL_NAMES,
 	isSavedDraft,
+	SENDING_METHODS,
 	withoutSend,
 } from "../../workers/agent/tools.ts";
 import { sendEmail } from "../../workers/email-sender.ts";
+import { getMailboxStub } from "../../workers/lib/email-helpers.ts";
 import * as sharedTools from "../../workers/lib/tools.ts";
 import { asks, MAILBOX, STRANGER, says, world } from "../helpers/fake-ai.ts";
 
@@ -309,11 +311,62 @@ describe("the environment the assistant's tools run with", () => {
 
 		expect(send.calls).toEqual([]);
 		expect(log.warn).toHaveBeenCalledWith("agent.send_refused");
-		// Every other binding is the caller's own.
-		expect(guarded.MAILBOX).toBe(env.MAILBOX);
+		// The mailboxes are guarded too (below); every other binding is the caller's own.
+		expect(guarded.MAILBOX).not.toBe(env.MAILBOX);
 		expect(guarded.AI).toBe(env.AI);
 		// The caller's environment is not changed.
 		expect(env.EMAIL).toBe(send);
+	});
+
+	it("has a handle on the mailbox without the methods that send (ADR-0016, decision 20)", async () => {
+		// Since outgoing mail waits in the mailbox object, the working send binding is the
+		// object's own: a send binding that refuses is no longer enough by itself.
+		const { env, mailbox, send } = world();
+		const guarded = withoutSend(env);
+		const stub = getMailboxStub(guarded, MAILBOX) as unknown as Record<
+			string,
+			(...args: unknown[]) => Promise<unknown>
+		>;
+		expect([...SENDING_METHODS].sort()).toEqual(["alarm", "reschedule", "submit", "unsend"]);
+		for (const method of SENDING_METHODS) {
+			await expect(stub[method]?.("mail-1"), method).rejects.toBeInstanceOf(AgentSendRefused);
+		}
+		expect(mailbox.sendingCalls).toEqual([]);
+		expect(send.calls).toEqual([]);
+		expect(log.warn).toHaveBeenCalledWith("agent.send_refused");
+		// Everything else is passed on to the mailbox as it is, with the mailbox as `this`.
+		expect(await stub.getEmail?.("mail-1")).toMatchObject({ id: "mail-1" });
+		expect(await stub.moveEmail?.("mail-1", Folders.ARCHIVE)).toBe(true);
+		expect(mailbox.in(Folders.ARCHIVE)).toHaveLength(1);
+		// A handle is not something to await: it has no `then`.
+		expect((stub as unknown as { then?: unknown }).then).toBeUndefined();
+	});
+
+	it("control: the caller's own handle has those methods, and they send", async () => {
+		const { env, mailbox, send } = world();
+		const stub = getMailboxStub(env, MAILBOX) as unknown as Record<
+			string,
+			(...args: unknown[]) => Promise<unknown>
+		>;
+		for (const method of SENDING_METHODS) await stub[method]?.("mail-1");
+		expect(mailbox.sendingCalls).toEqual([...SENDING_METHODS]);
+		expect(send.calls).toHaveLength(SENDING_METHODS.length);
+	});
+
+	it("is the one every tool of the assistant and of MCP is given", () => {
+		for (const file of ["workers/agent/tools.ts", "workers/mcp/server.ts"]) {
+			const source = readFileSync(file, "utf8");
+			expect(source, file).toContain("const env = withoutSend(callerEnv);");
+			// The caller's own environment is named where the guarded one is made, and for
+			// nothing that reaches a mailbox.
+			expect(source, file).not.toMatch(/callerEnv\.(MAILBOX|EMAIL)|getMailboxStub\(callerEnv/);
+		}
+		// The shared tools reach a mailbox only through the environment they are handed.
+		const shared = readFileSync("workers/lib/tools.ts", "utf8");
+		expect(shared.match(/getMailboxStub\(/g)?.length).toBe(
+			shared.match(/getMailboxStub\(env, mailboxId\)/g)?.length,
+		);
+		expect(shared).not.toMatch(/\.(submit|unsend|reschedule|alarm)\(/);
 	});
 
 	it("stops the send helper itself, should a tool ever be wired to it", async () => {

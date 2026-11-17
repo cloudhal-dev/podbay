@@ -13,6 +13,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { cleanLabelName, isLabelId, labelColor } from "../../shared/labels";
 import type { ApiContext } from "../auth/middleware";
+import { WAITS } from "../lib/outgoing";
 
 const M = "/api/v1/mailboxes/:mailboxId";
 
@@ -78,5 +79,6 @@ labels.put(`${M}/emails/:emailId/labels`, async (c) => {
 	const { add, remove } = body.data;
 	if (![...add, ...remove].every(isLabelId)) return refuse(c, "not_found");
 	const done = await c.var.mailboxStub.labelConversation(c.req.param("emailId"), add, remove);
+	if (done === "scheduled") return c.json(WAITS, 409);
 	return typeof done === "string" ? refuse(c, done) : c.json(done);
 });

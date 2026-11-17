@@ -183,8 +183,30 @@ export class FakeMailbox {
 		Object.assign(email, fields);
 		return true;
 	}
-	async checkSendRateLimit() {
-		return null;
+
+	/**
+	 * The methods by which the mailbox object sends (ADR-0016). The working send binding is
+	 * the mailbox's own, so a call that reaches one of them here does send: the tests give the
+	 * tools a handle without them and look for a call.
+	 */
+	sender: { send(message: unknown): Promise<unknown> } | null = null;
+	readonly sendingCalls: string[] = [];
+	async #sends(method: string) {
+		this.sendingCalls.push(method);
+		await this.sender?.send({ from: MAILBOX, to: "anyone@elsewhere.test", subject: method });
+		return { id: "taken", send_at: "2026-11-18T10:00:00.000Z", swept: [] };
+	}
+	async submit() {
+		return this.#sends("submit");
+	}
+	async unsend() {
+		return this.#sends("unsend");
+	}
+	async reschedule() {
+		return this.#sends("reschedule");
+	}
+	async alarm() {
+		await this.#sends("alarm");
 	}
 }
 
@@ -200,6 +222,8 @@ export class FakeSendEmail {
 export function world() {
 	const mailbox = new FakeMailbox();
 	const send = new FakeSendEmail();
+	// As in the Worker: the mailbox object is what holds the working send binding.
+	mailbox.sender = send;
 	const ai = new FakeAi();
 	mailbox.emails.set("mail-1", {
 		id: "mail-1",

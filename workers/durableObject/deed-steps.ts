@@ -13,6 +13,7 @@ import {
 	type BulkStepAnswer,
 	type BulkUndoAnswer,
 } from "../../shared/bulk";
+import { Folders } from "../../shared/folders";
 import {
 	actOn,
 	chunks,
@@ -193,6 +194,8 @@ function putBack(
 		),
 	)) {
 		const changes = recorded.get(state.id) ?? [];
+		// A message that was sent since and waits to leave is left as it is (ADR-0016).
+		if (state.folder_id === Folders.SCHEDULED) continue;
 		if (!asLeft(deed.change, changes, state, carried.get(state.id))) continue;
 		restored += 1;
 		for (const one of changes) {

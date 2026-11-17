@@ -14,6 +14,7 @@
  * The app imports this module as it is, so nothing here needs the schema library.
  */
 import { LIST_ORDERS, type ListOrder } from "./list-order";
+import { DEFAULT_UNDO_SECONDS, UNDO_SECONDS, type UndoSeconds } from "./sending";
 
 /** The version of the stored document. A document with a higher one is not read or written. */
 export const CHOICES_VERSION = 1;
@@ -62,6 +63,8 @@ export interface Choices {
 	hoverActions: boolean;
 	/** Whether an answer can be sent and its conversation archived in one press. */
 	sendAndArchive: boolean;
+	/** How long a message that was sent can still be taken back, in seconds (ADR-0016). */
+	undoSeconds: UndoSeconds;
 	/** Whether new mail is announced by a notification of this device. */
 	notifications: boolean;
 }
@@ -80,7 +83,11 @@ interface Rule<K extends ChoiceKey> {
 	readonly kept: "person" | "device";
 }
 
-/** The schema: decision 4 of ADR-0012, and the order of a list by decision 25 of ADR-0014. */
+/**
+ * The schema: decision 4 of ADR-0012, the order of a list by decision 25 of ADR-0014, and the
+ * undo window of a send by decision 10 of ADR-0016 (a person's choice like the others; the
+ * request carries it, and the Worker never reads it from here).
+ */
 export const CHOICES: { readonly [K in ChoiceKey]: Rule<K> } = {
 	density: { values: DENSITIES, initial: "default", kept: "device" },
 	readingPane: { values: READING_PANES, initial: "none", kept: "device" },
@@ -95,6 +102,7 @@ export const CHOICES: { readonly [K in ChoiceKey]: Rule<K> } = {
 	snippets: { values: YES_OR_NO, initial: true, kept: "person" },
 	hoverActions: { values: YES_OR_NO, initial: true, kept: "person" },
 	sendAndArchive: { values: YES_OR_NO, initial: false, kept: "person" },
+	undoSeconds: { values: UNDO_SECONDS, initial: DEFAULT_UNDO_SECONDS, kept: "person" },
 	notifications: { values: YES_OR_NO, initial: false, kept: "device" },
 };
 

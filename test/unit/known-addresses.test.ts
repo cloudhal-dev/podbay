@@ -229,7 +229,7 @@ describe("who learns and who asks (ADR-0012, decisions 14 and 19)", () => {
 		).toEqual([]);
 	});
 
-	it("learns in one place only: where the mailbox object stores a sent message", () => {
+	it("learns in one place only: where a message has left", () => {
 		// Nothing on the way of incoming mail names the table or the step.
 		for (const file of [
 			"workers/arrival.ts",
@@ -238,10 +238,24 @@ describe("who learns and who asks (ADR-0012, decisions 14 and 19)", () => {
 		]) {
 			expect(source(file), file).not.toMatch(KNOWN);
 		}
+		// Since ADR-0016 a message reaches Sent when it has left, so that is where the mailbox
+		// learns whom it wrote to: once, in the function that lets mail leave, and nowhere a
+		// message is merely stored or taken to be sent.
+		const leaving = source("workers/durableObject/leaving.ts");
+		expect(leaving.match(/known\.learn\(/g)).toHaveLength(1);
+		const before = leaving.slice(0, leaving.indexOf("known.learn("));
+		expect(before).toContain("markSent(storage, id, outcome.serviceId");
+		const calls = readdirSync("workers", { recursive: true, encoding: "utf8" })
+			.filter((name) => name.endsWith(".ts"))
+			.map((name) => `workers/${name}`)
+			.filter((file) => /\bknown\.learn\(|\blearn\(sql/.test(source(file)));
+		expect(calls.sort()).toEqual(
+			["workers/durableObject/known.ts", "workers/durableObject/leaving.ts"].sort(),
+		);
 		const object = source("workers/durableObject/index.ts");
-		// Twice called: a new row in Sent, and a draft that becomes the sent message.
-		expect(object.match(/this\.#learn\(/g)).toHaveLength(2);
-		expect(object).toContain("if (isSent) this.#learn(email);");
-		expect(object).toContain(`if (!("refused" in sent)) this.#learn(fields);`);
+		expect(object).not.toMatch(/learn\(/);
+		for (const file of ["workers/durableObject/submissions.ts", "workers/lib/outgoing.ts"]) {
+			expect(source(file), file).not.toMatch(KNOWN);
+		}
 	});
 });

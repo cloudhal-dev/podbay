@@ -262,6 +262,8 @@ function planLine(
 			: conversation.filter((message) => message.folder_id === line.place);
 	if (inLine.length === 0) return "not_found";
 
+	// A line that waits to leave is changed by nothing but its own way out (ADR-0016).
+	if (line.place === Folders.SCHEDULED) return "place";
 	// A line in Sent goes only to Trash; a draft is not moved here; Spam and Trash take no label.
 	if (change.move !== undefined) {
 		if (line.place === Folders.DRAFT) return "place";
@@ -269,7 +271,10 @@ function planLine(
 	}
 	const hidden = HIDDEN.includes(line.place);
 	if (add.length + remove.length > 0 && hidden) return "place";
-	const outside = conversation.filter((message) => !HIDDEN.includes(message.folder_id));
+	// A mark of the conversation passes over a message of it that waits to leave.
+	const outside = conversation.filter(
+		(message) => !HIDDEN.includes(message.folder_id) && message.folder_id !== Folders.SCHEDULED,
+	);
 	const tooMany = (message: Message) => {
 		let kept = 0;
 		for (const label of carried.get(message.id) ?? []) {
@@ -460,21 +465,41 @@ export function actOn(
 
 // ── Beginning a deed ───────────────────────────────────────────────
 
+/** Whether a request names a message that waits to leave, or the place such messages are in. */
+function namesScheduled(sql: SqlStorage, request: DeedRequest): boolean {
+	if (request.filter?.folder?.toLowerCase() === Folders.SCHEDULED) return true;
+	for (const chunk of chunks([...new Set(request.ids ?? [])])) {
+		const found = rows(
+			sql.exec(
+				`SELECT 1 FROM emails WHERE id IN (${marks(chunk.length)}) AND folder_id = ?${chunk.length + 1} LIMIT 1`,
+				...chunk,
+				Folders.SCHEDULED,
+			),
+		);
+		if (found.length > 0) return true;
+	}
+	return false;
+}
+
 /**
  * Begins a deed. With ids it acts at once and answers what it changed. With a filter it changes
  * nothing: it counts, keeps the filter, the change and the time of asking, and answers the
  * count and the deed's id (decision 9). `not_found` when a label of the change is not one of
- * this mailbox; nothing is changed or kept then.
+ * this mailbox, `scheduled` when the request names mail that waits to leave; nothing is
+ * changed or kept then.
  */
 export function begin(
 	storage: DeedStorage,
 	request: DeedRequest,
 	now: number,
-): BulkStepAnswer | BulkCountAnswer | "not_found" {
+): BulkStepAnswer | BulkCountAnswer | "not_found" | "scheduled" {
 	const { sql } = storage;
 	const { add, remove } = labelsOf(request.change);
 	const wanted = [...new Set([...add, ...remove])];
 	return storage.transactionSync(() => {
+		// Scheduled is not a place a deed acts in: a request that names a waiting message, or
+		// everything in Scheduled, is refused whole (ADR-0016, decision 2).
+		if (namesScheduled(sql, request)) return "scheduled";
 		forgetOld(sql, now);
 		if (wanted.length > 0) {
 			const known = rows(

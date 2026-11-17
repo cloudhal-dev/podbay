@@ -410,6 +410,12 @@
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified",
 					"note": "Holds the search conditions, the search list and its count, moved out of index.ts; a search that names no place leaves out Spam and Trash."
+				},
+				{
+					"path": "workers/durableObject/conversations.ts",
+					"upstream": "workers/durableObject/index.ts",
+					"status": "modified",
+					"note": "Holds the list of a place by conversation and its count, moved out of index.ts unchanged when ADR-0016 was built, so that the mailbox object's file stays under its size."
 				}
 			]
 		}

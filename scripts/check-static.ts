@@ -21,6 +21,7 @@ import { check as messages } from "./checks/messages.ts";
 import { check as names } from "./checks/names.ts";
 import { check as ratchets } from "./checks/ratchets.ts";
 import { check as secrets } from "./checks/secrets.ts";
+import { check as sender } from "./checks/sender.ts";
 import { check as vendored } from "./checks/vendored-skills.ts";
 import { checkPins, readManifest } from "./pins.ts";
 
@@ -33,6 +34,7 @@ const ALL: Check[] = [
 	secrets,
 	account,
 	imports,
+	sender,
 	html,
 	dialogs,
 	messages,

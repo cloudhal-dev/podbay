@@ -12,6 +12,7 @@
  * Zod schemas: used across route handlers to eliminate duplication.
  */
 import { z } from "zod";
+import { UNDO_SECONDS } from "../../shared/sending";
 import { MAX_MESSAGE_BYTES, MAX_RECIPIENTS, messageBytes } from "../../shared/sending-limits";
 
 // ── TypeScript Interfaces ──────────────────────────────────────────
@@ -71,6 +72,15 @@ export const SendEmailRequestSchema = z
 		 * files, and its row becomes the sent message. A message without files needs none.
 		 */
 		draft_id: z.string().max(128).optional(),
+		/**
+		 * When the message leaves (ADR-0016, decision 12): an instant in UTC, written with `Z`.
+		 * Without it the message is an ordinary send and waits for the undo window.
+		 */
+		send_at: z.string().max(40).datetime().optional(),
+		/** The undo window the person chose: 5, 10 or 30 seconds; 10 when nothing is said. */
+		undo_seconds: z
+			.union([z.literal(UNDO_SECONDS[0]), z.literal(UNDO_SECONDS[1]), z.literal(UNDO_SECONDS[2])])
+			.optional(),
 		in_reply_to: z.string().optional(),
 		references: z.array(z.string()).optional(),
 		thread_id: z.string().optional(),
@@ -91,7 +101,14 @@ export const SendEmailRequestSchema = z
 		message: "The message is too large to send",
 	});
 
+/** A send is answered when the mailbox took the message; it has not left yet (ADR-0016). */
 export const SendEmailResponseSchema = z.object({
 	id: z.string(),
-	status: z.string(),
+	status: z.literal("waiting"),
+	send_at: z.string(),
+});
+
+/** `POST …/emails/:id/reschedule`: a new time, or none for "now". */
+export const RescheduleRequestSchema = z.strictObject({
+	send_at: z.string().max(40).datetime().optional(),
 });

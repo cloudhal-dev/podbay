@@ -318,4 +318,43 @@ export const mailboxMigrations: Migration[] = [
 				('delivery', 0), ('mail', 0), ('labels', 0), ('settings', 0);
 		`,
 	},
+	{
+		// ADR-0016: outgoing mail waits before it leaves. The place Scheduled holds a message
+		// from the press until it has left. `submissions` has one row for a message on its way:
+		// its state (`waiting`, `sending`, `sent`, `failed`), the time it leaves, its next try,
+		// who asked and when, why it failed, and the id the sending service gave it. `send_log`
+		// has one row for each message that left, with its time and its kind and nothing of the
+		// message: the caps are counted there, so deleting or moving sent mail frees no place.
+		// It is filled from what is in Sent from the last day, so the caps do not start over.
+		// Nothing is rewritten: mail already in Sent has no row in `submissions`.
+		name: "17_submissions",
+		sql: `
+			INSERT INTO folders (id, name, is_deletable) VALUES ('scheduled', 'Scheduled', 0);
+
+			CREATE TABLE submissions (
+				email_id TEXT PRIMARY KEY,
+				state TEXT NOT NULL,
+				send_at TEXT NOT NULL,
+				retry_at TEXT,
+				attempts INTEGER NOT NULL DEFAULT 0,
+				started_at TEXT,
+				requested_at TEXT NOT NULL,
+				requested_by TEXT NOT NULL,
+				error TEXT,
+				sent_at TEXT,
+				service_id TEXT,
+				FOREIGN KEY(email_id) REFERENCES emails(id) ON DELETE CASCADE
+			);
+			CREATE INDEX idx_submissions_state_send_at ON submissions(state, send_at);
+
+			CREATE TABLE send_log (
+				at TEXT NOT NULL,
+				kind TEXT NOT NULL
+			);
+
+			INSERT INTO send_log (at, kind)
+				SELECT date, 'person' FROM emails
+				WHERE folder_id = 'sent' AND date >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day');
+		`,
+	},
 ];

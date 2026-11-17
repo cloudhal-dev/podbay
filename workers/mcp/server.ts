@@ -49,7 +49,7 @@ const READ_ONLY = "This key can read this mailbox but not change it.";
 const DRAFT_NOTE =
 	"Saved to Drafts. Nothing was sent, and nothing can be sent from here: a person opens the draft in Podbay and sends it.";
 /** Only a real send fills Sent, and drafts are made by the draft tools. */
-const NOT_A_MOVE_TARGET: readonly string[] = [Folders.SENT, Folders.DRAFT];
+const NOT_A_MOVE_TARGET: readonly string[] = [Folders.SENT, Folders.DRAFT, Folders.SCHEDULED];
 
 type ToolResult = { content: { type: "text"; text: string }[]; isError?: true };
 
@@ -253,7 +253,7 @@ export function buildMcpServer(callerEnv: Env, caller: KeyCaller): McpServer {
 		async ({ mailboxId: raw, emailId, read }) => {
 			const to = await reach(raw, "write");
 			if ("refused" in to) return to.refused;
-			return answer(await toolMarkEmailRead(env, to.address, emailId, read));
+			return outcome(await toolMarkEmailRead(env, to.address, emailId, read));
 		},
 	);
 
@@ -271,7 +271,7 @@ export function buildMcpServer(callerEnv: Env, caller: KeyCaller): McpServer {
 			const to = await reach(raw, "write");
 			if ("refused" in to) return to.refused;
 			if (NOT_A_MOVE_TARGET.includes(folderId)) {
-				return refuse("An email cannot be moved into Sent or Drafts.");
+				return refuse("An email cannot be moved into Sent, Drafts or Scheduled.");
 			}
 			return outcome(await toolMoveEmail(env, to.address, emailId, folderId));
 		},

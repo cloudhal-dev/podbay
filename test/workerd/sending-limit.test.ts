@@ -1,12 +1,15 @@
 /**
- * Tier 3: how much a mailbox may send (rule S8).
+ * Tier 3: how much a mailbox may send (rule S8; ADR-0016, decision 16).
  *
- * A mailbox sends at most 20 messages in an hour and 100 in a day. The window is counted in
- * time, not in calendar days: mail sent earlier the same day does not count against the hour,
- * and mail sent the day before yesterday does not count against the day.
+ * A mailbox sends at most 20 messages in an hour and 100 in a day. The caps count what left,
+ * in the mailbox's own record of it (`send_log`), not what stands in Sent. The window is
+ * counted in time, not in calendar days: mail that left earlier the same day does not count
+ * against the hour, and mail that left the day before yesterday does not count against the
+ * day.
  */
 import { runInDurableObject } from "cloudflare:test";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { sendRefusal } from "../../workers/durableObject/sending.ts";
 import { Browser, createMailbox, migrate, setupOwner, testEnv } from "./helpers.ts";
 
 const MAILBOX = "limits@example.com";
@@ -15,28 +18,22 @@ const HOUR = 60 * MINUTE;
 
 const stub = () => testEnv.MAILBOX.get(testEnv.MAILBOX.idFromName(MAILBOX));
 
-/** Puts `count` sent messages into the mailbox, each sent `ago` milliseconds before now. */
+/** Records `count` messages as having left the mailbox `ago` milliseconds before now. */
 async function sent(count: number, ago: number): Promise<void> {
 	await runInDurableObject(stub(), (_object, state) => {
-		// The date is written as the Worker writes it when it sends.
-		const date = new Date(Date.now() - ago).toISOString();
+		// The time is written as the mailbox writes it when it hands a message over.
 		for (let index = 0; index < count; index++) {
 			state.storage.sql.exec(
-				`INSERT INTO emails (id, folder_id, subject, sender, recipient, date) VALUES (?, 'sent', 'Sent', ?, 'to@example.net', ?)`,
-				crypto.randomUUID(),
-				MAILBOX,
-				date,
+				`INSERT INTO send_log (at, kind) VALUES (?, 'person')`,
+				new Date(Date.now() - ago - index).toISOString(),
 			);
 		}
 	});
 }
 
-/** The mailbox object, as far as this test calls it. */
-interface Limited {
-	checkSendRateLimit(): Promise<string | null>;
-}
+/** Why the mailbox may not send now, as the mailbox itself asks when a message is taken. */
 const refusal = () =>
-	runInDurableObject(stub(), (object) => (object as unknown as Limited).checkSendRateLimit());
+	runInDurableObject(stub(), (_object, state) => sendRefusal(state.storage.sql, Date.now()));
 
 beforeAll(async () => {
 	await migrate();
@@ -48,6 +45,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
 	await runInDurableObject(stub(), (_object, state) => {
+		state.storage.sql.exec(`DELETE FROM send_log`);
 		state.storage.sql.exec(`DELETE FROM emails WHERE folder_id = 'sent'`);
 	});
 });
@@ -70,6 +68,27 @@ describe("the sending limit", () => {
 		expect(await refusal()).toBeNull();
 		await sent(20, 61 * MINUTE);
 		expect(await refusal()).toBeNull();
+	});
+
+	it("does not count what stands in Sent: only what the mailbox recorded as having left", async () => {
+		// Until ADR-0016 the caps counted the rows of Sent, so deleting sent mail freed them.
+		await runInDurableObject(stub(), (_object, state) => {
+			const date = new Date(Date.now() - 5 * MINUTE).toISOString();
+			for (let index = 0; index < 30; index++) {
+				state.storage.sql.exec(
+					`INSERT INTO emails (id, folder_id, subject, sender, recipient, date) VALUES (?, 'sent', 'Sent', ?, 'to@example.net', ?)`,
+					crypto.randomUUID(),
+					MAILBOX,
+					date,
+				);
+			}
+		});
+		expect(await refusal()).toBeNull();
+		await sent(20, 5 * MINUTE);
+		await runInDurableObject(stub(), (_object, state) => {
+			state.storage.sql.exec(`DELETE FROM emails WHERE folder_id = 'sent'`);
+		});
+		expect(await refusal()).toMatch(/20 emails per hour/);
 	});
 
 	it("refuses the hundred-and-first message of a day, and forgets the day before", async () => {

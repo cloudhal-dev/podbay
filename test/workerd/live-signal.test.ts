@@ -41,6 +41,8 @@ import {
 	setupOwner,
 } from "./helpers.ts";
 import { counters, inObject, mailboxStub, open, quiet, settled, type Tab } from "./live-helpers.ts";
+import { HANDLERS, READS, WRITES } from "./live-methods.ts";
+import { age, wake, wakeNow } from "./sending-helpers.ts";
 
 /** Words that stand for mail: wherever a test can put content, it puts this. */
 const MARK = "QZXMARKQZX";
@@ -342,23 +344,49 @@ describe("what is told", () => {
 			ok(del(`/drafts/${draft}/attachments/${file}`), 204),
 		);
 
-		// ── Sending ──
+		// ── Sending (ADR-0016): taken, given a new time, taken back, leaving ──
 		const message = {
 			to: `${MARK}@elsewhere.test`,
 			from: address,
 			subject: `${MARK} sent`,
 			html: `<p>${MARK}</p>`,
+			// A time later on, so that nothing leaves by itself while this test looks.
+			send_at: new Date(Date.now() + 3_600_000).toISOString(),
 		};
+		const taken = async (res: Promise<Response>) =>
+			(await json<{ id: string }>(await ok(res, 202))).id;
 		await step("a draft sent", ["mail"], () =>
-			ok(owner.post(`${base}/emails`, { ...message, draft_id: draft }), 202),
+			taken(owner.post(`${base}/emails`, { ...message, draft_id: draft })),
 		);
-		await step("a message sent", ["mail"], () => ok(owner.post(`${base}/emails`, message), 202));
+		let waiting = "";
+		await step("a message sent", ["mail"], async () => {
+			waiting = await taken(owner.post(`${base}/emails`, message));
+		});
 		await step("a reply sent", ["mail"], () =>
-			ok(owner.post(`${base}/emails/${filed}/reply`, message), 202),
+			taken(owner.post(`${base}/emails/${filed}/reply`, message)),
 		);
 		await step("a forward sent", ["mail"], () =>
-			ok(owner.post(`${base}/emails/${filed}/forward`, message), 202),
+			taken(owner.post(`${base}/emails/${filed}/forward`, message)),
 		);
+		await step("a waiting message given a new time", ["mail"], () =>
+			ok(
+				owner.post(`${base}/emails/${waiting}/reschedule`, {
+					send_at: new Date(Date.now() + 7_200_000).toISOString(),
+				}),
+			),
+		);
+		await step("a waiting message taken back", ["mail"], () =>
+			ok(owner.post(`${base}/emails/${waiting}/unsend`)),
+		);
+		await step("a message that is not waiting", [], () =>
+			ok(owner.post(`${base}/emails/${waiting}/unsend`), 404),
+		);
+		// The alarm writes too, and tells like any other write: the mail that waited has gone.
+		await step("the alarm, when mail leaves", ["mail"], async () => {
+			await age(address, 3_700_000);
+			expect(await wake(address)).toBe(true);
+		});
+		await step("the alarm, when nothing is due", [], () => wakeNow(address));
 		await step("a draft discarded", ["mail"], async () => {
 			const made = await ok(
 				owner.post(`${base}/drafts`, { subject: `${MARK} gone`, body: MARK }),
@@ -506,69 +534,6 @@ describe("what is told", () => {
 const methods = () =>
 	Object.getOwnPropertyNames(MailboxDO.prototype).filter((name) => name !== "constructor");
 
-/** The methods that only read. Each is called below and must change no row. */
-const READS = [
-	"allKeys",
-	"batchToEmpty",
-	"checkSendRateLimit",
-	"completeAddress",
-	"countEmails",
-	"countSearchResults",
-	"countThreadedEmails",
-	"draftFile",
-	"findThreadBySubject",
-	"findThreadOfReferences",
-	"getAttachment",
-	"getEmail",
-	"getEmails",
-	"getFolders",
-	"getLabels",
-	"getThreadEmails",
-	"getThreadedEmails",
-	"holdsFiles",
-	"messageKeys",
-	"originalOf",
-	"searchEmails",
-];
-/** The connection itself: taking one, ending one. They change no row either. */
-const HANDLERS = ["closeLive", "fetch", "webSocketClose", "webSocketMessage"];
-/** Every other method writes, and this is what a call of it that changed a row is about. */
-const WRITES: Record<string, LiveKind[]> = {
-	// Mail
-	createEmail: ["mail"],
-	deleteEmail: ["mail"],
-	emptyBatch: ["mail"],
-	filesStored: ["mail"],
-	labelConversation: ["mail"],
-	markStored: ["mail"],
-	markThreadRead: ["mail"],
-	moveEmail: ["mail"],
-	removeFile: ["mail"],
-	runDeed: ["mail"],
-	saveDraft: ["mail"],
-	sendDraft: ["mail"],
-	undoDeed: ["mail"],
-	updateEmail: ["mail"],
-	// Mail, when lines were ticked; nothing, when a filter was only counted
-	bulk: ["mail"],
-	// Arrival
-	fileArrival: ["delivery", "mail"],
-	// Labels
-	createLabel: ["labels"],
-	updateLabel: ["labels"],
-	deleteLabel: ["labels", "mail"],
-	// Settings: the method moves its own counter
-	settingsSaved: [],
-	// Rows no read of mail shows
-	beginArrival: [],
-	claimArrival: [],
-	declareFile: [],
-	dropArrival: [],
-	forgetAddress: [],
-	forgetAddresses: [],
-	purge: [],
-};
-
 describe("the signal cannot be forgotten", () => {
 	it("every method of the mailbox object is watched", () => {
 		const unwatched = methods().filter((name) => {
@@ -613,7 +578,6 @@ describe("the signal cannot be forgotten", () => {
 		const SAMPLE: Record<string, unknown[]> = {
 			allKeys: [],
 			batchToEmpty: ["trash", new Date().toISOString()],
-			checkSendRateLimit: [],
 			completeAddress: ["a"],
 			countEmails: [{ folder: "inbox" }],
 			countSearchResults: [{ query: "seed" }],
@@ -785,7 +749,7 @@ describe("the counters are stored", () => {
 		);
 		expect(columns).toEqual(["kind", "value"]);
 		expect(await mail()).toEqual(before);
-		expect(mailboxMigrations.at(-1)?.name).toBe("16_states");
+		expect(mailboxMigrations[15]?.name).toBe("16_states");
 		// And it counts from there.
 		await deliver(address, marked(address, "New mail"));
 		expect(await counters(address)).toEqual({ delivery: 1, mail: 1, labels: 0, settings: 0 });

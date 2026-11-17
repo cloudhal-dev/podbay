@@ -208,52 +208,53 @@
 		{
 			"id": "runtime.send_email.send",
 			"kind": "runtime",
-			"relies": "`env.EMAIL.send(message)` takes a structured message and resolves to a result.",
+			"relies": "`env.EMAIL.send(message)` takes a structured message and resolves to a result. One function in the mailbox object is its only caller (ADR-0016, decision 4; `pnpm static sender`).",
 			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
-			"pageUpdated": "2026-10-30",
-			"verifiedAt": "2026-11-17",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-18",
 			"evidence": "send(message: EmailMessage | EmailMessageBuilder): Promise<EmailSendResult>;",
-			"code": ["workers/email-sender.ts"]
+			"code": ["workers/email-sender.ts", "workers/durableObject/leaving.ts"]
 		},
 		{
 			"id": "runtime.send_email.message",
 			"kind": "runtime",
 			"relies": "The message takes `to`, `from`, `subject`, `html`, `text`, `cc`, `bcc` and `replyTo`. An address is a string or `{ email, name }`.",
 			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
-			"pageUpdated": "2026-10-30",
-			"verifiedAt": "2026-11-17",
-			"evidence": "to: string | EmailAddress | (string | EmailAddress)[]; // Max 50 recipients",
-			"code": ["workers/email-sender.ts"]
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-18",
+			"evidence": "to?: string | EmailAddress | (string | EmailAddress)[];",
+			"code": ["workers/email-sender.ts", "workers/lib/outgoing-message.ts"],
+			"note": "On 2026-11-18 the page writes `to` as optional: at least one of `to`, `cc` or `bcc` is required, and the three together hold at most 50 addresses. Podbay always gives `to`."
 		},
 		{
 			"id": "runtime.send_email.attachments",
 			"kind": "runtime",
 			"relies": "An attachment is `{ content, filename, type, disposition, contentId? }`. Podbay passes `content` as a base64 string.",
 			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
-			"pageUpdated": "2026-10-30",
-			"verifiedAt": "2026-11-17",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-18",
 			"evidence": "content: string | ArrayBuffer | ArrayBufferView; // Base64 string or binary content",
-			"code": ["workers/email-sender.ts"]
+			"code": ["workers/email-sender.ts", "workers/durableObject/leaving.ts"]
 		},
 		{
 			"id": "runtime.send_email.headers",
 			"kind": "runtime",
 			"relies": "Custom headers are passed as a `headers` map of strings.",
 			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
-			"pageUpdated": "2026-10-30",
-			"verifiedAt": "2026-11-17",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-18",
 			"evidence": "headers?: { [key: string]: string };",
-			"code": ["workers/email-sender.ts"]
+			"code": ["workers/email-sender.ts", "workers/lib/outgoing-message.ts"]
 		},
 		{
 			"id": "runtime.send_email.result",
 			"kind": "runtime",
-			"relies": "A successful send returns `{ messageId }`. A failed send throws an `Error` with a `code` property.",
+			"relies": "A successful send returns `{ messageId }`, which is kept as `service_id`. A failed send throws an `Error` with a `code` property, which decides what becomes of the message (ADR-0016, decision 6).",
 			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
-			"pageUpdated": "2026-10-30",
-			"verifiedAt": "2026-11-17",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-18",
 			"evidence": "// Errors are thrown as standard Error objects with a `code` property",
-			"code": ["workers/email-sender.ts"]
+			"code": ["workers/email-sender.ts", "workers/durableObject/leaving.ts", "shared/sending.ts"]
 		},
 		{
 			"id": "runtime.r2.get",
@@ -266,7 +267,7 @@
 			"code": [
 				"workers/index.ts",
 				"workers/arrival.ts",
-				"workers/lib/outgoing.ts",
+				"workers/durableObject/leaving.ts",
 				"workers/routes/drafts.ts",
 				"workers/routes/original.ts"
 			]
@@ -339,12 +340,12 @@
 		{
 			"id": "runtime.ctx.waitUntil",
 			"kind": "runtime",
-			"relies": "`ctx.waitUntil(promise)` lets work continue after the handler has returned. Podbay sends mail, wakes the agent and takes up arrivals that were left half done this way.",
+			"relies": "`ctx.waitUntil(promise)` lets work continue after the handler has returned. Podbay wakes the agent and takes up arrivals that were left half done this way. Mail is no longer sent this way: it leaves from the mailbox object's alarm (ADR-0016).",
 			"source": "https://developers.cloudflare.com/workers/runtime-apis/context/",
 			"pageUpdated": "2026-10-12",
-			"verifiedAt": "2026-11-17",
+			"verifiedAt": "2026-11-18",
 			"evidence": "`ctx.waitUntil()` extends the lifetime of your Worker, allowing you to perform work without blocking returning a response, and that may continue after a response is returned.",
-			"code": ["workers/arrival.ts", "workers/lib/outgoing.ts"]
+			"code": ["workers/arrival.ts"]
 		},
 		{
 			"id": "runtime.access.jwt_header",
@@ -501,19 +502,28 @@
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| **Total message size** | 25 MiB | Including attachments |",
-			"code": ["shared/sending-limits.ts", "workers/lib/schemas.ts"],
+			"code": [
+				"shared/sending-limits.ts",
+				"workers/lib/schemas.ts",
+				"workers/lib/outgoing-message.ts"
+			],
 			"note": "The same table: `| **Recipients (to, cc, bcc)** | 50 per email | Combined across all recipient fields |`."
 		},
 		{
 			"id": "runtime.durable_objects.alarms",
 			"kind": "runtime",
-			"relies": "A Durable Object can set one alarm at a time; it runs at least once and is retried when the handler throws. Proposed for waking snoozed mail (ADR-0010): many times are kept in storage, and the alarm is set to the earliest.",
+			"relies": "A Durable Object can set one alarm at a time. The mailbox object keeps every time it waits for in rows and sets its one alarm to the earliest (ADR-0016, decision 17); snooze (ADR-0010) adds its times to the same function.",
 			"source": "https://developers.cloudflare.com/durable-objects/api/alarms/",
 			"pageUpdated": "2026-04-21",
-			"verifiedAt": "2026-11-17",
+			"verifiedAt": "2026-11-18",
 			"evidence": "Each Durable Object is able to schedule a single alarm at a time by calling `setAlarm()`.",
-			"code": ["docs/adr/0010-snooze-and-mute.md"],
-			"note": "The same page: `Alarms have guaranteed at-least-once execution and are retried automatically when the alarm() handler throws.` Nothing uses an alarm yet."
+			"code": [
+				"workers/durableObject/alarm.ts",
+				"workers/durableObject/submissions.ts",
+				"workers/durableObject/index.ts",
+				"docs/adr/0010-snooze-and-mute.md"
+			],
+			"note": "The same page: `Alarms have guaranteed at-least-once execution and are retried automatically when the alarm() handler throws.` Since ADR-0016 the mailbox object has an alarm: outgoing mail leaves from it."
 		},
 		{
 			"id": "limit.durable_objects.storage",
@@ -736,7 +746,7 @@
 			"code": [
 				"shared/sending-limits.ts",
 				"workers/durableObject/drafts.ts",
-				"workers/lib/outgoing.ts",
+				"workers/lib/outgoing-message.ts",
 				"app/hooks/useDraftFiles.ts"
 			]
 		},
@@ -859,12 +869,12 @@
 		{
 			"id": "runtime.r2.head",
 			"kind": "runtime",
-			"relies": "`bucket.head(key)` says whether an object exists without reading it. An arrival that is filed as `interrupted` is checked this way, so its bytes are not read again.",
+			"relies": "`bucket.head(key)` says whether an object exists without reading it. An arrival that is filed as `interrupted` is checked this way, so its bytes are not read again. A send that names a draft asks the same way whether the bytes of each of its files are there; they are read when the message leaves.",
 			"source": "https://developers.cloudflare.com/r2/api/workers/workers-api-reference/",
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Retrieves the `R2Object` for the given key containing only object metadata, if the key exists, and `null` if the key does not exist.",
-			"code": ["workers/arrival.ts"]
+			"code": ["workers/arrival.ts", "workers/lib/outgoing.ts"]
 		},
 		{
 			"id": "limit.r2.delete_keys",
@@ -914,9 +924,13 @@
 			"relies": "The sending service makes `Date`, `Message-ID`, `MIME-Version`, `Content-Type`, `DKIM-Signature` and `Return-Path` itself and refuses a request that sets one. So what leaves is never what Podbay holds: a sent message has no original, and its stored header fields are the ones Podbay handed over.",
 			"source": "https://developers.cloudflare.com/email-service/reference/headers/",
 			"pageUpdated": "2026-11-11",
-			"verifiedAt": "2026-11-17",
+			"verifiedAt": "2026-11-18",
 			"evidence": "These headers are auto-generated by the Cloudflare Email Service infrastructure. You cannot set or override them.",
-			"code": ["workers/lib/outgoing.ts", "app/components/email-panel/EmailPanelDialogs.tsx"]
+			"code": [
+				"workers/lib/outgoing-message.ts",
+				"workers/durableObject/submissions.ts",
+				"app/components/email-panel/EmailPanelDialogs.tsx"
+			]
 		},
 		{
 			"id": "runtime.d1.json_patch",
@@ -1102,12 +1116,12 @@
 		{
 			"id": "runtime.durable_objects.write_coalescing",
 			"kind": "runtime",
-			"relies": "A counter is moved in the same turn as the change it counts, with no `await` of I/O between them, so both are stored or neither (ADR-0013, decision 5).",
+			"relies": "A counter is moved in the same turn as the change it counts, with no `await` of I/O between them, so both are stored or neither (ADR-0013, decision 5). The same holds for the alarm: a message is taken, taken back or given a new time and the alarm is set in the same turn (ADR-0016, decision 17).",
 			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Any series of write operations with no intervening `await` will automatically be submitted atomically",
-			"code": ["workers/durableObject/live.ts"]
+			"code": ["workers/durableObject/live.ts", "workers/durableObject/index.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.sql.total_changes",
@@ -1140,6 +1154,222 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "`evictDurableObject(stub:DurableObjectStub, options?:DurableObjectEvictionOptions)`: Promise\\<void>",
 			"code": ["test/workerd/live.test.ts", "test/workerd/live-signal.test.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.alarm.handler",
+			"kind": "runtime",
+			"relies": "The mailbox object's `alarm()` runs when the alarm's time comes, one run at a time for one object. A run that finds a message handed over already does nothing for it.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/alarms/",
+			"pageUpdated": "2026-04-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Only one instance of `alarm()` will ever run at a given time per Durable Object instance.",
+			"code": [
+				"workers/durableObject/index.ts",
+				"workers/durableObject/alarm.ts",
+				"workers/durableObject/leaving.ts"
+			]
+		},
+		{
+			"id": "runtime.durable_objects.alarm.retries",
+			"kind": "runtime",
+			"relies": "A handler that throws is tried again six times and then not at all until an alarm is set again. So the mailbox's handler catches its own errors and always sets the next alarm (ADR-0016, decision 18).",
+			"source": "https://developers.cloudflare.com/durable-objects/api/alarms/",
+			"pageUpdated": "2026-04-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Retries are performed using exponential backoff starting at a 2 second delay from the first failure with up to 6 retries allowed.",
+			"code": ["workers/durableObject/alarm.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.alarm.restart",
+			"kind": "runtime",
+			"relies": "A handler can start over on another machine. The handover of a message is therefore a compare-and-set written before the service is called: a run that starts over finds `sending` and hands nothing over again (ADR-0016, decision 5).",
+			"source": "https://developers.cloudflare.com/durable-objects/api/alarms/",
+			"pageUpdated": "2026-04-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Following a short delay, the `alarm()` handler will run from the beginning on the other machine.",
+			"code": ["workers/durableObject/leaving.ts", "workers/durableObject/submissions.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.alarm.lateness",
+			"kind": "runtime",
+			"relies": "An alarm can be late by up to a minute. A late alarm makes the undo window longer, never shorter: what decides is the state of the row, not the clock (ADR-0016, decision 11).",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "will usually execute within a few milliseconds after the set time, but can be delayed by up to a minute due to maintenance or failures while failover takes place.",
+			"code": [
+				"workers/durableObject/alarm.ts",
+				"workers/durableObject/submissions.ts",
+				"shared/sending.ts"
+			]
+		},
+		{
+			"id": "runtime.durable_objects.alarm.past",
+			"kind": "runtime",
+			"relies": "An alarm set to a time that has come runs at once. A run that leaves mail due (more than ten messages) sets the alarm to their time and is run again.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "If `setAlarm()` is called with a time equal to or before `Date.now()`, the alarm will be scheduled for asynchronous execution in the immediate future.",
+			"code": ["workers/durableObject/alarm.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.alarm.getAlarm",
+			"kind": "runtime",
+			"relies": "Whenever the object wakes it asks whether an alarm is set, and sets one when something waits and none is. An alarm that has not started counts as set, so a wake for the alarm itself sets no second one.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "The alarm is considered to be set if it has not started, or if it has failed and any retry has not begun.",
+			"code": ["workers/durableObject/alarm.ts", "workers/durableObject/index.ts"],
+			"note": "The alarms page adds that `getAlarm` answers `null` while a handler is running unless `setAlarm` was called since it started; the handler always calls `setAlarm` or `deleteAlarm` at its end."
+		},
+		{
+			"id": "runtime.durable_objects.alarm.constructor",
+			"kind": "runtime",
+			"relies": "The constructor runs before the alarm handler when the object was asleep. The constructor of the mailbox object sets an alarm only after asking whether one is set.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/alarms/",
+			"pageUpdated": "2026-04-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "If you wish to call `setAlarm` inside the constructor of a Durable Object, ensure that you are first checking whether an alarm has already been set.",
+			"code": ["workers/durableObject/alarm.ts", "workers/durableObject/index.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.alarm.held",
+			"kind": "runtime",
+			"relies": "An alarm can be lost: one held for more than seven days while a spending limit blocks the account's objects is deleted. The rows are still there, the alarm is set again at the next wake, and a message 24 hours past its time does not leave (ADR-0016, decisions 15 and 18).",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/spend-management/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-18",
+			"evidence": "An alarm scheduled more than seven days ago is deleted while held.",
+			"code": ["workers/durableObject/alarm.ts", "workers/durableObject/leaving.ts"]
+		},
+		{
+			"id": "limit.durable_objects.alarm_wall_time",
+			"kind": "limit",
+			"relies": "A run of the alarm lets at most ten messages leave and waits at most 60 seconds for the service's answer to each, so it ends inside the fifteen minutes a handler may run.",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Alarm handler invocations have a maximum wall time of 15 minutes.",
+			"code": ["shared/sending.ts", "workers/durableObject/leaving.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.deleteAll.alarm",
+			"kind": "runtime",
+			"relies": "Deleting a mailbox deletes its alarm with its rows, so a deleted mailbox sends nothing (ADR-0016, decision 21). The compatibility date is later than 2026-02-24; `purge` also calls `deleteAlarm()` first.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "For Workers with a compatibility date of `2026-02-24` or later, `deleteAll()` also deletes any active [alarm](https://developers.cloudflare.com/durable-objects/api/alarms/).",
+			"code": ["workers/durableObject/index.ts", "wrangler.jsonc"]
+		},
+		{
+			"id": "runtime.durable_objects.output_gate",
+			"kind": "runtime",
+			"relies": "The handover of a message (`waiting` to `sending`) is on disk before the sending service hears of it: the platform holds outgoing messages until the write is confirmed, and Podbay also waits for `sync()` before the call.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "By default, the system will pause outgoing network messages from the Durable Object until all previous writes have been confirmed flushed to disk.",
+			"code": ["workers/durableObject/leaving.ts", "workers/durableObject/submissions.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.sync",
+			"kind": "runtime",
+			"relies": "`ctx.storage.sync()` resolves when the writes made so far are on disk. The mailbox waits for it between the handover and the call to the sending service.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Synchronizes any pending writes to disk.",
+			"code": ["workers/durableObject/leaving.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.env",
+			"kind": "runtime",
+			"relies": "The mailbox object has the Worker's bindings. Since ADR-0016 it uses three of them: the send binding, the bucket (the files of a message that leaves) and the index (whether the mailbox is still there and its sender may still send).",
+			"source": "https://developers.cloudflare.com/durable-objects/api/base/",
+			"pageUpdated": "2026-06-15",
+			"verifiedAt": "2026-11-18",
+			"evidence": "`env` contains the environment bindings available to this Durable Object, as defined in your Wrangler configuration.",
+			"code": [
+				"workers/durableObject/leaving.ts",
+				"workers/durableObject/index.ts",
+				"workers/auth/standing.ts"
+			]
+		},
+		{
+			"id": "runtime.durable_objects.id.name",
+			"kind": "runtime",
+			"relies": "The alarm handler reads the mailbox's address from `ctx.id.name`: the object is named after the address in the index, and nothing in a row says which mailbox it is. Without a name nothing leaves.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/id/",
+			"pageUpdated": "2026-05-27",
+			"verifiedAt": "2026-11-18",
+			"evidence": "The `name` property is also available on `ctx.id` inside the Durable Object when the caller uses `idFromName()` or `getByName()`.",
+			"code": ["workers/durableObject/leaving.ts"],
+			"note": "The page: the name is `undefined` when the caller used `idFromString()`, and for alarms created before 2026-03-15. Podbay reaches a mailbox only by `idFromName` (`getMailboxStub`, the guard). Seen to hold in the local runtime on 2026-11-18 (`test/workerd/sending.test.ts`)."
+		},
+		{
+			"id": "runtime.send_email.error_codes",
+			"kind": "runtime",
+			"relies": "A refusal of the sending service carries one of 24 codes. Three read as \"not now\" and are tried again (`E_RATE_LIMIT_EXCEEDED`, `E_INTERNAL_SERVER_ERROR`, `E_EMAIL_SENDING_NOT_READY`); every other code is final (ADR-0016, decisions 6 and 8).",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Email Service errors have a `code` property. The following error codes may be returned when sending emails:",
+			"code": [
+				"shared/sending.ts",
+				"workers/durableObject/leaving.ts",
+				"app/lib/sending-words.ts",
+				"test/unit/sending.test.ts"
+			],
+			"note": "The table's own words for the three: \"Sending rate or concurrent send limit reached\", \"Email Service temporarily unavailable\", \"Domain onboarding has not finished. Retry the send later\". The page says to retry of the third only; reading the first two as \"not now\" is ADR-0016's. `E_DAILY_LIMIT_EXCEEDED` (\"Daily sending quota reached\") is final. `E_DELIVERY_FAILED` does not say whether another recipient was reached."
+		},
+		{
+			"id": "runtime.send_email.type_error",
+			"kind": "runtime",
+			"relies": "An argument of the wrong shape is refused with a `TypeError` that has no code: the service did not take the message. Podbay records it as a message that does not fit (`limits`), never as `unknown`.",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-18",
+			"evidence": "If the argument to `send()` does not match the [interface](#interface), `send()` throws a `TypeError` without a `code` property.",
+			"code": ["shared/sending.ts", "workers/durableObject/leaving.ts"]
+		},
+		{
+			"id": "runtime.send_email.no_idempotency_key",
+			"kind": "runtime",
+			"relies": "`send()` takes no idempotency key and the service gives every message it takes an id of its own, so Podbay cannot ask whether a handover that got no answer arrived. Such a message is `failed` with `unknown` and is never handed over again (ADR-0016, decision 7).",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-18",
+			"evidence": "messageId: string; // Unique email ID",
+			"code": [
+				"workers/durableObject/leaving.ts",
+				"workers/durableObject/submissions.ts",
+				"shared/sending.ts"
+			],
+			"note": "A fact of absence: the interface on the page lists `to`, `cc`, `bcc`, `from`, `subject`, `html`, `text`, `replyTo`, `attachments` and `headers`, and names no key of that kind. Read again when the page changes."
+		},
+		{
+			"id": "tooling.vitest.runDurableObjectAlarm",
+			"kind": "tooling",
+			"relies": "The Workers-runtime tests run a mailbox's alarm by hand after ageing its rows, instead of waiting for time.",
+			"source": "https://developers.cloudflare.com/workers/testing/vitest-integration/test-apis/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Immediately runs and removes the Durable Object pointed to by `stub`'s alarm if one is scheduled.",
+			"code": ["test/workerd/sending-helpers.ts"],
+			"note": "Seen on 2026-11-18: an alarm whose time has come also runs by itself in the test runtime, so a test that must see one run sets a time that has not come and runs it by hand."
+		},
+		{
+			"id": "tooling.vitest.runInDurableObject",
+			"kind": "tooling",
+			"relies": "The Workers-runtime tests put a send binding of their own into a mailbox object, which answers what a test says and counts every call; no test reaches a sending service.",
+			"source": "https://developers.cloudflare.com/workers/testing/vitest-integration/test-apis/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Runs the provided `callback` inside the Durable Object that corresponds to the provided `stub`.",
+			"code": ["test/workerd/sending-helpers.ts"]
 		}
 	]
 }

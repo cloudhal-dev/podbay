@@ -3,10 +3,13 @@
 
 import type { Env } from "../types";
 
+/** What the mailbox answers for a message that waits to leave: it is not deleted (ADR-0016). */
+type Waits = "scheduled";
+
 /** The mailbox calls that name a message's objects and delete its rows. */
 interface Deleter {
-	messageKeys(id: string): Promise<string[] | null>;
-	deleteEmail(id: string): Promise<string[] | null>;
+	messageKeys(id: string): Promise<string[] | null | Waits>;
+	deleteEmail(id: string): Promise<string[] | null | Waits>;
 }
 
 /** One call to the bucket deletes at most this many objects (docs/cloudflare/ledger.json). */
@@ -24,20 +27,24 @@ export async function deleteObjects(bucket: Env["BUCKET"], keys: readonly string
  * original, and then its rows (rule S13; ADR-0011, decision 9; ADR-0015, decision 22). Every
  * path that deletes one message goes through here, so none can leave an object behind.
  * Objects go before rows: a failure in between leaves rows that can be deleted again, never
- * an object that no row names. False when there is no such message.
+ * an object that no row names. False when there is no such message, and `scheduled` for one
+ * that waits to leave: nothing of it is deleted, it is taken back first.
  */
 export async function deleteMessage(
 	bucket: Env["BUCKET"],
 	stub: Deleter,
 	id: string,
-): Promise<boolean> {
+): Promise<boolean | Waits> {
 	const keys = await stub.messageKeys(id);
 	if (keys === null) return false;
+	if (keys === "scheduled") return keys;
 	await deleteObjects(bucket, keys);
 	// The rows say what the message had when they went: a file that was declared in between
 	// is deleted now, so that it is not left without its row.
 	const last = await stub.deleteEmail(id);
 	if (last === null) return true;
+	// Sent in the moment between: its rows stay, and it fails at leaving for want of its files.
+	if (last === "scheduled") return last;
 	const gone = new Set(keys);
 	await deleteObjects(
 		bucket,

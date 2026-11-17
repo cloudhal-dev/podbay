@@ -8,9 +8,10 @@
  * were moved out of `./index.ts`.
  *
  * Rule S9: the assistant never sends. It has no tool that sends, and the environment its tools
- * run with has no working send binding (`withoutSend`), so a tool that is added or changed by
- * mistake cannot send either. Sending is a person's action in the app, through the API routes.
- * `test/unit/agent-no-send.test.ts` proves both.
+ * run with has no working send binding and no method of the mailbox that sends (`withoutSend`),
+ * so a tool that is added or changed by mistake cannot send either, now or later. Sending is a
+ * person's action in the app, through the API routes. `test/unit/agent-no-send.test.ts` and
+ * `test/workerd-agent/sending.test.ts` prove it.
  */
 
 import { type Tool, tool } from "ai";
@@ -52,19 +53,73 @@ const REFUSING_SENDER: SendEmail = {
 };
 
 /**
- * The environment the assistant's tools run with: the caller's environment, with a send binding
- * that refuses. Every other binding is read through to the real one.
+ * The methods of the mailbox object by which mail is sent (ADR-0016): taking a message to be
+ * sent, taking it back, giving it a new time, and the run that lets mail leave. Scheduling is
+ * sending, so no tool reaches any of them.
+ */
+export const SENDING_METHODS: readonly string[] = ["submit", "unsend", "reschedule", "alarm"];
+
+const refuseSending = (): Promise<never> => {
+	log.warn("agent.send_refused");
+	return Promise.reject(new AgentSendRefused());
+};
+
+/**
+ * A handle on a mailbox without the methods that send. Everything else is passed on to the
+ * mailbox as it is.
+ */
+function withoutSending<T extends object>(stub: T): T {
+	return new Proxy(stub, {
+		get(target, name) {
+			if (typeof name === "string" && SENDING_METHODS.includes(name)) return refuseSending;
+			const value: unknown = Reflect.get(target, name);
+			// A method is called on the handle itself, never taken off it.
+			return typeof name === "string" && typeof value === "function"
+				? (...args: unknown[]) =>
+						(target as Record<string, (...given: unknown[]) => unknown>)[name]?.(...args)
+				: value;
+		},
+	});
+}
+
+/** The binding of the mailboxes, whose every handle is one without the methods that send. */
+function guardedMailboxes(mailboxes: Env["MAILBOX"]): Env["MAILBOX"] {
+	const handles = ["get", "getByName"];
+	return new Proxy(mailboxes, {
+		get(target, name) {
+			const value: unknown = Reflect.get(target, name);
+			if (typeof name !== "string" || typeof value !== "function") return value;
+			const call = (...args: unknown[]) =>
+				(target as unknown as Record<string, (...given: unknown[]) => unknown>)[name]?.(...args);
+			if (handles.includes(name))
+				return (...args: unknown[]) => withoutSending(call(...args) as object);
+			// A part of the namespace (a jurisdiction) hands out handles too.
+			if (name === "jurisdiction") {
+				return (...args: unknown[]) => guardedMailboxes(call(...args) as Env["MAILBOX"]);
+			}
+			return call;
+		},
+	});
+}
+
+/**
+ * The environment the tools of the assistant and of MCP run with: the caller's environment,
+ * with a send binding that refuses, and with mailboxes whose handles have no method that
+ * sends. The first alone is not enough since ADR-0016: the working send binding is the
+ * mailbox object's, which every tool can reach, so the tools get a handle without `submit`,
+ * `unsend`, `reschedule` and the alarm. Every other binding is read through to the real one.
  */
 export function withoutSend(env: Env): Env {
-	// Object.create is typed `any`; the result is `env` with one property shadowed.
+	// Object.create is typed `any`; the result is `env` with two properties shadowed.
 	const guarded: Env = Object.create(env, {
 		EMAIL: { value: REFUSING_SENDER, enumerable: true, writable: false },
+		MAILBOX: { value: guardedMailboxes(env.MAILBOX), enumerable: true, writable: false },
 	});
 	return guarded;
 }
 
-/** Folders the assistant may not move a message into: only a real send fills Sent. */
-const NO_MOVE_TARGETS: readonly string[] = [Folders.SENT, Folders.DRAFT];
+/** Folders the assistant may not move a message into: only a real send fills Sent or Scheduled. */
+const NO_MOVE_TARGETS: readonly string[] = [Folders.SENT, Folders.DRAFT, Folders.SCHEDULED];
 
 /** Adds the "nothing was sent" message to a saved draft; passes an error through. */
 function draftResult<T extends { message: string } | { error: string }>(result: T): T {
@@ -209,7 +264,7 @@ export function createAgentTools(callerEnv: Env, mailboxId: string): Record<Agen
 				if (NO_MOVE_TARGETS.includes(folderId.toLowerCase())) {
 					return {
 						error:
-							"Cannot move an email into sent or draft. Sent holds only mail a person sent; use draft_reply or draft_email to write a draft.",
+							"Cannot move an email into sent, draft or scheduled. Sent holds only mail a person sent; use draft_reply or draft_email to write a draft.",
 					};
 				}
 				return toolMoveEmail(env, mailboxId, emailId, folderId);

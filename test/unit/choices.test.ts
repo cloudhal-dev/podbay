@@ -53,6 +53,7 @@ describe("which choices there are", () => {
 			snippets: [[true, false], true, "person"],
 			hoverActions: [[true, false], true, "person"],
 			sendAndArchive: [[true, false], false, "person"],
+			undoSeconds: [[5, 10, 30], 10, "person"],
 			notifications: [[true, false], false, "device"],
 		});
 		expect(CHOICES_VERSION).toBe(1);
@@ -62,7 +63,7 @@ describe("which choices there are", () => {
 		}
 	});
 
-	it("lets ten travel with the person, and the order of a list with them; three stay with the device", () => {
+	it("lets ten travel with the person, and the order of a list and the undo window with them; three stay with the device", () => {
 		// Decision 4 of ADR-0012, in its order. The collapsed rail, the fourth choice of the
 		// device, is not among these at all: it is kept by `useUIStore`.
 		const record = [
@@ -78,7 +79,8 @@ describe("which choices there are", () => {
 			"sendAndArchive",
 		];
 		// ADR-0014, decision 25: the order of a list is kept where the page size is kept.
-		expect([...TRAVELLING].sort()).toEqual([...record, "order"].sort());
+		// ADR-0016, decision 10: the undo window of a send is a person's choice like the others.
+		expect([...TRAVELLING].sort()).toEqual([...record, "order", "undoSeconds"].sort());
 		const device = Object.keys(CHOICES).filter((key) => !isTravelling(key));
 		expect(device).toEqual(["density", "readingPane", "notifications"]);
 		expect(isTravelling("rail")).toBe(false);
@@ -104,6 +106,7 @@ describe("which choices there are", () => {
 			snippets: true,
 			hoverActions: true,
 			sendAndArchive: false,
+			undoSeconds: 10,
 			notifications: false,
 		});
 	});

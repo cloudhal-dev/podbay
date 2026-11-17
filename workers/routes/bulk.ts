@@ -28,6 +28,7 @@ import { log } from "../../shared/log";
 import type { ApiContext } from "../auth/middleware";
 import { writeAudit } from "../auth/store";
 import type { DeedNotice, DeedRefusal } from "../durableObject/deed-steps";
+import { WAITS } from "../lib/outgoing";
 
 const M = "/api/v1/mailboxes/:mailboxId";
 type C = Context<ApiContext>;
@@ -104,6 +105,8 @@ bulk.post(`${M}/bulk`, async (c) => {
 	const unit = parsed.data.unit ?? "conversation";
 	const done = await c.var.mailboxStub.bulk({ ids, filter, unit, change });
 	if (done === "not_found") return refuse(c, "not_found");
+	// Mail that waits to leave is acted on by nothing but its own way out (ADR-0016).
+	if (done === "scheduled") return c.json(WAITS, 409);
 	log.info("bulk.begun", {
 		deed: done.deed,
 		counted: filter !== undefined,

@@ -125,3 +125,37 @@ export function htmlToText(html: string, options: { keepLineBreaks?: boolean } =
 		.replace(/\n{3,}/g, "\n\n")
 		.trim();
 }
+
+const NAMED: Record<string, string> = {
+	lt: "<",
+	gt: ">",
+	quot: '"',
+	apos: "'",
+	nbsp: " ",
+	amp: "&",
+};
+
+/** Character references back to characters, each once: what one makes is not read again. */
+function decodeEntities(text: string): string {
+	return text.replace(
+		/&(#\d{1,7}|#x[0-9a-f]{1,6}|lt|gt|quot|apos|nbsp|amp);/gi,
+		(match: string, name: string) => {
+			const lower = name.toLowerCase();
+			if (!lower.startsWith("#")) return NAMED[lower] ?? match;
+			const code = lower.startsWith("#x")
+				? Number.parseInt(lower.slice(2), 16)
+				: Number(lower.slice(1));
+			return Number.isInteger(code) && code > 0 && code <= 0x10ffff
+				? String.fromCodePoint(code)
+				: match;
+		},
+	);
+}
+
+/**
+ * The text form of a message written as HTML, as it leaves beside the HTML (ADR-0016): the
+ * mailbox keeps one body and makes the text from it when the message leaves.
+ */
+export function plainTextOf(html: string): string {
+	return decodeEntities(htmlToText(html, { keepLineBreaks: true }));
+}
