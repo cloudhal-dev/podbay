@@ -11,3 +11,5 @@ Decisions are immutable once accepted. A later ADR supersedes an earlier one; th
 | [0005](0005-client-stack.md) | The client stays a single-page app on one JSON API; TanStack Start and Exact are not adopted now | Accepted, 2026-11-17 |
 | [0006](0006-guidance-for-engineers-and-agents.md) | How engineers and coding agents are guided | Accepted, 2026-11-17 |
 | [0007](0007-places-and-labels.md) | A message is in one place and carries any number of labels | Accepted, 2026-11-17 |
+| [0008](0008-rules-for-incoming-mail.md) | A mailbox has rules for its incoming mail: blocked senders, filters, an automatic reply | Proposed, 2026-11-17 |
+| [0009](0009-emptying-trash-and-spam.md) | Trash and Spam can be emptied in one step | Proposed, 2026-11-17 |
