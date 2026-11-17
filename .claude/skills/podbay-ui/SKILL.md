@@ -31,7 +31,7 @@ The app is a single-page app served as static assets. It shows strangers' mail i
 
 ## 3. How a mailbox behaves
 
-The mail screens follow what a person expects from a first-class web mail client (the bar is the mail people know from Gmail and Google Workspace). The behaviour was studied on the live product and written down here in our own words; nothing of it is copied: no code, no text, no asset. These are decisions; `test/e2e/mailbox.spec.ts` holds each one, and `test/e2e/writing.spec.ts` the ones about writing a message.
+The mail screens follow what a person expects from a first-class web mail client (the bar is the mail people know from Gmail and Google Workspace). The behaviour was studied on the live product and written down here in our own words; nothing of it is copied: no code, no text, no asset. These are decisions; `test/e2e/mailbox.spec.ts` holds each one, `test/e2e/writing.spec.ts` the ones about writing a message, and `test/e2e/bulk.spec.ts` the ones about acting on many conversations and the order of a list.
 
 ### The frame
 
@@ -57,7 +57,10 @@ The mail screens follow what a person expects from a first-class web mail client
 | Each line is one real button, with a checkbox and a star beside it. No clickable `div` | `MessageList.tsx` |
 | Holding Shift while ticking a line ticks, or unticks, every line from the last box used to this one | `toggle` in `MessageList.tsx` |
 | The box above the list selects the page; the menu beside it selects by kind: All, None, Read, Unread, Starred, Unstarred | `MessageListToolbar.tsx` |
-| With nothing selected the bar refreshes, pages, and offers "Mark this page as read". With a selection it shows, in this order: Archive, Report spam (Not spam inside Spam), Delete; then Mark as read or unread (whichever applies), Move to | `MessageListToolbar.tsx` |
+| With nothing selected the bar refreshes, pages, and offers "Mark this page as read". With a selection it shows, in this order: Archive, Report spam (Not spam inside Spam), Delete; then Mark as read or unread (whichever applies), Move to, Label as. In Sent it offers Delete alone of the first three: sent mail goes only to Trash | `MessageListToolbar.tsx` |
+| **A line is a conversation in a place, and what is done to lines is one request**, however many are ticked (ADR-0014): from the toolbar, a line's menu, its quick actions, a drag or a key. A move takes every message of the conversation that is in that place; read, taking a star and labels take the conversation outside Spam and Trash; unread and a star go to the newest message of the line. With conversation view off a line is one message, and the request says so. The mailbox decides all of it; the app only names the lines | `act` in `app/hooks/useConversationActions.ts`; `POST …/bulk` (`workers/routes/bulk.ts`, `workers/durableObject/deeds.ts`). The request's types come from `shared/bulk.ts` with `import type`, so the schema library stays out of the app |
+| Once **a whole page is ticked**, a line above the list offers everything in the place, or everything the search finds. Choosing a deed then asks in the app's own dialog with the count the mailbox gave (conversations, and messages in all); the deed runs in steps, the same line says how far it is, and leaving the page stops it where it is. Drafts offer no such line, everything in Trash is deleted for good only by emptying it, and "Move to" a label is not offered for a search across places | `SelectEverything.tsx`; `everything` in `useConversationActions.ts`; the `everything` prop of `MessageList.tsx`, given by `routes/email-list.tsx` and `routes/search-results.tsx` (`app/lib/search-filter.ts` makes the list's request and the deed's filter from the same words) |
+| **The order of a list** is a person's choice: newest first, unread first or starred first, in the Display menu and in General settings, kept where the page size is kept. The request carries it (`order`); the Worker never acts on a stored choice | `order` in `app/hooks/useDisplay.ts`, `DisplayMenu.tsx`, `settings/GeneralSettings.tsx`, `routes/email-list.tsx`, `queries/search.ts` |
 | A line has a **menu on a right click** (and on the menu key): open, reply, reply to all, forward, archive, delete, read or unread, star, spam, move to, label as, find messages from the sender, open in a new tab. On a line that is part of a selection it acts on the selection | `ConversationMenu.tsx`: a Kumo `DropdownMenu` opened at the pointer through its `anchor` |
 | A line can be **dragged onto a place or a label in the rail**; a line of a selection takes the selection with it. It does what "Move to" does and is only a shortcut for the pointer. Sent and Drafts take no drop | `useDropTarget.ts`; the conversations are held in `useUIStore` while dragged, the drag itself carries only a mark |
 | An action applies to what is selected, or to the line the keyboard is on | `targets()` in `MessageList.tsx` |
@@ -66,9 +69,10 @@ The mail screens follow what a person expects from a first-class web mail client
 
 | Behaviour | How it is built |
 |---|---|
-| Every move (archive, spam, Trash, a folder) says what happened in a toast with **Undo**, which puts each conversation back where it was; `z` does the same while the toast is there | `moveTo` in `app/hooks/useConversationActions.ts`, used by the list and the open conversation alike |
+| Everything done to conversations (a move, read or unread, a star, a label) says what happened in a toast with **Undo**; `z` does the same while the toast is there. Undo is a call to the mailbox, which keeps for an hour what each message had: it puts back what is still as the deed left it and leaves alone what was changed again since. A line the deed could not take (sent mail to Archive, a label in Spam) is named on the note's second line | `act`, `offerUndo` and `takeBack` in `app/hooks/useConversationActions.ts`, used by the list and the open conversation alike; the words of every note and question are in `app/lib/deed-words.ts` |
+| A message's own menu acts on that message: its deeds say `message` as their unit, so a move or a mark takes it alone (labels stay the conversation's) | `messageActions` in `EmailPanel.tsx` |
 | **Delete means Trash.** Only inside Trash is a message deleted for good, and then the app asks first in its own dialog | `remove` in `useConversationActions.ts` |
-| Mail cannot be moved into Sent or Drafts: only sending fills Sent, only writing makes a draft | `moveTargets` in `useConversationActions.ts` |
+| Mail cannot be moved into Sent or Drafts: only sending fills Sent, only writing makes a draft. A conversation in Sent goes only to Trash, and Undo puts it back into Sent from the mailbox's record. A draft is not moved with other lines: deleted from the Drafts list it goes to Trash by itself | `moveTargets`, `fromSent` and `moveTo` in `useConversationActions.ts` |
 
 ### Labels (ADR-0007)
 
@@ -120,7 +124,7 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | Behaviour | How it is built |
 |---|---|
 | Settings are one screen with tabs, as a mail client has them; the open tab is in the address (`?tab=`). **General** is the reader's own choices; the other tabs are about the mailbox, and **Account** says where the person's own account is looked after (password, passkeys, sessions) | `app/routes/settings.tsx`, `app/components/settings/` |
-| A person's choices take effect at once, without a Save button, and are kept **in this browser only**: conversations on a page (10, 25, 50, 100), density, reading pane, conversation view on or off, snippets, actions on a line, what the Reply button of a message does, where to go after a conversation is filed, a "Send and archive" button, notifications of new mail, keyboard shortcuts on or off, light or dark, the language of the app's own words. An unknown stored value falls back to its default | `useDisplay` (`app/hooks/useDisplay.ts`); never something the Worker decides by |
+| A person's choices take effect at once, without a Save button, and are kept **in this browser only**: conversations on a page (10, 25, 50, 100), the order of a list, density, reading pane, conversation view on or off, snippets, actions on a line, what the Reply button of a message does, where to go after a conversation is filed, a "Send and archive" button, notifications of new mail, keyboard shortcuts on or off, light or dark, the language of the app's own words. An unknown stored value falls back to its default | `useDisplay` (`app/hooks/useDisplay.ts`); never something the Worker decides by |
 | With **conversation view off** every message is its own line and is read by itself; the list is asked for without conversations, which the API has always offered | `useEmails`, `EmailPanel.tsx` |
 | **Send and archive**, when asked for, is a second button on an answer: it sends, files the answered conversation in Archive and returns to the list | `handleSend` in `useComposeForm.ts` |
 | **Notifications**, when asked for and allowed by the browser, announce mail that arrives while Podbay is open in a tab: the sender and the subject, nothing of the message, and nothing for what was already there. The app looks at the top of the inbox every half minute; it is not pushed anything | `NewMailNotifier.tsx` |
@@ -160,7 +164,7 @@ The app speaks English and Turkish. Every word a person reads or hears goes thro
 | A date | `dateLanguage()` as the locale; `formatListDate(date, dateLanguage())` | English leaves the date order to the device; another language is named |
 
 - **Never join pieces of a sentence in code** (`{t("Signed in as")} {email}`): word order differs. Put the value in the message.
-- A new message gets its Turkish in `app/i18n/tr.ts` in the same change; the check fails without it, and fails for a translation the code no longer names.
+- A new message gets its Turkish in the same change; the check fails without it, and fails for a translation the code no longer names. The Turkish catalog is `app/i18n/tr.ts`, which joins two files so that neither passes the size a file may have: `app/i18n/tr/a-to-m.ts` for messages whose English begins, in upper case, before "N", and `app/i18n/tr/n-to-z.ts` for the rest. A message goes into the one its English belongs to, in order.
 - Names and code are not messages: Podbay, MCP, a header name, a search operator inside `<code>`.
 - Mail is never translated, and neither is a name a person gave (a label, a mailbox). What the Worker answers is English for now.
 - The language is a choice of the person (`language` in `useDisplay`: this device's, English or Türkçe). Changing it draws the app again (`RootLayout` in `app/router.tsx`).
@@ -178,7 +182,8 @@ The app speaks English and Turkish. Every word a person reads or hears goes thro
 | A list of conversations with selection, quick actions and paging | `app/components/MessageList.tsx` |
 | A confirmation before something that cannot be undone | `useConfirm()` from `app/components/Confirm.tsx` |
 | A dialog with a form | The "Create folder" dialog in `app/components/Sidebar.tsx` |
-| Something done to conversations (move, archive, spam, delete, read, star) | `useConversationActions` in `app/hooks/useConversationActions.ts`; it brings the toast and Undo |
+| Something done to conversations (move, archive, spam, delete, read, star, label) | `useConversationActions` in `app/hooks/useConversationActions.ts`; it sends one request for the lines and brings the toast and Undo |
+| A line above a list that says how much is there and offers one thing to do with all of it | `EmptyPlace.tsx`, `SelectEverything.tsx` |
 | A toolbar button that is only an icon | `app/components/IconButton.tsx` |
 | A menu of things to tick | `app/components/LabelMenu.tsx` (`DropdownMenu.CheckboxItem`) |
 | A keyboard shortcut | `useShortcuts` in `app/hooks/useShortcuts.ts`; add it to `SHORTCUT_HELP` so the `?` dialog lists it |
