@@ -6,6 +6,7 @@
 import { useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "shared/sending-limits";
+import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { useUIStore } from "~/hooks/useUIStore";
 import {
 	buildQuotedReplyBlock,
@@ -186,6 +187,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const toastManager = useKumoToastManager();
 	const { composeOptions, closePanel, closeCompose } = useUIStore();
 	const { data: currentMailbox } = useMailbox(mailboxId);
+	const knownAddresses = useKnownAddresses(mailboxId, currentMailbox?.email);
 	const sendEmailMutation = useSendEmail();
 	const saveDraftMutation = useSaveDraft();
 	const replyMutation = useReplyToEmail();
@@ -390,6 +392,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		formTitle,
 		handleSaveDraft,
 		handleSend,
+		knownAddresses,
 		files,
 		addFiles,
 		removeFile,

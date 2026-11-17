@@ -15,6 +15,7 @@ import EmailPanelToolbar from "~/components/email-panel/EmailPanelToolbar";
 import type { MessageActions } from "~/components/email-panel/MessageHeader";
 import SingleMessageView from "~/components/email-panel/SingleMessageView";
 import ThreadMessage from "~/components/email-panel/ThreadMessage";
+import InlineReply from "~/components/InlineReply";
 import { LabelChips } from "~/components/LabelChip";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useDisplay } from "~/hooks/useDisplay";
@@ -189,8 +190,13 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		if (next) openConversation(next);
 		else closePanel();
 	};
+	// An answer to an open conversation is written under it.
 	const reply = (mode: "reply" | "reply-all" | "forward") =>
-		startCompose({ mode, originalEmail: mode === "forward" ? email : lastReceivedMessage });
+		startCompose(
+			{ mode, originalEmail: mode === "forward" ? email : lastReceivedMessage },
+			"inline",
+		);
+	const answering = useUIStore((state) => state.isComposing && state.composePlacement === "inline");
 	// Beside the list only the keys that answer live here; the list has the rest.
 	useShortcuts(
 		{ r: () => reply("reply"), a: () => reply("reply-all"), f: () => reply("forward") },
@@ -320,9 +326,9 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		else if (msg.id === emailId) useUIStore.getState().selectEmail(next.id);
 	};
 	const messageActions = (msg: Email): MessageActions => ({
-		onReply: () => startCompose({ mode: "reply", originalEmail: msg }),
-		onReplyAll: () => startCompose({ mode: "reply-all", originalEmail: msg }),
-		onForward: () => startCompose({ mode: "forward", originalEmail: msg }),
+		onReply: () => startCompose({ mode: "reply", originalEmail: msg }, "inline"),
+		onReplyAll: () => startCompose({ mode: "reply-all", originalEmail: msg }, "inline"),
+		onForward: () => startCompose({ mode: "forward", originalEmail: msg }, "inline"),
 		onDelete: () => void actions.remove([msg], "Message").then(afterLeaving(msg)),
 		onMarkUnread: () => {
 			actions.setRead([msg], false);
@@ -456,7 +462,8 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 						onPreviewImage={(url, filename) => setPreviewImage({ url, filename })}
 					/>
 				)}
-				{!isDraftFolder && (
+				{answering && <InlineReply />}
+				{!isDraftFolder && !answering && (
 					<div className="flex flex-wrap gap-2 px-4 py-5 md:px-6 print:hidden">
 						<Button
 							variant="outline"

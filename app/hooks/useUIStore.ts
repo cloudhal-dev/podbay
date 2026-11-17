@@ -40,7 +40,9 @@ interface UIState {
 	/** Whether the compose window is open. It floats over whatever is on screen. */
 	isComposing: boolean;
 	selectEmail: (id: string | null) => void;
-	startCompose: (options?: ComposeOptions) => void;
+	/** Where the message being written is shown: the floating window, or under the conversation. */
+	composePlacement: "window" | "inline";
+	startCompose: (options?: ComposeOptions, placement?: "window" | "inline") => void;
 	/** Close the open conversation and go back to the list. */
 	closePanel: () => void;
 	closeCompose: () => void;
@@ -68,6 +70,7 @@ interface UIState {
 export const useUIStore = create<UIState>((set, get) => ({
 	selectedEmailId: null,
 	isComposing: false,
+	composePlacement: "window",
 	composeOptions: { mode: "new", originalEmail: null },
 	isSidebarOpen: false,
 	isRailCollapsed: railCollapsedBefore(),
@@ -77,9 +80,10 @@ export const useUIStore = create<UIState>((set, get) => ({
 	selectEmail: (id) => set({ selectedEmailId: id }),
 
 	// Writing a message never closes what is being read: the window floats above it.
-	startCompose: (options) =>
+	startCompose: (options, placement = "window") =>
 		set({
 			isComposing: true,
+			composePlacement: placement,
 			composeOptions: options || { mode: "new", originalEmail: null },
 			isSidebarOpen: false,
 		}),

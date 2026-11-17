@@ -8,11 +8,10 @@ import {
 	MinusIcon,
 	XIcon,
 } from "@phosphor-icons/react";
-import { useParams } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
-import { useComposeForm } from "~/hooks/useComposeForm";
 import { useUIStore } from "~/hooks/useUIStore";
 import ComposePanel from "./ComposePanel";
+import { useCompose } from "./ComposeSession";
 
 const TITLES = {
 	new: "New message",
@@ -61,15 +60,15 @@ function TitleButton({
  * was written as a draft; only Discard throws it away.
  */
 export default function ComposeWindow() {
-	const { isComposing } = useUIStore();
-	if (!isComposing) return null;
+	const { isComposing, composePlacement } = useUIStore();
+	// An answer being written under its conversation is shown there, not here.
+	if (!isComposing || composePlacement === "inline") return null;
 	return <OpenComposeWindow />;
 }
 
 function OpenComposeWindow() {
-	const { mailboxId, folder } = useParams({ strict: false });
 	const { composeOptions } = useUIStore();
-	const form = useComposeForm(mailboxId, folder);
+	const form = useCompose();
 	const [size, setSize] = useState<keyof typeof SIZES>("normal");
 	const minimised = size === "minimised";
 	const title = form.isDraftEdit ? "Draft" : TITLES[composeOptions.mode];

@@ -4,6 +4,7 @@
 		"app/lib/mail-html.ts",
 		"app/lib/inline-images.ts",
 		"app/lib/search-parser.ts",
+		"app/lib/address-suggestions.ts",
 		"workers/**/*",
 		"shared/**/*",
 		"scripts/**/*",

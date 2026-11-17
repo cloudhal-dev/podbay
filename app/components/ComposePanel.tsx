@@ -8,6 +8,7 @@ import { FileIcon, FloppyDiskIcon, PaperclipIcon, TrashIcon, XIcon } from "@phos
 import { type DragEvent, type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
 import type { ComposeForm } from "~/hooks/useComposeForm";
 import { formatBytes } from "~/lib/utils";
+import AddressField from "./AddressField";
 import RichTextEditor from "./RichTextEditor";
 
 const FIELD =
@@ -72,14 +73,13 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 			)}
 
 			<Line label="To" id="compose-to">
-				<input
-					ref={toField}
+				<AddressField
+					inputRef={toField}
 					id="compose-to"
-					type="text"
-					autoComplete="off"
 					className={FIELD}
 					value={form.to}
-					onChange={(event) => form.setTo(event.target.value)}
+					onChange={form.setTo}
+					known={form.knownAddresses}
 					required
 				/>
 				{!form.showCcBcc && (
@@ -94,25 +94,23 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 			</Line>
 			{form.showCcBcc && (
 				<Line label="Cc" id="compose-cc">
-					<input
+					<AddressField
 						id="compose-cc"
-						type="text"
-						autoComplete="off"
 						className={FIELD}
 						value={form.cc}
-						onChange={(event) => form.setCc(event.target.value)}
+						onChange={form.setCc}
+						known={form.knownAddresses}
 					/>
 				</Line>
 			)}
 			{form.showCcBcc && (
 				<Line label="Bcc" id="compose-bcc">
-					<input
+					<AddressField
 						id="compose-bcc"
-						type="text"
-						autoComplete="off"
 						className={FIELD}
 						value={form.bcc}
-						onChange={(event) => form.setBcc(event.target.value)}
+						onChange={form.setBcc}
+						known={form.knownAddresses}
 					/>
 				</Line>
 			)}
