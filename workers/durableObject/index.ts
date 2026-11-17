@@ -701,16 +701,16 @@ export class MailboxDO extends DurableObject<Env> {
 	// ── Rate limiting (raw SQL) ────────────────────────────────────
 
 	/**
-	 * Check if the mailbox has exceeded the send rate limit.
-	 * Limits: 20 emails per hour, 100 per day per mailbox.
+	 * Whether the mailbox has sent too much: 20 emails an hour, 100 a day.
 	 * Returns null if under limit, or an error message string if exceeded.
+	 * Dates are ISO text with a `T`; `datetime()` writes a space there, which sorts before it.
 	 */
 	async checkSendRateLimit(): Promise<string | null> {
 		const hourRow = [
 			...this.ctx.storage.sql.exec(
 				`SELECT COUNT(*) as cnt FROM emails
 			 WHERE folder_id = ?1
-			   AND date >= datetime('now', '-1 hour')`,
+			   AND date >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour')`,
 				Folders.SENT,
 			),
 		][0] as { cnt: number } | undefined;
@@ -723,7 +723,7 @@ export class MailboxDO extends DurableObject<Env> {
 			...this.ctx.storage.sql.exec(
 				`SELECT COUNT(*) as cnt FROM emails
 			 WHERE folder_id = ?1
-			   AND date >= datetime('now', '-1 day')`,
+			   AND date >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')`,
 				Folders.SENT,
 			),
 		][0] as { cnt: number } | undefined;

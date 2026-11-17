@@ -62,6 +62,7 @@
 | Actions pinned by commit, read-only token | S16 | `.github/workflows/checks.yml` (by review until the workflow lint lands) |
 | The app's words are messages, in English and Turkish: every message the code names has a Turkish translation with the same values, the catalog holds nothing the code dropped, and no words stand bare in the markup of a screen; a person chooses the language in the settings or takes the device's, it takes effect at once and is kept in the browser, and dates follow it | D8 | `pnpm static messages`, `test/unit/messages.test.ts`; `pnpm e2e`: `language.spec.ts` |
 | The formatting bar sizes, colours, highlights, aligns and indents what is written and takes it off again; what goes into a message is literal markup with nothing of the app's theme, a choice from one of its menus leaves the cursor in the text, and its menus open above the compose window | D9 | `pnpm e2e`: `writing.spec.ts` (the formatting bar) |
+| A mailbox sends at most 20 messages in an hour and 100 in a day, counted in time: until 2026-11-17 the hour was compared as text against dates written another way, so it counted the whole day and a mailbox could send twenty messages a day | S8 | `test/workerd/sending-limit.test.ts` |
 
 ## 2. Not enforced yet
 
