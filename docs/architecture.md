@@ -39,22 +39,22 @@ It is for a person or a small team with a domain on Cloudflare who wants real ad
                       │                              │
         ┌─────────────┼──────────────┬───────────────┤
         ▼             ▼              ▼               │
-   D1 index      MailboxDO      Queues: inbound, outbound, events (+ DLQ)
+   D1 index      MailboxDO      Queues: inbound, events (+ DLQ)
    users,        per mailbox:        R2: raw messages, attachments, exports
    domains,      messages, threads,
-   mailboxes,    labels, FTS index
-   memberships,
-   audit
+   mailboxes,    labels, FTS index,
+   memberships,  mail on its way out
+   audit         (one alarm)
 ```
 
 | Part | Design | Why |
 |---|---|---|
 | Worker | One Worker, four handlers: `fetch` (UI assets, API, MCP, agent WebSocket), `email` (inbound), `queue` (consumers), `scheduled` (cleanup, exports) | One deployable unit; simple to install by hand |
 | Central index | D1: users, sessions, domains, mailboxes, addresses and aliases, memberships, audit. Batches only, compare-and-set on a revision column | Listing and authorisation need one queryable place; Durable Objects cannot be listed or joined |
-| Mailbox | One `MailboxDO` per mailbox: message metadata, threads, folders, labels and an FTS5 index ([SQLite storage API](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/)) | A mailbox is the unit of isolation, export and deletion |
+| Mailbox | One `MailboxDO` per mailbox: message metadata, threads, folders, labels, mail on its way out with the one alarm that lets it leave, and an FTS5 index ([SQLite storage API](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/)) | A mailbox is the unit of isolation, export and deletion |
 | Storage | R2 holds the raw message, attachments and exports under a per-mailbox prefix. The Durable Object holds metadata and extracted text only | A Durable Object stores at most 10 GB on Workers Paid (1 GB on the Free plan) and a row at most 8 MB ([limits](https://developers.cloudflare.com/durable-objects/platform/limits/)); inbound mail can be 25 MiB ([limits](https://developers.cloudflare.com/email-service/platform/limits/)) |
 | Inbound | The `email` handler resolves the **envelope** recipient in D1, rejects unknown addresses, streams the raw message to R2 and enqueues a pointer. A consumer parses, files, applies rules and wakes the agent | A queue message is at most 128 KB ([Queues limits](https://developers.cloudflare.com/queues/platform/limits/)); an isolate has 128 MB ([Workers limits](https://developers.cloudflare.com/workers/platform/limits/)) |
-| Outbound | A send is a row plus a queue message with an idempotency key. The consumer calls `send_email`, retries retryable errors and records the result | No duplicate and no lost sends; a visible state |
+| Outbound | A send is a row and a time, and no queue ([ADR-0016](adr/0016-outgoing-mail-waits-before-it-leaves.md)). The send route stores the message in the place Scheduled with a state in the mailbox's own database (`waiting`, `sending`, `sent`, `failed`) and answers; the mailbox object's alarm lets it leave at its time, from one function that is the only caller of `send_email`. The handover is a compare-and-set written before the call, so a message leaves at most once by Podbay's doing; "not now" is tried again on a schedule, any other refusal brings the message back to Drafts with the reason, and no answer is never a resend: the service takes no idempotency key, so a person decides | No duplicate sends; a visible state in the unit that is exported and deleted; taking a message back and letting it leave cannot both win; no binding more for an installation to make |
 | Delivery events | Email Sending publishes delivered, bounced and complained events to a Queue ([event subscriptions](https://developers.cloudflare.com/email-service/reference/event-subscriptions/)); a consumer attaches them to the message | Delivery status without a webhook endpoint |
 | Sign-in and access | Better Auth on D1 for identity; Podbay's own `authorize` for access ([sign-in and access](auth-and-access.md)) | Managing is not reading |
 | Sender check | `From` must be an address of a mailbox the caller may send as; per-mailbox and per-instance caps | Mailboxes are created at runtime, so the binding cannot be locked to fixed addresses ([send bindings](https://developers.cloudflare.com/email-service/configuration/send-bindings/)) |

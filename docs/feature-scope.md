@@ -28,9 +28,9 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 | Area | What Podbay delivers | Seed has it | Phase |
 |---|---|---|---|
 | Mailboxes | Personal and shared mailboxes with memberships; aliases; one address on several domains | A mailbox per address, no access control | A |
-| Places and labels | Inbox, Starred, Sent, Drafts, Archive, Spam, Trash; any number of labels on a message ([ADR-0007](adr/0007-places-and-labels.md)) | Inbox, Sent, Drafts, Archive, Spam, Trash | A; Snoozed and Scheduled in B |
+| Places and labels | Inbox, Starred, Sent, Drafts, Scheduled, Archive, Spam, Trash; any number of labels on a message ([ADR-0007](adr/0007-places-and-labels.md)). Scheduled holds mail that was sent and has not left yet ([ADR-0016](adr/0016-outgoing-mail-waits-before-it-leaves.md)) | Inbox, Sent, Drafts, Archive, Spam, Trash | A; Snoozed in B |
 | Conversations | Threading by message headers, with reply, reply all and forward | Yes | A |
-| Compose | Rich text, attachments, signatures, addresses completed from mail sent ([ADR-0012](adr/0012-a-persons-choices-and-known-addresses.md)) | Rich text, attachments | A; scheduled send and follow-up reminders in B |
+| Compose | Rich text, attachments, signatures, addresses completed from mail sent ([ADR-0012](adr/0012-a-persons-choices-and-known-addresses.md)); a send that can be taken back for a few seconds, and sending later at a time ([ADR-0016](adr/0016-outgoing-mail-waits-before-it-leaves.md), which moved scheduled send from phase B) | Rich text, attachments | A; follow-up reminders in B |
 | Search | Full-text search with a query grammar: phrases, exclusions, `from:`, `to:`, `subject:`, `has:attachment`, `is:unread`, `after:`, `before:` | Substring match | A |
 | Sender authentication | SPF, DKIM and DMARC results shown on each message; failures treated as suspicious | None | A |
 | Spam | Authentication results, allow and block lists, Report spam and Not spam | An empty Spam folder | A; scoring that learns per mailbox in B |
