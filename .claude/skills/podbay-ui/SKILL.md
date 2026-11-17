@@ -40,7 +40,7 @@ The mail screens follow what a person expects from a first-class web mail client
 | A top bar across the width (64px) with one wide, rounded search box (48px); a rail on the left; the mail in one surface | `app/routes/mailbox.tsx`, `Header.tsx`, `Sidebar.tsx` |
 | The rail collapses to icons and stays that way; on a phone it slides over the list. Folder names stay as tooltips and accessible names | `isRailCollapsed` in `useUIStore`, remembered in this browser only |
 | One list **or** one conversation by default. Opening a conversation is a navigation (`?open=<id>`), so Back returns to the list and a reload shows the conversation again | `MailView.tsx`: the address is the truth |
-| The reader can choose a **reading pane**: on a screen at least 1024px wide the conversation opens beside the list. Then moving through the list with `j` and `k` opens what the cursor is on, the list keeps the keys that file a conversation, and filing the open one closes the pane | `useSplit` in `app/hooks/useDisplay.ts`, `MailView.tsx`, `MessageList.tsx` |
+| The reader can choose a **reading pane**: beside the list on a screen at least 1024px wide, or under it on a screen at least 640px tall, the conversation opens with the list still there. Then moving through the list with `j` and `k` opens what the cursor is on, the list keeps the keys that file a conversation, and filing the open one closes the pane | `useSplit` in `app/hooks/useDisplay.ts`, `MailView.tsx`, `MessageList.tsx` |
 | The reader chooses how tall a line is: Default (40px), Comfortable (48px), Compact (32px). Both choices live in the Display menu of the top bar and are remembered in this browser only | `DisplayMenu.tsx`, `useDisplay.ts` |
 | A search has **quick filters** above its results: one press adds an operator to the query (has an attachment, unread, in the inbox) and a second takes it out; the search box always says what is searched | `routes/search-results.tsx`; `toggleOperator` in `app/lib/search-parser.ts` |
 | The search box has **search options**: who, subject, words, folder, dates, attachment, unread. They write the query a person could type, so the box always shows what is searched, and they open filled with what the box says | `SearchOptions.tsx`; `buildSearchQuery` and `searchOptionsOf` in `app/lib/search-parser.ts` |
@@ -110,6 +110,7 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | **An address that is done is a chip** that can be taken off; a comma, a semicolon, Enter or leaving the field ends the one in hand, and Backspace in the empty field takes the last chip off. Something that does not look like an address is marked. The value stays addresses separated by commas | `AddressField.tsx`; the rules of typing are pure functions in `app/lib/address-suggestions.ts` |
 | **A forward carries the files** of the message it forwards, fetched as the reader could download them. One that can do harm when opened is left behind and named, as is what would not fit | `carryFiles` in `useComposeForm.ts` |
 | **An address is completed while it is typed** from the addresses in the lists this browser has already loaded: arrows choose, Enter or Tab takes, and Enter never sends the message while a suggestion is offered. It asks the Worker nothing and is not an address book | `AddressField.tsx`, `app/lib/address-suggestions.ts`, `useKnownAddresses.ts` |
+| The **formatting bar** follows the order people know: undo and redo; size, bold, italic, underline, text colour, highlight; alignment, numbered and bulleted lists, indent less and more; quote, strikethrough, link, rule, remove formatting. What it writes into a message is literal (a size in pixels, a colour as a number), never a token of the app's theme: mail is read in other programs. The bar reads the selection through `useEditorState`, because the editor does not draw it again by itself; a menu of the bar gives the cursor back to the text when it closes (`finalFocus`), and menus are ordered above the compose window in `app/index.css` | `app/components/editor/Toolbar.tsx`, `RichTextEditor.tsx` |
 | A link is added in a dialog of the app. A dialog opened from inside the compose form stops its own submit and keys there: React passes events through a portal, and the form would send the message | `RichTextEditor.tsx` |
 | A new message starts in To; a reply starts in the text, above what it answers. Ctrl or Cmd with Enter sends | `ComposePanel.tsx` |
 
@@ -132,7 +133,7 @@ The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then 
 
 ### Not built yet
 
-Snooze, a reading pane below the list, importance markers, category tabs, scheduled send and undo of a send. Add one with its line above and its test.
+Snooze, importance markers, category tabs, scheduled send and undo of a send. Add one with its line above and its test.
 
 A new behaviour of this kind gets a line here and a test there, in the same change.
 
