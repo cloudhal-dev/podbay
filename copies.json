@@ -392,6 +392,12 @@
 					"path": "workers/durableObject/shapes.ts",
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified"
+				},
+				{
+					"path": "workers/durableObject/threads.ts",
+					"upstream": "workers/durableObject/index.ts",
+					"status": "modified",
+					"note": "Holds the subject matching moved out of index.ts, beside Podbay's own matching by Message-ID."
 				}
 			]
 		}

@@ -14,6 +14,7 @@ import type { Env } from "../types";
 import * as labels from "./labels";
 import { applyMigrations, mailboxMigrations } from "./migrations";
 import type { AttachmentData, EmailData, GetEmailsOptions } from "./shapes";
+import { threadOfReferences, threadOfSubject } from "./threads";
 
 /**
  * SQL expression to normalize email subjects by stripping common
@@ -688,48 +689,13 @@ export class MailboxDO extends DurableObject<Env> {
 
 	// ── Threading helpers (raw SQL) ────────────────────────────────
 
+	/** The conversation an incoming message joins by what it says it answers (./threads). */
+	async findThreadOfReferences(messageIds: string[], subject: string) {
+		return threadOfReferences(this.ctx.storage.sql, messageIds, subject);
+	}
+
 	async findThreadBySubject(subject: string, senderAddress?: string): Promise<string | null> {
-		const normalized = subject
-			.replace(/^(?:(?:re|fwd?|fw|aw|wg|r[eé]f|sv)\s*:\s*)+/i, "")
-			.trim()
-			.toLowerCase();
-
-		if (!normalized) return null;
-
-		const result = this.ctx.storage.sql.exec(
-			`SELECT thread_id, subject,
-			        GROUP_CONCAT(DISTINCT LOWER(sender)) as senders,
-			        GROUP_CONCAT(DISTINCT LOWER(recipient)) as recipients
-			 FROM emails
-			 WHERE thread_id IS NOT NULL
-			   AND thread_id != id
-			   AND date >= datetime('now', '-7 days')
-			 GROUP BY thread_id
-			 ORDER BY MAX(date) DESC
-			 LIMIT 50`,
-		);
-
-		const normalizedSender = senderAddress?.toLowerCase().trim();
-
-		for (const row of result) {
-			const rowSubject = String(row.subject || "")
-				.replace(/^(?:(?:re|fwd?|fw|aw|wg|r[eé]f|sv)\s*:\s*)+/i, "")
-				.trim()
-				.toLowerCase();
-			if (rowSubject !== normalized) continue;
-
-			if (normalizedSender) {
-				const threadSenders = String(row.senders || "");
-				const threadRecipients = String(row.recipients || "");
-				const allParticipants = `${threadSenders},${threadRecipients}`;
-				if (!allParticipants.includes(normalizedSender)) {
-					continue;
-				}
-			}
-
-			return String(row.thread_id);
-		}
-		return null;
+		return threadOfSubject(this.ctx.storage.sql, subject, senderAddress);
 	}
 
 	// ── Rate limiting (raw SQL) ────────────────────────────────────

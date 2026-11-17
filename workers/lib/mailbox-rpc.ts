@@ -24,6 +24,7 @@ export interface MailboxQueries {
 	): Promise<unknown[]>;
 	countSearchResults(options: SearchFilterOptions): Promise<number>;
 	findThreadBySubject(subject: string, senderAddress?: string): Promise<string | null>;
+	findThreadOfReferences(messageIds: string[], subject: string): Promise<string | null>;
 	checkSendRateLimit(): Promise<string | null>;
 }
 

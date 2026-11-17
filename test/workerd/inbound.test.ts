@@ -103,6 +103,77 @@ describe("inbound mail", () => {
 	});
 });
 
+describe("conversations", () => {
+	const THREADS = "threads@example.com";
+	/** The lines of the inbox as conversations: the newest subject and how many messages. */
+	async function conversations(): Promise<[string, number][]> {
+		const res = await request(
+			`/api/v1/mailboxes/${encodeURIComponent(THREADS)}/emails?folder=inbox&threaded=true`,
+			{ cookie },
+		);
+		const body = (await res.json()) as { emails: { subject: string; thread_count: number }[] };
+		return body.emails.map((row): [string, number] => [row.subject, row.thread_count]).sort();
+	}
+	const send = (headers: Record<string, string>) =>
+		deliver(THREADS, mime({ From: "ada@sender.test", To: THREADS, ...headers }));
+
+	beforeAll(async () => {
+		expect((await createMailbox(cookie, THREADS)).status).toBe(201);
+	});
+
+	it("puts a message and the answers to it in one conversation", async () => {
+		await send({ Subject: "Budget", "Message-ID": "<budget-1@sender.test>" });
+		await send({
+			Subject: "Re: Budget",
+			"Message-ID": "<budget-2@sender.test>",
+			"In-Reply-To": "<budget-1@sender.test>",
+			References: "<budget-1@sender.test>",
+		});
+		await send({
+			Subject: "RE: Budget",
+			"Message-ID": "<budget-3@sender.test>",
+			"In-Reply-To": "<budget-2@sender.test>",
+			References: "<budget-1@sender.test> <budget-2@sender.test>",
+		});
+		expect(await conversations()).toEqual([["RE: Budget", 3]]);
+	});
+
+	it("does not let a message into a conversation by naming one of its messages alone", async () => {
+		// Whoever learned a Message-ID still has to know what the conversation is about.
+		await send({
+			Subject: "You have won",
+			"Message-ID": "<intruder@evil.test>",
+			"In-Reply-To": "<budget-3@sender.test>",
+			References: "<budget-1@sender.test> <budget-3@sender.test>",
+		});
+		expect(await conversations()).toEqual([
+			["RE: Budget", 3],
+			["You have won", 1],
+		]);
+	});
+
+	it("keeps answers to a message this mailbox never held together", async () => {
+		for (const id of ["a", "b"]) {
+			await send({
+				Subject: "Re: Elsewhere",
+				"Message-ID": `<elsewhere-${id}@sender.test>`,
+				"In-Reply-To": "<never-here@sender.test>",
+				References: "<never-here@sender.test>",
+			});
+		}
+		expect((await conversations()).find(([subject]) => subject === "Re: Elsewhere")).toEqual([
+			"Re: Elsewhere",
+			2,
+		]);
+	});
+
+	it("takes a flood of references without failing", async () => {
+		const many = Array.from({ length: 400 }, (_v, n) => `<flood-${n}@evil.test>`).join(" ");
+		await send({ Subject: "Flood", "Message-ID": "<flood@evil.test>", References: many });
+		expect((await conversations()).find(([subject]) => subject === "Flood")).toEqual(["Flood", 1]);
+	});
+});
+
 describe("optional features are off by default", () => {
 	it("reports both features off", async () => {
 		const res = await request("/api/v1/config", { cookie });

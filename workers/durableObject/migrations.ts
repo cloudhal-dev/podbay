@@ -208,4 +208,9 @@ export const mailboxMigrations: Migration[] = [
             DELETE FROM folders WHERE is_deletable = 1;
         `,
 	},
+	{
+		// An incoming message is matched to the messages it says it answers by their Message-ID.
+		name: "11_message_id_index",
+		sql: `CREATE INDEX IF NOT EXISTS idx_emails_message_id ON emails(message_id);`,
+	},
 ];

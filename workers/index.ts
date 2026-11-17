@@ -468,7 +468,15 @@ async function receiveEmail(event: InboundEnvelope, env: Env, ctx: ExecutionCont
 		: [];
 	let threadId = emailReferences[0] || inReplyTo || messageId;
 
-	if (!inReplyTo && emailReferences.length === 0) {
+	if (inReplyTo || emailReferences.length > 0) {
+		// The message joins the conversation of what it answers when that message is here; an
+		// answer to something this mailbox never held keeps the id the sender's program gave it.
+		const known = await mailboxQueries(stub).findThreadOfReferences(
+			[...emailReferences, ...(inReplyTo ? [inReplyTo] : [])],
+			parsedEmail.subject || "",
+		);
+		if (known) threadId = known;
+	} else {
 		const subjectThread = await mailboxQueries(stub).findThreadBySubject(
 			parsedEmail.subject || "",
 			parsedEmail.from?.address || undefined,

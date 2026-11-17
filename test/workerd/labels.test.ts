@@ -234,14 +234,16 @@ describe("labels on conversations", () => {
 				`SELECT e.subject, COUNT(*) AS n FROM email_labels el JOIN emails e ON e.id = el.email_id GROUP BY e.id ORDER BY e.subject`,
 			),
 		]);
-		// The two replies are one conversation; the label went to both, and to nothing else.
+		// The message and its two replies are one conversation; the label went to all three, and
+		// to nothing else.
 		expect(carried).toEqual([
+			{ subject: "Plan", n: 2 },
 			{ subject: "Re: Plan", n: 2 },
 			{ subject: "Re: Plan", n: 2 },
 		]);
 		expect((await labels()).map((l) => [l.name, l.total])).toEqual([
-			["Clients", 2],
-			["Projects/2026", 2],
+			["Clients", 3],
+			["Projects/2026", 3],
 		]);
 
 		const taken = await put("owner", `${M}/emails/${plan.id}/labels`, {
@@ -270,16 +272,20 @@ describe("labels on conversations", () => {
 
 	it("finds a label's messages, and never the ones in Trash or Spam", async () => {
 		const { id } = await named("Projects/2026");
-		expect((await withLabel(id)).map((row) => row.subject)).toEqual(["Re: Plan", "Re: Plan"]);
+		expect((await withLabel(id)).map((row) => row.subject).sort()).toEqual([
+			"Plan",
+			"Re: Plan",
+			"Re: Plan",
+		]);
 
 		const plan = await bySubject("Re: Plan");
 		await as("owner").post(`${M}/emails/${plan.id}/move`, { folderId: "trash" });
-		expect(await withLabel(id)).toHaveLength(1);
-		expect((await labels()).find((l) => l.id === id)?.total).toBe(1);
+		expect(await withLabel(id)).toHaveLength(2);
+		expect((await labels()).find((l) => l.id === id)?.total).toBe(2);
 
 		// The message keeps its label: restoring it restores the label.
 		await as("owner").post(`${M}/emails/${plan.id}/move`, { folderId: "inbox" });
-		expect(await withLabel(id)).toHaveLength(2);
+		expect(await withLabel(id)).toHaveLength(3);
 
 		// A label that is asked for and is not one finds nothing, never everything.
 		for (const bad of ["inbox", "", "lbl_x"]) {
