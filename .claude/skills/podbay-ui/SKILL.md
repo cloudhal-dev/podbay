@@ -64,6 +64,18 @@ The mail screens follow what a person expects from a first-class web mail client
 | **Delete means Trash.** Only inside Trash is a message deleted for good, and then the app asks first in its own dialog | `remove` in `useConversationActions.ts` |
 | Mail cannot be moved into Sent or Drafts: only sending fills Sent, only writing makes a draft | `moveTargets` in `useConversationActions.ts` |
 
+### Labels (ADR-0007)
+
+A message is in one place and carries any number of labels. Places are fixed; everything a person makes is a label.
+
+| Behaviour | How it is built |
+|---|---|
+| Labels are listed in the rail under the places, each with its colour and unread count. A label is made, renamed, recoloured and deleted there; deleting one asks first and deletes no mail | `RailLabels.tsx`, `LabelDialog.tsx` |
+| A label's list is a search (`label:<name>`), as Starred is. It never shows what is in Spam or Trash | The rail links to the search screen; `useSearchEmails` sends the label by id |
+| A line and an open conversation show the labels the conversation carries as chips: a dot of the label's colour and its name | `LabelChip.tsx` |
+| **"Label as"** gives or takes labels and leaves the conversation where it is; the menu stays open so several are set in one visit. **"Move to"** a label gives it and takes the conversation out of the inbox, with one Undo | `LabelMenu.tsx`, `MoveMenu.tsx`; `label` and `moveToLabel` in `useConversationActions.ts` |
+| A colour is an index into a palette of classes written out in full. It is never built from input and never set as an inline style | `app/lib/labels.ts` |
+
 ### An open conversation
 
 | Behaviour | How it is built |
@@ -89,7 +101,7 @@ The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then 
 
 ### Not built yet
 
-Labels, snooze, a reading pane below the list, importance markers, category tabs, scheduled send, undo of a send, drag and drop, and a context menu on a line. Add one with its line above and its test.
+Nested labels shown as a tree (a `/` is only part of the name today), snooze, a reading pane below the list, importance markers, category tabs, scheduled send, undo of a send, drag and drop, and a context menu on a line. Add one with its line above and its test.
 
 A new behaviour of this kind gets a line here and a test there, in the same change.
 
@@ -115,6 +127,7 @@ A new behaviour of this kind gets a line here and a test there, in the same chan
 | A dialog with a form | The "Create folder" dialog in `app/components/Sidebar.tsx` |
 | Something done to conversations (move, archive, spam, delete, read, star) | `useConversationActions` in `app/hooks/useConversationActions.ts`; it brings the toast and Undo |
 | A toolbar button that is only an icon | `app/components/IconButton.tsx` |
+| A menu of things to tick | `app/components/LabelMenu.tsx` (`DropdownMenu.CheckboxItem`) |
 | A keyboard shortcut | `useShortcuts` in `app/hooks/useShortcuts.ts`; add it to `SHORTCUT_HELP` so the `?` dialog lists it |
 
 ## 6. A new screen
