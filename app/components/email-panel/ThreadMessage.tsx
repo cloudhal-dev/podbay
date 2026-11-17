@@ -16,6 +16,7 @@ import { dateLanguage, t } from "~/i18n";
 import { formatDetailDate, stripHtml } from "~/lib/utils";
 import type { Email } from "~/types";
 import MessageHeader, { type MessageActions } from "./MessageHeader";
+import UnreadMessage from "./UnreadMessage";
 
 interface ThreadMessageProps {
 	email: Email;
@@ -123,7 +124,15 @@ export default function ThreadMessage({
 				</div>
 
 				<div className="md:ml-[52px]">
-					<MessageBody email={email} mailboxId={mailboxId} autoSize />
+					{email.unparsed ? (
+						<UnreadMessage
+							why={email.unparsed}
+							onShowOriginal={actions?.onShowOriginal}
+							onDownloadOriginal={actions?.onDownloadOriginal}
+						/>
+					) : (
+						<MessageBody email={email} mailboxId={mailboxId} autoSize />
+					)}
 				</div>
 
 				{isDraft && (onSendDraft || onEditDraft || onDeleteDraft) && (

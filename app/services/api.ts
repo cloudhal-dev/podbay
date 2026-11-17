@@ -11,6 +11,7 @@ import type {
 	BulkUndoAnswer,
 	BulkUnit,
 } from "shared/bulk";
+import type { OriginalAnswer } from "shared/original";
 import { t } from "~/i18n";
 import type {
 	AccessKey,
@@ -231,6 +232,11 @@ const api = {
 		post<void>(`/api/v1/mailboxes/${mailboxId}/emails`, email),
 	getEmail: (mailboxId: string, id: string, opts?: { signal?: AbortSignal }) =>
 		get<Email>(`/api/v1/mailboxes/${mailboxId}/emails/${id}`, { signal: opts?.signal }),
+	/** The first part of a received message's original, as text (ADR-0015). */
+	getOriginal: (mailboxId: string, id: string, opts?: { signal?: AbortSignal }) =>
+		get<OriginalAnswer>(`/api/v1/mailboxes/${mailboxId}/emails/${id}/original`, {
+			signal: opts?.signal,
+		}),
 	updateEmail: (mailboxId: string, id: string, data: unknown) =>
 		put<Email>(`/api/v1/mailboxes/${mailboxId}/emails/${id}`, data),
 	deleteEmail: (mailboxId: string, id: string) =>

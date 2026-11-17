@@ -238,7 +238,7 @@ export default function EmailPanelToolbar({
 							{t("Find messages from this sender")}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item icon={CodeIcon} onClick={onViewSource}>
-							{t("Show message headers")}
+							{email.has_original ? t("Show original") : t("Show message headers")}
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu>

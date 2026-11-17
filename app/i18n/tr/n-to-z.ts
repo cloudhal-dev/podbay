@@ -51,6 +51,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	'Nothing matched "{query}". Try different words.':
 		'"{query}" ile eşleşen bir şey yok. Başka sözcükler deneyin.',
 	"Nothing was changed": "Hiçbir şey değiştirilmedi",
+	"Nothing was recorded about SPF, DKIM or DMARC when this message arrived.":
+		"Bu ileti geldiğinde SPF, DKIM veya DMARC hakkında hiçbir şey kaydedilmedi.",
 	Notifications: "Bildirimler",
 	"Numbered list": "Numaralı liste",
 	Off: "Kapalı",
@@ -73,12 +75,16 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Or enter this key by hand:": "Ya da bu anahtarı elle girin:",
 	Orange: "Turuncu",
 	"Order of a list": "Liste sırası",
+	"Original message": "Özgün ileti",
 	Owner: "Sahip",
 	Passkey: "Geçiş anahtarı",
 	Passkeys: "Geçiş anahtarları",
 	Password: "Parola",
 	People: "Kişiler",
 	"Please fill in all fields": "Lütfen tüm alanları doldurun",
+	"Podbay could not read this message.": "Podbay bu iletiyi okuyamadı.",
+	"Podbay was stopped twice while reading it, and did not try again.":
+		"Podbay onu okurken iki kez durduruldu ve yeniden denemedi.",
 	Print: "Yazdır",
 	"Print all": "Tümünü yazdır",
 	Prompt: "İstem",
@@ -175,6 +181,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Show me the latest inbox emails": "Gelen kutusundaki son e-postaları göster",
 	"Show message headers": "İleti üstbilgilerini göster",
 	"Show my sessions": "Oturumlarımı göster",
+	"Show original": "Özgün iletiyi göster",
 	"Show quoted text": "Alıntılanan metni göster",
 	"Show the button": "Düğmeyi göster",
 	"Show the shortcuts": "Kısayolları göster",
@@ -235,6 +242,10 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 		"Asistanla olan sohbet kaldırılır. Postalarınıza dokunulmaz.",
 	"The draft will be deleted. This cannot be undone.": "Taslak silinir. Bu işlem geri alınamaz.",
 	"The file could not be downloaded.": "Dosya indirilemedi.",
+	"The file holds the whole message as it arrived, with every attachment. Another program will open it without Podbay's protections.":
+		"Dosya, iletinin geldiği haliyle tamamını ve bütün eklerini içerir. Başka bir program onu Podbay'in korumaları olmadan açar.",
+	"The first {shown} of {size}. Download the message to have all of it.":
+		"{size} boyutundaki iletinin ilk {shown} kadarı. Tamamı için iletiyi indirin.",
 	"The invitation could not be created.": "Davet oluşturulamadı.",
 	"The key could not be created.": "Anahtar oluşturulamadı.",
 	"The key could not be revoked.": "Anahtar iptal edilemedi.",
@@ -248,11 +259,16 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	'The marked actions need a key with "Read, organise, draft" and a mailbox you can write in.':
 		'İşaretli işlemler için "Okuma, düzenleme, taslak" yetkili bir anahtar ve yazabildiğiniz bir posta kutusu gerekir.',
 	"The member could not be removed.": "Üye çıkarılamadı.",
+	"The message as it arrived, before Podbay read it.":
+		"İletinin, Podbay onu okumadan önce geldiği hali.",
 	"The name could not be saved": "Ad kaydedilemedi",
 	"The name people see on mail sent from this mailbox.":
 		"Bu posta kutusundan gönderilen postalarda görünen ad.",
 	"The newer conversation": "Daha yeni yazışma",
 	"The older conversation": "Daha eski yazışma",
+	"The original could not be loaded.": "Özgün ileti yüklenemedi.",
+	"The original of this message is no longer in storage.":
+		"Bu iletinin özgün hali artık depoda değil.",
 	"The owner account could not be created.": "Sahip hesabı oluşturulamadı.",
 	"The owner's email": "Sahibin e-postası",
 	"The page you're looking for doesn't exist.": "Aradığınız sayfa yok.",
@@ -278,9 +294,14 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The start of a message after its subject, in a list.":
 		"Listede, konudan sonra iletinin başlangıcı.",
 	"The two passwords are not the same.": "İki parola aynı değil.",
+	"The whole message as it arrived: {size}.": "İletinin geldiği haliyle tamamı: {size}.",
 	"Their email": "Kişinin e-postası",
 	"There are no mailboxes yet.": "Henüz posta kutusu yok.",
 	"There is nothing here to change.": "Burada değiştirilecek bir şey yok.",
+	"These are the fields Podbay handed to the sending service. The service gave the message its own date and message id, and those are not kept here, so a sent message has no original.":
+		"Bunlar, Podbay'in gönderim hizmetine verdiği alanlardır. Hizmet iletiye kendi tarihini ve ileti kimliğini verdi; bunlar burada tutulmaz, bu yüzden gönderilen bir iletinin özgün hali yoktur.",
+	"These attachments in it can do harm when opened:":
+		"İçindeki şu ekler açıldığında zarar verebilir:",
 	"These choices take effect at once and are kept in this browser. Another browser, or another person of this mailbox, has their own.":
 		"Bu seçimler hemen geçerli olur ve bu tarayıcıda saklanır. Başka bir tarayıcının ya da bu posta kutusundaki başka bir kişinin kendi seçimleri vardır.",
 	"They get an account on this instance. They see no mailbox until a mailbox owner adds them.":
@@ -307,7 +328,10 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"This mailbox does not exist, or you may not see its members.":
 		"Bu posta kutusu yok ya da üyelerini görme yetkiniz yok.",
 	"This mailbox has no labels yet.": "Bu posta kutusunda henüz etiket yok.",
+	"This message arrived before Podbay kept originals, so it has none. These are the header fields that were stored.":
+		"Bu ileti, Podbay özgün iletileri saklamaya başlamadan önce geldi; bu yüzden özgün hali yok. Bunlar, saklanan üstbilgi alanlarıdır.",
 	"This message has no header data.": "Bu iletide üstbilgi verisi yok.",
+	"This message has no original.": "Bu iletinin özgün hali yok.",
 	"This opens {host} in a new tab, where the list takes you off. Podbay sends nothing by itself.":
 		"{host} yeni bir sekmede açılır; listeden orada çıkarsınız. Podbay kendiliğinden hiçbir şey göndermez.",
 	To: "Kime",
@@ -342,6 +366,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"What a client can do": "Bir istemcinin yapabildikleri",
 	"What a list puts on top. Inside each group the newest is first.":
 		"Bir listenin en üste koyduğu şey. Her grubun içinde en yeni olan önce gelir.",
+	"What follows the header": "Üstbilgiden sonrası",
 	"What the Reply button on a message does.": "Bir iletideki Yanıtla düğmesinin ne yaptığı.",
 	"Where a conversation opens when the screen has room.":
 		"Ekranda yer olduğunda yazışmanın nerede açıldığı.",

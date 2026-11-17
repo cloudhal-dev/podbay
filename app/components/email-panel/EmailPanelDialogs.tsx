@@ -14,7 +14,10 @@ interface PreviewImage {
 }
 
 interface EmailPanelDialogsProps {
+	/** A message without an original: a sent message, or mail from before originals were kept. */
 	sourceViewEmail: Email | null;
+	/** The address of the mailbox on screen: a message from it was sent from here. */
+	mailboxEmail?: string;
 	previewImage: PreviewImage | null;
 	onCloseSource: () => void;
 	onClosePreview: () => void;
@@ -59,6 +62,7 @@ function getSourceHeaders(msg: Email): { key: string; value: string }[] {
 
 export default function EmailPanelDialogs({
 	sourceViewEmail,
+	mailboxEmail,
 	previewImage,
 	onCloseSource,
 	onClosePreview,
@@ -79,6 +83,16 @@ export default function EmailPanelDialogs({
 						{sourceViewEmail?.subject || t("(no subject)")}
 					</LayerDialog.Description>
 					<LayerDialog.Body>
+						{/* Why there is no original to show, and what the list is instead (ADR-0015). */}
+						<p className="mb-3 text-sm text-kumo-subtle">
+							{sourceViewEmail?.sender === mailboxEmail
+								? t(
+										"These are the fields Podbay handed to the sending service. The service gave the message its own date and message id, and those are not kept here, so a sent message has no original.",
+									)
+								: t(
+										"This message arrived before Podbay kept originals, so it has none. These are the header fields that were stored.",
+									)}
+						</p>
 						<table className="w-full text-sm border-collapse">
 							<tbody>
 								{sourceHeaders.map((header, idx) => (

@@ -99,6 +99,12 @@ export interface Email {
 	email_references?: string | null;
 	message_id?: string | null;
 	raw_headers?: string | null;
+	/** Whether the bytes it arrived as are kept (ADR-0015). Sent mail and drafts have none. */
+	has_original?: boolean;
+	/** The number of bytes of the original. */
+	raw_size?: number | null;
+	/** Set when Podbay could not read the message: it has its original and nothing else. */
+	unparsed?: "parser" | "too_large" | "interrupted" | null;
 	attachments?: Attachment[];
 	snippet?: string | null;
 	// Thread aggregate fields (only present in threaded list view)

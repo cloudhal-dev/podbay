@@ -10,6 +10,7 @@ import {
 	CodeIcon,
 	CopyIcon,
 	DotsThreeVerticalIcon,
+	DownloadSimpleIcon,
 	EnvelopeSimpleIcon,
 	MagnifyingGlassIcon,
 	PencilSimpleIcon,
@@ -41,7 +42,11 @@ export interface MessageActions {
 	onFindFromSender: () => void;
 	/** Starts a new message to whoever wrote this one. */
 	onWriteToSender: () => void;
+	/** The stored list of header fields: for a message that has no original. */
 	onShowHeaders: () => void;
+	/** Only for a message whose original is kept (ADR-0015): it replaces "Show headers". */
+	onShowOriginal?: () => void;
+	onDownloadOriginal?: () => void;
 	/** Only for mail from a list that says how to leave it. */
 	onUnsubscribe?: () => void;
 }
@@ -261,9 +266,23 @@ export default function MessageHeader({
 								<DropdownMenu.Item icon={PrinterIcon} onClick={actions.onPrint}>
 									{t("Print")}
 								</DropdownMenu.Item>
-								<DropdownMenu.Item icon={CodeIcon} onClick={actions.onShowHeaders}>
-									{t("Show headers")}
-								</DropdownMenu.Item>
+								{actions.onShowOriginal && actions.onDownloadOriginal ? (
+									<>
+										<DropdownMenu.Item icon={CodeIcon} onClick={actions.onShowOriginal}>
+											{t("Show original")}
+										</DropdownMenu.Item>
+										<DropdownMenu.Item
+											icon={DownloadSimpleIcon}
+											onClick={actions.onDownloadOriginal}
+										>
+											{t("Download message")}
+										</DropdownMenu.Item>
+									</>
+								) : (
+									<DropdownMenu.Item icon={CodeIcon} onClick={actions.onShowHeaders}>
+										{t("Show headers")}
+									</DropdownMenu.Item>
+								)}
 							</DropdownMenu.Content>
 						</DropdownMenu>
 					</span>

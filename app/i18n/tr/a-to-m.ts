@@ -19,6 +19,8 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"A message carries {count} files at most.": "Bir ileti en çok {count} dosya taşır.",
 	"A notification of this device when mail arrives while Podbay is open in a tab. It shows who wrote and the subject.":
 		"Podbay bir sekmede açıkken posta geldiğinde bu cihazın bildirimi. Kimin yazdığını ve konuyu gösterir.",
+	"A part of it is too large for Podbay to keep as text.":
+		"Bir bölümü, Podbay'in metin olarak saklayamayacağı kadar büyük.",
 	"A passkey signs you in with your device's fingerprint, face or PIN. It works only on this site, so it cannot be given away to a look-alike page, and it needs no code afterwards.":
 		"Geçiş anahtarı, cihazınızın parmak izi, yüz tanıma veya PIN'i ile oturum açmanızı sağlar. Yalnızca bu sitede çalışır; bu yüzden benzer görünen bir sayfaya kaptırılamaz ve ardından kod gerektirmez.",
 	"A person whose account is gone": "Hesabı artık olmayan bir kişi",
@@ -123,6 +125,10 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	Close: "Kapat",
 	"Close sidebar": "Kenar çubuğunu kapat",
 	"Close the conversation": "Yazışmayı kapat",
+	"Cloudflare Email Routing recorded no result for SPF, DKIM or DMARC when this message arrived. Podbay did not check them itself.":
+		"Cloudflare Email Routing, bu ileti geldiğinde SPF, DKIM veya DMARC için bir sonuç kaydetmedi. Podbay bunları kendisi denetlemedi.",
+	"Cloudflare Email Routing recorded these results when this message arrived: {results}. Podbay did not check them itself.":
+		"Cloudflare Email Routing, bu ileti geldiğinde şu sonuçları kaydetti: {results}. Podbay bunları kendisi denetlemedi.",
 	"Code from the app": "Uygulamadaki kod",
 	"Code from your authenticator app": "Kimlik doğrulama uygulamanızdaki kod",
 	"Collapse all": "Tümünü daralt",
@@ -203,6 +209,8 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Download anyway": "Yine de indir",
 	"Download it only if you were expecting it from this sender. A familiar name on a message is not proof of who sent it.":
 		"Yalnızca bu gönderenden bekliyorsanız indirin. İletideki tanıdık bir ad, onu kimin gönderdiğinin kanıtı değildir.",
+	"Download message": "İletiyi indir",
+	"Download this message?": "Bu ileti indirilsin mi?",
 	Draft: "Taslak",
 	"Draft a response to the latest email": "Son e-postaya bir yanıt taslağı hazırla",
 	"Draft discarded": "Taslak silindi",
@@ -275,6 +283,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	Grey: "Gri",
 	"Has an attachment": "Eki var",
 	"Has the words": "Şu sözcükleri içerir",
+	Header: "Üstbilgi",
 	"Hide agent panel": "Asistan panelini gizle",
 	"Hide details": "Ayrıntıları gizle",
 	"Hide it": "Gizle",
@@ -297,6 +306,9 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Indent more": "Girintiyi artır",
 	Info: "Bilgi",
 	"Invite a person": "Kişi davet et",
+	"It is built in a way Podbay does not read.": "Podbay'in okumadığı bir biçimde kurulmuş.",
+	"It is kept exactly as it arrived, and you can see or save that.":
+		"Tam geldiği haliyle saklanıyor; onu görebilir veya kaydedebilirsiniz.",
 	"It is taken off one message. No message is deleted or moved.":
 		"Bir iletiden kaldırılır. Hiçbir ileti silinmez ya da taşınmaz.",
 	"It is taken off {count} messages. No message is deleted or moved.":
@@ -323,6 +335,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Light, dark, or whatever this device uses.": "Açık, koyu ya da bu cihazın kullandığı.",
 	Link: "Bağlantı",
 	"Loading agent...": "Asistan yükleniyor...",
+	"Loading the original": "Özgün ileti yükleniyor",
 	"Loading thread": "Yazışma yükleniyor",
 	Mail: "Posta",
 	"Mail sent to this address arrives here.": "Bu adrese gönderilen postalar buraya gelir.",

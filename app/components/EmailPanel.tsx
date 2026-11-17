@@ -13,6 +13,7 @@ import EmailPanelDialogs from "~/components/email-panel/EmailPanelDialogs";
 import EmailPanelHeader from "~/components/email-panel/EmailPanelHeader";
 import EmailPanelToolbar from "~/components/email-panel/EmailPanelToolbar";
 import type { MessageActions } from "~/components/email-panel/MessageHeader";
+import OriginalMessage from "~/components/email-panel/OriginalMessage";
 import SingleMessageView from "~/components/email-panel/SingleMessageView";
 import ThreadMessage from "~/components/email-panel/ThreadMessage";
 import InlineReply from "~/components/InlineReply";
@@ -90,6 +91,9 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	const older = position >= 0 ? siblings[position + 1] : undefined;
 	const [isSending, setIsSending] = useState(false);
 	const [sourceViewEmail, setSourceViewEmail] = useState<Email | null>(null);
+	/** The message whose original is shown, and the one whose original is about to be saved. */
+	const [originalOf, setOriginalOf] = useState<Email | null>(null);
+	const [savingOf, setSavingOf] = useState<Email | null>(null);
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
 	const [previewImage, setPreviewImage] = useState<{ url: string; filename: string } | null>(null);
 	const isDraftFolder = folder === Folders.DRAFT;
@@ -396,6 +400,9 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		onFindFromSender: () => findFrom(msg),
 		onWriteToSender: () => startCompose({ mode: "new", prefill: { to: msg.sender, subject: "" } }),
 		onShowHeaders: () => setSourceViewEmail(msg),
+		// Only a received message whose bytes are kept has an original (ADR-0015).
+		onShowOriginal: msg.has_original ? () => setOriginalOf(msg) : undefined,
+		onDownloadOriginal: msg.has_original ? () => setSavingOf(msg) : undefined,
 		onUnsubscribe: leaveList(msg),
 	});
 	const allExpanded = allMessages.every((msg) => expandedMessages.has(msg.id));
@@ -437,7 +444,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				onMove={(folderId) => away(actions.moveTo([email], folderId))}
 				onMoveToLabel={(label) => away(actions.moveToLabel([email], label))}
 				onLabel={(labelId, give) => actions.label([email], labelId, give)}
-				onViewSource={() => setSourceViewEmail(email)}
+				onViewSource={() => (email.has_original ? setOriginalOf(email) : setSourceViewEmail(email))}
 				onPrintAll={() => {
 					setShowsMiddle(true);
 					setExpanded(new Set(allMessages.map((msg) => msg.id)));
@@ -549,8 +556,20 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				)}
 			</div>
 
+			<OriginalMessage
+				mailboxId={mailboxId}
+				showing={originalOf}
+				saving={savingOf}
+				onCloseShowing={() => setOriginalOf(null)}
+				onCloseSaving={() => setSavingOf(null)}
+				onAskToSave={(msg) => {
+					setOriginalOf(null);
+					setSavingOf(msg);
+				}}
+			/>
 			<EmailPanelDialogs
 				sourceViewEmail={sourceViewEmail}
+				mailboxEmail={currentMailbox?.email}
 				previewImage={previewImage}
 				onCloseSource={() => setSourceViewEmail(null)}
 				onClosePreview={() => setPreviewImage(null)}

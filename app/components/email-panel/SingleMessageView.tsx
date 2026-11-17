@@ -7,6 +7,7 @@ import EmailAttachmentList from "~/components/EmailAttachmentList";
 import MessageBody from "~/components/MessageBody";
 import type { Email } from "~/types";
 import MessageHeader, { type MessageActions } from "./MessageHeader";
+import UnreadMessage from "./UnreadMessage";
 
 interface SingleMessageViewProps {
 	email: Email;
@@ -42,7 +43,15 @@ export default function SingleMessageView({
 
 			{/* As tall as the message: the conversation scrolls, never the message inside it */}
 			<div className="px-4 py-4 md:px-6">
-				<MessageBody email={email} mailboxId={mailboxId} autoSize />
+				{email.unparsed ? (
+					<UnreadMessage
+						why={email.unparsed}
+						onShowOriginal={actions?.onShowOriginal}
+						onDownloadOriginal={actions?.onDownloadOriginal}
+					/>
+				) : (
+					<MessageBody email={email} mailboxId={mailboxId} autoSize />
+				)}
 			</div>
 
 			<EmailAttachmentList

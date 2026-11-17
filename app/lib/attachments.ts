@@ -20,7 +20,8 @@ export function attachmentUrl(mailboxId: string, emailId: string, attachmentId: 
 	return `/api/v1/mailboxes/${encodeURIComponent(mailboxId)}/emails/${encodeURIComponent(emailId)}/attachments/${encodeURIComponent(attachmentId)}`;
 }
 
-function saveBlob(blob: Blob, filename: string): void {
+/** Hands bytes the app holds to the browser as a file to save, under a name the app gives. */
+export function saveBlob(blob: Blob, filename: string): void {
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement("a");
 	link.href = url;
