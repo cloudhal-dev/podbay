@@ -31,6 +31,7 @@ import {
 } from "../auth/people";
 import { personByEmail } from "../auth/recovery";
 import { listAllMailboxes } from "../auth/store";
+import { closeLiveOf } from "./live";
 
 const InviteBody = z.object({
 	email: z.string().trim().toLowerCase().email().max(254),
@@ -187,6 +188,8 @@ people.put("/api/v1/mailboxes/:mailboxId/members/:userId", async (c) => {
 	});
 	if (result === "no_such_user") return c.json({ error: "No such person on this instance" }, 400);
 	if (result === "last_owner") return c.json({ error: "A mailbox must keep an owner" }, 409);
+	// A changed role is a changed right: the person's open app comes back through the guard.
+	await closeLiveOf(c.env, c.var.mailboxRow.address, c.req.param("userId"));
 	return c.json(await listMembers(c.env.DB, c.var.mailboxRow.id));
 });
 
@@ -200,5 +203,7 @@ people.delete("/api/v1/mailboxes/:mailboxId/members/:userId", async (c) => {
 	});
 	if (result === "not_a_member") return c.json({ error: "Not found" }, 404);
 	if (result === "last_owner") return c.json({ error: "A mailbox must keep an owner" }, 409);
+	// The index is written; whatever the person had open on this mailbox is told nothing more.
+	await closeLiveOf(c.env, c.var.mailboxRow.address, c.req.param("userId"));
 	return c.body(null, 204);
 });

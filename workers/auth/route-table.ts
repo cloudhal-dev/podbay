@@ -15,6 +15,11 @@ import type { Action } from "./authorize";
  * `fresh` marks a sensitive change: the caller must have signed in within the last few minutes
  * (workers/auth/fresh.ts). Better Auth's own sensitive endpoints are held to the same rule in
  * workers/auth/options.ts.
+ *
+ * `upgrade` marks a route that opens a WebSocket (ADR-0013). A handshake is a GET that carries
+ * the session cookie from any page of the same site, and what it opens stays open, so the
+ * guard is stricter for it than for a read: the request must be an upgrade, it must name the
+ * app's own origin, and its session is read from the database (workers/auth/middleware.ts).
  */
 export type RouteRight = Action | "public";
 
@@ -23,6 +28,7 @@ export interface RouteEntry {
 	readonly path: string;
 	readonly right: RouteRight;
 	readonly fresh?: true;
+	readonly upgrade?: true;
 }
 
 const M = "/api/v1/mailboxes/:mailboxId";
@@ -69,6 +75,9 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "GET", path: M, right: "mailbox.read" },
 	{ method: "PUT", path: M, right: "mailbox.manage" },
 	{ method: "DELETE", path: M, right: "mailbox.manage", fresh: true },
+	// The mailbox tells the open app that something changed (ADR-0013). Being told is a way of
+	// reading, so whoever may read may listen; what is told is four counters and no mail.
+	{ method: "GET", path: `${M}/live`, right: "mailbox.read", upgrade: true },
 	// Members: a mailbox owner, and whoever manages the instance (workers/auth/authorize.ts).
 	{ method: "GET", path: `${M}/members`, right: "mailbox.members.read" },
 	{ method: "GET", path: `${M}/members/history`, right: "mailbox.members.manage" },

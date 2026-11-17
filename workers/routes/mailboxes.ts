@@ -15,6 +15,7 @@ import {
 } from "../auth/store";
 import { mailboxAddressFor } from "../lib/inbound";
 import { deleteObjects } from "../lib/messages";
+import { settingsSaved } from "./live";
 
 const CreateBody = z.object({
 	email: z.string().max(254),
@@ -129,6 +130,9 @@ mailboxes.put("/api/v1/mailboxes/:mailboxId", async (c) => {
 		c.var.user.id,
 		mailbox.address,
 	);
+	// The settings are in the index, so the mailbox object is told that they changed: it is
+	// the one change to a mailbox that is not made in it (ADR-0013, decision 6).
+	await settingsSaved(c.var.mailboxStub);
 	return c.json(view({ ...mailbox, settings: parsed.data.settings }, mailbox.role));
 });
 
@@ -142,7 +146,8 @@ mailboxes.delete("/api/v1/mailboxes/:mailboxId", async (c) => {
 	const mailbox = c.var.mailbox;
 	const keys = await c.var.mailboxStub.allKeys();
 	await deleteObjects(c.env.BUCKET, keys);
-	// What reached the mailbox while its objects were deleted is named by the purge itself.
+	// What reached the mailbox while its objects were deleted is named by the purge itself,
+	// which also closes every connection of the open app (ADR-0013, decision 12).
 	const late = await c.var.mailboxStub.purge();
 	const gone = new Set(keys);
 	await deleteObjects(

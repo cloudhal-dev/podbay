@@ -22,6 +22,7 @@ import * as drafts from "./drafts";
 import { type BatchToEmpty, batchToEmpty, type EmptiedBatch, emptyBatch } from "./emptying";
 import * as known from "./known";
 import * as labels from "./labels";
+import * as live from "./live";
 import { applyMigrations, mailboxMigrations } from "./migrations";
 import * as originals from "./originals";
 import { countSearchResults, searchEmails } from "./search";
@@ -49,6 +50,38 @@ export class MailboxDO extends DurableObject<Env> {
 		super(state, env);
 		this.db = drizzle(this.ctx.storage, { schema });
 		applyMigrations(this.ctx.storage.sql, mailboxMigrations, this.ctx.storage);
+		live.answerPings(this.ctx);
+	}
+
+	// ── Telling the open app (ADR-0013, ./live) ────────────────────
+
+	/**
+	 * Every method of this class is wrapped here, once: a call that changed a row moves the
+	 * counters it is about and tells the open app. A method that writes needs to do nothing
+	 * for it, and cannot leave it out; what it is about, when that is not mail, is `live.ABOUT`.
+	 */
+	static {
+		live.watch(MailboxDO.prototype, (object) => object.ctx);
+	}
+
+	/** The one request this object takes: a connection the guard allowed, built by the Worker. */
+	async fetch(request: Request) {
+		return live.accept(this.ctx, request, Date.now());
+	}
+	/** The app says `ping`, which the platform answers. Anything else ends the connection. */
+	async webSocketMessage(ws: WebSocket) {
+		live.refuse(this.ctx, ws);
+	}
+	async webSocketClose(_ws: WebSocket, code: number) {
+		live.gone(this.ctx, code);
+	}
+	/** Closes the connections of a person whose right ended, or all of them. */
+	async closeLive(person?: string) {
+		return live.end(this.ctx, person);
+	}
+	/** The mailbox's settings are in the index; the route that saved them says so here. */
+	async settingsSaved() {
+		live.move(this.ctx.storage.sql, ["settings"]);
 	}
 
 	// ── Email CRUD (Drizzle) ───────────────────────────────────────
@@ -698,6 +731,8 @@ export class MailboxDO extends DurableObject<Env> {
 	 */
 	async purge(): Promise<string[]> {
 		const keys = originals.allKeys(this.ctx.storage);
+		// A mailbox that is gone tells nobody anything (ADR-0013, decision 12).
+		live.end(this.ctx);
 		await this.ctx.storage.deleteAll();
 		// The object may live on in memory. Leave it empty but usable, so a mailbox created again at
 		// the same address starts from a clean schema instead of from missing tables.

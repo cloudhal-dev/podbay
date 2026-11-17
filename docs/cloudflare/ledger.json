@@ -950,6 +950,196 @@
 			"evidence": "| Maximum string, `BLOB` or table row size | 2,000,000 bytes (2 MB) |",
 			"code": ["workers/routes/choices.ts", "shared/choices.ts"],
 			"note": "The same table: \"| Queries per Worker invocation (read [subrequest limits](https://developers.cloudflare.com/workers/platform/limits/#subrequests)) | 1000 (Workers Paid) / 50 (Free) |\"; a change to the choices is one batch, which counts as one query."
+		},
+		{
+			"id": "runtime.durable_objects.websocket.accept",
+			"kind": "runtime",
+			"relies": "The mailbox object takes a connection with `acceptWebSocket` and not with `accept()`, so it can leave memory while the connection stays open (ADR-0013, decision 1).",
+			"source": "https://developers.cloudflare.com/durable-objects/api/state/",
+			"pageUpdated": "2026-09-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "which allows a Durable Object to be removed from memory to save costs while keeping its WebSockets connected.",
+			"code": ["workers/durableObject/live.ts", "workers/durableObject/index.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.websocket.hibernation",
+			"kind": "runtime",
+			"relies": "While the object is not in memory its connections stay open, and what it held in memory is gone when it wakes: the counters are stored and nothing about a connection is kept in memory.",
+			"source": "https://developers.cloudflare.com/durable-objects/best-practices/websockets/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "When an event arrives, the Durable Object is re-initialized and its `constructor` runs",
+			"code": [
+				"workers/durableObject/live.ts",
+				"workers/durableObject/index.ts",
+				"workers/durableObject/migrations.ts"
+			],
+			"note": "The same page: \"Clients remain connected while the Durable Object is not in memory\" and \"In-memory state is reset\". Shown locally with `evictDurableObject` (test/workerd/live.test.ts); not shown on Cloudflare's network."
+		},
+		{
+			"id": "runtime.durable_objects.websocket.tags",
+			"kind": "runtime",
+			"relies": "A connection carries the id of its person as a tag, and the object finds a person's connections again with `getWebSockets(tag)`. The object refuses an id longer than a tag may be.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/state/",
+			"pageUpdated": "2026-09-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Each tag is a maximum of 256 characters and there can be at most 10 tags associated with a WebSocket.",
+			"code": ["workers/durableObject/live.ts"],
+			"note": "No page says in words that tags outlast hibernation; `getWebSockets` and `getTags` are documented as part of the Hibernation API. test/workerd/live.test.ts shows it in the local runtime after `evictDurableObject`: a connection is found by its tag and closed for the right person. Not shown on Cloudflare's network."
+		},
+		{
+			"id": "runtime.durable_objects.websocket.attachment",
+			"kind": "runtime",
+			"relies": "A connection keeps, as its attachment, when the guard allowed it and the message it was last sent. Both are there after the object slept, so an old connection is closed and the same state is never sent twice.",
+			"source": "https://developers.cloudflare.com/durable-objects/best-practices/websockets/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Serialized attachments persist through hibernation as long as the WebSocket remains healthy",
+			"code": ["workers/durableObject/live.ts"],
+			"note": "The same list: \"Maximum serialized size is 16,384 bytes\"; an attachment here is a number and a message of at most 256 bytes."
+		},
+		{
+			"id": "runtime.durable_objects.websocket.auto_response",
+			"kind": "runtime",
+			"relies": "The app says `ping` and the platform answers `pong` without waking the mailbox object. The pair is set in the constructor, as the platform's example does.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/state/",
+			"pageUpdated": "2026-09-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "If a request is received matching the provided request then the auto-response will be returned without waking WebSockets in hibernation and incurring billable duration charges.",
+			"code": ["workers/durableObject/live.ts", "shared/live.ts", "app/lib/live.ts"],
+			"note": "\"Both request and response are limited to 2,048 characters each.\""
+		},
+		{
+			"id": "plan.durable_objects.websocket.auto_response_requests",
+			"kind": "plan",
+			"relies": "Nothing yet: the app pings once a minute whether or not an auto-answered ping is billed as a received message. At twenty to one it would be three requests an hour for an open tab (ADR-0013, Consequences).",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/pricing/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": null,
+			"evidence": "needs verification: the page says an auto-response is not charged wall-clock time, in a footnote on duration; it does not say whether one counts as a received message.",
+			"code": ["workers/durableObject/live.ts", "app/lib/live.ts"],
+			"note": "The footnote: \"Application level auto-response messages handled by\" `state.setWebSocketAutoResponse()` \"will not incur additional wall-clock time, and so they will not be charged.\" Cannot be tested locally: billing is not simulated. To settle on a real account, from the Durable Objects request metrics of an idle mailbox with one open tab."
+		},
+		{
+			"id": "plan.durable_objects.websocket.messages",
+			"kind": "plan",
+			"relies": "Opening a connection is one request to the object; what the object sends costs nothing; what it receives is counted at twenty to one. The app sends nothing but `ping`, and the object closes a connection that sends anything else.",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/pricing/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "For compute requests billing-only, a 20:1 ratio is applied to incoming WebSocket messages to factor in smaller messages for real-time communication.",
+			"code": ["workers/durableObject/live.ts", "app/lib/live.ts"],
+			"note": "The same footnote: \"A request is needed to create a WebSocket connection. There is no charge for outgoing WebSocket messages\"."
+		},
+		{
+			"id": "runtime.durable_objects.hibernation.conditions",
+			"kind": "runtime",
+			"relies": "The mailbox object holds no timer and takes no WebSocket with `accept()`, so it can sleep with its connections open: the five minutes of a connection are checked when it is awake for another reason, and bursts are evened out in the app.",
+			"source": "https://developers.cloudflare.com/durable-objects/concepts/durable-object-lifecycle/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "After 10 seconds of no incoming request or event, and all the above conditions satisfied, the Durable Object will transition into the **hibernated** state.",
+			"code": ["workers/durableObject/live.ts"],
+			"note": "The conditions above it: no `setTimeout`/`setInterval` callback, no unfinished I/O or `waitUntil` promise, \"No WebSocket standard API is used\", no request still being processed."
+		},
+		{
+			"id": "runtime.durable_objects.websocket.close_reply",
+			"kind": "runtime",
+			"relies": "The object closes a connection with `close(1008, reason)` and does not answer a close itself: with the compatibility date in `wrangler.jsonc` the runtime completes the close handshake.",
+			"source": "https://developers.cloudflare.com/workers/configuration/compatibility-flags/",
+			"pageUpdated": "2026-09-18",
+			"verifiedAt": "2026-11-17",
+			"evidence": "With this flag active, you no longer need to call `close()` in your `close` event handler. The runtime handles the close handshake automatically.",
+			"code": ["workers/durableObject/live.ts", "wrangler.jsonc"],
+			"note": "The flag is `web_socket_auto_reply_to_close`, on by default from compatibility date 2026-04-07 (the state API page says the same)."
+		},
+		{
+			"id": "limit.durable_objects.websockets",
+			"kind": "limit",
+			"relies": "A mailbox takes at most 200 connections (ADR-0013, decision 20), far under what one object may hold.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/state/",
+			"pageUpdated": "2026-09-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "The WebSocket Hibernation API permits a maximum of 32,768 WebSocket connections per Durable Object",
+			"code": ["workers/durableObject/live.ts", "shared/live.ts"]
+		},
+		{
+			"id": "limit.durable_objects.websocket_message",
+			"kind": "limit",
+			"relies": "A message the object receives may be large; the object reads none of it. Anything but `ping`, which the platform answers, closes the connection, whatever its size.",
+			"source": "https://developers.cloudflare.com/durable-objects/platform/limits/",
+			"pageUpdated": "2026-11-13",
+			"verifiedAt": "2026-11-17",
+			"evidence": "| WebSocket message size | 32 MiB (only for received messages) |",
+			"code": ["workers/durableObject/live.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.code_updates",
+			"kind": "runtime",
+			"relies": "A deploy, a runtime update or a reset of the object can close connections, so the app reconnects by itself and never trusts the connection to be there.",
+			"source": "https://developers.cloudflare.com/durable-objects/deployments/durable-objects-code-updates/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "By default, Durable Objects defer code updates for up to 300 seconds (5 minutes) to give in-flight requests time to finish.",
+			"code": ["app/lib/live.ts", "app/hooks/useLive.ts"],
+			"note": "The WebSockets page: \"Connections accepted with the WebSocket Hibernation API remain connected when a Durable Object adopts new code after hibernating.\""
+		},
+		{
+			"id": "runtime.durable_objects.websocket.worker_handoff",
+			"kind": "runtime",
+			"relies": "The Worker checks the handshake (the guard) and hands the object a request; the object's `fetch` accepts the connection and its response, with status 101, is what the Worker returns.",
+			"source": "https://developers.cloudflare.com/durable-objects/best-practices/websockets/",
+			"pageUpdated": "2026-10-30",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Validate requests in your Worker to avoid billing for invalid requests against a Durable Object.",
+			"code": [
+				"workers/routes/live.ts",
+				"workers/auth/middleware.ts",
+				"workers/durableObject/live.ts"
+			],
+			"note": "The page's Worker passes the browser's own request on; Podbay builds a new one, so that no cookie or header of the browser reaches the object (ADR-0013, decision 10). The page's example answers a request that is not an upgrade with 426, as the guard does."
+		},
+		{
+			"id": "runtime.durable_objects.write_coalescing",
+			"kind": "runtime",
+			"relies": "A counter is moved in the same turn as the change it counts, with no `await` of I/O between them, so both are stored or neither (ADR-0013, decision 5).",
+			"source": "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+			"pageUpdated": "2026-09-21",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Any series of write operations with no intervening `await` will automatically be submitted atomically",
+			"code": ["workers/durableObject/live.ts"]
+		},
+		{
+			"id": "runtime.durable_objects.sql.total_changes",
+			"kind": "runtime",
+			"relies": "The mailbox object asks SQLite for `total_changes()` before and after each of its methods, to know whether the call changed a row. The function is on the runtime's list of allowed SQL functions.",
+			"source": "https://raw.githubusercontent.com/cloudflare/workerd/4c42a4a9d3390c88e9bd977091c9d3395a6cd665/src/workerd/util/sqlite.c%2B%2B",
+			"pageUpdated": null,
+			"verifiedAt": "2026-11-17",
+			"evidence": "\"total_changes\"_kj,",
+			"code": ["workers/durableObject/live.ts"],
+			"note": "The SQL API page (updated 2026-09-21) points at this file and commit: \"Refer to the [source code ↗︎](…) for the full list of supported functions.\" The quoted line is in `ALLOWED_SQLITE_FUNCTIONS`. test/workerd/live-signal.test.ts runs it in the local runtime: a read leaves it as it was, a write moves it."
+		},
+		{
+			"id": "runtime.websocket.idle",
+			"kind": "runtime",
+			"relies": "Nothing: the app says `ping` once a minute and reconnects when a connection is gone, so it does not depend on how long a silent connection is kept.",
+			"source": "https://developers.cloudflare.com/workers/runtime-apis/websockets/",
+			"pageUpdated": "2026-10-12",
+			"verifiedAt": null,
+			"evidence": "needs verification: no page read on 2026-11-17 says how long a WebSocket to a Worker may stay silent before the network closes it.",
+			"code": ["app/lib/live.ts", "test/e2e/live.spec.ts"],
+			"note": "Locally (Chrome, the built app, the local runtime) a connection on which nothing was said for 130 seconds stayed open and was still told (test/e2e/live.spec.ts runs it with 65 seconds). That says nothing about Cloudflare's network."
+		},
+		{
+			"id": "tooling.vitest.evictDurableObject",
+			"kind": "tooling",
+			"relies": "The Workers-runtime tests put a mailbox object out of memory with its connections open, to show what a connection keeps through sleep.",
+			"source": "https://developers.cloudflare.com/workers/testing/vitest-integration/test-apis/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-17",
+			"evidence": "`evictDurableObject(stub:DurableObjectStub, options?:DurableObjectEvictionOptions)`: Promise\\<void>",
+			"code": ["test/workerd/live.test.ts", "test/workerd/live-signal.test.ts"]
 		}
 	]
 }

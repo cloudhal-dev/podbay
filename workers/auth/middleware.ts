@@ -12,6 +12,9 @@
  * 5. A route marked `fresh` needs a session that signed in a few minutes ago, read from the
  *    database and not from the cookie. It is checked last, so it never tells a caller anything
  *    about a route they may not use.
+ * 6. A route marked `upgrade` opens a WebSocket (ADR-0013). Before a session is looked for,
+ *    the request must be an upgrade (426) and name the app's own origin (403); then its
+ *    session is read from the database, as for a route marked `fresh`.
  */
 import { createMiddleware } from "hono/factory";
 import { errorFields, log } from "../../shared/log";
@@ -73,6 +76,19 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 export function sameOrigin(request: Request): boolean {
 	const origin = request.headers.get("origin");
 	return origin !== null && origin === new URL(request.url).origin;
+}
+
+/**
+ * Why a request may not open a WebSocket, or `null` when it may go on to the session check.
+ *
+ * A handshake is a GET, so nothing else asks where it comes from, and a browser sends the
+ * session cookie with it from any page of the same site. The page must therefore be the app's
+ * own: an `Origin` that is missing or is another's is refused, which also leaves a program,
+ * which has none, no way in. A request that is not an upgrade has nothing to open.
+ */
+export function upgradeRefusal(request: Request): 426 | 403 | null {
+	if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") return 426;
+	return sameOrigin(request) ? null : 403;
 }
 
 /** The route pattern that will handle this request, as registered (for example `/api/v1/me`). */
@@ -158,6 +174,14 @@ export const guard = createMiddleware<ApiContext>(async (c, next) => {
 		// Better Auth checks the origin of its own endpoints.
 		return c.json({ error: "Cross-origin request refused" }, 403);
 	}
+	if (entry?.upgrade === true) {
+		// Asked before a session is looked for: a foreign page learns nothing about one.
+		const refused = upgradeRefusal(c.req.raw);
+		if (refused === 426) {
+			return c.json({ error: "This route opens a WebSocket" }, 426, { Upgrade: "websocket" });
+		}
+		if (refused === 403) return c.json({ error: "Cross-origin request refused" }, 403);
+	}
 	if (right === "public") return next();
 
 	let session: { user: SessionUser; session: { createdAt: Date | string } } | null;
@@ -165,8 +189,9 @@ export const guard = createMiddleware<ApiContext>(async (c, next) => {
 		session = await authFor(c.env, c.req.raw).api.getSession({
 			headers: c.req.raw.headers,
 			// A sensitive change is decided on the session in the database, never on the copy cached
-			// in the cookie: a session revoked a moment ago must not pass.
-			query: { disableCookieCache: entry?.fresh === true },
+			// in the cookie: a session revoked a moment ago must not pass. A connection that stays
+			// open is opened on the same footing.
+			query: { disableCookieCache: entry?.fresh === true || entry?.upgrade === true },
 		});
 	} catch (error) {
 		if (error instanceof AuthNotConfigured) {

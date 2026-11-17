@@ -27,6 +27,7 @@ import { drafts } from "./routes/drafts";
 import { keys } from "./routes/keys";
 import { knownAddresses } from "./routes/known-addresses";
 import { labels } from "./routes/labels";
+import { live } from "./routes/live";
 import { mailboxes } from "./routes/mailboxes";
 import { original } from "./routes/original";
 import { people } from "./routes/people";
@@ -82,6 +83,7 @@ app.route("/", places);
 app.route("/", original);
 app.route("/", bulk);
 app.route("/", knownAddresses);
+app.route("/", live);
 app.route("/", recovery);
 
 // -- Config ---------------------------------------------------------

@@ -26,9 +26,11 @@ export function applyMigrations(
 		applied_at TEXT NOT NULL DEFAULT (datetime('now'))
 	)`);
 
+	// One read says what is applied. The constructor runs at every wake of the object, also
+	// from sleep with connections open (ADR-0013), so the check must stay this small.
+	const applied = new Set([...sql.exec(`SELECT name FROM d1_migrations`)].map((row) => row.name));
 	for (const migration of migrations) {
-		const applied = [...sql.exec(`SELECT 1 FROM d1_migrations WHERE name = ?`, migration.name)];
-		if (applied.length > 0) continue;
+		if (applied.has(migration.name)) continue;
 
 		// Strip any existing BEGIN/COMMIT wrapper from the migration SQL.
 		// Cloudflare's DO runtime forbids SQL-level transactions -- must use
@@ -299,6 +301,21 @@ export const mailboxMigrations: Migration[] = [
 				name_key TEXT
 			);
 			CREATE INDEX idx_known_addresses_used ON known_addresses(last_used_at);
+		`,
+	},
+	{
+		// ADR-0013: what the mailbox tells the open app. One counter for each kind of change
+		// (`shared/live.ts`), which only grows and is written with the change it counts. The
+		// table holds four numbers and nothing of any message. They start at nought: mail that
+		// is already here is not counted back.
+		name: "16_states",
+		sql: `
+			CREATE TABLE states (
+				kind TEXT PRIMARY KEY,
+				value INTEGER NOT NULL DEFAULT 0
+			) WITHOUT ROWID;
+			INSERT INTO states (kind, value) VALUES
+				('delivery', 0), ('mail', 0), ('labels', 0), ('settings', 0);
 		`,
 	},
 ];

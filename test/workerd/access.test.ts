@@ -48,6 +48,19 @@ const mailboxRoutes = ROUTE_TABLE.filter((r) => r.path.includes(":mailboxId")).m
 	(r) => [r.method, concrete(r.path), r.right] as const,
 );
 
+/**
+ * The request a route is tried with. A route that opens a WebSocket is asked as a browser asks
+ * it, with the handshake's header: without it the guard answers 426 before anything else
+ * (ADR-0013; the refusals of that route are in test/workerd/live.test.ts).
+ */
+const UPGRADES = new Set(
+	ROUTE_TABLE.filter((r) => r.upgrade === true).map((r) => `${r.method} ${concrete(r.path)}`),
+);
+function tried(method: string, path: string): RequestInit {
+	if (UPGRADES.has(`${method} ${path}`)) return { method, headers: { upgrade: "websocket" } };
+	return { method, ...(method === "GET" ? {} : { body: "{}" }) };
+}
+
 async function deliver(to: string, raw: string) {
 	const { message, rejections } = inbound(to, raw);
 	const ctx = createExecutionContext();
@@ -213,11 +226,7 @@ describe("per-mailbox access", () => {
 	it.each(mailboxRoutes)(
 		"%s %s answers 404 to a signed-in person who is not a member",
 		async (method, path) => {
-			const res = await request(path, {
-				method,
-				cookie: cookies.outsider,
-				...(method === "GET" ? {} : { body: "{}" }),
-			});
+			const res = await request(path, { ...tried(method, path), cookie: cookies.outsider });
 			expect(res.status).toBe(404);
 		},
 	);
@@ -229,11 +238,7 @@ describe("per-mailbox access", () => {
 	it.each(mailRoutes)(
 		"%s %s answers 404 to an administrator without a membership (managing is not reading)",
 		async (method, path) => {
-			const res = await request(path, {
-				method,
-				cookie: cookies.admin,
-				...(method === "GET" ? {} : { body: "{}" }),
-			});
+			const res = await request(path, { ...tried(method, path), cookie: cookies.admin });
 			expect(res.status).toBe(404);
 		},
 	);
@@ -256,18 +261,14 @@ describe("per-mailbox access", () => {
 	it.each(memberRoutes.filter(([method]) => method !== "DELETE"))(
 		"%s %s is not hidden from an administrator without a membership",
 		async (method, path) => {
-			const res = await request(path, {
-				method,
-				cookie: cookies.admin,
-				...(method === "GET" ? {} : { body: "{}" }),
-			});
+			const res = await request(path, { ...tried(method, path), cookie: cookies.admin });
 			// Past the guard: the handler answers, with a list or with its own refusal of an empty body.
 			expect([200, 400]).toContain(res.status);
 		},
 	);
 
 	it.each(mailboxRoutes)("%s %s answers 401 without a session", async (method, path) => {
-		const res = await request(path, { method, ...(method === "GET" ? {} : { body: "{}" }) });
+		const res = await request(path, tried(method, path));
 		expect(res.status).toBe(401);
 	});
 
@@ -283,11 +284,7 @@ describe("per-mailbox access", () => {
 	it.each(mailboxRoutes.filter(([, , right]) => !READER_MAY.includes(right)))(
 		"%s %s answers 403 to a reader",
 		async (method, path) => {
-			const res = await request(path, {
-				method,
-				cookie: cookies.reader,
-				...(method === "GET" ? {} : { body: "{}" }),
-			});
+			const res = await request(path, { ...tried(method, path), cookie: cookies.reader });
 			expect(res.status).toBe(403);
 		},
 	);
