@@ -20,6 +20,7 @@ import {
 } from "@tanstack/react-router";
 import { forwardRef, useEffect } from "react";
 import { errorFields, log } from "shared/log";
+import { ConfirmProvider } from "~/components/Confirm";
 import { FreshProofProvider } from "~/components/FreshProof";
 import { useMe } from "~/lib/session";
 import AcceptRoute from "~/routes/accept";
@@ -113,7 +114,9 @@ function RootLayout() {
 				<TooltipProvider>
 					<Toasty>
 						<FreshProofProvider>
-							<SessionGate />
+							<ConfirmProvider>
+								<SessionGate />
+							</ConfirmProvider>
 						</FreshProofProvider>
 					</Toasty>
 				</TooltipProvider>

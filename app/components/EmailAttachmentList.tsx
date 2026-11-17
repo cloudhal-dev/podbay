@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Button, Dialog } from "@cloudflare/kumo";
+import { LayerDialog } from "@cloudflare/kumo";
 import { FileIcon, ImageIcon, PaperclipIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { type AttachmentRisk, attachmentRisk, isShowableImage } from "shared/attachment-risk";
@@ -136,22 +136,20 @@ export default function EmailAttachmentList({
 				})}
 			</div>
 
-			<Dialog.Root
+			<LayerDialog.Alert
 				open={asking !== null}
 				onOpenChange={(open) => {
 					if (!open) setAsking(null);
 				}}
 			>
-				<Dialog size="sm" className="p-6">
-					<Dialog.Title className="text-base font-semibold mb-2">
-						This file can do harm
-					</Dialog.Title>
-					{asking && (
+				<LayerDialog.Content size="sm">
+					<LayerDialog.Title>This file can do harm</LayerDialog.Title>
+					<LayerDialog.Body>
 						<div className="space-y-3">
 							<p className="text-sm font-medium text-kumo-default break-all">
-								{asking.attachment.filename}
+								{asking?.attachment.filename}
 							</p>
-							<p className="text-sm text-kumo-strong">{asking.risk.reason}</p>
+							<p className="text-sm text-kumo-strong">{asking?.risk.reason}</p>
 							<p className="text-sm text-kumo-subtle">
 								Download it only if you were expecting it from this sender. A familiar name on a
 								message is not proof of who sent it.
@@ -161,18 +159,15 @@ export default function EmailAttachmentList({
 									{error}
 								</p>
 							)}
-							<div className="flex justify-end gap-2 pt-1">
-								<Button variant="secondary" size="sm" onClick={() => setAsking(null)}>
-									Cancel
-								</Button>
-								<Button variant="destructive" size="sm" loading={busy} onClick={download}>
-									Download anyway
-								</Button>
-							</div>
 						</div>
-					)}
-				</Dialog>
-			</Dialog.Root>
+					</LayerDialog.Body>
+					<LayerDialog.Actions dismissLabel="Cancel">
+						<LayerDialog.Action variant="destructive" loading={busy} onClick={download}>
+							Download anyway
+						</LayerDialog.Action>
+					</LayerDialog.Actions>
+				</LayerDialog.Content>
+			</LayerDialog.Alert>
 		</div>
 	);
 }

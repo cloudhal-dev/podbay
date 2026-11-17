@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Dialog } from "@cloudflare/kumo";
+import { LayerDialog } from "@cloudflare/kumo";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from "react";
 import { needsFreshProof } from "~/lib/auth-client";
@@ -46,28 +46,30 @@ export function FreshProofProvider({ children }: { children: ReactNode }) {
 	return (
 		<FreshProofContext.Provider value={run}>
 			{children}
-			<Dialog.Root
+			<LayerDialog.Root
 				open={open}
 				onOpenChange={(next) => {
 					if (!next) finish(false);
 				}}
 			>
-				<Dialog size="sm" className="p-6">
-					<Dialog.Title className="text-base font-semibold mb-1">Confirm it is you</Dialog.Title>
-					<Dialog.Description className="text-sm text-kumo-subtle mb-4">
+				<LayerDialog.Content size="sm">
+					<LayerDialog.Title>Confirm it is you</LayerDialog.Title>
+					<LayerDialog.Description>
 						This change needs you to sign in again. It is asked once every few minutes.
-					</Dialog.Description>
-					{open && (
-						<SignInSteps
-							fixedEmail={me?.user.email ?? ""}
-							onDone={async () => {
-								await queryClient.invalidateQueries({ queryKey: sessionKeys.me });
-								finish(true);
-							}}
-						/>
-					)}
-				</Dialog>
-			</Dialog.Root>
+					</LayerDialog.Description>
+					<LayerDialog.Body>
+						{open && (
+							<SignInSteps
+								fixedEmail={me?.user.email ?? ""}
+								onDone={async () => {
+									await queryClient.invalidateQueries({ queryKey: sessionKeys.me });
+									finish(true);
+								}}
+							/>
+						)}
+					</LayerDialog.Body>
+				</LayerDialog.Content>
+			</LayerDialog.Root>
 		</FreshProofContext.Provider>
 	);
 }

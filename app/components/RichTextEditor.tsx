@@ -32,9 +32,15 @@ import { useCallback, useEffect } from "react";
 interface RichTextEditorProps {
 	value: string;
 	onChange: (value: string) => void;
+	/** Put the cursor in the text when it is filled in. Off when writing starts in another field. */
+	focusOnLoad?: boolean;
 }
 
-export default function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+export default function RichTextEditor({
+	value,
+	onChange,
+	focusOnLoad = true,
+}: RichTextEditorProps) {
 	const editor = useEditor({
 		extensions: [
 			StarterKit,
@@ -61,6 +67,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
 	useEffect(() => {
 		if (editor && !editor.isDestroyed && value !== editor.getHTML()) {
 			editor.commands.setContent(value);
+			if (!focusOnLoad) return;
 			// Place cursor at the start of the document (above quoted text)
 			const rafId = requestAnimationFrame(() => {
 				if (!editor.isDestroyed) {
@@ -69,7 +76,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
 			});
 			return () => cancelAnimationFrame(rafId);
 		}
-	}, [value, editor]);
+	}, [value, editor, focusOnLoad]);
 
 	const setLink = useCallback(() => {
 		if (!editor) return;

@@ -1,5 +1,5 @@
 {
-	"lintWarnings": 34,
+	"lintWarnings": 33,
 	"consoleCalls": 0,
 	"oversizedFiles": {
 		"workers/durableObject/index.ts": 842

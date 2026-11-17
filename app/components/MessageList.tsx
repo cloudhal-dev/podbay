@@ -1,27 +1,27 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Badge, Button, Tooltip, useKumoToastManager } from "@cloudflare/kumo";
+import { Badge, Tooltip } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
 	ArrowBendUpLeftIcon,
-	ArrowsClockwiseIcon,
-	CaretLeftIcon,
-	CaretRightIcon,
 	EnvelopeOpenIcon,
 	EnvelopeSimpleIcon,
 	StarIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
 import { useParams } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { formatListDate } from "shared/dates";
 import { Folders, getFolderDisplayName } from "shared/folders";
+import { useConversationActions } from "~/hooks/useConversationActions";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { getSnippetText } from "~/lib/utils";
-import { useDeleteEmail, useMarkThreadRead, useMoveEmail, useUpdateEmail } from "~/queries/emails";
+import { useMarkThreadRead, useUpdateEmail } from "~/queries/emails";
 import type { Email } from "~/types";
+import IconButton from "./IconButton";
+import MessageListToolbar from "./MessageListToolbar";
 
 interface MessageListProps {
 	/** The page's heading. Read by assistive technology; the rail already shows it to the eye. */
@@ -76,32 +76,6 @@ function Skeleton() {
 	);
 }
 
-function IconButton({
-	label,
-	icon,
-	onClick,
-	disabled,
-}: {
-	label: string;
-	icon: ReactNode;
-	onClick: () => void;
-	disabled?: boolean;
-}) {
-	return (
-		<Tooltip content={label} side="bottom" asChild>
-			<Button
-				variant="ghost"
-				shape="square"
-				size="sm"
-				icon={icon}
-				onClick={onClick}
-				disabled={disabled}
-				aria-label={label}
-			/>
-		</Tooltip>
-	);
-}
-
 /**
  * A list of conversations as a mail client shows it: one dense line each, a toolbar that acts on
  * what is selected, quick actions on the line under the pointer, and the keyboard for all of it.
@@ -124,14 +98,11 @@ export default function MessageList({
 }: MessageListProps) {
 	const { mailboxId } = useParams({ strict: false });
 	const { selectEmail } = useUIStore();
-	const toasts = useKumoToastManager();
 	const updateEmail = useUpdateEmail();
 	const markThreadRead = useMarkThreadRead();
-	const moveEmail = useMoveEmail();
-	const deleteEmail = useDeleteEmail();
+	const actions = useConversationActions(mailboxId, folder);
 	const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 	const [cursor, setCursor] = useState(0);
-	const selectAll = useRef<HTMLInputElement>(null);
 	const mark = highlight ?? ((text: string) => text);
 
 	const ids = emails.map((email) => email.id).join(",");
@@ -143,16 +114,9 @@ export default function MessageList({
 	}, [ids]);
 
 	const chosen = emails.filter((email) => selected.has(email.id));
-	const allSelected = emails.length > 0 && chosen.length === emails.length;
-	useEffect(() => {
-		if (selectAll.current) selectAll.current.indeterminate = chosen.length > 0 && !allSelected;
-	}, [chosen.length, allSelected]);
-
-	const inTrash = folder === Folders.TRASH;
 	const current = emails[cursor];
 	/** What an action applies to: the selection, or the line the keyboard is on. */
 	const targets = () => (chosen.length > 0 ? chosen : current ? [current] : []);
-	const plural = (count: number) => (count === 1 ? "Conversation" : `${count} conversations`);
 
 	function toggle(id: string) {
 		const next = new Set(selected);
@@ -171,43 +135,6 @@ export default function MessageList({
 		}
 	}
 
-	function setRead(list: Email[], read: boolean) {
-		if (!mailboxId) return;
-		for (const email of list) updateEmail.mutate({ mailboxId, id: email.id, data: { read } });
-	}
-
-	function star(email: Email) {
-		if (mailboxId) {
-			updateEmail.mutate({ mailboxId, id: email.id, data: { starred: !email.starred } });
-		}
-	}
-
-	function archive(list: Email[]) {
-		if (!mailboxId || list.length === 0) return;
-		for (const email of list) {
-			moveEmail.mutate({ mailboxId, id: email.id, folderId: Folders.ARCHIVE });
-		}
-		toasts.add({ title: `${plural(list.length)} archived` });
-	}
-
-	/** Delete moves to Trash. Only inside Trash is it for good, and then it asks first. */
-	function remove(list: Email[]) {
-		if (!mailboxId || list.length === 0) return;
-		if (!inTrash) {
-			for (const email of list) {
-				moveEmail.mutate({ mailboxId, id: email.id, folderId: Folders.TRASH });
-			}
-			toasts.add({ title: `${plural(list.length)} moved to Trash` });
-			return;
-		}
-		const sure = window.confirm(
-			`Delete ${list.length === 1 ? "this conversation" : `these ${list.length} conversations`} forever? This cannot be undone.`,
-		);
-		if (!sure) return;
-		for (const email of list) deleteEmail.mutate({ mailboxId, id: email.id });
-		toasts.add({ title: `${plural(list.length)} deleted forever` });
-	}
-
 	function move(by: number) {
 		const next = Math.min(Math.max(cursor + by, 0), emails.length - 1);
 		setCursor(next);
@@ -224,92 +151,35 @@ export default function MessageList({
 			o: openCurrent,
 			Enter: openCurrent,
 			x: () => current && toggle(current.id),
-			s: () => current && star(current),
-			e: () => folder !== Folders.ARCHIVE && archive(targets()),
-			"#": () => remove(targets()),
-			"Shift+I": () => setRead(targets(), true),
-			"Shift+U": () => setRead(targets(), false),
+			s: () => current && actions.star(current),
+			e: () => folder !== Folders.ARCHIVE && actions.archive(targets()),
+			"#": () => void actions.remove(targets()),
+			"!": () => folder !== Folders.SPAM && actions.reportSpam(targets()),
+			"Shift+I": () => actions.setRead(targets(), true),
+			"Shift+U": () => actions.setRead(targets(), false),
+			"* a": () => setSelected(new Set(emails.map((email) => email.id))),
+			"* n": () => setSelected(new Set()),
 		},
 		emails.length > 0,
 	);
 
-	const first = (page - 1) * pageSize + 1;
-	const last = Math.min(page * pageSize, totalCount);
-
 	return (
 		<>
 			<h1 className="sr-only">{title}</h1>
-			<div className="flex h-12 shrink-0 items-center gap-1 border-b border-kumo-line px-3">
-				<input
-					ref={selectAll}
-					type="checkbox"
-					aria-label="Select all conversations on this page"
-					className="mx-1.5 h-4 w-4 cursor-pointer"
-					checked={allSelected}
-					disabled={emails.length === 0}
-					onChange={() => setSelected(allSelected ? new Set() : new Set(emails.map((e) => e.id)))}
-				/>
-				{chosen.length === 0 ? (
-					onRefresh && (
-						<IconButton
-							label={isRefreshing ? "Refreshing" : "Refresh"}
-							icon={
-								<ArrowsClockwiseIcon size={18} className={isRefreshing ? "animate-spin" : ""} />
-							}
-							onClick={onRefresh}
-							disabled={isRefreshing}
-						/>
-					)
-				) : (
-					<>
-						{folder !== Folders.ARCHIVE && (
-							<IconButton
-								label="Archive"
-								icon={<ArchiveIcon size={18} />}
-								onClick={() => archive(chosen)}
-							/>
-						)}
-						<IconButton
-							label={inTrash ? "Delete forever" : "Delete"}
-							icon={<TrashIcon size={18} />}
-							onClick={() => remove(chosen)}
-						/>
-						<IconButton
-							label="Mark as read"
-							icon={<EnvelopeOpenIcon size={18} />}
-							onClick={() => setRead(chosen, true)}
-						/>
-						<IconButton
-							label="Mark as unread"
-							icon={<EnvelopeSimpleIcon size={18} />}
-							onClick={() => setRead(chosen, false)}
-						/>
-						<span className="ml-2 text-sm text-kumo-subtle" aria-live="polite">
-							{chosen.length} selected
-						</span>
-					</>
-				)}
-
-				<div className="ml-auto flex items-center gap-1">
-					{totalCount > 0 && (
-						<span className="mr-1 text-xs text-kumo-subtle whitespace-nowrap">
-							{first}–{last} of {totalCount}
-						</span>
-					)}
-					<IconButton
-						label="Newer"
-						icon={<CaretLeftIcon size={16} />}
-						onClick={() => setPage(page - 1)}
-						disabled={page <= 1}
-					/>
-					<IconButton
-						label="Older"
-						icon={<CaretRightIcon size={16} />}
-						onClick={() => setPage(page + 1)}
-						disabled={last >= totalCount}
-					/>
-				</div>
-			</div>
+			<MessageListToolbar
+				emails={emails}
+				chosen={chosen}
+				onSelect={(next) => setSelected(new Set(next))}
+				isUnread={hasUnread}
+				actions={actions}
+				folder={folder}
+				page={page}
+				setPage={setPage}
+				pageSize={pageSize}
+				totalCount={totalCount}
+				isRefreshing={isRefreshing}
+				onRefresh={onRefresh}
+			/>
 
 			<div className="flex-1 overflow-y-auto">
 				{isLoading && emails.length === 0 ? (
@@ -326,12 +196,12 @@ export default function MessageList({
 						const tone = isSelected
 							? "bg-kumo-brand/10"
 							: unread
-								? "bg-kumo-base hover:bg-kumo-tint"
-								: "bg-kumo-recessed/60 hover:bg-kumo-tint";
+								? "bg-kumo-base"
+								: "bg-kumo-recessed/60";
 						return (
 							<div
 								key={email.id}
-								className={`group flex min-h-10 items-center gap-2 border-b border-l-2 border-b-kumo-line px-2.5 text-sm transition-colors md:h-10 ${
+								className={`group flex min-h-10 items-center gap-2 border-b border-l-2 border-b-kumo-line px-2.5 text-sm hover:relative hover:z-[1] hover:shadow-[0_1px_3px_rgb(0_0_0/0.18)] md:h-10 ${
 									index === cursor ? "border-l-kumo-brand" : "border-l-transparent"
 								} ${tone}`}
 							>
@@ -347,7 +217,7 @@ export default function MessageList({
 									aria-label={email.starred ? "Unstar" : "Star"}
 									aria-pressed={email.starred}
 									className="shrink-0 rounded bg-transparent border-0 p-0.5 cursor-pointer"
-									onClick={() => star(email)}
+									onClick={() => actions.star(email)}
 								>
 									<StarIcon
 										size={16}
@@ -417,20 +287,20 @@ export default function MessageList({
 										<IconButton
 											label="Archive"
 											icon={<ArchiveIcon size={16} />}
-											onClick={() => archive([email])}
+											onClick={() => actions.archive([email])}
 										/>
 									)}
 									<IconButton
-										label={inTrash ? "Delete forever" : "Delete"}
+										label={actions.inTrash ? "Delete forever" : "Delete"}
 										icon={<TrashIcon size={16} />}
-										onClick={() => remove([email])}
+										onClick={() => void actions.remove([email])}
 									/>
 									<IconButton
 										label={unread ? "Mark as read" : "Mark as unread"}
 										icon={
 											unread ? <EnvelopeOpenIcon size={16} /> : <EnvelopeSimpleIcon size={16} />
 										}
-										onClick={() => setRead([email], unread)}
+										onClick={() => actions.setRead([email], unread)}
 									/>
 								</span>
 							</div>

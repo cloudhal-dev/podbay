@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { accountProblems } from "../../scripts/checks/account.ts";
 import { compatProblems, MAX_AGE_DAYS } from "../../scripts/checks/compat.ts";
+import { BROWSER_DIALOG_DEBT, dialogProblems } from "../../scripts/checks/dialogs.ts";
 import { headersProblems } from "../../scripts/checks/headers.ts";
 import { htmlProblems } from "../../scripts/checks/html.ts";
 import { secretProblems } from "../../scripts/checks/secrets.ts";
@@ -100,6 +101,34 @@ describe("html", () => {
 		expect(htmlProblems("app/x.ts", 'if (el.innerHTML === "") return;')).toEqual([]);
 		expect(htmlProblems("app/x.ts", "// never assign el.innerHTML = body here")).toEqual([]);
 		expect(htmlProblems("workers/x.ts", "el.innerHTML = body;")).toEqual([]);
+	});
+});
+
+describe("dialogs", () => {
+	it.each(["confirm", "alert", "prompt"])("refuses the browser's %s in the UI", (name) => {
+		expect(
+			dialogProblems("app/components/X.tsx", `if (window.${name}("Sure?")) go();`)[0],
+		).toContain(name);
+	});
+
+	it("refuses Kumo's older Dialog and accepts LayerDialog", () => {
+		const old = 'import { Button, Dialog } from "@cloudflare/kumo";';
+		expect(dialogProblems("app/components/X.tsx", old)).toHaveLength(1);
+		expect(
+			dialogProblems(
+				"app/components/X.tsx",
+				'import { Button, LayerDialog } from "@cloudflare/kumo";',
+			),
+		).toEqual([]);
+	});
+
+	it("ignores comments and code outside the UI, and keeps the debt list to one prompt", () => {
+		expect(dialogProblems("app/x.ts", "// never call window.confirm() here")).toEqual([]);
+		expect(dialogProblems("workers/x.ts", 'window.alert("x");')).toEqual([]);
+		expect(BROWSER_DIALOG_DEBT).toEqual({ "app/components/RichTextEditor.tsx": ["prompt"] });
+		expect(
+			dialogProblems("app/components/RichTextEditor.tsx", 'window.confirm("x");'),
+		).toHaveLength(1);
 	});
 });
 

@@ -13,9 +13,12 @@ export const SHORTCUT_HELP: { keys: string; does: string }[] = [
 	{ keys: "j  /  k", does: "Next or previous conversation in the list" },
 	{ keys: "o  or  Enter", does: "Open the conversation" },
 	{ keys: "u", does: "Back to the list" },
+	{ keys: "r  /  a  /  f", does: "Reply, reply to all or forward the open conversation" },
 	{ keys: "x", does: "Select the conversation" },
+	{ keys: "*  then  a  /  n", does: "Select all or none" },
 	{ keys: "e", does: "Archive" },
 	{ keys: "#", does: "Move to Trash" },
+	{ keys: "!", does: "Report spam" },
 	{ keys: "s", does: "Star or unstar" },
 	{ keys: "Shift+I  /  Shift+U", does: "Mark as read or unread" },
 	{ keys: "g  then  i", does: "Go to Inbox" },
@@ -24,6 +27,13 @@ export const SHORTCUT_HELP: { keys: string; does: string }[] = [
 	{ keys: "g  then  d", does: "Go to Drafts" },
 	{ keys: "?", does: "Show this list" },
 ];
+
+/**
+ * A dialog, a confirmation or a menu is open: its keys are its own. A toast is announced as a
+ * dialog that is not modal, and it must not silence the keyboard while it is on screen.
+ */
+const OPEN_LAYER =
+	'[role="dialog"]:not([aria-modal="false"]), [role="alertdialog"]:not([aria-modal="false"]), [role="menu"]';
 
 function isTyping(target: EventTarget | null): boolean {
 	if (!(target instanceof HTMLElement)) return false;
@@ -45,7 +55,7 @@ export function shortcutName(event: Pick<KeyboardEvent, "key" | "shiftKey">): st
 
 /**
  * Single-key shortcuts for the mail screens. They never fire while the reader is typing, with a
- * modifier held, or while a dialog is open, so they cannot collide with writing a message.
+ * modifier held, or while a dialog or a menu is open, so they cannot collide with writing a message.
  */
 export function useShortcuts(shortcuts: Shortcuts, enabled = true): void {
 	const latest = useRef(shortcuts);
@@ -58,7 +68,7 @@ export function useShortcuts(shortcuts: Shortcuts, enabled = true): void {
 
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.metaKey || event.ctrlKey || event.altKey) return;
-			if (isTyping(event.target) || document.querySelector('[role="dialog"]')) return;
+			if (isTyping(event.target) || document.querySelector(OPEN_LAYER)) return;
 			const name = shortcutName(event);
 			const combined = prefix ? `${prefix} ${name}` : name;
 			clearTimeout(timer);

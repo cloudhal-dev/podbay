@@ -7,6 +7,7 @@
 import { check as account } from "./checks/account.ts";
 import { check as compat } from "./checks/compat.ts";
 import { check as copies } from "./checks/copies.ts";
+import { check as dialogs } from "./checks/dialogs.ts";
 import { check as docs } from "./checks/docs.ts";
 import { check as guidance } from "./checks/guidance.ts";
 import { check as headers } from "./checks/headers.ts";
@@ -32,6 +33,7 @@ const ALL: Check[] = [
 	account,
 	imports,
 	html,
+	dialogs,
 	hosts,
 	headers,
 	compat,

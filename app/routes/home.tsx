@@ -3,7 +3,15 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Button, Dialog, Input, Loader, Select, Text, useKumoToastManager } from "@cloudflare/kumo";
+import {
+	Button,
+	Input,
+	LayerDialog,
+	Loader,
+	Select,
+	Text,
+	useKumoToastManager,
+} from "@cloudflare/kumo";
 import { EnvelopeIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
@@ -257,7 +265,6 @@ export default function HomeRoute() {
 				)}
 			</div>
 
-			{/* Create Dialog */}
 			{canManage && (
 				<div className="mx-auto max-w-2xl px-4 pb-16 md:px-6">
 					<Registry />
@@ -266,110 +273,99 @@ export default function HomeRoute() {
 				</div>
 			)}
 
-			<Dialog.Root open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-				<Dialog size="sm" className="p-6">
-					<Dialog.Title className="text-base font-semibold mb-5">Create New Mailbox</Dialog.Title>
-					<form onSubmit={handleCreate} className="space-y-4">
-						{createError && (
-							<Text variant="error" size="sm">
-								{createError}
-							</Text>
-						)}
-						<div>
-							<span className="text-sm font-medium text-kumo-default mb-1.5 block">
-								Email Address
-							</span>
-							<div className="flex items-center gap-2">
-								<div className="flex-1">
-									<Input
-										aria-label="Address prefix"
-										placeholder="info"
-										size="sm"
-										value={newPrefix}
-										onChange={(e) => setNewPrefix(e.target.value)}
-										required
-									/>
-								</div>
-								<span className="text-sm text-kumo-subtle">@</span>
-								{domains.length > 1 ? (
+			<LayerDialog.Root open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+				<LayerDialog.Content size="sm">
+					<LayerDialog.Title>Create a mailbox</LayerDialog.Title>
+					<LayerDialog.Body>
+						<form id="create-mailbox" onSubmit={handleCreate} className="space-y-4">
+							{createError && (
+								<Text variant="error" size="sm">
+									{createError}
+								</Text>
+							)}
+							<div>
+								<span className="text-sm font-medium text-kumo-default mb-1.5 block">
+									Email Address
+								</span>
+								<div className="flex items-center gap-2">
 									<div className="flex-1">
-										<Select
-											aria-label="Domain"
-											value={selectedDomain}
-											onValueChange={(value) => {
-												if (value) setSelectedDomain(value);
-											}}
-										>
-											{domains.map((d) => (
-												<Select.Option key={d} value={d}>
-													{d}
-												</Select.Option>
-											))}
-										</Select>
+										<Input
+											aria-label="Address prefix"
+											placeholder="info"
+											size="sm"
+											value={newPrefix}
+											onChange={(e) => setNewPrefix(e.target.value)}
+											required
+										/>
 									</div>
-								) : (
-									<span className="text-sm text-kumo-subtle">{selectedDomain || "no domain"}</span>
-								)}
+									<span className="text-sm text-kumo-subtle">@</span>
+									{domains.length > 1 ? (
+										<div className="flex-1">
+											<Select
+												aria-label="Domain"
+												value={selectedDomain}
+												onValueChange={(value) => {
+													if (value) setSelectedDomain(value);
+												}}
+											>
+												{domains.map((d) => (
+													<Select.Option key={d} value={d}>
+														{d}
+													</Select.Option>
+												))}
+											</Select>
+										</div>
+									) : (
+										<span className="text-sm text-kumo-subtle">
+											{selectedDomain || "no domain"}
+										</span>
+									)}
+								</div>
 							</div>
-						</div>
-						<Input
-							label="Display Name (optional)"
-							placeholder="Info"
-							size="sm"
-							value={newName}
-							onChange={(e) => setNewName(e.target.value)}
-						/>
-						<div className="flex justify-end gap-2 pt-2">
-							<Dialog.Close
-								render={(props) => (
-									<Button {...props} variant="secondary" size="sm">
-										Cancel
-									</Button>
-								)}
-							/>
-							<Button
-								type="submit"
-								variant="primary"
+							<Input
+								label="Display Name (optional)"
+								placeholder="Info"
 								size="sm"
-								loading={isCreating}
-								disabled={!selectedDomain}
-							>
-								Create
-							</Button>
-						</div>
-					</form>
-				</Dialog>
-			</Dialog.Root>
+								value={newName}
+								onChange={(e) => setNewName(e.target.value)}
+							/>
+						</form>
+					</LayerDialog.Body>
+					<LayerDialog.Actions dismissLabel="Cancel">
+						<LayerDialog.Action
+							type="submit"
+							form="create-mailbox"
+							loading={isCreating}
+							disabled={!selectedDomain}
+						>
+							Create
+						</LayerDialog.Action>
+					</LayerDialog.Actions>
+				</LayerDialog.Content>
+			</LayerDialog.Root>
 
-			{/* Delete Dialog */}
-			<Dialog.Root
+			<LayerDialog.Alert
 				open={isDeleteOpen}
 				onOpenChange={(open) => {
 					setIsDeleteOpen(open);
 					if (!open) setMailboxToDelete(null);
 				}}
 			>
-				<Dialog size="sm" className="p-6">
-					<Dialog.Title className="text-base font-semibold mb-2">Delete Mailbox</Dialog.Title>
-					<Dialog.Description className="text-kumo-subtle text-sm mb-5">
-						Are you sure you want to delete{" "}
-						<strong className="text-kumo-default">{mailboxToDelete?.email}</strong>? This action
-						cannot be undone.
-					</Dialog.Description>
-					<div className="flex justify-end gap-2">
-						<Dialog.Close
-							render={(props) => (
-								<Button {...props} variant="secondary" size="sm">
-									Cancel
-								</Button>
-							)}
-						/>
-						<Button variant="destructive" size="sm" loading={isDeleting} onClick={handleDelete}>
+				<LayerDialog.Content size="sm">
+					<LayerDialog.Title>Delete this mailbox?</LayerDialog.Title>
+					<LayerDialog.Body>
+						<p className="text-sm text-kumo-strong">
+							<strong className="text-kumo-default">{mailboxToDelete?.email}</strong> and every
+							message in it will be deleted. This cannot be undone.
+						</p>
+					</LayerDialog.Body>
+					<LayerDialog.Actions dismissLabel="Cancel">
+						<LayerDialog.Action variant="destructive" loading={isDeleting} onClick={handleDelete}>
 							Delete
-						</Button>
-					</div>
-				</Dialog>
-			</Dialog.Root>
+						</LayerDialog.Action>
+					</LayerDialog.Actions>
+				</LayerDialog.Content>
+			</LayerDialog.Alert>
 		</div>
 	);
 }

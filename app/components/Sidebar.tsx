@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Button, Dialog, Input, Tooltip } from "@cloudflare/kumo";
+import { Button, Input, LayerDialog, Tooltip } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
 	FileIcon,
@@ -219,32 +219,27 @@ export default function Sidebar() {
 				)}
 			</div>
 
-			<Dialog.Root open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
-				<Dialog size="sm" className="p-6">
-					<Dialog.Title className="text-base font-semibold mb-4">Create folder</Dialog.Title>
-					<form onSubmit={handleCreateFolder} className="space-y-4">
-						<Input
-							label="Folder name"
-							placeholder="e.g. Projects"
-							value={newFolderName}
-							onChange={(e) => setNewFolderName(e.target.value)}
-							required
-						/>
-						<div className="flex justify-end gap-2">
-							<Dialog.Close
-								render={(props) => (
-									<Button {...props} variant="secondary">
-										Cancel
-									</Button>
-								)}
+			<LayerDialog.Root open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
+				<LayerDialog.Content size="sm">
+					<LayerDialog.Title>Create folder</LayerDialog.Title>
+					<LayerDialog.Body>
+						<form id="create-folder" onSubmit={handleCreateFolder}>
+							<Input
+								label="Folder name"
+								placeholder="e.g. Projects"
+								value={newFolderName}
+								onChange={(e) => setNewFolderName(e.target.value)}
+								required
 							/>
-							<Button type="submit" variant="primary" disabled={!newFolderName.trim()}>
-								Create
-							</Button>
-						</div>
-					</form>
-				</Dialog>
-			</Dialog.Root>
+						</form>
+					</LayerDialog.Body>
+					<LayerDialog.Actions dismissLabel="Cancel">
+						<LayerDialog.Action type="submit" form="create-folder" disabled={!newFolderName.trim()}>
+							Create
+						</LayerDialog.Action>
+					</LayerDialog.Actions>
+				</LayerDialog.Content>
+			</LayerDialog.Root>
 		</aside>
 	);
 }

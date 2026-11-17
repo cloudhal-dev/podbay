@@ -60,7 +60,7 @@ test("a file that can do harm is marked, explained, and downloaded only when ask
 	}
 
 	await page.getByRole("button", { name: /setup\.exe/ }).click();
-	const dialog = page.getByRole("dialog");
+	const dialog = page.getByRole("alertdialog");
 	await expect(dialog.getByText("This file can do harm")).toBeVisible();
 	await expect(dialog.getByText("This is a program.")).toBeVisible();
 
@@ -76,11 +76,11 @@ test("a file that can do harm is marked, explained, and downloaded only when ask
 
 	await page.getByRole("button", { name: /setup\.exe/ }).click();
 	const started = page.waitForEvent("download");
-	await page.getByRole("dialog").getByRole("button", { name: "Download anyway" }).click();
+	await page.getByRole("alertdialog").getByRole("button", { name: "Download anyway" }).click();
 	const download = await started;
 	expect(download.suggestedFilename()).toBe("setup.exe");
 	expect(readFileSync(await download.path(), "utf8")).toBe("MZ not a real program");
-	await expect(page.getByRole("dialog")).toBeHidden();
+	await expect(page.getByRole("alertdialog")).toBeHidden();
 });
 
 test("an attachment never opens as a page, whatever it contains and however it is asked for", async ({

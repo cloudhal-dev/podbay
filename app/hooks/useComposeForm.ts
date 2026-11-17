@@ -163,6 +163,8 @@ function buildInitialComposeFields(
 	};
 }
 
+export type ComposeForm = ReturnType<typeof useComposeForm>;
+
 export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const toastManager = useKumoToastManager();
 	const { composeOptions, closePanel, closeCompose } = useUIStore();
@@ -182,6 +184,10 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const [error, setError] = useState<string | null>(null);
 	const [isSavingDraft, setIsSavingDraft] = useState(false);
 	const [isSending, setIsSending] = useState(false);
+	/** The draft this window saved, so saving again replaces it and sending removes it. */
+	const [savedDraftId, setSavedDraftId] = useState<string | null>(null);
+	/** Whether the person wrote anything since the window opened or the draft was last saved. */
+	const [touched, setTouched] = useState(false);
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
 	const isDraftEdit = !!composeOptions.draftEmail;
 
@@ -211,6 +217,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			sigBlock,
 		);
 		setError(null);
+		setSavedDraftId(null);
+		setTouched(false);
 		setTo(initialFields.to);
 		setCc(initialFields.cc);
 		setBcc(initialFields.bcc);
@@ -219,12 +227,12 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		setBody(initialFields.body);
 	}, [composeOptions, currentMailbox?.email, sigBlock]);
 
-	const handleSaveDraft = async () => {
-		if (!mailboxId || isSending) return;
+	const handleSaveDraft = async (): Promise<boolean> => {
+		if (!mailboxId || isSending) return false;
 		setIsSavingDraft(true);
 		setError(null);
 		try {
-			await saveDraftMutation.mutateAsync({
+			const saved = (await saveDraftMutation.mutateAsync({
 				mailboxId,
 				draft: {
 					to,
@@ -238,17 +246,35 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 						composeOptions.originalEmail?.thread_id ||
 						composeOptions.draftEmail?.thread_id ||
 						undefined,
-					draft_id: composeOptions.draftEmail?.id || undefined,
+					draft_id: savedDraftId || composeOptions.draftEmail?.id || undefined,
 				},
-			});
-			toastManager.add({ title: "Draft saved!" });
+			})) as { id?: string } | undefined;
+			if (saved?.id) setSavedDraftId(saved.id);
+			setTouched(false);
+			toastManager.add({ title: "Draft saved" });
+			return true;
 		} catch (err: unknown) {
 			const message = (err instanceof Error ? err.message : null) || "Failed to save draft.";
 			setError(message);
 			toastManager.add({ title: message, variant: "error" });
+			return false;
 		} finally {
 			setIsSavingDraft(false);
 		}
+	};
+
+	/** Closing keeps what was written: it is saved as a draft first, and stays open if that fails. */
+	const saveAndClose = async () => {
+		if (isSending) return;
+		if (touched && !(await handleSaveDraft())) return;
+		closeCompose();
+	};
+
+	/** Discarding throws away what this window wrote, including a draft it saved itself. */
+	const discard = () => {
+		if (isSending) return;
+		if (mailboxId && savedDraftId) deleteEmailMutation.mutate({ mailboxId, id: savedDraftId });
+		closeCompose();
 	};
 
 	const handleSend = async (e: FormEvent, onClose: () => void) => {
@@ -280,11 +306,10 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			html: body,
 			text: htmlToPlainText(body),
 		};
-		const draftId = composeOptions.draftEmail?.id;
+		const draftId = savedDraftId || composeOptions.draftEmail?.id;
 		const mode = composeOptions.mode;
 		const originalId = composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to;
 		setIsSending(true);
-		toastManager.add({ title: "Sending email..." });
 		try {
 			if ((mode === "reply" || mode === "reply-all") && originalId)
 				await replyMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
@@ -292,7 +317,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				await forwardMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
 			else await sendEmailMutation.mutateAsync({ mailboxId, email: emailData });
 			if (draftId) deleteEmailMutation.mutate({ mailboxId, id: draftId });
-			toastManager.add({ title: "Email sent!" });
+			toastManager.add({ title: "Message sent" });
 			onClose();
 		} catch (err: unknown) {
 			const message = (err instanceof Error ? err.message : null) || "Failed to send email.";
@@ -323,6 +348,11 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		formTitle,
 		handleSaveDraft,
 		handleSend,
+		saveAndClose,
+		discard,
+		touch: () => setTouched(true),
+		mode: composeOptions.mode,
+		isDraftEdit,
 		closeCompose,
 		closePanel,
 	};

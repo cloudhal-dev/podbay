@@ -6,7 +6,6 @@
 import { Outlet, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import AgentSidebar from "~/components/AgentSidebar";
-import ComposeEmail from "~/components/ComposeEmail";
 import ComposeWindow from "~/components/ComposeWindow";
 import Header, { SEARCH_INPUT_ID } from "~/components/Header";
 import ShortcutHelp from "~/components/ShortcutHelp";
@@ -35,7 +34,6 @@ export default function MailboxRoute() {
 		isAgentPanelOpen,
 		closePanel,
 		closeCompose,
-		closeComposeModal,
 		startCompose,
 		setShortcutHelpOpen,
 	} = useUIStore();
@@ -44,12 +42,11 @@ export default function MailboxRoute() {
 		if (prevMailboxIdRef.current && mailboxId && prevMailboxIdRef.current !== mailboxId) {
 			closePanel();
 			closeCompose();
-			closeComposeModal();
 			closeSidebar();
 		}
 
 		prevMailboxIdRef.current = mailboxId;
-	}, [mailboxId, closeCompose, closeComposeModal, closePanel, closeSidebar]);
+	}, [mailboxId, closeCompose, closePanel, closeSidebar]);
 
 	const goTo = (folder: string) => {
 		if (mailboxId) {
@@ -109,7 +106,6 @@ export default function MailboxRoute() {
 			</div>
 
 			<ComposeWindow />
-			<ComposeEmail />
 			<ShortcutHelp />
 		</div>
 	);

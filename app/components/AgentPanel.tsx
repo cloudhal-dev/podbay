@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { errorFields, log } from "shared/log";
+import { useConfirm } from "~/components/Confirm";
 import { useUIStore } from "~/hooks/useUIStore";
 import { escapeHtml } from "~/lib/utils";
 import type { Email } from "~/types";
@@ -298,6 +299,7 @@ function AgentChatConnected({
 
 	const agent = useAgent({ agent: "EmailAgent", name: mailboxId });
 	const { messages, sendMessage, status, setMessages, stop } = useAgentChat({ agent });
+	const confirm = useConfirm();
 	const isStreaming = status === "streaming" || status === "submitted";
 
 	// Keep the newest message in view; a streamed answer changes `messages` without adding one.
@@ -348,10 +350,14 @@ function AgentChatConnected({
 								shape="square"
 								size="sm"
 								icon={<TrashIcon size={14} />}
-								onClick={() => {
-									if (window.confirm("Clear chat history?")) {
-										setMessages([]);
-									}
+								onClick={async () => {
+									const sure = await confirm({
+										title: "Clear this chat?",
+										body: "The conversation with the assistant will be removed. Your mail is not touched.",
+										action: "Clear",
+										destructive: true,
+									});
+									if (sure) setMessages([]);
 								}}
 								aria-label="Clear chat"
 							/>

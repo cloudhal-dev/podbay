@@ -3,30 +3,32 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { useKumoToastManager } from "@cloudflare/kumo";
+import { Button, useKumoToastManager } from "@cloudflare/kumo";
+import { ArrowBendUpLeftIcon, ArrowBendUpRightIcon, ChatCircleIcon } from "@phosphor-icons/react";
 import { useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Folders } from "shared/folders";
+import { useConfirm } from "~/components/Confirm";
 import EmailPanelDialogs from "~/components/email-panel/EmailPanelDialogs";
 import EmailPanelHeader from "~/components/email-panel/EmailPanelHeader";
 import EmailPanelToolbar from "~/components/email-panel/EmailPanelToolbar";
 import SingleMessageView from "~/components/email-panel/SingleMessageView";
 import ThreadMessage from "~/components/email-panel/ThreadMessage";
+import { useConversationActions } from "~/hooks/useConversationActions";
+import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { splitEmailList, toEmailListValue } from "~/lib/utils";
 import {
 	useDeleteEmail,
 	useEmail,
-	useMoveEmail,
 	useReplyToEmail,
 	useSendEmail,
 	useThreadReplies,
 	useUpdateEmail,
 } from "~/queries/emails";
-import { useFolders } from "~/queries/folders";
 import { useMailbox } from "~/queries/mailboxes";
 import api from "~/services/api";
-import type { Email, Folder, Mailbox } from "~/types";
+import type { Email, Mailbox } from "~/types";
 
 function EmailPanelSkeleton() {
 	return (
@@ -57,15 +59,17 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 	};
 	const updateEmail = useUpdateEmail();
 	const deleteEmailMut = useDeleteEmail();
-	const moveEmailMut = useMoveEmail();
 	const sendEmailMut = useSendEmail();
 	const replyMut = useReplyToEmail();
-	const { data: folders = [] } = useFolders(mailboxId) as { data?: Folder[] };
 	const { data: currentMailbox } = useMailbox(mailboxId) as {
 		data?: Mailbox;
 	};
 	const { closePanel, startCompose } = useUIStore();
 	const toastManager = useKumoToastManager();
+	const confirm = useConfirm();
+	/** The folder this conversation is in: the one on screen, or its own in search results. */
+	const place = folder || email?.folder_id || undefined;
+	const actions = useConversationActions(mailboxId, place);
 	const [isSending, setIsSending] = useState(false);
 	const [sourceViewEmail, setSourceViewEmail] = useState<Email | null>(null);
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
@@ -117,35 +121,31 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 		return nonDrafts.length > 0 ? nonDrafts[0] : email;
 	}, [allMessages, draftMessageIds, currentMailbox?.email, email]);
 
-	const moveToFolders = useMemo(() => {
-		const cur = folder || email?.folder_id;
-		return folders.filter((f) => f.id !== cur);
-	}, [folders, folder, email?.folder_id]);
+	const isOpen = email !== undefined && !isDraftFolder;
+	/** Every action that files the conversation away also goes back to the list. */
+	const away = (did: boolean) => {
+		if (did) closePanel();
+	};
+	const reply = (mode: "reply" | "reply-all" | "forward") =>
+		startCompose({ mode, originalEmail: mode === "forward" ? email : lastReceivedMessage });
+	useShortcuts(
+		{
+			r: () => reply("reply"),
+			a: () => reply("reply-all"),
+			f: () => reply("forward"),
+			e: () => email && place !== Folders.ARCHIVE && away(actions.archive([email])),
+			"#": () => email && void actions.remove([email]).then(away),
+			"!": () => email && place !== Folders.SPAM && away(actions.reportSpam([email])),
+			s: () => email && actions.star(email),
+			"Shift+U": () => {
+				if (email) actions.setRead([email], false);
+				closePanel();
+			},
+		},
+		isOpen,
+	);
 
 	if (!email) return <EmailPanelSkeleton />;
-
-	const toggleStar = () => {
-		if (mailboxId)
-			updateEmail.mutate({ mailboxId, id: email.id, data: { starred: !email.starred } });
-	};
-	const handleMove = (folderId: string) => {
-		if (mailboxId) {
-			moveEmailMut.mutate({ mailboxId, id: email.id, folderId });
-			closePanel();
-		}
-	};
-	// Delete moves to Trash. Only inside Trash is it for good, and then it asks first.
-	const handleDelete = () => {
-		if (!mailboxId) return;
-		if ((folder || email.folder_id) !== Folders.TRASH) {
-			moveEmailMut.mutate({ mailboxId, id: email.id, folderId: Folders.TRASH });
-			closePanel();
-			return;
-		}
-		if (!window.confirm("Delete this conversation forever? This cannot be undone.")) return;
-		deleteEmailMut.mutate({ mailboxId, id: email.id });
-		closePanel();
-	};
 
 	const handleEditDraft = (draftMsg?: Email) => {
 		const target = draftMsg || email;
@@ -163,7 +163,13 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 	const handleDeleteDraft = async (draftMsg?: Email) => {
 		const target = draftMsg || email;
 		if (!mailboxId) return;
-		if (!window.confirm("Discard this draft?")) return;
+		const sure = await confirm({
+			title: "Discard this draft?",
+			body: "The draft will be deleted. This cannot be undone.",
+			action: "Discard",
+			destructive: true,
+		});
+		if (!sure) return;
 		deleteEmailMut.mutate({ mailboxId, id: target.id });
 		toastManager.add({ title: "Draft discarded" });
 		if (target.id === emailId) closePanel();
@@ -216,7 +222,7 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 				await replyMut.mutateAsync({ mailboxId, emailId: originalEmail.id, email: emailData });
 			else await sendEmailMut.mutateAsync({ mailboxId, email: emailData });
 			await deleteEmailMut.mutateAsync({ mailboxId, id: target.id });
-			toastManager.add({ title: "Email sent!" });
+			toastManager.add({ title: "Message sent" });
 			if (isDraftFolder) closePanel();
 		} catch (err) {
 			const message = (err instanceof Error ? err.message : null) || "Failed to send email.";
@@ -232,34 +238,24 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 		<div className="flex flex-col h-full">
 			<EmailPanelToolbar
 				email={email}
-				mailboxId={mailboxId}
+				folder={place}
 				isDraftFolder={isDraftFolder}
 				isSending={isSending}
-				moveToFolders={moveToFolders}
+				moveToFolders={actions.moveTargets}
 				onBack={closePanel}
 				onSendDraft={() => handleSendDraft()}
 				onEditDraft={() => handleEditDraft()}
-				onReply={() => startCompose({ mode: "reply", originalEmail: lastReceivedMessage })}
-				onReplyAll={() =>
-					startCompose({
-						mode: "reply-all",
-						originalEmail: lastReceivedMessage,
-					})
-				}
-				onForward={() => startCompose({ mode: "forward", originalEmail: email })}
-				onToggleStar={toggleStar}
-				onToggleRead={() => {
-					if (mailboxId) {
-						updateEmail.mutate({
-							mailboxId,
-							id: email.id,
-							data: { read: !email.read },
-						});
-					}
+				onArchive={() => away(actions.archive([email]))}
+				onSpam={() => away(actions.reportSpam([email]))}
+				onNotSpam={() => away(actions.notSpam([email]))}
+				onDelete={() => void actions.remove([email]).then(away)}
+				onMarkUnread={() => {
+					actions.setRead([email], false);
+					closePanel();
 				}}
-				onMove={handleMove}
+				onToggleStar={() => actions.star(email)}
+				onMove={(folderId) => away(actions.moveTo([email], folderId))}
 				onViewSource={() => setSourceViewEmail(email)}
-				onDelete={handleDelete}
 			/>
 
 			<EmailPanelHeader
@@ -297,6 +293,34 @@ export default function EmailPanel({ emailId }: { emailId: string }) {
 						mailboxId={mailboxId}
 						onPreviewImage={(url, filename) => setPreviewImage({ url, filename })}
 					/>
+				)}
+				{!isDraftFolder && (
+					<div className="flex flex-wrap gap-2 px-4 py-5 md:px-6">
+						<Button
+							variant="outline"
+							className="rounded-full"
+							icon={<ArrowBendUpLeftIcon size={16} />}
+							onClick={() => reply("reply")}
+						>
+							Reply
+						</Button>
+						<Button
+							variant="outline"
+							className="rounded-full"
+							icon={<ChatCircleIcon size={16} />}
+							onClick={() => reply("reply-all")}
+						>
+							Reply all
+						</Button>
+						<Button
+							variant="outline"
+							className="rounded-full"
+							icon={<ArrowBendUpRightIcon size={16} />}
+							onClick={() => reply("forward")}
+						>
+							Forward
+						</Button>
+					</div>
 				)}
 			</div>
 

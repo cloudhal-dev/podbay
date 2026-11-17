@@ -41,9 +41,10 @@
 					"status": "modified"
 				},
 				{
-					"path": "app/components/ComposeEmail.tsx",
+					"path": null,
 					"upstream": "app/components/ComposeEmail.tsx",
-					"status": "modified"
+					"status": "removed",
+					"note": "The compose dialog; writing happens in the floating compose window (ComposeWindow.tsx)."
 				},
 				{
 					"path": "app/components/ComposePanel.tsx",
@@ -105,7 +106,7 @@
 				{
 					"path": "app/components/email-panel/EmailPanelHeader.tsx",
 					"upstream": "app/components/email-panel/EmailPanelHeader.tsx",
-					"status": "verbatim"
+					"status": "modified"
 				},
 				{
 					"path": "app/components/email-panel/EmailPanelToolbar.tsx",

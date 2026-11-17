@@ -75,7 +75,7 @@ export default function Header() {
 	const isSettingsActive = location.pathname.includes("/settings");
 
 	return (
-		<header className="flex h-14 shrink-0 items-center gap-2 bg-kumo-recessed px-2 md:gap-3 md:px-3">
+		<header className="flex h-16 shrink-0 items-center gap-2 bg-kumo-recessed px-2 md:gap-3 md:px-3">
 			{/* One button: slides the rail in on a phone, collapses it on a wide screen */}
 			<Tooltip content="Main menu" side="bottom" asChild>
 				<Button
@@ -111,7 +111,7 @@ export default function Header() {
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					onKeyDown={handleKeyDown}
-					className="h-10 w-full rounded-full border border-transparent bg-kumo-fill pl-11 pr-10 text-sm text-kumo-default placeholder:text-kumo-subtle focus:border-kumo-line focus:bg-kumo-base focus:outline-none focus:ring-1 focus:ring-kumo-ring [&::-webkit-search-cancel-button]:hidden"
+					className="h-12 w-full rounded-full border border-transparent bg-kumo-fill pl-12 pr-10 text-sm text-kumo-default placeholder:text-kumo-subtle focus:border-kumo-line focus:bg-kumo-base focus:outline-none focus:ring-1 focus:ring-kumo-ring [&::-webkit-search-cancel-button]:hidden"
 				/>
 				{searchQuery && (
 					<button
