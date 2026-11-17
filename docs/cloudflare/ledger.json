@@ -514,6 +514,17 @@
 			"note": "The same table: `| **Recipients (to, cc, bcc)** | 50 per email | Combined across all recipient fields |`."
 		},
 		{
+			"id": "runtime.durable_objects.alarms",
+			"kind": "runtime",
+			"relies": "A Durable Object can set one alarm at a time; it runs at least once and is retried when the handler throws. Proposed for waking snoozed mail (ADR-0010): many times are kept in storage, and the alarm is set to the earliest.",
+			"source": "https://developers.cloudflare.com/durable-objects/api/alarms/",
+			"pageUpdated": "2026-04-21",
+			"verifiedAt": "2026-11-17",
+			"evidence": "Each Durable Object is able to schedule a single alarm at a time by calling `setAlarm()`.",
+			"code": ["docs/adr/0010-snooze-and-mute.md"],
+			"note": "The same page: `Alarms have guaranteed at-least-once execution and are retried automatically when the alarm() handler throws.` Nothing uses an alarm yet."
+		},
+		{
 			"id": "limit.durable_objects.storage",
 			"kind": "limit",
 			"relies": "One Durable Object stores at most 10 GB, so raw messages and attachments live in R2.",

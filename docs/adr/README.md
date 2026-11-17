@@ -13,3 +13,4 @@ Decisions are immutable once accepted. A later ADR supersedes an earlier one; th
 | [0007](0007-places-and-labels.md) | A message is in one place and carries any number of labels | Accepted, 2026-11-17 |
 | [0008](0008-rules-for-incoming-mail.md) | A mailbox has rules for its incoming mail: blocked senders, filters, an automatic reply | Proposed, 2026-11-17 |
 | [0009](0009-emptying-trash-and-spam.md) | Trash and Spam can be emptied in one step | Proposed, 2026-11-17 |
+| [0010](0010-snooze-and-mute.md) | A conversation can be snoozed, and a conversation can be muted | Proposed, 2026-11-17 |
