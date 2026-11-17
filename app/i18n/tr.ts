@@ -20,6 +20,7 @@ export const tr: Readonly<Record<string, string>> = {
 	"A conversation can carry several labels. A slash in the name nests it, as in Clients/Acme.":
 		"Bir yazışma birden çok etiket taşıyabilir. Addaki eğik çizgi etiketi iç içe yerleştirir: Müşteriler/Acme gibi.",
 	"A message can go to {count} recipients at most.": "Bir ileti en çok {count} alıcıya gidebilir.",
+	"A message carries {count} files at most.": "Bir ileti en çok {count} dosya taşır.",
 	"A notification of this device when mail arrives while Podbay is open in a tab. It shows who wrote and the subject.":
 		"Podbay bir sekmede açıkken posta geldiğinde bu cihazın bildirimi. Kimin yazdığını ve konuyu gösterir.",
 	"A passkey signs you in with your device's fingerprint, face or PIN. It works only on this site, so it cannot be given away to a look-alike page, and it needs no code afterwards.":

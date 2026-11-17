@@ -728,6 +728,16 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "Object key length | 1,024 bytes",
 			"code": ["workers/lib/filenames.ts"]
+		},
+		{
+			"id": "limit.email.attachments_count",
+			"kind": "limit",
+			"relies": "A message being sent carries at most 32 files; the request is refused before anything is stored, and the app says so while the person writes.",
+			"source": "https://developers.cloudflare.com/email-service/api/send-emails/workers-api/",
+			"pageUpdated": "2026-11-17",
+			"verifiedAt": "2026-11-17",
+			"evidence": "`attachments` array exceeds 32 entries",
+			"code": ["shared/sending-limits.ts", "workers/lib/schemas.ts", "app/hooks/useComposeForm.ts"]
 		}
 	]
 }

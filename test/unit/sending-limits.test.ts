@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
 	base64Bytes,
+	MAX_ATTACHMENTS,
 	MAX_ATTACHMENTS_BYTES,
 	MAX_MESSAGE_BYTES,
 	MAX_RECIPIENTS,
+	messageBytes,
 } from "../../shared/sending-limits.ts";
 import { SendEmailRequestSchema } from "../../workers/lib/schemas.ts";
 
@@ -41,6 +43,33 @@ describe("what a message being sent may hold", () => {
 			message({ attachments: [file(half), file(half + 1)] }),
 		);
 		expect(over.success).toBe(false);
+	});
+
+	it("takes the service's number of files, and refuses one more", () => {
+		const files = (count: number) => Array.from({ length: count }, () => file(10));
+		expect(
+			SendEmailRequestSchema.safeParse(message({ attachments: files(MAX_ATTACHMENTS) })).success,
+		).toBe(true);
+		expect(
+			SendEmailRequestSchema.safeParse(message({ attachments: files(MAX_ATTACHMENTS + 1) }))
+				.success,
+		).toBe(false);
+	});
+
+	it("weighs the whole message, so text alone cannot pass what the service takes", () => {
+		expect(messageBytes({ html: "ab", text: "ş", attachments: [{ content: "AAAA" }] })).toBe(8);
+		const room = MAX_MESSAGE_BYTES - messageBytes(message());
+		expect(SendEmailRequestSchema.safeParse(message({ html: "h".repeat(room) })).success).toBe(
+			true,
+		);
+		expect(SendEmailRequestSchema.safeParse(message({ html: "h".repeat(room + 1) })).success).toBe(
+			false,
+		);
+		// Files at their limit leave room for a message's text, and not for megabytes of it.
+		const full = { attachments: [file(MAX_ATTACHMENTS_BYTES)] };
+		expect(SendEmailRequestSchema.safeParse(message(full)).success).toBe(true);
+		const heavy = message({ ...full, html: "h".repeat(2 * 1024 * 1024) });
+		expect(SendEmailRequestSchema.safeParse(heavy).success).toBe(false);
 	});
 
 	it("takes the service's number of recipients across To, Cc and Bcc, and refuses one more", () => {

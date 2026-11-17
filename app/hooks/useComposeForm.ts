@@ -7,7 +7,7 @@ import { useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { attachmentRisk } from "shared/attachment-risk";
 import { Folders } from "shared/folders";
-import { MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "shared/sending-limits";
+import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES, MAX_RECIPIENTS } from "shared/sending-limits";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { useUIStore } from "~/hooks/useUIStore";
 import { quoteLanguage, t } from "~/i18n";
@@ -406,6 +406,10 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const addFiles = (added: Iterable<File>) => {
 		const next = [...files, ...added];
 		const total = next.reduce((sum, file) => sum + file.size, 0);
+		if (next.length > MAX_ATTACHMENTS) {
+			setError(t("A message carries {count} files at most.", { count: MAX_ATTACHMENTS }));
+			return;
+		}
 		if (total > MAX_ATTACHMENTS_BYTES) {
 			setError(
 				t("Attached files can be {limit} MB together. These would be {size} MB.", {
