@@ -3,9 +3,11 @@
 
 import { Button, DropdownMenu, Tooltip } from "@cloudflare/kumo";
 import { DotsThreeIcon, PlusIcon } from "@phosphor-icons/react";
-import { Link } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { useConfirm } from "~/components/Confirm";
+import { useConversationActions } from "~/hooks/useConversationActions";
+import { useDropTarget } from "~/hooks/useDropTarget";
 import { labelDot, labelSearch } from "~/lib/labels";
 import { useDeleteLabel, useLabels } from "~/queries/labels";
 import type { Label } from "~/types";
@@ -58,42 +60,14 @@ export default function RailLabels({
 			</div>
 			<ul className="m-0 list-none space-y-0.5 p-0">
 				{labels.map((label) => (
-					<li key={label.id} className="group flex items-center rounded-full hover:bg-kumo-tint">
-						<Link
-							to="/mailbox/$mailboxId/search"
-							params={{ mailboxId }}
-							search={{ q: labelSearch(label.name) }}
-							onClick={onNavigate}
-							className="flex h-9 min-w-0 flex-1 items-center gap-4 rounded-full pl-4 text-sm text-kumo-strong no-underline"
-							activeProps={{ className: "font-semibold text-kumo-default" }}
-						>
-							<span className="flex w-[18px] shrink-0 justify-center">
-								<span className={`h-2.5 w-2.5 rounded-full ${labelDot(label.color)}`} />
-							</span>
-							<span className="flex-1 truncate">{label.name}</span>
-							{label.unread > 0 && <span className="text-xs font-semibold">{label.unread}</span>}
-						</Link>
-						<DropdownMenu>
-							<DropdownMenu.Trigger
-								render={
-									<Button
-										variant="ghost"
-										shape="square"
-										size="sm"
-										icon={<DotsThreeIcon size={16} weight="bold" />}
-										aria-label={`Options for the label ${label.name}`}
-										className="mr-1 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 data-[popup-open]:opacity-100"
-									/>
-								}
-							/>
-							<DropdownMenu.Content>
-								<DropdownMenu.Item onClick={() => setEditing(label)}>Edit</DropdownMenu.Item>
-								<DropdownMenu.Item variant="danger" onClick={() => void remove(label)}>
-									Delete
-								</DropdownMenu.Item>
-							</DropdownMenu.Content>
-						</DropdownMenu>
-					</li>
+					<RailLabel
+						key={label.id}
+						label={label}
+						mailboxId={mailboxId}
+						onNavigate={onNavigate}
+						onEdit={() => setEditing(label)}
+						onDelete={() => void remove(label)}
+					/>
 				))}
 			</ul>
 			<LabelDialog
@@ -105,5 +79,65 @@ export default function RailLabels({
 				label={editing === "new" || editing === null ? undefined : editing}
 			/>
 		</div>
+	);
+}
+
+/** One label of the rail. Dropping conversations on it moves them to it. */
+function RailLabel({
+	label,
+	mailboxId,
+	onNavigate,
+	onEdit,
+	onDelete,
+}: {
+	label: Label;
+	mailboxId: string;
+	onNavigate: () => void;
+	onEdit: () => void;
+	onDelete: () => void;
+}) {
+	const { folder } = useParams({ strict: false });
+	const actions = useConversationActions(mailboxId, folder);
+	const drop = useDropTarget((conversations) => actions.moveToLabel(conversations, label));
+	return (
+		<li
+			className={`group flex items-center rounded-full hover:bg-kumo-tint ${drop.over ? "ring-2 ring-kumo-brand" : ""}`}
+			{...drop.handlers}
+		>
+			<Link
+				to="/mailbox/$mailboxId/search"
+				params={{ mailboxId }}
+				search={{ q: labelSearch(label.name) }}
+				onClick={onNavigate}
+				className="flex h-9 min-w-0 flex-1 items-center gap-4 rounded-full pl-4 text-sm text-kumo-strong no-underline"
+				activeProps={{ className: "font-semibold text-kumo-default" }}
+			>
+				<span className="flex w-[18px] shrink-0 justify-center">
+					<span className={`h-2.5 w-2.5 rounded-full ${labelDot(label.color)}`} />
+				</span>
+				<span className="flex-1 truncate">{label.name}</span>
+				{label.unread > 0 && <span className="text-xs font-semibold">{label.unread}</span>}
+			</Link>
+			<DropdownMenu>
+				<DropdownMenu.Trigger
+					render={
+						<Button
+							variant="ghost"
+							shape="square"
+							size="sm"
+							icon={<DotsThreeIcon size={16} weight="bold" />}
+							aria-label={`Options for the label ${label.name}`}
+							className="mr-1 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 data-[popup-open]:opacity-100"
+						/>
+					}
+				/>
+				<DropdownMenu.Content>
+					<DropdownMenu.Item onClick={onEdit}>Edit</DropdownMenu.Item>
+					<DropdownMenu.Item variant="danger" onClick={onDelete}>
+						Delete
+					</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu>
+		</li>
 	);
 }

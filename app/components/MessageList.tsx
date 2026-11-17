@@ -16,6 +16,7 @@ import { formatListDate } from "shared/dates";
 import { Folders, getFolderDisplayName } from "shared/folders";
 import { type ConversationActions, useConversationActions } from "~/hooks/useConversationActions";
 import { type Density, useDisplay, useSplit } from "~/hooks/useDisplay";
+import { DRAG_TYPE } from "~/hooks/useDropTarget";
 import { hasUnread, useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
@@ -230,6 +231,15 @@ export default function MessageList({
 							// biome-ignore lint/a11y/noStaticElementInteractions: the menu of the line; the keyboard reaches it through the menu key on the line's button
 							<div
 								key={email.id}
+								draggable
+								onDragStart={(event) => {
+									// A line of a selection takes the selection with it.
+									const taken = isSelected && chosen.length > 1 ? chosen : [email];
+									useUIStore.setState({ dragged: taken });
+									event.dataTransfer.setData(DRAG_TYPE, String(taken.length));
+									event.dataTransfer.effectAllowed = "move";
+								}}
+								onDragEnd={() => useUIStore.setState({ dragged: [] })}
 								onContextMenu={(event) => {
 									event.preventDefault();
 									setMenu({ email, at: { x: event.clientX, y: event.clientY } });

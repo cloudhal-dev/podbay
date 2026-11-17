@@ -131,7 +131,11 @@ for (const [index, item] of CORPUS.entries()) {
 		expect(app.watch.dialogs, "dialogs").toEqual([]);
 		expect(app.watch.popups.length, "windows opened").toBe(0);
 		expect(new URL(page.url()).pathname, "the page did not move").toContain("/mailbox/");
-		expect(await page.title()).toBe("Podbay");
+		// The tab's title is the app's own: the mailbox, with a count while something is unread.
+		const escaped = app.account.mailbox.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		expect(await page.title(), "the title is the app's").toMatch(
+			new RegExp(`^(\\(\\d+\\) )?${escaped} - Podbay$`),
+		);
 
 		const seen = await app.seen();
 		expect(seen.messages, "messages posted to the app").toEqual([]);

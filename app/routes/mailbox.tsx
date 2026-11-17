@@ -14,6 +14,7 @@ import Sidebar from "~/components/Sidebar";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { useFeatures } from "~/queries/config";
+import { useFolders } from "~/queries/folders";
 import { useMailbox } from "~/queries/mailboxes";
 
 /**
@@ -48,6 +49,16 @@ export default function MailboxRoute() {
 
 		prevMailboxIdRef.current = mailboxId;
 	}, [mailboxId, closeCompose, closePanel, closeSidebar]);
+
+	// The tab says how much is unread, so it can be seen from another tab.
+	const { data: places = [] } = useFolders(mailboxId);
+	const unread = places.find((place) => place.id === "inbox")?.unreadCount ?? 0;
+	useEffect(() => {
+		document.title = `${unread > 0 ? `(${unread}) ` : ""}${mailboxId ?? "Mail"} - Podbay`;
+		return () => {
+			document.title = "Podbay";
+		};
+	}, [unread, mailboxId]);
 
 	const goTo = (folder: string) => {
 		if (mailboxId) {

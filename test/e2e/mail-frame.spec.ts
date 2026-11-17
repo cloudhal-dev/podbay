@@ -127,10 +127,20 @@ test("a link opens outside the app, in a window that knows nothing of it", async
 		MAIL_FRAME_SANDBOX,
 	);
 
+	// The frame grows to the message's height just after it loads, and a click made while it
+	// moves can miss the link. A click that opened nothing is made again.
+	const follow = async (id: string) => {
+		for (let attempt = 1; ; attempt++) {
+			const opened = context.waitForEvent("page", { timeout: 5_000 }).catch(() => null);
+			await frame.locator(`#${id}`).click();
+			const popup = await opened;
+			if (popup !== null) return popup;
+			if (attempt === 3) throw new Error(`the link #${id} opened no window`);
+		}
+	};
+
 	for (const id of ["plain", "top"]) {
-		const opened = context.waitForEvent("page");
-		await frame.locator(`#${id}`).click();
-		const popup = await opened;
+		const popup = await follow(id);
 		await popup.waitForLoadState("domcontentloaded");
 		expect(new URL(popup.url()).origin, id).toBe("https://canary.test");
 		// The new window has no handle on the app, and it is an ordinary window, not a sandboxed one.
@@ -164,8 +174,12 @@ test("quoted text at the end of a reply is folded, and opens without leaving the
 	// now is: nothing is cut off and nothing scrolls inside it.
 	const element = page.locator('iframe[title="Email content"]');
 	const before = (await element.boundingBox())?.height ?? 0;
-	await frame.getByText("Show quoted text").click();
-	await expect(quoted).toBeVisible();
+	// A click made while the frame is still growing to the message's height can miss; one that
+	// opened nothing is made again, and one that opened it is not.
+	await expect(async () => {
+		if (!(await quoted.isVisible())) await frame.getByText("Show quoted text").click();
+		await expect(quoted).toBeVisible({ timeout: 1_000 });
+	}).toPass({ timeout: 15_000 });
 	await expect
 		.poll(async () => (await element.boundingBox())?.height ?? 0)
 		.toBeGreaterThan(before + 100);

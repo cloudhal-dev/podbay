@@ -695,3 +695,35 @@ test("a line has a menu on a right click, and a long conversation keeps its midd
 	await expect(fold).toHaveCount(0);
 	await expect(page.getByRole("button", { name: /part 3/ })).toBeVisible();
 });
+
+test("a conversation is dragged onto a label or a place, and the tab says how much is unread", async ({
+	page,
+	app,
+}) => {
+	await app.deliver(mime({ subject: "Behaviour: drag me", to: app.account.mailbox, text: "x" }));
+	const inbox = `/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`;
+	await page.goto(inbox);
+	await expect(row(page, "Behaviour: drag me")).toBeVisible();
+	await expect(page).toHaveTitle(/^\(\d+\) .+ - Podbay$/);
+
+	const rail = page.getByRole("navigation", { name: "Folders" });
+	await page.getByRole("button", { name: "Create a label" }).click();
+	const dialog = page.getByRole("dialog", { name: "New label" });
+	await dialog.getByLabel("Name").fill("Dropzone");
+	await dialog.getByRole("button", { name: "Create" }).click();
+	const label = rail.getByRole("link", { name: "Dropzone" });
+	await expect(label).toBeVisible();
+
+	// Onto a label: it gets the label and leaves the inbox, as "Move to" does.
+	await row(page, "Behaviour: drag me").dragTo(label);
+	await expect(page.getByText("Conversation moved to Dropzone")).toBeVisible();
+	await expect(row(page, "Behaviour: drag me")).toHaveCount(0);
+
+	// Onto a place: back to the inbox, still carrying the label.
+	await rail.getByRole("link", { name: /Archive/ }).click();
+	await expect(row(page, "Behaviour: drag me").getByText("Dropzone")).toBeVisible();
+	await row(page, "Behaviour: drag me").dragTo(rail.getByRole("link", { name: /Inbox/ }));
+	await expect(row(page, "Behaviour: drag me")).toHaveCount(0);
+	await rail.getByRole("link", { name: /Inbox/ }).click();
+	await expect(row(page, "Behaviour: drag me").getByText("Dropzone")).toBeVisible();
+});

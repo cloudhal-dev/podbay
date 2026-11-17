@@ -37,6 +37,8 @@ function rememberRail(collapsed: boolean): void {
 interface UIState {
 	/** The open conversation. The address bar is the truth (`?open=`); `MailView` keeps the two in step. */
 	selectedEmailId: string | null;
+	/** The conversations being dragged from a list, until they are dropped or let go. */
+	dragged: Email[];
 	/** Whether the compose window is open. It floats over whatever is on screen. */
 	isComposing: boolean;
 	selectEmail: (id: string | null) => void;
@@ -70,6 +72,7 @@ interface UIState {
 export const useUIStore = create<UIState>((set, get) => ({
 	selectedEmailId: null,
 	isComposing: false,
+	dragged: [],
 	composePlacement: "window",
 	composeOptions: { mode: "new", originalEmail: null },
 	isSidebarOpen: false,

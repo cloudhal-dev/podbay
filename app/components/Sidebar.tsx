@@ -18,6 +18,8 @@ import {
 import { Link, useParams } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Folders } from "shared/folders";
+import { useConversationActions } from "~/hooks/useConversationActions";
+import { useDropTarget } from "~/hooks/useDropTarget";
 import { useUIStore } from "~/hooks/useUIStore";
 import { useFolders } from "~/queries/folders";
 import { useMailbox } from "~/queries/mailboxes";
@@ -73,6 +75,51 @@ function Item({
 	);
 }
 
+/** Only a real send fills Sent, and drafts are made by writing: nothing is dropped on them. */
+const NO_DROP: readonly string[] = [Folders.SENT, Folders.DRAFT];
+
+/** One place of the rail. Conversations dragged from a list can be dropped on it. */
+function Place({
+	id,
+	label,
+	icon,
+	count,
+	collapsed,
+	mailboxId,
+	onNavigate,
+}: {
+	id: string;
+	label: string;
+	icon: ReactNode;
+	count?: number;
+	collapsed: boolean;
+	mailboxId: string;
+	onNavigate: () => void;
+}) {
+	const { folder } = useParams({ strict: false });
+	const actions = useConversationActions(mailboxId, folder);
+	const drop = useDropTarget((conversations) => actions.moveTo(conversations, id));
+	const takes = !NO_DROP.includes(id) && id !== folder;
+	return (
+		<Item collapsed={collapsed} icon={icon} label={label} count={count}>
+			{(className, content) => (
+				<Link
+					to="/mailbox/$mailboxId/emails/$folder"
+					params={{ mailboxId, folder: id }}
+					onClick={onNavigate}
+					aria-label={collapsed ? label : undefined}
+					className={`${className} ${takes && drop.over ? "ring-2 ring-kumo-brand" : ""}`}
+					activeProps={{ className: ACTIVE }}
+					inactiveProps={{ className: INACTIVE }}
+					{...(takes ? drop.handlers : {})}
+				>
+					{content}
+				</Link>
+			)}
+		</Item>
+	);
+}
+
 /**
  * The rail: write a message, then the places mail lives. On a wide screen it collapses to
  * icons; on a phone it slides over the list. Folder names stay reachable as tooltips.
@@ -88,21 +135,16 @@ export default function Sidebar() {
 	const unread = (folderId: string) => folders.find((f) => f.id === folderId)?.unreadCount || 0;
 
 	const folderLink = (id: string, label: string, icon: ReactNode, count?: number) => (
-		<Item key={id} collapsed={collapsed} icon={icon} label={label} count={count}>
-			{(className, content) => (
-				<Link
-					to="/mailbox/$mailboxId/emails/$folder"
-					params={{ mailboxId, folder: id }}
-					onClick={closeSidebar}
-					aria-label={collapsed ? label : undefined}
-					className={className}
-					activeProps={{ className: ACTIVE }}
-					inactiveProps={{ className: INACTIVE }}
-				>
-					{content}
-				</Link>
-			)}
-		</Item>
+		<Place
+			key={id}
+			id={id}
+			label={label}
+			icon={icon}
+			count={count}
+			collapsed={collapsed}
+			mailboxId={mailboxId}
+			onNavigate={closeSidebar}
+		/>
 	);
 
 	return (
