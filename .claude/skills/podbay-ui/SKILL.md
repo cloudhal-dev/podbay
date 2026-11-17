@@ -43,6 +43,7 @@ The mail screens follow what a person expects from a first-class web mail client
 | The reader can choose a **reading pane**: on a screen at least 1024px wide the conversation opens beside the list. Then moving through the list with `j` and `k` opens what the cursor is on, the list keeps the keys that file a conversation, and filing the open one closes the pane | `useSplit` in `app/hooks/useDisplay.ts`, `MailView.tsx`, `MessageList.tsx` |
 | The reader chooses how tall a line is: Default (40px), Comfortable (48px), Compact (32px). Both choices live in the Display menu of the top bar and are remembered in this browser only | `DisplayMenu.tsx`, `useDisplay.ts` |
 | The search box has **search options**: who, subject, words, folder, dates, attachment, unread. They write the query a person could type, so the box always shows what is searched, and they open filled with what the box says | `SearchOptions.tsx`; `buildSearchQuery` and `searchOptionsOf` in `app/lib/search-parser.ts` |
+| The browser tab says how much of the inbox is unread: `(3) address - Podbay` | `app/routes/mailbox.tsx` |
 | Starred is a search (`is:starred`), not a folder | The rail links to the search screen |
 | Every screen has a heading, shown or not | `<h1 className="sr-only">` in `MessageList.tsx` |
 
@@ -55,6 +56,7 @@ The mail screens follow what a person expects from a first-class web mail client
 | The box above the list selects the page; the menu beside it selects by kind: All, None, Read, Unread, Starred, Unstarred | `MessageListToolbar.tsx` |
 | With nothing selected the bar refreshes, pages, and offers "Mark this page as read". With a selection it shows, in this order: Archive, Report spam (Not spam inside Spam), Delete; then Mark as read or unread (whichever applies), Move to | `MessageListToolbar.tsx` |
 | A line has a **menu on a right click** (and on the menu key): open, reply, reply to all, forward, archive, delete, read or unread, star, spam, move to, label as, find messages from the sender, open in a new tab. On a line that is part of a selection it acts on the selection | `ConversationMenu.tsx`: a Kumo `DropdownMenu` opened at the pointer through its `anchor` |
+| A line can be **dragged onto a place or a label in the rail**; a line of a selection takes the selection with it. It does what "Move to" does and is only a shortcut for the pointer. Sent and Drafts take no drop | `useDropTarget.ts`; the conversations are held in `useUIStore` while dragged, the drag itself carries only a mark |
 | An action applies to what is selected, or to the line the keyboard is on | `targets()` in `MessageList.tsx` |
 
 ### What an action does
