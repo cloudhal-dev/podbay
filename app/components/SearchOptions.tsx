@@ -10,6 +10,7 @@ import {
 	searchOptionsOf,
 } from "~/lib/search-parser";
 import { useFolders } from "~/queries/folders";
+import { useLabels } from "~/queries/labels";
 import type { Folder } from "~/types";
 
 const NATIVE_FIELD =
@@ -34,6 +35,7 @@ export default function SearchOptions({
 	onSearch: (query: string) => void;
 }) {
 	const { data: folders = [] } = useFolders(mailboxId) as { data?: Folder[] };
+	const { data: labels = [] } = useLabels(mailboxId);
 	const [options, setOptions] = useState<Options>(NO_SEARCH_OPTIONS);
 	const set = (change: Partial<Options>) => setOptions((now) => ({ ...now, ...change }));
 
@@ -80,6 +82,31 @@ export default function SearchOptions({
 							value={options.words}
 							onChange={(event) => set({ words: event.target.value })}
 						/>
+						<div>
+							<label
+								htmlFor="search-label"
+								className="mb-1.5 block text-sm font-medium text-kumo-default"
+							>
+								Label
+							</label>
+							<select
+								id="search-label"
+								className={NATIVE_FIELD}
+								value={options.label}
+								onChange={(event) => set({ label: event.target.value })}
+							>
+								<option value="">Any</option>
+								{/* A label the box names that no longer exists is still shown, so it is not lost silently */}
+								{options.label !== "" && !labels.some((l) => l.name === options.label) && (
+									<option value={options.label}>{options.label}</option>
+								)}
+								{labels.map((label) => (
+									<option key={label.id} value={label.name}>
+										{label.name}
+									</option>
+								))}
+							</select>
+						</div>
 						<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
 							<div>
 								<label

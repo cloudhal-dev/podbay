@@ -3,16 +3,24 @@
 
 import { Button, DropdownMenu } from "@cloudflare/kumo";
 import { FolderSimpleIcon } from "@phosphor-icons/react";
-import type { Folder } from "~/types";
+import { labelDot } from "~/lib/labels";
+import type { Folder, Label } from "~/types";
 
-/** The "Move to" menu: the folders a conversation can go to. */
+/**
+ * "Move to": the places a conversation can go, and the labels. Moving to a label gives the
+ * label and takes the conversation out of the inbox (ADR-0007, decision 9).
+ */
 export default function MoveMenu({
 	folders,
+	labels = [],
 	onMove,
+	onMoveToLabel,
 	iconSize = 18,
 }: {
 	folders: Folder[];
+	labels?: readonly Label[];
 	onMove: (folderId: string) => void;
+	onMoveToLabel?: (label: Label) => void;
 	iconSize?: number;
 }) {
 	return (
@@ -39,6 +47,23 @@ export default function MoveMenu({
 						</DropdownMenu.Item>
 					))}
 				</DropdownMenu.Group>
+				{onMoveToLabel && labels.length > 0 && (
+					<>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
+							<DropdownMenu.Label>Labels</DropdownMenu.Label>
+							{labels.map((label) => (
+								<DropdownMenu.Item key={label.id} onClick={() => onMoveToLabel(label)}>
+									<span
+										className={`mr-2 inline-block h-2 w-2 rounded-full ${labelDot(label.color)}`}
+										aria-hidden="true"
+									/>
+									{label.name}
+								</DropdownMenu.Item>
+							))}
+						</DropdownMenu.Group>
+					</>
+				)}
 			</DropdownMenu.Content>
 		</DropdownMenu>
 	);

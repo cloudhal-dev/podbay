@@ -8,6 +8,7 @@ import type {
 	CreatedAccessKey,
 	Email,
 	Folder,
+	Label,
 	Mailbox,
 	MailboxRole,
 	Member,
@@ -200,12 +201,20 @@ const api = {
 
 	// Folders
 	listFolders: (mailboxId: string) => get<Folder[]>(`/api/v1/mailboxes/${mailboxId}/folders`),
-	createFolder: (mailboxId: string, name: string) =>
-		post<Folder>(`/api/v1/mailboxes/${mailboxId}/folders`, { name }),
-	updateFolder: (mailboxId: string, id: string, name: string) =>
-		put<Folder>(`/api/v1/mailboxes/${mailboxId}/folders/${id}`, { name }),
-	deleteFolder: (mailboxId: string, id: string) =>
-		del<void>(`/api/v1/mailboxes/${mailboxId}/folders/${id}`),
+
+	// Labels (ADR-0007)
+	listLabels: (mailboxId: string) => get<Label[]>(`/api/v1/mailboxes/${mailboxId}/labels`),
+	createLabel: (mailboxId: string, label: { name: string; color: number }) =>
+		post<Label>(`/api/v1/mailboxes/${mailboxId}/labels`, label),
+	updateLabel: (mailboxId: string, id: string, change: { name?: string; color?: number }) =>
+		put<Label>(`/api/v1/mailboxes/${mailboxId}/labels/${id}`, change),
+	deleteLabel: (mailboxId: string, id: string) =>
+		del<void>(`/api/v1/mailboxes/${mailboxId}/labels/${id}`),
+	labelConversation: (
+		mailboxId: string,
+		emailId: string,
+		change: { add: string[]; remove: string[] },
+	) => put<{ labels: string[] }>(`/api/v1/mailboxes/${mailboxId}/emails/${emailId}/labels`, change),
 
 	// Search
 	searchEmails: (mailboxId: string, params: Record<string, string>) =>

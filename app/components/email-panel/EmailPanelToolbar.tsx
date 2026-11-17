@@ -22,8 +22,9 @@ import {
 } from "@phosphor-icons/react";
 import { Folders } from "shared/folders";
 import IconButton from "~/components/IconButton";
+import LabelMenu from "~/components/LabelMenu";
 import MoveMenu from "~/components/MoveMenu";
-import type { Email, Folder } from "~/types";
+import type { Email, Folder, Label } from "~/types";
 
 interface EmailPanelToolbarProps {
 	email: Email;
@@ -32,6 +33,7 @@ interface EmailPanelToolbarProps {
 	isDraftFolder: boolean;
 	isSending: boolean;
 	moveToFolders: Folder[];
+	labels: readonly Label[];
 	/** Shown beside the list: there is no list to go back to, only a pane to close. */
 	inPane: boolean;
 	onBack: () => void;
@@ -48,6 +50,8 @@ interface EmailPanelToolbarProps {
 	onMarkUnread: () => void;
 	onToggleStar: () => void;
 	onMove: (folderId: string) => void;
+	onMoveToLabel: (label: Label) => void;
+	onLabel: (labelId: string, give: boolean) => void;
 	onViewSource: () => void;
 }
 
@@ -61,6 +65,7 @@ export default function EmailPanelToolbar({
 	isDraftFolder,
 	isSending,
 	moveToFolders,
+	labels,
 	inPane,
 	onBack,
 	onNewer,
@@ -75,6 +80,8 @@ export default function EmailPanelToolbar({
 	onMarkUnread,
 	onToggleStar,
 	onMove,
+	onMoveToLabel,
+	onLabel,
 	onViewSource,
 }: EmailPanelToolbarProps) {
 	return (
@@ -135,7 +142,13 @@ export default function EmailPanelToolbar({
 					onClick={onMarkUnread}
 				/>
 			)}
-			<MoveMenu folders={moveToFolders} onMove={onMove} />
+			<MoveMenu
+				folders={moveToFolders}
+				labels={labels}
+				onMove={onMove}
+				onMoveToLabel={onMoveToLabel}
+			/>
+			{!isDraftFolder && <LabelMenu labels={labels} targets={[email]} onChange={onLabel} />}
 			<IconButton
 				label={email.starred ? "Unstar" : "Star"}
 				icon={

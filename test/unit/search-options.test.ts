@@ -19,6 +19,7 @@ describe("search options", () => {
 			to: "Grace Hopper",
 			subject: "Re: the pod bay",
 			folder: "inbox",
+			label: "Clients/Acme Ltd",
 			hasAttachment: true,
 			unreadOnly: true,
 			after: "2026-01-01",
@@ -26,7 +27,7 @@ describe("search options", () => {
 		};
 		const query = buildSearchQuery(options);
 		expect(query).toBe(
-			'from:ada@example.com to:"Grace Hopper" subject:"Re: the pod bay" in:inbox has:attachment is:unread after:2026-01-01 before:2026-06-30 quarterly plan',
+			'from:ada@example.com to:"Grace Hopper" subject:"Re: the pod bay" in:inbox label:"Clients/Acme Ltd" has:attachment is:unread after:2026-01-01 before:2026-06-30 quarterly plan',
 		);
 		expect(parseSearchQuery(query)).toMatchObject({
 			query: "quarterly plan",
@@ -34,6 +35,7 @@ describe("search options", () => {
 			to: "Grace Hopper",
 			subject: "Re: the pod bay",
 			folder: "inbox",
+			label: "Clients/Acme Ltd",
 			has_attachment: true,
 			is_read: false,
 		});

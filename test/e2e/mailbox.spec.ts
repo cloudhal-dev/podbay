@@ -404,3 +404,78 @@ test("a link is added in the app's own dialog, and adding it does not send the m
 	expect(app.watch.dialogs).toEqual([]);
 	await compose.getByRole("button", { name: "Discard" }).click();
 });
+
+test("a conversation carries labels: made in the rail, given, listed, moved to, and deleted without losing mail", async ({
+	page,
+	app,
+}) => {
+	for (const name of ["label me", "file me"]) {
+		await app.deliver(mime({ subject: `Behaviour: ${name}`, to: app.account.mailbox, text: name }));
+	}
+	const inbox = `/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`;
+	await page.goto(inbox);
+	const rail = page.getByRole("navigation", { name: "Folders" });
+	const label = rail.getByRole("link", { name: "Projects" });
+
+	// A label is made in the rail. A second one of the same name, whatever its case, is refused.
+	await page.getByRole("button", { name: "Create a label" }).click();
+	const dialog = page.getByRole("dialog", { name: "New label" });
+	await dialog.getByLabel("Name").fill("Projects");
+	await dialog.getByRole("radio", { name: "Blue" }).check({ force: true });
+	await dialog.getByRole("button", { name: "Create" }).click();
+	await expect(label).toBeVisible();
+	await page.getByRole("button", { name: "Create a label" }).click();
+	await dialog.getByLabel("Name").fill("PROJECTS");
+	await dialog.getByRole("button", { name: "Create" }).click();
+	await expect(dialog.getByRole("alert")).toContainText("already exists");
+	await dialog.getByRole("button", { name: "Cancel" }).click();
+
+	// "Label as" gives the label and leaves the conversation where it is.
+	await select(page, "Behaviour: label me").check();
+	await page.getByRole("button", { name: "Label as" }).click();
+	await page.getByRole("menuitemcheckbox", { name: "Projects" }).click();
+	await page.keyboard.press("Escape");
+	await expect(row(page, "Behaviour: label me").getByText("Projects")).toBeVisible();
+	await expect(row(page, "Behaviour: file me").getByText("Projects")).toHaveCount(0);
+
+	// A label's list is a search for it.
+	await label.click();
+	await expect(page.getByRole("heading", { name: "Label Projects" })).toBeAttached();
+	await expect(page.getByRole("searchbox", { name: "Search emails" })).toHaveValue(
+		"label:Projects",
+	);
+	await expect(row(page, "Behaviour: label me")).toBeVisible();
+	await expect(row(page, "Behaviour: file me")).toHaveCount(0);
+
+	// "Move to" a label gives it and takes the conversation out of the inbox, with one Undo.
+	await page.goto(inbox);
+	await select(page, "Behaviour: file me").check();
+	await page.getByRole("button", { name: "Move to" }).click();
+	await page.getByRole("menuitem", { name: "Projects" }).click();
+	await expect(row(page, "Behaviour: file me")).toHaveCount(0);
+	await expect(page.getByText("Conversation moved to Projects")).toBeVisible();
+	await page.getByRole("button", { name: "Undo" }).click();
+	await expect(row(page, "Behaviour: file me")).toBeVisible();
+	await expect(row(page, "Behaviour: file me").getByText("Projects")).toHaveCount(0);
+
+	await select(page, "Behaviour: file me").check();
+	await page.getByRole("button", { name: "Move to" }).click();
+	await page.getByRole("menuitem", { name: "Projects" }).click();
+	await expect(row(page, "Behaviour: file me")).toHaveCount(0);
+	await rail.getByRole("link", { name: /Archive/ }).click();
+	await expect(row(page, "Behaviour: file me").getByText("Projects")).toBeVisible();
+
+	// Deleting a label asks, and deletes no mail.
+	await label.hover();
+	await page.getByRole("button", { name: "Options for the label Projects" }).click();
+	await page.getByRole("menuitem", { name: "Delete" }).click();
+	const asking = page.getByRole("alertdialog");
+	await expect(asking.getByText("No message is deleted or moved.")).toBeVisible();
+	await asking.getByRole("button", { name: "Delete label" }).click();
+	await expect(label).toHaveCount(0);
+	await expect(row(page, "Behaviour: file me")).toBeVisible();
+	await expect(row(page, "Behaviour: file me").getByText("Projects")).toHaveCount(0);
+	await page.goto(inbox);
+	await expect(row(page, "Behaviour: label me")).toBeVisible();
+	expect(app.watch.dialogs).toEqual([]);
+});

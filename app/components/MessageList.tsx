@@ -22,6 +22,7 @@ import { useUIStore } from "~/hooks/useUIStore";
 import { getSnippetText } from "~/lib/utils";
 import type { Email } from "~/types";
 import IconButton from "./IconButton";
+import { LabelChips } from "./LabelChip";
 import MessageListToolbar from "./MessageListToolbar";
 
 interface MessageListProps {
@@ -116,6 +117,7 @@ export default function MessageList({
 	const actions: ConversationActions = {
 		...base,
 		moveTo: (list, target, said) => closeIfOpen(list, base.moveTo(list, target, said)),
+		moveToLabel: (list, label) => closeIfOpen(list, base.moveToLabel(list, label)),
 		archive: (list) => closeIfOpen(list, base.archive(list)),
 		reportSpam: (list) => closeIfOpen(list, base.reportSpam(list)),
 		notSpam: (list) => closeIfOpen(list, base.notSpam(list)),
@@ -272,6 +274,9 @@ export default function MessageList({
 												{getFolderDisplayName(place)}
 											</Badge>
 										)}
+										<span className="mr-1.5 inline-flex gap-1 align-middle empty:hidden">
+											<LabelChips ids={email.labels} labels={actions.labels} max={3} />
+										</span>
 										<span
 											className={unread ? "font-semibold text-kumo-default" : "text-kumo-default"}
 										>

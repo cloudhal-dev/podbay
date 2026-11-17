@@ -8,6 +8,7 @@ import { useParams, useSearch } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";
+import { parseSearchQuery } from "~/lib/search-parser";
 import { SEARCH_PAGE_SIZE, useSearchEmails } from "~/queries/search";
 
 function highlightTerms(text: string, query: string): React.ReactNode {
@@ -45,6 +46,12 @@ export default function SearchResultsRoute() {
 	const urlQuery = search.q ?? "";
 	const [page, setPage] = useState(1);
 	const starred = urlQuery.trim() === "is:starred";
+	// A search that is only a label is that label's list.
+	const asked = parseSearchQuery(urlQuery);
+	const labelOnly =
+		asked.label !== undefined && urlQuery.trim().startsWith("label:") && asked.query === ""
+			? asked.label
+			: null;
 
 	// A different search starts on its first page.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: the search is the trigger
@@ -57,7 +64,9 @@ export default function SearchResultsRoute() {
 	return (
 		<MailView emails={searchData?.results ?? []}>
 			<MessageList
-				title={starred ? "Starred" : `Search results for ${urlQuery}`}
+				title={
+					starred ? "Starred" : labelOnly ? `Label ${labelOnly}` : `Search results for ${urlQuery}`
+				}
 				emails={searchData?.results ?? []}
 				totalCount={searchData?.totalCount ?? 0}
 				page={page}

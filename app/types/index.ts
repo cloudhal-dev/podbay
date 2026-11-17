@@ -84,6 +84,8 @@ export interface Email {
 	id: string;
 	thread_id?: string | null;
 	folder_id?: string | null;
+	/** The ids of the labels its conversation carries. */
+	labels?: string[];
 	subject: string;
 	sender: string;
 	recipient: string;
@@ -114,6 +116,17 @@ export interface Attachment {
 	size: number;
 	content_id?: string;
 	disposition?: string;
+}
+
+/** A label of a mailbox (ADR-0007). A message is in one place and carries any number of labels. */
+export interface Label {
+	id: string;
+	name: string;
+	/** An index into the app's palette. */
+	color: number;
+	/** Messages that carry it, outside Spam and Trash. */
+	total: number;
+	unread: number;
 }
 
 export interface Folder {

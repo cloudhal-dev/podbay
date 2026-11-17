@@ -20,6 +20,7 @@ import { Folders } from "shared/folders";
 import type { ConversationActions } from "~/hooks/useConversationActions";
 import type { Email } from "~/types";
 import IconButton from "./IconButton";
+import LabelMenu from "./LabelMenu";
 import MoveMenu from "./MoveMenu";
 
 interface MessageListToolbarProps {
@@ -172,7 +173,14 @@ export default function MessageListToolbar({
 					/>
 					<MoveMenu
 						folders={actions.moveTargets}
+						labels={actions.labels}
 						onMove={(target) => actions.moveTo(chosen, target)}
+						onMoveToLabel={(label) => actions.moveToLabel(chosen, label)}
+					/>
+					<LabelMenu
+						labels={actions.labels}
+						targets={chosen}
+						onChange={(labelId, give) => actions.label(chosen, labelId, give)}
 					/>
 					<span
 						className="sr-only ml-2 text-sm text-kumo-subtle @xl:not-sr-only"

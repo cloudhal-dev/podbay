@@ -85,13 +85,16 @@ export function useThreadReplies(
 // ---------- Mutations ----------
 
 /** Invalidate both the email list and folder counts after any email mutation. */
-function useInvalidateEmailData() {
+export function useInvalidateEmailData() {
 	const qc = useQueryClient();
 	return (mailboxId: string) => {
 		qc.invalidateQueries({ queryKey: ["emails", mailboxId] });
 		qc.invalidateQueries({
 			queryKey: queryKeys.folders.list(mailboxId),
 		});
+		// A label counts its messages, and a search may be a label's list.
+		qc.invalidateQueries({ queryKey: queryKeys.labels.list(mailboxId) });
+		qc.invalidateQueries({ queryKey: ["search", mailboxId] });
 	};
 }
 

@@ -3,7 +3,8 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { labelKey } from "shared/labels";
 import { parseSearchQuery } from "~/lib/search-parser";
 import api from "~/services/api";
 import type { Email } from "~/types";
@@ -17,6 +18,7 @@ interface SearchResponse {
 }
 
 export function useSearchEmails(mailboxId: string | undefined, query: string, page: number) {
+	const queryClient = useQueryClient();
 	return useQuery<{ results: Email[]; totalCount: number }>({
 		queryKey:
 			mailboxId && query
@@ -38,6 +40,15 @@ export function useSearchEmails(mailboxId: string | undefined, query: string, pa
 			if (parsed.is_read !== undefined) params.is_read = String(parsed.is_read);
 			if (parsed.is_starred !== undefined) params.is_starred = String(parsed.is_starred);
 			if (parsed.has_attachment) params.has_attachment = "true";
+			if (parsed.label !== undefined) {
+				// A label is asked for by name and sent by id. A name that is no label finds nothing.
+				const wanted = labelKey(parsed.label);
+				const labels = await queryClient.ensureQueryData({
+					queryKey: queryKeys.labels.list(mailboxId!),
+					queryFn: () => api.listLabels(mailboxId!),
+				});
+				params.label = labels.find((label) => labelKey(label.name) === wanted)?.id ?? "none";
+			}
 
 			const data = (await api.searchEmails(mailboxId!, params)) as SearchResponse | Email[];
 			if (data && typeof data === "object" && "emails" in data) {

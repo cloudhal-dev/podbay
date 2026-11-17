@@ -6,7 +6,8 @@ import { Folders, getFolderDisplayName } from "shared/folders";
 import { useConfirm } from "~/components/Confirm";
 import { useDeleteEmail, useMoveEmail, useUpdateEmail } from "~/queries/emails";
 import { useFolders } from "~/queries/folders";
-import type { Email, Folder } from "~/types";
+import { useLabelConversation, useLabels } from "~/queries/labels";
+import type { Email, Folder, Label } from "~/types";
 
 /** Only a real send fills Sent, and drafts are made by writing: neither is a place to move mail to. */
 const NOT_A_MOVE_TARGET: readonly string[] = [Folders.SENT, Folders.DRAFT];
@@ -25,6 +26,8 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 	const moveEmail = useMoveEmail();
 	const deleteEmail = useDeleteEmail();
 	const { data: folders = [] } = useFolders(mailboxId) as { data?: Folder[] };
+	const { data: labels = [] } = useLabels(mailboxId);
+	const labelConversation = useLabelConversation();
 
 	const inTrash = folder === Folders.TRASH;
 	const moveTargets = folders.filter(
@@ -77,8 +80,67 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 		return true;
 	}
 
+	/** Gives a label to conversations, or takes it from them. They stay where they are. */
+	function label(list: Email[], labelId: string, give: boolean) {
+		if (!mailboxId) return;
+		for (const email of list) {
+			labelConversation.mutate({
+				mailboxId,
+				emailId: email.id,
+				add: give ? [labelId] : [],
+				remove: give ? [] : [labelId],
+			});
+		}
+	}
+
+	/** "Move to" a label: gives the label and takes the conversation out of the inbox, as one action. */
+	function moveToLabel(list: Email[], target: Label): boolean {
+		if (!mailboxId || list.length === 0) return false;
+		const before = list.map((email) => ({
+			email,
+			had: email.labels?.includes(target.id) === true,
+			folderId: email.folder_id || folder,
+		}));
+		for (const { email, folderId } of before) {
+			labelConversation.mutate({ mailboxId, emailId: email.id, add: [target.id], remove: [] });
+			if (folderId === Folders.INBOX) {
+				moveEmail.mutate({ mailboxId, id: email.id, folderId: Folders.ARCHIVE });
+			}
+		}
+		const toast: string = toasts.add({
+			title: `${plural(list.length)} moved to ${target.name}`,
+			actions: [
+				{
+					children: "Undo",
+					variant: "ghost",
+					onClick: () => {
+						for (const { email, had, folderId } of before) {
+							if (!had) {
+								labelConversation.mutate({
+									mailboxId,
+									emailId: email.id,
+									add: [],
+									remove: [target.id],
+								});
+							}
+							if (folderId === Folders.INBOX) {
+								moveEmail.mutate({ mailboxId, id: email.id, folderId: Folders.INBOX });
+							}
+						}
+						toasts.close(toast);
+					},
+				},
+			],
+		});
+		return true;
+	}
+
 	return {
 		inTrash,
+		/** The labels of the mailbox, in name order. */
+		labels,
+		label,
+		moveToLabel,
 		/** Folders a conversation on screen can be moved to. */
 		moveTargets,
 		moveTo,

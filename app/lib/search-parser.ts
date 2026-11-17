@@ -14,6 +14,7 @@
  *   is:unread / is:read       — filter by read status
  *   is:starred                — filter by starred status
  *   has:attachment             — filter by attachment presence
+ *   label:name                — conversations that carry a label
  *   before:2025-01-01         — emails before date
  *   after:2025-01-01          — emails after date
  *
@@ -30,12 +31,14 @@ export interface ParsedSearch {
 	is_read?: boolean;
 	is_starred?: boolean;
 	has_attachment?: boolean;
+	/** A label's name, as the person wrote it. */
+	label?: string;
 	date_start?: string;
 	date_end?: string;
 }
 
 // Matches operator:value or operator:"quoted value"
-const OPERATOR_RE = /\b(from|to|subject|in|is|has|before|after):(?:"([^"]*?)"|(\S+))/gi;
+const OPERATOR_RE = /\b(from|to|subject|in|is|has|label|before|after):(?:"([^"]*?)"|(\S+))/gi;
 
 export function parseSearchQuery(input: string): ParsedSearch {
 	const result: ParsedSearch = { query: "" };
@@ -98,6 +101,9 @@ export function parseSearchQuery(input: string): ParsedSearch {
 					result.has_attachment = true;
 				}
 				break;
+			case "label":
+				result.label = value;
+				break;
 			case "before":
 				result.date_end = normalizeDate(value);
 				break;
@@ -132,6 +138,8 @@ export interface SearchOptions {
 	subject: string;
 	/** A folder id, or "" for everywhere. */
 	folder: string;
+	/** A label's name, or "" for any. */
+	label: string;
 	hasAttachment: boolean;
 	unreadOnly: boolean;
 	after: string;
@@ -144,6 +152,7 @@ export const NO_SEARCH_OPTIONS: SearchOptions = {
 	to: "",
 	subject: "",
 	folder: "",
+	label: "",
 	hasAttachment: false,
 	unreadOnly: false,
 	after: "",
@@ -166,6 +175,7 @@ export function buildSearchQuery(options: SearchOptions): string {
 	add("to", options.to);
 	add("subject", options.subject);
 	add("in", options.folder);
+	add("label", options.label);
 	if (options.hasAttachment) parts.push("has:attachment");
 	if (options.unreadOnly) parts.push("is:unread");
 	add("after", options.after);
@@ -184,6 +194,7 @@ export function searchOptionsOf(query: string): SearchOptions {
 		to: parsed.to ?? "",
 		subject: parsed.subject ?? "",
 		folder: parsed.folder ?? "",
+		label: parsed.label ?? "",
 		hasAttachment: parsed.has_attachment === true,
 		unreadOnly: parsed.is_read === false,
 		after: parsed.date_start?.slice(0, 10) ?? "",

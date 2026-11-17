@@ -14,6 +14,7 @@ import EmailPanelHeader from "~/components/email-panel/EmailPanelHeader";
 import EmailPanelToolbar from "~/components/email-panel/EmailPanelToolbar";
 import SingleMessageView from "~/components/email-panel/SingleMessageView";
 import ThreadMessage from "~/components/email-panel/ThreadMessage";
+import { LabelChips } from "~/components/LabelChip";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useOpenConversation } from "~/hooks/useOpenConversation";
 import { useShortcuts } from "~/hooks/useShortcuts";
@@ -25,7 +26,6 @@ import {
 	useReplyToEmail,
 	useSendEmail,
 	useThreadReplies,
-	useUpdateEmail,
 } from "~/queries/emails";
 import { useMailbox } from "~/queries/mailboxes";
 import api from "~/services/api";
@@ -66,7 +66,6 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	const { data: threadRepliesRaw } = useThreadReplies(mailboxId, email?.thread_id) as {
 		data?: Email[];
 	};
-	const updateEmail = useUpdateEmail();
 	const deleteEmailMut = useDeleteEmail();
 	const sendEmailMut = useSendEmail();
 	const replyMut = useReplyToEmail();
@@ -262,6 +261,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				isDraftFolder={isDraftFolder}
 				isSending={isSending}
 				moveToFolders={actions.moveTargets}
+				labels={actions.labels}
 				inPane={inPane}
 				onBack={closePanel}
 				onNewer={newer ? () => openConversation(newer) : undefined}
@@ -279,10 +279,13 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				}}
 				onToggleStar={() => actions.star(email)}
 				onMove={(folderId) => away(actions.moveTo([email], folderId))}
+				onMoveToLabel={(label) => away(actions.moveToLabel([email], label))}
+				onLabel={(labelId, give) => actions.label([email], labelId, give)}
 				onViewSource={() => setSourceViewEmail(email)}
 			/>
 
 			<EmailPanelHeader
+				labels={<LabelChips ids={email.labels} labels={actions.labels} />}
 				subject={email.subject}
 				messageCount={allMessages.length}
 				showThreadCount={hasThread}
