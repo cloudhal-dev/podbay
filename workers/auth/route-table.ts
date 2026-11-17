@@ -43,6 +43,10 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 
 	// The signed-in person
 	{ method: "GET", path: "/api/v1/me", right: "session" },
+	// The person's own choices (ADR-0012). No id in the path: the session says whose they are,
+	// and no other route reads or sets them.
+	{ method: "GET", path: "/api/v1/me/choices", right: "session" },
+	{ method: "PUT", path: "/api/v1/me/choices", right: "session" },
 	{ method: "GET", path: "/api/v1/config", right: "session" },
 	{ method: "GET", path: "/api/v1/mailboxes", right: "session" },
 	{ method: "POST", path: "/api/v1/mailboxes", right: "instance.manage" },
@@ -125,6 +129,12 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "PUT", path: `${M}/emails/:emailId/labels`, right: "mailbox.write" },
 
 	{ method: "GET", path: `${M}/search`, right: "mailbox.read" },
+
+	// The addresses a mailbox has written to (ADR-0012). Completing one is part of writing, so
+	// a reader gets nothing; forgetting them all is the owner's.
+	{ method: "GET", path: `${M}/known-addresses`, right: "mailbox.write" },
+	{ method: "DELETE", path: `${M}/known-addresses/:knownId`, right: "mailbox.write" },
+	{ method: "DELETE", path: `${M}/known-addresses`, right: "mailbox.manage" },
 ];
 
 /** The table entry of a matched route, or undefined when the route is not in the table. */

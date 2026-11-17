@@ -8,6 +8,7 @@ import type { SQL } from "drizzle-orm";
 import { and, asc, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/durable-sqlite";
 import { Folders } from "../../shared/folders";
+import { log } from "../../shared/log";
 import * as schema from "../db/schema";
 import {
 	conversationOrderSql,
@@ -19,6 +20,7 @@ import * as steps from "./deed-steps";
 import * as deeds from "./deeds";
 import * as drafts from "./drafts";
 import { type BatchToEmpty, batchToEmpty, type EmptiedBatch, emptyBatch } from "./emptying";
+import * as known from "./known";
 import * as labels from "./labels";
 import { applyMigrations, mailboxMigrations } from "./migrations";
 import * as originals from "./originals";
@@ -542,7 +544,30 @@ export class MailboxDO extends DurableObject<Env> {
 		return drafts.holdsFiles(this.ctx.storage, id);
 	}
 	async sendDraft(id: string, fields: drafts.SentFields) {
-		return drafts.sendDraft(this.ctx.storage, id, fields);
+		const sent = drafts.sendDraft(this.ctx.storage, id, fields);
+		if (!("refused" in sent)) this.#learn(fields);
+		return sent;
+	}
+
+	// ── Known addresses (ADR-0012, ./known) ────────────────────────
+
+	/**
+	 * A message a person sent teaches the mailbox whom it writes to. It is called where a sent
+	 * message is stored, here and in `createEmail`, and nowhere else, and it cannot fail a send.
+	 */
+	#learn(message: known.SentTo) {
+		const { skipped } = known.learn(this.ctx.storage.sql, message, Date.now());
+		if (skipped > 0) log.warn("known_addresses.skipped", { skipped });
+	}
+	/** The known addresses that what is typed could become: a handful, best first. */
+	async completeAddress(typed: string) {
+		return known.complete(this.ctx.storage.sql, typed);
+	}
+	async forgetAddress(id: string) {
+		return known.forgetOne(this.ctx.storage.sql, id);
+	}
+	async forgetAddresses() {
+		return known.forgetAll(this.ctx.storage.sql);
 	}
 
 	// ── Folders (Drizzle) ──────────────────────────────────────────
@@ -726,5 +751,7 @@ export class MailboxDO extends DurableObject<Env> {
 		if (attachments.length > 0) {
 			this.db.insert(schema.attachments).values(attachments).run();
 		}
+		// Only a message stored as sent teaches an address: never a draft, never mail that arrived.
+		if (isSent) this.#learn(email);
 	}
 }

@@ -280,4 +280,25 @@ export const mailboxMigrations: Migration[] = [
 			);
 		`,
 	},
+	{
+		// ADR-0012: the addresses this mailbox has written to. A row is an address in lower case,
+		// once; a name the outgoing message gave its recipient, if it gave one; how many messages
+		// went to it; when it was last and first written to. Nothing of any message. `name_key`
+		// is the name in lower case and only serves the comparison when an address is completed;
+		// the index serves forgetting the least recently used. The table starts empty: mail
+		// already in Sent is not read back.
+		name: "15_known_addresses",
+		sql: `
+			CREATE TABLE known_addresses (
+				id TEXT PRIMARY KEY,
+				address TEXT NOT NULL UNIQUE,
+				name TEXT,
+				use_count INTEGER NOT NULL DEFAULT 0,
+				last_used_at TEXT NOT NULL,
+				created_at TEXT NOT NULL,
+				name_key TEXT
+			);
+			CREATE INDEX idx_known_addresses_used ON known_addresses(last_used_at);
+		`,
+	},
 ];

@@ -22,8 +22,10 @@ import { storeAndSend } from "./lib/outgoing";
 import { SendEmailRequestSchema } from "./lib/schemas";
 import { account } from "./routes/account";
 import { bulk } from "./routes/bulk";
+import { choices } from "./routes/choices";
 import { drafts } from "./routes/drafts";
 import { keys } from "./routes/keys";
+import { knownAddresses } from "./routes/known-addresses";
 import { labels } from "./routes/labels";
 import { mailboxes } from "./routes/mailboxes";
 import { original } from "./routes/original";
@@ -70,6 +72,7 @@ const app = new Hono<ApiContext>();
 app.use("/api/*", guard);
 
 app.route("/", account);
+app.route("/", choices);
 app.route("/", mailboxes);
 app.route("/", people);
 app.route("/", keys);
@@ -78,6 +81,7 @@ app.route("/", labels);
 app.route("/", places);
 app.route("/", original);
 app.route("/", bulk);
+app.route("/", knownAddresses);
 app.route("/", recovery);
 
 // -- Config ---------------------------------------------------------

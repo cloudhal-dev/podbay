@@ -577,6 +577,72 @@ describe("a tool gets nothing of the original (ADR-0015, decision 21)", () => {
 	});
 });
 
+describe("a key and its tools reach neither the known addresses nor a person's choices (ADR-0012)", () => {
+	const known = () =>
+		runInDurableObject(testEnv.MAILBOX.get(testEnv.MAILBOX.idFromName(TEAM)), (_object, state) =>
+			Number([...state.storage.sql.exec(`SELECT COUNT(*) AS n FROM known_addresses`)][0]?.n ?? -1),
+		);
+
+	it("teaches the mailbox no address, whatever a client drafts", async () => {
+		const key = (await newKey("sender", [TEAM], "write")).body.token;
+		const saved = await tool(key, "create_draft", {
+			mailboxId: TEAM,
+			to: "planted-by-a-client@elsewhere.test",
+			subject: "A draft with a recipient",
+			bodyHtml: "<p>Hello</p>",
+		});
+		expect(saved.isError).toBe(false);
+		const drafts = (await tool(key, "list_emails", { mailboxId: TEAM, folder: "draft" })).value as {
+			id: string;
+		}[];
+		expect(drafts.length).toBeGreaterThan(0);
+		const changed = await tool(key, "update_draft", {
+			mailboxId: TEAM,
+			draftId: drafts[0]?.id,
+			to: "planted-again@elsewhere.test",
+			subject: "Changed",
+			bodyHtml: "<p>Again</p>",
+		});
+		expect(changed.isError).toBe(false);
+		// Nothing in this suite sent mail as a person, and nothing else teaches an address.
+		expect(await known()).toBe(0);
+		const offered = await request(
+			`/api/v1/mailboxes/${encodeURIComponent(TEAM)}/known-addresses?q=planted`,
+			{ cookie: cookies.owner },
+		);
+		expect(await offered.json()).toEqual({ addresses: [] });
+	});
+
+	it("has no tool for either, and a key opens neither route", async () => {
+		expect(
+			MCP_TOOLS.map((t) => t.name).filter((name) =>
+				/known|address|contact|complet|choice|setting|preference/.test(name),
+			),
+		).toEqual([]);
+		const key = (await newKey("owner", [TEAM], "write")).body.token;
+		for (const [method, path] of [
+			["GET", `/api/v1/mailboxes/${encodeURIComponent(TEAM)}/known-addresses?q=a`],
+			["DELETE", `/api/v1/mailboxes/${encodeURIComponent(TEAM)}/known-addresses`],
+			["GET", "/api/v1/me/choices"],
+			["PUT", "/api/v1/me/choices"],
+		] as const) {
+			const res = await request(path, {
+				method,
+				headers: { authorization: `Bearer ${key}` },
+				...(method === "PUT" ? { body: `{"pageSize":10}` } : {}),
+			});
+			expect(res.status, `${method} ${path}`).toBe(401);
+		}
+		expect(
+			(
+				await testEnv.DB.prepare(`select count(*) as "n" from "user_choices"`).first<{
+					n: number;
+				}>()
+			)?.n,
+		).toBe(0);
+	});
+});
+
 describe("a key stops working when what it was made from goes away", () => {
 	it("at once when its owner loses the membership", async () => {
 		const key = (await newKey("sender", [TEAM], "write")).body.token;

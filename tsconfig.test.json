@@ -10,6 +10,10 @@
 		"app/lib/original-text.ts",
 		"app/lib/unsubscribe.ts",
 		"app/lib/user-agent.ts",
+		"app/lib/session.ts",
+		"app/hooks/useDisplay.ts",
+		"app/services/api.ts",
+		"app/types/**/*.ts",
 		"workers/**/*",
 		"shared/**/*",
 		"scripts/**/*",
@@ -34,7 +38,8 @@
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"paths": {
-			"shared/*": ["./shared/*"]
+			"shared/*": ["./shared/*"],
+			"~/*": ["./app/*"]
 		}
 	}
 }
