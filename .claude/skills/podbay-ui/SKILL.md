@@ -52,6 +52,7 @@ The mail screens follow what a person expects from a first-class web mail client
 
 | Behaviour | How it is built |
 |---|---|
+| **Trash and Spam have a line above the list**: how much is there, and one button that deletes all of it for good (ADR-0009). The app asks first and says how much goes; the mailbox deletes in batches, the line says how far it is, and leaving the page stops it where it is. No other place has the line | `EmptyPlace.tsx`, `workers/routes/places.ts`, `workers/durableObject/emptying.ts` |
 | A conversation is one dense line: checkbox, star, sender, subject and the start of the text, date. Where the list is narrow (a phone, or beside the reading pane) a line is two rows of text; this follows the width of the list, not of the screen (container queries). Unread is bold. The line under the pointer lifts, and it or the line the keyboard is on shows quick actions in place of the date | `MessageList.tsx`, shared by folders and search results |
 | Each line is one real button, with a checkbox and a star beside it. No clickable `div` | `MessageList.tsx` |
 | Holding Shift while ticking a line ticks, or unticks, every line from the last box used to this one | `toggle` in `MessageList.tsx` |
