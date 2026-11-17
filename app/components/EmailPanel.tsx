@@ -5,13 +5,14 @@
 
 import { Button, useKumoToastManager } from "@cloudflare/kumo";
 import { ArrowBendUpLeftIcon, ArrowBendUpRightIcon, ChatCircleIcon } from "@phosphor-icons/react";
-import { useParams } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Folders } from "shared/folders";
 import { useConfirm } from "~/components/Confirm";
 import EmailPanelDialogs from "~/components/email-panel/EmailPanelDialogs";
 import EmailPanelHeader from "~/components/email-panel/EmailPanelHeader";
 import EmailPanelToolbar from "~/components/email-panel/EmailPanelToolbar";
+import type { MessageActions } from "~/components/email-panel/MessageHeader";
 import SingleMessageView from "~/components/email-panel/SingleMessageView";
 import ThreadMessage from "~/components/email-panel/ThreadMessage";
 import { LabelChips } from "~/components/LabelChip";
@@ -75,9 +76,10 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	const { closePanel, startCompose } = useUIStore();
 	const toastManager = useKumoToastManager();
 	const confirm = useConfirm();
-	/** The folder this conversation is in: the one on screen, or its own in search results. */
-	const place = folder || email?.folder_id || undefined;
-	const actions = useConversationActions(mailboxId, place);
+	const actions = useConversationActions(mailboxId, folder || email?.folder_id || undefined);
+	const navigate = useNavigate();
+	/** What is being printed: one message, the whole conversation, or nothing. */
+	const [printing, setPrinting] = useState<string | "all" | null>(null);
 	const openConversation = useOpenConversation(mailboxId);
 	const position = siblings.findIndex((sibling) => sibling.id === emailId);
 	const newer = position > 0 ? siblings[position - 1] : undefined;
@@ -93,22 +95,48 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		return threadRepliesRaw.filter((e) => e.id !== email.id);
 	}, [threadRepliesRaw, email]);
 
+	/** The folder this conversation is in: the one on screen, or its own in search results. */
+	const place = folder || email?.folder_id || undefined;
+
+	// Oldest first, as a conversation is read. A message that was deleted or reported from this
+	// conversation is not shown in it, unless the conversation is being read in Trash or Spam.
 	const allMessages = useMemo(() => {
 		if (!email) return [];
-		return [email, ...threadReplies].sort(
-			(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-		);
-	}, [email, threadReplies]);
+		const away = (msg: Email) =>
+			msg.id !== email.id &&
+			(msg.folder_id === Folders.TRASH || msg.folder_id === Folders.SPAM) &&
+			msg.folder_id !== place;
+		return [email, ...threadReplies]
+			.filter((msg) => !away(msg))
+			.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+	}, [email, threadReplies, place]);
 
-	// Reset expanded state only when the selected email changes, not on every refetch.
-	// Using allMessages as a dependency would reset user expand/collapse state on background refetches.
+	// Until the reader folds or opens something, a conversation shows its newest message and
+	// whatever is still unread, also when its other messages arrive after the first one.
 	const currentEmailId = email?.id;
+	const choseWhatIsOpen = useRef(false);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: a different conversation starts afresh
 	useEffect(() => {
-		if (allMessages.length > 1) setExpandedMessages(new Set([allMessages[0].id]));
-	}, [currentEmailId]); // eslint-disable-line react-hooks/exhaustive-deps
+		choseWhatIsOpen.current = false;
+		setExpandedMessages(new Set());
+	}, [currentEmailId]);
+	const openByDefault = allMessages
+		.filter((msg, index) => index === allMessages.length - 1 || !msg.read)
+		.map((msg) => msg.id)
+		.join(",");
+	useEffect(() => {
+		// Only ever opens more: a message that was open because it was unread stays open once read.
+		if (!choseWhatIsOpen.current) {
+			setExpandedMessages((open) => new Set([...open, ...openByDefault.split(",")]));
+		}
+	}, [openByDefault]);
+	const setExpanded: typeof setExpandedMessages = (next) => {
+		choseWhatIsOpen.current = true;
+		setExpandedMessages(next);
+	};
 
 	const toggleExpand = (msgId: string) => {
-		setExpandedMessages((prev) => {
+		setExpanded((prev) => {
 			const next = new Set(prev);
 			if (next.has(msgId)) next.delete(msgId);
 			else next.add(msgId);
@@ -128,10 +156,22 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	const lastReceivedMessage = useMemo(() => {
 		const ce = currentMailbox?.email;
 		const received = allMessages.filter((msg) => !draftMessageIds.has(msg.id) && msg.sender !== ce);
-		if (received.length > 0) return received[0];
+		if (received.length > 0) return received[received.length - 1];
 		const nonDrafts = allMessages.filter((msg) => !draftMessageIds.has(msg.id));
-		return nonDrafts.length > 0 ? nonDrafts[0] : email;
+		return nonDrafts.length > 0 ? nonDrafts[nonDrafts.length - 1] : email;
 	}, [allMessages, draftMessageIds, currentMailbox?.email, email]);
+
+	// Printing waits for the screen to show what will be printed, and ends when the dialog closes.
+	useEffect(() => {
+		if (printing === null) return;
+		const done = () => setPrinting(null);
+		window.addEventListener("afterprint", done, { once: true });
+		const timer = setTimeout(() => window.print(), 150);
+		return () => {
+			clearTimeout(timer);
+			window.removeEventListener("afterprint", done);
+		};
+	}, [printing]);
 
 	const isOpen = email !== undefined && !isDraftFolder;
 	/** Every action that files the conversation away also goes back to the list. */
@@ -252,9 +292,47 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	};
 
 	const hasThread = allMessages.length > 1;
+	const findFrom = (msg: Email) => {
+		if (!mailboxId) return;
+		void navigate({
+			to: "/mailbox/$mailboxId/search",
+			params: { mailboxId },
+			search: { q: `from:${msg.sender}` },
+		});
+	};
+	/** After one message leaves the conversation: go back when none is left, or stand on another. */
+	const afterLeaving = (msg: Email) => (did: boolean) => {
+		if (!did) return;
+		const left = allMessages.filter((other) => other.id !== msg.id);
+		const next = left[left.length - 1];
+		if (!next) closePanel();
+		else if (msg.id === emailId) useUIStore.getState().selectEmail(next.id);
+	};
+	const messageActions = (msg: Email): MessageActions => ({
+		onReply: () => startCompose({ mode: "reply", originalEmail: msg }),
+		onReplyAll: () => startCompose({ mode: "reply-all", originalEmail: msg }),
+		onForward: () => startCompose({ mode: "forward", originalEmail: msg }),
+		onDelete: () => void actions.remove([msg], "Message").then(afterLeaving(msg)),
+		onMarkUnread: () => {
+			actions.setRead([msg], false);
+			closePanel();
+		},
+		onSpam:
+			msg.folder_id === Folders.SPAM
+				? undefined
+				: () => afterLeaving(msg)(actions.reportSpam([msg], "Message")),
+		onStar: () => actions.star(msg),
+		onPrint: () => {
+			setExpanded((open) => new Set([...open, msg.id]));
+			setPrinting(msg.id);
+		},
+		onFindFromSender: () => findFrom(msg),
+		onShowHeaders: () => setSourceViewEmail(msg),
+	});
+	const allExpanded = allMessages.every((msg) => expandedMessages.has(msg.id));
 
 	return (
-		<div className="flex flex-col h-full">
+		<div className="flex h-full flex-col print:block print:h-auto">
 			<EmailPanelToolbar
 				email={email}
 				folder={place}
@@ -282,6 +360,17 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				onMoveToLabel={(label) => away(actions.moveToLabel([email], label))}
 				onLabel={(labelId, give) => actions.label([email], labelId, give)}
 				onViewSource={() => setSourceViewEmail(email)}
+				onPrintAll={() => {
+					setExpanded(new Set(allMessages.map((msg) => msg.id)));
+					setPrinting("all");
+				}}
+				onToggleAll={
+					hasThread
+						? () => setExpanded(allExpanded ? new Set() : new Set(allMessages.map((msg) => msg.id)))
+						: undefined
+				}
+				allExpanded={allExpanded}
+				onFindFromSender={() => findFrom(lastReceivedMessage ?? email)}
 			/>
 
 			<EmailPanelHeader
@@ -291,7 +380,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				showThreadCount={hasThread}
 			/>
 
-			<div className="flex-1 overflow-y-auto">
+			<div className="flex-1 overflow-y-auto print:overflow-visible">
 				{hasThread ? (
 					allMessages.map((msg, idx) => {
 						const isDraft = draftMessageIds.has(msg.id);
@@ -309,7 +398,9 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 								onSendDraft={isDraft ? () => handleSendDraft(msg) : undefined}
 								onEditDraft={isDraft ? () => handleEditDraft(msg) : undefined}
 								onDeleteDraft={isDraft ? () => handleDeleteDraft(msg) : undefined}
-								onViewSource={() => setSourceViewEmail(msg)}
+								actions={isDraft ? undefined : messageActions(msg)}
+								inTrash={msg.folder_id === Folders.TRASH}
+								hiddenInPrint={printing !== null && printing !== "all" && printing !== msg.id}
 								onPreviewImage={(url, filename) => setPreviewImage({ url, filename })}
 							/>
 						);
@@ -318,11 +409,15 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 					<SingleMessageView
 						email={email}
 						mailboxId={mailboxId}
+						mailboxEmail={currentMailbox?.email}
+						isDraft={isDraftFolder}
+						inTrash={place === Folders.TRASH}
+						actions={isDraftFolder ? undefined : messageActions(email)}
 						onPreviewImage={(url, filename) => setPreviewImage({ url, filename })}
 					/>
 				)}
 				{!isDraftFolder && (
-					<div className="flex flex-wrap gap-2 px-4 py-5 md:px-6">
+					<div className="flex flex-wrap gap-2 px-4 py-5 md:px-6 print:hidden">
 						<Button
 							variant="outline"
 							className="rounded-full"

@@ -72,9 +72,9 @@ export default function MailboxRoute() {
 	});
 
 	return (
-		<div className="flex h-screen flex-col overflow-hidden bg-kumo-recessed">
+		<div className="flex h-screen flex-col overflow-hidden bg-kumo-recessed print:block print:h-auto print:overflow-visible print:bg-white">
 			<Header />
-			<div className="flex min-h-0 flex-1">
+			<div className="flex min-h-0 flex-1 print:block">
 				{/* Phone: the rail slides over the list */}
 				{isSidebarOpen && (
 					<div
@@ -87,19 +87,19 @@ export default function MailboxRoute() {
 					/>
 				)}
 				<div
-					className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 ease-in-out md:relative md:z-0 md:translate-x-0 ${
+					className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 ease-in-out md:relative md:z-0 md:translate-x-0 print:hidden ${
 						isSidebarOpen ? "translate-x-0" : "-translate-x-full"
 					}`}
 				>
 					<Sidebar />
 				</div>
 
-				<main className="min-w-0 flex-1 overflow-hidden bg-kumo-base md:mb-2 md:mr-2 md:rounded-2xl md:border md:border-kumo-line">
+				<main className="min-w-0 flex-1 overflow-hidden bg-kumo-base md:mb-2 md:mr-2 md:rounded-2xl md:border md:border-kumo-line print:m-0 print:overflow-visible print:border-0">
 					<Outlet />
 				</main>
 
 				{hasAssistant && isAgentPanelOpen && (
-					<div className="hidden w-[380px] shrink-0 flex-col overflow-hidden bg-kumo-base lg:mb-2 lg:mr-2 lg:flex lg:rounded-2xl lg:border lg:border-kumo-line">
+					<div className="hidden w-[380px] shrink-0 flex-col overflow-hidden bg-kumo-base lg:mb-2 lg:mr-2 lg:flex lg:rounded-2xl lg:border lg:border-kumo-line print:hidden">
 						<AgentSidebar />
 					</div>
 				)}

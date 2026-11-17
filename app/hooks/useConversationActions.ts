@@ -34,13 +34,14 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 		(target) => target.id !== folder && !NOT_A_MOVE_TARGET.includes(target.id),
 	);
 
-	function moveTo(list: Email[], target: string, said?: string): boolean {
+	/** `what` names what moved when it is not whole conversations: one message of one. */
+	function moveTo(list: Email[], target: string, said?: string, what?: string): boolean {
 		if (!mailboxId || list.length === 0) return false;
 		const before = list.map((email) => ({ id: email.id, folderId: email.folder_id || folder }));
 		for (const email of list) moveEmail.mutate({ mailboxId, id: email.id, folderId: target });
 		const name = folders.find((f) => f.id === target)?.name ?? getFolderDisplayName(target);
 		const toast: string = toasts.add({
-			title: `${plural(list.length)} ${said ?? `moved to ${name}`}`,
+			title: `${what ?? plural(list.length)} ${said ?? `moved to ${name}`}`,
 			actions: [
 				{
 					children: "Undo",
@@ -60,9 +61,12 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 	}
 
 	/** Moves to Trash, or inside Trash deletes for good after asking. Resolves to whether it did. */
-	async function remove(list: Email[]): Promise<boolean> {
+	async function remove(list: Email[], what?: string): Promise<boolean> {
 		if (!mailboxId || list.length === 0) return false;
-		if (!inTrash) return moveTo(list, Folders.TRASH, "moved to Trash");
+		// What decides is where each message is, so one message of a conversation read elsewhere
+		// goes to Trash, and one already in Trash is deleted for good.
+		const inTrash = list.every((email) => (email.folder_id || folder) === Folders.TRASH);
+		if (!inTrash) return moveTo(list, Folders.TRASH, "moved to Trash", what);
 		const one = list.length === 1;
 		const sure = await confirm({
 			title: one
@@ -146,7 +150,8 @@ export function useConversationActions(mailboxId: string | undefined, folder?: s
 		moveTo,
 		remove,
 		archive: (list: Email[]) => moveTo(list, Folders.ARCHIVE, "archived"),
-		reportSpam: (list: Email[]) => moveTo(list, Folders.SPAM, "marked as spam"),
+		reportSpam: (list: Email[], what?: string) =>
+			moveTo(list, Folders.SPAM, "marked as spam", what),
 		notSpam: (list: Email[]) => moveTo(list, Folders.INBOX, "moved to Inbox"),
 		setRead(list: Email[], read: boolean) {
 			if (!mailboxId) return;

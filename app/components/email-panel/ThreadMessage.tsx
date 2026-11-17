@@ -3,19 +3,18 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Badge, Button, Tooltip } from "@cloudflare/kumo";
+import { Button } from "@cloudflare/kumo";
 import {
 	CaretDownIcon,
-	CaretUpIcon,
-	CodeIcon,
 	PaperPlaneTiltIcon,
 	PencilSimpleIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
 import EmailAttachmentList from "~/components/EmailAttachmentList";
 import MessageBody from "~/components/MessageBody";
-import { formatDetailDate, formatShortDate, stripHtml } from "~/lib/utils";
+import { formatDetailDate, stripHtml } from "~/lib/utils";
 import type { Email } from "~/types";
+import MessageHeader, { type MessageActions } from "./MessageHeader";
 
 interface ThreadMessageProps {
 	email: Email;
@@ -29,7 +28,11 @@ interface ThreadMessageProps {
 	onSendDraft?: () => void;
 	onEditDraft?: () => void;
 	onDeleteDraft?: () => void;
-	onViewSource?: () => void;
+	/** What can be done to this message alone. Left out for a draft. */
+	actions?: MessageActions;
+	inTrash?: boolean;
+	/** Left out of a print of another message of the conversation. */
+	hiddenInPrint?: boolean;
 	onPreviewImage?: (url: string, filename: string) => void;
 }
 
@@ -44,7 +47,7 @@ function Avatar({
 }) {
 	return (
 		<div
-			className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+			className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
 				isDraft
 					? "bg-kumo-fill text-kumo-subtle"
 					: isSelf
@@ -69,11 +72,13 @@ export default function ThreadMessage({
 	onSendDraft,
 	onEditDraft,
 	onDeleteDraft,
-	onViewSource,
+	actions,
+	inTrash,
+	hiddenInPrint,
 	onPreviewImage,
 }: ThreadMessageProps) {
 	const isSelf = email.sender === mailboxEmail;
-	const containerClassName = `${!isLast ? "border-b border-kumo-line" : ""} ${isDraft ? "border-l-2 border-l-kumo-warning bg-kumo-warning/[0.02]" : ""}`;
+	const containerClassName = `${!isLast ? "border-b border-kumo-line" : ""} ${isDraft ? "border-l-2 border-l-kumo-warning bg-kumo-warning/[0.02]" : ""} ${hiddenInPrint ? "print:hidden" : ""}`;
 	const senderLabel = isDraft ? "Draft reply" : isSelf ? "You" : email.sender;
 
 	if (!isExpanded) {
@@ -82,7 +87,7 @@ export default function ThreadMessage({
 				<button
 					type="button"
 					onClick={onToggleExpand}
-					className="w-full flex items-center gap-3 px-4 py-3 hover:bg-kumo-tint rounded-lg text-left"
+					className="flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-4 py-3 text-left hover:bg-kumo-tint md:px-6"
 				>
 					<Avatar isDraft={isDraft} isSelf={isSelf} sender={email.sender} />
 					<div className="flex-1 min-w-0">
@@ -105,63 +110,23 @@ export default function ThreadMessage({
 	return (
 		<div className={`group/thread-msg ${containerClassName}`}>
 			<div className="px-4 py-4 md:px-6">
-				<div className="flex items-center justify-between gap-3 mb-3">
-					<div className="flex items-center gap-2.5 min-w-0">
-						<button
-							type="button"
-							onClick={onToggleExpand}
-							className="shrink-0"
-							aria-label="Collapse message"
-						>
-							<div className="cursor-pointer hover:ring-2 hover:ring-kumo-brand/30 transition-shadow rounded-full">
-								<Avatar isDraft={isDraft} isSelf={isSelf} sender={email.sender} />
-							</div>
-						</button>
-						<div className="min-w-0">
-							<div className="flex items-center gap-2">
-								<span className="text-sm font-medium text-kumo-default truncate">
-									{senderLabel}
-								</span>
-								{isDraft && <Badge variant="outline">Draft</Badge>}
-							</div>
-							<div className="text-xs text-kumo-subtle">To: {email.recipient}</div>
-						</div>
-					</div>
-					<div className="flex items-center gap-1 shrink-0">
-						<span className="text-xs text-kumo-subtle">{formatShortDate(email.date)}</span>
-						{onViewSource && (
-							<Tooltip content="View source" side="bottom" asChild>
-								<Button
-									variant="ghost"
-									shape="square"
-									size="sm"
-									icon={<CodeIcon size={14} />}
-									onClick={onViewSource}
-									aria-label="View source"
-									className="transition-opacity !h-6 !w-6"
-								/>
-							</Tooltip>
-						)}
-						<button
-							type="button"
-							onClick={onToggleExpand}
-							className="ml-1"
-							aria-label="Collapse message"
-						>
-							<CaretUpIcon
-								size={14}
-								className="text-kumo-subtle hover:text-kumo-default transition-colors"
-							/>
-						</button>
-					</div>
+				<div className="mb-3">
+					<MessageHeader
+						email={email}
+						mailboxEmail={mailboxEmail}
+						isDraft={isDraft}
+						inTrash={inTrash}
+						actions={actions}
+						onCollapse={onToggleExpand}
+					/>
 				</div>
 
-				<div className="md:ml-[42px]">
+				<div className="md:ml-[52px]">
 					<MessageBody email={email} mailboxId={mailboxId} autoSize />
 				</div>
 
 				{isDraft && (onSendDraft || onEditDraft || onDeleteDraft) && (
-					<div className="flex gap-2 mt-3 md:ml-[42px]">
+					<div className="flex gap-2 mt-3 md:ml-[52px]">
 						{onSendDraft && (
 							<Button
 								variant="primary"
@@ -204,7 +169,7 @@ export default function ThreadMessage({
 					emailId={email.id}
 					attachments={email.attachments}
 					onPreviewImage={onPreviewImage}
-					className="mt-3 md:ml-[42px]"
+					className="mt-3 md:ml-[52px]"
 				/>
 			</div>
 		</div>

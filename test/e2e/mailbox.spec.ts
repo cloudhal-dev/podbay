@@ -479,3 +479,99 @@ test("a conversation carries labels: made in the rail, given, listed, moved to, 
 	await expect(row(page, "Behaviour: label me")).toBeVisible();
 	expect(app.watch.dialogs).toEqual([]);
 });
+
+test("each message has its own menu, and a conversation is read oldest first and can be printed", async ({
+	page,
+	app,
+}) => {
+	// The browser's print dialog cannot be driven: count the calls and say it closed.
+	await page.addInitScript(() => {
+		const state = window as unknown as { printed: number };
+		state.printed = 0;
+		window.print = () => {
+			state.printed += 1;
+			window.dispatchEvent(new Event("afterprint"));
+		};
+	});
+	const root = `behaviour-menu-${Date.now()}@sender.test`;
+	for (const body of ["first reply", "second reply"]) {
+		await app.deliver(
+			mime({
+				subject: "Re: Behaviour: menu",
+				to: app.account.mailbox,
+				html: `<p>${body}</p>`,
+				inReplyTo: root,
+			}),
+		);
+	}
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await row(page, "Re: Behaviour: menu").first().click();
+
+	// The conversation is read oldest first and its newest message is open. Its menu folds and
+	// opens all of it.
+	const frames = page.locator('iframe[title="Email content"]');
+	await expect(frames.last().contentFrame().getByText("second reply")).toBeVisible();
+	const more = page.getByRole("button", { name: "More", exact: true });
+	// Whether the older message opened by itself depends on whether it was still unread.
+	const expandAll = async () => {
+		await more.click();
+		await expect(page.getByRole("menuitem", { name: "Print all" })).toBeVisible();
+		const expand = page.getByRole("menuitem", { name: "Expand all" });
+		if (await expand.isVisible()) await expand.click();
+		else await page.keyboard.press("Escape");
+	};
+	await expandAll();
+	await expect(frames).toHaveCount(2);
+	await more.click();
+	await page.getByRole("menuitem", { name: "Collapse all" }).click();
+	await expect(frames).toHaveCount(0);
+	await more.click();
+	await page.getByRole("menuitem", { name: "Expand all" }).click();
+	await expect(frames).toHaveCount(2);
+	await expect(frames.first().contentFrame().getByText("first reply")).toBeVisible();
+
+	// Who a message went to is one click away.
+	await page.getByRole("button", { name: "Show details" }).first().click();
+	await expect(page.locator("dl").first()).toContainText("Subject");
+	await expect(page.locator("dl").first()).toContainText("ada@sender.test");
+
+	// A message is answered from its own menu.
+	const menus = page.getByRole("button", { name: "More for this message" });
+	await menus.first().click();
+	await page.getByRole("menuitem", { name: "Forward" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	await expect(compose.getByLabel("Subject")).toHaveValue("Fwd: Re: Behaviour: menu");
+	await compose.getByRole("button", { name: "Discard" }).click();
+
+	// Printing one message prints once, and on paper there is the mail and none of the app.
+	await menus.first().click();
+	await page.getByRole("menuitem", { name: "Print", exact: true }).click();
+	await expect
+		.poll(() => page.evaluate(() => (window as unknown as { printed: number }).printed))
+		.toBe(1);
+	await page.emulateMedia({ media: "print" });
+	await expect(page.getByRole("searchbox", { name: "Search emails" })).toBeHidden();
+	await expect(page.getByRole("button", { name: "Back to list" })).toBeHidden();
+	await expect(page.getByRole("navigation", { name: "Folders" })).toBeHidden();
+	await expect(frames.first()).toBeVisible();
+	await page.emulateMedia({ media: "screen" });
+
+	// Its sender's other mail is a search.
+	await menus.first().click();
+	await page.getByRole("menuitem", { name: "Find messages from this sender" }).click();
+	await expect(page.getByRole("searchbox", { name: "Search emails" })).toHaveValue(
+		"from:ada@sender.test",
+	);
+	await page.goBack();
+	await expect(frames.first()).toBeVisible();
+
+	// Deleting one message leaves the conversation open with the other.
+	await expandAll();
+	await expect(frames).toHaveCount(2);
+	await menus.first().click();
+	await page.getByRole("menuitem", { name: "Delete this message" }).click();
+	await expect(page.getByText("Message moved to Trash")).toBeVisible();
+	await expect(frames).toHaveCount(1);
+	await expect(frames.first().contentFrame().getByText("second reply")).toBeVisible();
+	await expect(page.getByRole("button", { name: "Back to list" })).toBeVisible();
+});

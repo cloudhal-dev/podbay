@@ -49,6 +49,8 @@ export function mime(input: {
 	html?: string;
 	text?: string;
 	parts?: Part[];
+	/** The Message-ID this message answers, so that several messages are one conversation. */
+	inReplyTo?: string;
 }): string {
 	sequence += 1;
 	const id = `e2e-${Date.now()}-${sequence}@sender.test`;
@@ -62,6 +64,9 @@ export function mime(input: {
 		`Subject: ${input.subject}`,
 		`Message-ID: <${id}>`,
 		"MIME-Version: 1.0",
+		...(input.inReplyTo
+			? [`In-Reply-To: <${input.inReplyTo}>`, `References: <${input.inReplyTo}>`]
+			: []),
 	];
 	if (!input.parts?.length) return [...head, ...body, ""].join("\r\n");
 	const boundary = `b-${sequence}`;

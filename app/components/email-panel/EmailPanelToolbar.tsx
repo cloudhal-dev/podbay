@@ -7,13 +7,18 @@ import { Button, DropdownMenu } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
 	ArrowLeftIcon,
+	ArrowSquareOutIcon,
+	ArrowsInLineVerticalIcon,
+	ArrowsOutLineVerticalIcon,
 	CaretLeftIcon,
 	CaretRightIcon,
 	CodeIcon,
 	DotsThreeVerticalIcon,
 	EnvelopeSimpleIcon,
+	MagnifyingGlassIcon,
 	PaperPlaneTiltIcon,
 	PencilSimpleIcon,
+	PrinterIcon,
 	StarIcon,
 	TrashIcon,
 	TrayIcon,
@@ -53,6 +58,11 @@ interface EmailPanelToolbarProps {
 	onMoveToLabel: (label: Label) => void;
 	onLabel: (labelId: string, give: boolean) => void;
 	onViewSource: () => void;
+	onPrintAll: () => void;
+	/** Opens or folds every message of the conversation. Left out when there is only one. */
+	onToggleAll?: () => void;
+	allExpanded: boolean;
+	onFindFromSender: () => void;
 }
 
 /**
@@ -83,9 +93,13 @@ export default function EmailPanelToolbar({
 	onMoveToLabel,
 	onLabel,
 	onViewSource,
+	onPrintAll,
+	onToggleAll,
+	allExpanded,
+	onFindFromSender,
 }: EmailPanelToolbarProps) {
 	return (
-		<div className="flex h-12 shrink-0 items-center gap-1 border-b border-kumo-line px-3">
+		<div className="flex h-12 shrink-0 items-center gap-1 border-b border-kumo-line px-3 print:hidden">
 			{inPane ? (
 				<IconButton label="Close the conversation" icon={<XIcon size={18} />} onClick={onBack} />
 			) : (
@@ -192,6 +206,29 @@ export default function EmailPanelToolbar({
 						}
 					/>
 					<DropdownMenu.Content>
+						{onToggleAll && (
+							<DropdownMenu.Item
+								icon={allExpanded ? ArrowsInLineVerticalIcon : ArrowsOutLineVerticalIcon}
+								onClick={onToggleAll}
+							>
+								{allExpanded ? "Collapse all" : "Expand all"}
+							</DropdownMenu.Item>
+						)}
+						<DropdownMenu.Item icon={PrinterIcon} onClick={onPrintAll}>
+							Print all
+						</DropdownMenu.Item>
+						<DropdownMenu.LinkItem
+							icon={ArrowSquareOutIcon}
+							href={typeof window === "undefined" ? "#" : window.location.href}
+							target="_blank"
+							rel="noopener"
+						>
+							Open in a new tab
+						</DropdownMenu.LinkItem>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item icon={MagnifyingGlassIcon} onClick={onFindFromSender}>
+							Find messages from this sender
+						</DropdownMenu.Item>
 						<DropdownMenu.Item icon={CodeIcon} onClick={onViewSource}>
 							Show message headers
 						</DropdownMenu.Item>

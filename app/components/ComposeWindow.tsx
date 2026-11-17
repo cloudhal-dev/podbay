@@ -22,7 +22,7 @@ const TITLES = {
 };
 
 const FRAME =
-	"fixed z-40 flex flex-col overflow-hidden border-kumo-line bg-kumo-base shadow-[0_8px_30px_rgb(0_0_0/0.28)]";
+	"fixed z-40 flex flex-col overflow-hidden border-kumo-line bg-kumo-base shadow-[0_8px_30px_rgb(0_0_0/0.28)] print:hidden";
 const SIZES = {
 	minimised: "bottom-0 right-4 w-72 rounded-t-xl border border-b-0 md:right-16",
 	normal:

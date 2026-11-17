@@ -61,11 +61,11 @@ export default function MailView({
 
 	if (split) {
 		return (
-			<div className="flex h-full min-w-0">
-				<div className="@container flex w-[38%] min-w-[360px] max-w-[520px] shrink-0 flex-col border-r border-kumo-line">
+			<div className="flex h-full min-w-0 print:block print:h-auto">
+				<div className="@container flex w-[38%] min-w-[360px] max-w-[520px] shrink-0 flex-col border-r border-kumo-line print:hidden">
 					{children}
 				</div>
-				<div className="flex min-w-0 flex-1 flex-col">
+				<div className="flex min-w-0 flex-1 flex-col print:block">
 					{open ? (
 						<EmailPanel emailId={open} inPane />
 					) : (
@@ -80,7 +80,7 @@ export default function MailView({
 	}
 
 	return (
-		<div className="@container flex h-full min-w-0 flex-col">
+		<div className="@container flex h-full min-w-0 flex-col print:block print:h-auto">
 			{open ? <EmailPanel emailId={open} siblings={emails} /> : children}
 		</div>
 	);
