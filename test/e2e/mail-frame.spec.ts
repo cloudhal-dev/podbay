@@ -142,3 +142,53 @@ test("a link opens outside the app, in a window that knows nothing of it", async
 	}
 	expect(app.watch.referers.filter((r) => r !== "")).toEqual([]);
 });
+
+test("quoted text at the end of a reply is folded, and opens without leaving the frame", async ({
+	page,
+	app,
+}) => {
+	await app.signIn();
+	await app.deliver(
+		mime({
+			subject: "Frame: folded quote",
+			to: app.account.mailbox,
+			html: `<p>My answer is above the fold.</p><blockquote>${"<p>An old line of the earlier message.</p>".repeat(12)}</blockquote>`,
+		}),
+	);
+	const frame = await app.openMessage("Frame: folded quote");
+	await expect(frame.getByText("My answer is above the fold.")).toBeVisible();
+	const quoted = frame.getByText("An old line of the earlier message.").first();
+	await expect(quoted).toBeHidden();
+
+	// The frame is as tall as the message, and opening the fold makes it as tall as the message
+	// now is: nothing is cut off and nothing scrolls inside it.
+	const element = page.locator('iframe[title="Email content"]');
+	const before = (await element.boundingBox())?.height ?? 0;
+	await frame.getByText("Show quoted text").click();
+	await expect(quoted).toBeVisible();
+	await expect
+		.poll(async () => (await element.boundingBox())?.height ?? 0)
+		.toBeGreaterThan(before + 100);
+	expect(await app.frameViolations(frame)).toEqual([]);
+	expect(app.watch.errors).toEqual([]);
+});
+
+test("a long message is shown whole: the conversation scrolls, not the message inside it", async ({
+	page,
+	app,
+}) => {
+	await app.signIn();
+	await app.deliver(
+		mime({
+			subject: "Frame: a long message",
+			to: app.account.mailbox,
+			html: "<p>A line of a long message.</p>".repeat(60),
+		}),
+	);
+	await app.openMessage("Frame: a long message");
+	const element = page.locator('iframe[title="Email content"]');
+	await expect.poll(async () => (await element.boundingBox())?.height ?? 0).toBeGreaterThan(1000);
+	// Reply sits under the whole message.
+	await page.getByRole("button", { name: "Reply", exact: true }).scrollIntoViewIfNeeded();
+	await expect(page.getByRole("button", { name: "Reply", exact: true })).toBeVisible();
+});

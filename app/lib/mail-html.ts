@@ -7,8 +7,10 @@
  * A message body is written by a stranger. It is shown in three layers, each of which holds on
  * its own:
  *
- * 1. `sanitizeMailHtml` removes script, forms, frames, embedded objects and event handlers, and
- *    takes remote resources out unless the reader asked for them.
+ * 1. `sanitizeMailHtml` removes script, forms, frames, embedded objects and event handlers,
+ *    takes remote resources out unless the reader asked for them, and takes out every resource
+ *    address that is neither embedded data nor remote: a relative address would resolve against
+ *    the app itself. It also folds the quoted text at the end of a reply away behind one line.
  * 2. `mailDocument` wraps the result in a document whose content policy allows no script except
  *    the one sizing script (by nonce), no network load unless remote content was allowed, no
  *    form submission and no `<base>`.
@@ -37,6 +39,8 @@ export interface SanitizedMail {
 }
 
 const REMOTE_URL = /^\s*(?:https?:)?\/\//i;
+/** A resource that is in the message itself. Nothing is fetched for it. */
+const EMBEDDED_URL = /^\s*data:/i;
 const CSS_REMOTE_URL = /url\(\s*['"]?\s*(?:https?:)?\/\//i;
 const RESOURCE_ATTRIBUTES = ["src", "srcset", "poster", "background"];
 
@@ -68,9 +72,65 @@ const SANITIZE_CONFIG = {
 	FORCE_BODY: true,
 };
 
-function isRemote(attribute: string, value: string): boolean {
-	if (attribute === "srcset") return value.split(",").some((part) => REMOTE_URL.test(part));
-	return REMOTE_URL.test(value);
+/** The addresses a resource attribute names: one, or several in a `srcset`. */
+function addressesOf(attribute: string, value: string): string[] {
+	return attribute === "srcset" ? value.split(",") : [value];
+}
+
+/**
+ * What a resource attribute would load: `embedded` data that is in the message, a `remote`
+ * address, or `neither`. A relative address is neither: in the mail frame it would resolve
+ * against the app's own address, and a message has no business asking the app for anything.
+ */
+function resourceKind(attribute: string, value: string): "embedded" | "remote" | "neither" {
+	const addresses = addressesOf(attribute, value);
+	if (addresses.every((address) => EMBEDDED_URL.test(address))) return "embedded";
+	if (addresses.every((address) => EMBEDDED_URL.test(address) || REMOTE_URL.test(address))) {
+		return "remote";
+	}
+	return "neither";
+}
+
+/** The words on the line that stands for folded quoted text. */
+export const QUOTE_SUMMARY = "Show quoted text";
+const QUOTE_CLASS = "podbay-quote";
+
+/** Whether a node has something to read or to look at. */
+function hasContent(node: Node): boolean {
+	if ((node.textContent ?? "").trim() !== "") return true;
+	if (node.nodeType !== 1) return false;
+	const element = node as Element;
+	return element.tagName === "IMG" || element.querySelector("img") !== null;
+}
+
+/**
+ * Whether an element is the quoted text at the end of a reply: a `blockquote` that is not
+ * inside another quote, has nothing to read after it, and is not the whole message.
+ */
+function isTrailingQuote(node: Element): boolean {
+	if (node.tagName !== "BLOCKQUOTE" || !hasContent(node)) return false;
+	if (node.parentElement?.closest(`blockquote, details`) != null) return false;
+	let top: Element = node;
+	for (let at: Element = node; at.parentElement !== null; at = at.parentElement) {
+		for (let next = at.nextSibling; next !== null; next = next.nextSibling) {
+			if (hasContent(next)) return false;
+		}
+		top = at.parentElement;
+	}
+	// Something of the message must stay on screen.
+	return (top.textContent ?? "").trim().length > (node.textContent ?? "").trim().length;
+}
+
+/** Puts the quote inside a `details` element, which folds and opens without any script. */
+function foldQuote(node: Element): void {
+	const document = node.ownerDocument;
+	const details = document.createElement("details");
+	details.setAttribute("class", QUOTE_CLASS);
+	const summary = document.createElement("summary");
+	summary.textContent = QUOTE_SUMMARY;
+	node.parentNode?.insertBefore(details, node);
+	details.appendChild(summary);
+	details.appendChild(node);
 }
 
 /**
@@ -89,19 +149,24 @@ export function sanitizeMailHtml(
 			node.setAttribute("target", "_blank");
 			node.setAttribute("rel", "noopener noreferrer nofollow");
 		}
-		if (allowRemote) return;
 		for (const attribute of RESOURCE_ATTRIBUTES) {
 			const value = node.getAttribute(attribute);
-			if (value !== null && isRemote(attribute, value)) {
+			if (value === null) continue;
+			const kind = resourceKind(attribute, value);
+			if (kind === "neither") {
+				// Never loadable, whatever the reader allowed: not counted as something to allow.
+				node.removeAttribute(attribute);
+			} else if (kind === "remote" && !allowRemote) {
 				node.removeAttribute(attribute);
 				blockedRemote++;
 			}
 		}
 		const style = node.getAttribute("style");
-		if (style !== null && CSS_REMOTE_URL.test(style)) {
+		if (!allowRemote && style !== null && CSS_REMOTE_URL.test(style)) {
 			node.removeAttribute("style");
 			blockedRemote++;
 		}
+		if (isTrailingQuote(node)) foldQuote(node);
 	});
 	try {
 		return { html: purify.sanitize(body, SANITIZE_CONFIG), blockedRemote };
@@ -148,6 +213,12 @@ body {
 a { color: #2563eb; }
 img { max-width: 100%; height: auto; }
 blockquote { border-left: 3px solid #d1d5db; padding-left: 1em; margin-left: 0; color: #6b7280; }
+details.podbay-quote > summary {
+	display: inline-block; list-style: none; cursor: pointer; user-select: none;
+	margin: 8px 0; padding: 0 10px; border: 1px solid #d1d5db; border-radius: 9999px;
+	font-size: 12px; line-height: 20px; color: #6b7280; background: #f9fafb;
+}
+details.podbay-quote > summary::-webkit-details-marker { display: none; }
 pre { background: #f3f4f6; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
 table { border-collapse: collapse; max-width: 100%; }
 td, th { padding: 4px 8px; }

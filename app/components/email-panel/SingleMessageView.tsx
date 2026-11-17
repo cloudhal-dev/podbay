@@ -40,8 +40,9 @@ export default function SingleMessageView({
 				/>
 			</div>
 
-			<div>
-				<MessageBody email={email} mailboxId={mailboxId} />
+			{/* As tall as the message: the conversation scrolls, never the message inside it */}
+			<div className="px-4 py-4 md:px-6">
+				<MessageBody email={email} mailboxId={mailboxId} autoSize />
 			</div>
 
 			<EmailAttachmentList

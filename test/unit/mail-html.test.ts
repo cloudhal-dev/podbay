@@ -10,6 +10,7 @@ import {
 	mailContentPolicy,
 	mailDocument,
 	type Purifier,
+	QUOTE_SUMMARY,
 	sanitizeMailHtml,
 } from "../../app/lib/mail-html.ts";
 
@@ -217,5 +218,102 @@ describe("mailDocument", () => {
 	it("uses a different nonce every time", () => {
 		const nonces = new Set(Array.from({ length: 50 }, () => freshNonce()));
 		expect(nonces.size).toBe(50);
+	});
+});
+
+describe("a resource address that is neither embedded nor remote", () => {
+	const DATA = "data:image/gif;base64,AA==";
+
+	it.each([
+		["a relative image", '<img src="x">'],
+		["an image at a path of the app", '<img src="/api/v1/mailboxes/a%40b.test/emails">'],
+		["a relative background", '<table background="tracker.gif"><tr><td>x</td></tr></table>'],
+		["an unresolved embedded image", '<img src="cid:logo@sender.test">'],
+		["a file address", '<img src="file:///etc/passwd">'],
+		["a set with one relative entry", `<img srcset="${DATA} 1x, big.png 2x">`],
+	])(
+		"%s is taken out whatever the reader allowed, and is not offered to be allowed",
+		(_n, body) => {
+			for (const result of [blocked(body), allowed(body)]) {
+				const document = parse(result.html);
+				expect(document.querySelectorAll("[src], [srcset], [background], [poster]")).toHaveLength(
+					0,
+				);
+				expect(result.blockedRemote).toBe(0);
+			}
+		},
+	);
+
+	it("keeps embedded data, and counts only what is remote", () => {
+		const body = `<img src="${DATA}"><img src="https://cdn.test/a.png"><img src="b.png">`;
+		const kept = parse(blocked(body).html).querySelectorAll("img[src]");
+		expect([...kept].map((image) => image.getAttribute("src"))).toEqual([DATA]);
+		expect(blocked(body).blockedRemote).toBe(1);
+		const shown = parse(allowed(body).html).querySelectorAll("img[src]");
+		expect([...shown].map((image) => image.getAttribute("src"))).toEqual([
+			DATA,
+			"https://cdn.test/a.png",
+		]);
+	});
+});
+
+describe("quoted text at the end of a reply", () => {
+	const folded = (body: string) =>
+		parse(blocked(body).html).querySelectorAll("details.podbay-quote");
+
+	it("is folded behind one line that needs no script to open", () => {
+		const document = parse(
+			blocked("<p>Thanks, see below.</p><blockquote><p>Old words</p></blockquote>").html,
+		);
+		const details = document.querySelector("details.podbay-quote");
+		expect(details?.hasAttribute("open")).toBe(false);
+		expect(details?.querySelector("summary")?.textContent).toBe(QUOTE_SUMMARY);
+		expect(details?.querySelector("blockquote")?.textContent).toBe("Old words");
+		expect(document.body.textContent).toContain("Thanks, see below.");
+	});
+
+	it("is found inside the wrapper a mail program puts around it", () => {
+		const body =
+			'<div dir="ltr">Agreed.</div><div class="quote"><div>On Monday, Ada wrote:</div><blockquote>Old</blockquote></div><div><br></div>';
+		expect(folded(body)).toHaveLength(1);
+	});
+
+	it.each([
+		["a quote that is answered underneath", "<blockquote>Old</blockquote><p>My answer</p>"],
+		[
+			"a quote with a picture after it",
+			'<p>a</p><blockquote>Old</blockquote><img src="data:image/gif;base64,AA==">',
+		],
+		["a message that is only a quote", "<blockquote>All there is</blockquote>"],
+		["an empty quote", "<p>a</p><blockquote> </blockquote>"],
+	])("leaves %s as it is", (_name, body) => {
+		expect(folded(body)).toHaveLength(0);
+	});
+
+	it("folds the outer quote only", () => {
+		const body =
+			"<p>a</p><blockquote>one<blockquote>two<blockquote>three</blockquote></blockquote></blockquote>";
+		const all = folded(body);
+		expect(all).toHaveLength(1);
+		expect(all[0]?.querySelectorAll("blockquote")).toHaveLength(3);
+	});
+
+	it("still cleans what is inside the fold", () => {
+		const body =
+			'<p>a</p><blockquote><script>steal()</script><img src="https://evil.test/p.gif" onerror="steal()"><a href="javascript:steal()">x</a></blockquote>';
+		const result = blocked(body);
+		const document = parse(result.html);
+		expect(document.querySelectorAll("script, [onerror], [src]")).toHaveLength(0);
+		expect(document.querySelector("a")?.getAttribute("href")).toBeNull();
+		expect(result.blockedRemote).toBe(1);
+	});
+
+	it("cannot be used to hide a message's own words: only the sender's blockquote is folded", () => {
+		const body =
+			'<details class="podbay-quote"><summary>Show quoted text</summary><p>Hidden by the sender</p></details><p>Shown</p>';
+		const document = parse(blocked(body).html);
+		// The sender may fold their own text, as any HTML can; nothing of ours is added to it.
+		expect(document.querySelectorAll("details")).toHaveLength(1);
+		expect(document.querySelectorAll("summary")).toHaveLength(1);
 	});
 });
