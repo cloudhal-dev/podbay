@@ -28,7 +28,7 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 | Area | What Podbay delivers | Seed has it | Phase |
 |---|---|---|---|
 | Mailboxes | Personal and shared mailboxes with memberships; aliases; one address on several domains | A mailbox per address, no access control | A |
-| Folders and labels | Inbox, Starred, Sent, Drafts, Archive, Spam, Trash, custom folders | Inbox, Sent, Drafts, Archive, Spam, Trash | A; Snoozed and Scheduled in B |
+| Places and labels | Inbox, Starred, Sent, Drafts, Archive, Spam, Trash; any number of labels on a message ([ADR-0007](adr/0007-places-and-labels.md)) | Inbox, Sent, Drafts, Archive, Spam, Trash | A; Snoozed and Scheduled in B |
 | Conversations | Threading by message headers, with reply, reply all and forward | Yes | A |
 | Compose | Rich text, attachments, signatures | Rich text, attachments | A; scheduled send and follow-up reminders in B |
 | Search | Full-text search with a query grammar: phrases, exclusions, `from:`, `to:`, `subject:`, `has:attachment`, `is:unread`, `after:`, `before:` | Substring match | A |

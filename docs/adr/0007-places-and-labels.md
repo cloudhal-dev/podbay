@@ -1,7 +1,8 @@
 # ADR-0007: A message is in one place and carries any number of labels
 
-- Status: **Proposed** (awaits the project lead)
+- Status: **Accepted**
 - Date: 2026-11-17
+- Decided by: Halil (@madraka), project lead
 - Sources: read on 2026-11-17 and listed at the end. Each quoted finding was read in the standard's or the vendor's own text on that day.
 
 ## Context
@@ -51,7 +52,7 @@ A mailbox's database is SQLite in one Durable Object. Its limits on the day of r
 | C | **Places and labels**: the six built-in folders are the only places, a message is in exactly one of them, and everything a person makes is a label | One idea a person makes. The place stays a column, so every existing query, the Trash and Spam rules and the rights keep their shape. Maps onto JMAP directly | Custom folders are converted, once, by a migration. One row of the accepted scope changes |
 | D | **Everything is a label**, Inbox and Trash included | The most general model | Every query that asks "where is this message" becomes a join, the conversation query above all. Trash and Spam must stay exclusive anyway, so the generality is not used. A large rewrite of tested code for no behaviour a person can see |
 
-## Decision (proposed)
+## Decision
 
 Option C.
 
