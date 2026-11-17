@@ -98,6 +98,16 @@ A message is in one place and carries any number of labels. Places are fixed; ev
 | A link is added in a dialog of the app. A dialog opened from inside the compose form stops its own submit and keys there: React passes events through a portal, and the form would send the message | `RichTextEditor.tsx` |
 | A new message starts in To; a reply starts in the text, above what it answers. Ctrl or Cmd with Enter sends | `ComposePanel.tsx` |
 
+### Settings
+
+| Behaviour | How it is built |
+|---|---|
+| Settings are one screen with tabs, as a mail client has them; the open tab is in the address (`?tab=`). **General** is the reader's own choices; the other tabs are about the mailbox | `app/routes/settings.tsx`, `app/components/settings/` |
+| A person's choices take effect at once, without a Save button, and are kept **in this browser only**: conversations on a page (10, 25, 50, 100), density, reading pane, what the Reply button of a message does, where to go after a conversation is filed, keyboard shortcuts on or off, light or dark. An unknown stored value falls back to its default | `useDisplay` (`app/hooks/useDisplay.ts`); never something the Worker decides by |
+| Light or dark is the `data-mode` attribute on the document, set before the first paint; "as this device" follows the device while the app is open. A message keeps the colours its sender gave it | `showAppearance` in `useDisplay.ts` |
+| What belongs to the mailbox is saved to it with its own button, by an owner; others see it and are told who can change it: the name mail is sent under, the signature, the assistant's prompt. Labels are managed here as well as in the rail | `MailboxDetails.tsx`, `SignatureSettings.tsx`, `AssistantSettings.tsx`, `LabelSettings.tsx` |
+| A setting is never shown for something the Worker does not do. Forwarding and an automatic reply have a stored shape and no behaviour, so they have no screen | The roadmap, section 4 |
+
 ### The keyboard
 
 The keyboard does everything common: `c`, `/`, `j` `k`, `o`, `u`, `x`, `*` then `a` or `n`, `e`, `#`, `!`, `s`, `Shift+I` `Shift+U`, `r` `a` `f` and `k` `j` in an open conversation, `g` then a letter, `?` (`useShortcuts`). Shortcuts never fire while typing, with a modifier held, or while a dialog or a menu is open.
@@ -120,6 +130,7 @@ A new behaviour of this kind gets a line here and a test there, in the same chan
 
 | Need | Use |
 |---|---|
+| A setting: its name and a line about it, then the control | `Row` and `Choice` in `app/components/settings/Row.tsx` |
 | A page outside a mailbox | `app/routes/security.tsx`, `app/routes/members.tsx`: a centred column of bordered sections |
 | A form that makes something shown once | `app/components/InvitePerson.tsx`, `app/components/AccessKeys.tsx` |
 | A list with an action per row and a confirmation | `app/components/People.tsx`, the rows in `AccessKeys.tsx` |
