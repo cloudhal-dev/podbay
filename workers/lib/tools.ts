@@ -261,6 +261,8 @@ export async function toolUpdateDraft(
 		to?: string;
 		subject?: string;
 		bodyHtml?: string;
+		/** If true, the body is checked by the model before it is saved. */
+		runVerifyDraft?: boolean;
 	},
 ): Promise<
 	{ status: string; newDraftId: string; oldDraftId: string; message: string } | { error: string }
@@ -271,13 +273,21 @@ export async function toolUpdateDraft(
 	if (!oldDraft) {
 		return { error: "Draft not found" };
 	}
+	// Changing a draft replaces it, and replacing deletes: a message anywhere but Drafts is
+	// never touched, or this tool would delete mail for good.
+	if (oldDraft.folder_id !== Folders.DRAFT) {
+		return { error: "Cannot update: email is not a draft" };
+	}
 
-	// Verify the body BEFORE deleting the old draft to prevent data loss
+	// The body goes to the model only when the caller asks (the assistant). An MCP client's
+	// draft is saved as it was given, so a key works with the assistant off and no mail of the
+	// mailbox reaches a model by this path.
 	const newDraftId = crypto.randomUUID();
 	const rawBody = params.bodyHtml ?? oldDraft.body ?? "";
-	const verifiedBody = await verifyDraft(env.AI, rawBody);
+	const verifiedBody = params.runVerifyDraft ? await verifyDraft(env.AI, rawBody) : rawBody;
 
-	if (!verifiedBody) {
+	// Checked BEFORE the old draft is deleted, so nothing is lost.
+	if (params.runVerifyDraft && !verifiedBody) {
 		return {
 			error: "Draft verification failed — keeping existing draft unchanged. Please try again.",
 		};

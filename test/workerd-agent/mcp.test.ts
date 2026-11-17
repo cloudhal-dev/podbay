@@ -10,7 +10,7 @@
  * No test here calls a model.
  */
 
-import { SELF } from "cloudflare:test";
+import { runInDurableObject, SELF } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
 import { MCP_TOOLS, type McpToolName } from "../../shared/mcp-tools.ts";
 import { MCP_TOOL_NAMES } from "../../workers/mcp/server.ts";
@@ -278,6 +278,52 @@ describe("a key never does more than its access and its owner's membership allow
 
 		expect((await folder(TEAM, "draft")).map((m) => m.subject)).toEqual(["From an AI client"]);
 		expect(await folder(TEAM, "sent")).toEqual([]);
+	});
+
+	it("changes a draft as it was given, and never a message that is not a draft", async () => {
+		const key = (await newKey("sender", [TEAM], "write")).body.token;
+		// A message in the inbox, put there directly: this test is about the tool.
+		await runInDurableObject(
+			testEnv.MAILBOX.get(testEnv.MAILBOX.idFromName(TEAM)),
+			(_object, state) => {
+				state.storage.sql.exec(
+					`INSERT INTO emails (id, folder_id, subject, sender, recipient, date, body) VALUES ('kept-in-inbox', 'inbox', 'Kept in the inbox', 'ada@sender.test', ?, ?, 'Hello')`,
+					TEAM,
+					new Date().toISOString(),
+				);
+			},
+		);
+
+		// Changing a draft replaces it, and replacing deletes: a message that is not a draft is
+		// refused and stays where it is.
+		const refused = await tool(key, "update_draft", {
+			mailboxId: TEAM,
+			draftId: "kept-in-inbox",
+			subject: "Gone",
+		});
+		expect(refused.isError).toBe(true);
+		expect(refused.text).toContain("not a draft");
+		expect((await folder(TEAM, "inbox")).map((m) => m.subject)).toContain("Kept in the inbox");
+
+		// A draft is changed, and saved exactly as given: no model reads it on the way (this
+		// configuration has none to ask, and the body is long enough that one would be asked).
+		const made = (await tool(key, "create_draft", { ...draft(TEAM), subject: "To be changed" }))
+			.value as { draftId: string };
+		const body = "<p>A body that is long enough to be worth a second look by a model.</p>";
+		const changed = await tool(key, "update_draft", {
+			mailboxId: TEAM,
+			draftId: made.draftId,
+			bodyHtml: body,
+		});
+		expect(changed.isError).toBe(false);
+		const { newDraftId } = changed.value as { newDraftId: string };
+		const read = (await tool(key, "get_email", { mailboxId: TEAM, emailId: newDraftId })).value as {
+			body: string;
+			subject: string;
+		};
+		expect(read.body).toBe(body);
+		expect(read.subject).toBe("To be changed");
+		await tool(key, "update_draft", { mailboxId: TEAM, draftId: newDraftId, subject: "x" });
 	});
 
 	it("cannot make a message look sent", async () => {

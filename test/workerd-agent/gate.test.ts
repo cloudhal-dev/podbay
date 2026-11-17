@@ -3,15 +3,19 @@
  *
  * - the assistant's connection needs a session and the right to change mail in that mailbox;
  *   a reader, a non-member and an administrator without a membership do not get it;
+ * - the connection is opened by the app's own page only: a browser sends the session cookie
+ *   with a WebSocket handshake from any page of the same site, so the origin is checked;
  * - MCP does not take a session at all: without a key every role is refused (the keys
  *   themselves are covered in mcp.test.ts).
  *
  * No test here delivers mail or opens a chat, so no model is ever called.
  */
+import { SELF } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
 	createMailbox,
 	migrate,
+	ORIGIN,
 	request,
 	seedMembership,
 	seedUser,
@@ -75,6 +79,38 @@ describe("the assistant's connection", () => {
 				.status,
 		).toBe(404);
 		expect((await gate("/agents/email-agent/", "owner")).status).toBe(404);
+	});
+
+	it("is opened by the app's own page only: another origin is refused before the session is looked at", async () => {
+		const upgrade = (origin: string | null, who?: string) => {
+			const headers = new Headers({ upgrade: "websocket", connection: "Upgrade" });
+			if (origin !== null) headers.set("origin", origin);
+			if (who) headers.set("cookie", cookies[who] ?? "");
+			return SELF.fetch(`${ORIGIN}${AGENT_PATH}`, { headers });
+		};
+		// A page of another site, a page of a sibling host (which the browser gives the cookie
+		// to), and a handshake that names no origin at all.
+		for (const origin of ["https://elsewhere.test", "https://blog.podbay.test", "null", null]) {
+			const refused = await upgrade(origin, "owner");
+			expect(refused.status, String(origin)).toBe(403);
+			expect(await refused.json(), String(origin)).toEqual({
+				error: "Cross-origin request refused",
+			});
+		}
+		// The answer does not depend on who asks, so it says nothing about the mailbox.
+		expect((await upgrade("https://elsewhere.test")).status).toBe(403);
+		// A request that changes something is held to the same rule.
+		const post = await SELF.fetch(`${ORIGIN}${AGENT_PATH}`, {
+			method: "POST",
+			headers: { cookie: cookies.owner ?? "", origin: "https://elsewhere.test" },
+		});
+		expect(post.status).toBe(403);
+		// From the app's own page the handshake passes the origin check and meets the gate.
+		expect((await upgrade(ORIGIN)).status).toBe(401);
+		expect((await upgrade(ORIGIN, "reader")).status).toBe(403);
+		const own = await upgrade(ORIGIN, "owner");
+		expect(own.status).not.toBe(401);
+		expect(own.status).not.toBe(403);
 	});
 
 	it.each(["owner", "sender"])("lets %s past the gate", async (who) => {

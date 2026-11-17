@@ -9,7 +9,7 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import { errorFields, log } from "../shared/log";
 import { API_CACHE_CONTROL, API_HEADERS } from "../shared/security-headers";
 import { callerForToken, touchKey } from "./auth/keys";
-import { mailboxDecision } from "./auth/middleware";
+import { mailboxDecision, sameOrigin } from "./auth/middleware";
 import { app as apiApp, receiveEmail } from "./index";
 import { features } from "./lib/features";
 import { secret } from "./lib/secrets";
@@ -112,6 +112,16 @@ app.route("/", apiApp);
 // drafts, so the caller needs the right to change mail there; a reader does not get it.
 app.all("/agents/*", async (c) => {
 	if (!features(c.env).agent) return c.json({ error: "Not found" }, 404);
+	// A browser sends the session cookie with a WebSocket handshake from any page of the same
+	// site, and a handshake is a GET, which nothing else here asks the origin of. So it is
+	// asked here: the connection is opened by the app's own page or not at all, and so is
+	// every request that changes something or says where it comes from.
+	const upgrade = c.req.header("upgrade")?.toLowerCase() === "websocket";
+	const named = c.req.header("origin") !== undefined;
+	const safe = c.req.method === "GET" || c.req.method === "HEAD";
+	if ((upgrade || named || !safe) && !sameOrigin(c.req.raw)) {
+		return c.json({ error: "Cross-origin request refused" }, 403);
+	}
 	const name = new URL(c.req.url).pathname.split("/")[3] ?? "";
 	const decision = await mailboxDecision(
 		c.env,

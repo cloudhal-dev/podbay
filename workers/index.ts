@@ -216,7 +216,15 @@ app.post("/api/v1/mailboxes/:mailboxId/drafts", async (c: AppContext) => {
 		await c.req.json(),
 	);
 	const stub = c.var.mailboxStub;
-	if (draft_id) await stub.deleteEmail(draft_id); // not atomic — create-then-delete would be safer
+	// Saving again replaces the draft that was saved before. Only a draft is replaced: an id
+	// of a message anywhere else is refused, or saving a draft could delete mail for good.
+	if (draft_id) {
+		const old = (await stub.getEmail(draft_id)) as { folder_id?: string } | null;
+		if (old && old.folder_id !== Folders.DRAFT) {
+			return c.json({ error: "Only a draft can be replaced by a draft" }, 409);
+		}
+		if (old) await stub.deleteEmail(draft_id); // not atomic — create-then-delete would be safer
+	}
 	const messageId = crypto.randomUUID();
 	const now = new Date().toISOString();
 	await stub.createEmail(

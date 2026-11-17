@@ -31,7 +31,12 @@ async function sent(count: number, ago: number): Promise<void> {
 	});
 }
 
-const refusal = () => runInDurableObject(stub(), (object) => object.checkSendRateLimit());
+/** The mailbox object, as far as this test calls it. */
+interface Limited {
+	checkSendRateLimit(): Promise<string | null>;
+}
+const refusal = () =>
+	runInDurableObject(stub(), (object) => (object as unknown as Limited).checkSendRateLimit());
 
 beforeAll(async () => {
 	await migrate();
