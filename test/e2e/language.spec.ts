@@ -33,6 +33,8 @@ test("a person chooses Turkish, and the screens, the notes and the dates follow"
 	// At once, without a reload: the settings themselves and the frame around them.
 	await expect(page.locator("html")).toHaveAttribute("lang", "tr");
 	await expect(page.getByRole("radiogroup", { name: "Dil" })).toBeVisible();
+	// The keyboard stays on the choice that was made, though everything was drawn again.
+	await expect(page.getByRole("radiogroup", { name: "Dil" }).getByLabel("Türkçe")).toBeFocused();
 	await expect(page.getByRole("link", { name: "Genel", exact: true })).toBeVisible();
 	await expect(page.getByRole("radiogroup", { name: "Language" })).toHaveCount(0);
 

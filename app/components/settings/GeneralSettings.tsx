@@ -2,7 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Button } from "@cloudflare/kumo";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PAGE_SIZES, type PageSize, useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";
 import { LANGUAGE_NAMES, LANGUAGES, m, t } from "~/i18n";
@@ -12,10 +12,23 @@ import Row, { Choice } from "./Row";
  * How the mail screens look and behave for this person. A choice takes effect at once and is
  * kept in this browser only.
  */
+/**
+ * Set when the language was just chosen. The whole app is drawn again in the new language, so
+ * the button that was pressed is gone; the new one gets the focus, and the keyboard stays
+ * where it was.
+ */
+let languageJustChosen = false;
+
 export default function GeneralSettings() {
 	const choices = useDisplay();
 	const { setShortcutHelpOpen } = useUIStore();
 	const [refused, setRefused] = useState(false);
+	const languageChoice = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (!languageJustChosen) return;
+		languageJustChosen = false;
+		languageChoice.current?.querySelector<HTMLInputElement>("input:checked")?.focus();
+	}, []);
 
 	/** Turning notifications on asks the browser first; a no leaves them off and says why. */
 	async function notify(on: boolean) {
@@ -226,15 +239,20 @@ export default function GeneralSettings() {
 					"The language of Podbay's own words. Mail stays in the language it was written in.",
 				)}
 			>
-				<Choice
-					legend={t("Language")}
-					value={choices.language}
-					options={[
-						["system", m("As this device")],
-						...LANGUAGES.map((language) => [language, LANGUAGE_NAMES[language]] as const),
-					]}
-					onChange={(language) => choices.choose({ language })}
-				/>
+				<div ref={languageChoice}>
+					<Choice
+						legend={t("Language")}
+						value={choices.language}
+						options={[
+							["system", m("As this device")],
+							...LANGUAGES.map((language) => [language, LANGUAGE_NAMES[language]] as const),
+						]}
+						onChange={(language) => {
+							languageJustChosen = true;
+							choices.choose({ language });
+						}}
+					/>
+				</div>
 			</Row>
 
 			<Row name={t("Appearance")} about={t("Light, dark, or whatever this device uses.")}>
