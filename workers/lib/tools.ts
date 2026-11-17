@@ -16,6 +16,7 @@
  */
 
 import { Folders } from "../../shared/folders";
+import { isLabelId } from "../../shared/labels";
 import type { Env } from "../types";
 import { verifyDraft } from "./ai";
 import {
@@ -349,4 +350,29 @@ export async function toolDiscardDraft(env: Env, mailboxId: string, draftId: str
 	}
 	await stub.deleteEmail(draftId);
 	return { status: "discarded", draftId };
+}
+
+// ── labels (ADR-0007) ──────────────────────────────────────────────
+
+export async function toolListLabels(env: Env, mailboxId: string) {
+	return getMailboxStub(env, mailboxId).getLabels();
+}
+
+/** Gives labels to, and takes labels from, the conversation a message belongs to. */
+export async function toolLabelEmail(
+	env: Env,
+	mailboxId: string,
+	emailId: string,
+	change: { add: string[]; remove: string[] },
+) {
+	if (![...change.add, ...change.remove].every(isLabelId)) {
+		return { error: "No such label. Call list_labels to see the labels of this mailbox." };
+	}
+	const stub = getMailboxStub(env, mailboxId);
+	const done = await stub.labelConversation(emailId, change.add, change.remove);
+	if (done === "limit") return { error: "This message has as many labels as it can hold." };
+	if (typeof done === "string") {
+		return { error: "No such label or email. Call list_labels to see the labels of this mailbox." };
+	}
+	return { status: "labelled", emailId, labels: done.labels };
 }

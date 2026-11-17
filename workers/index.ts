@@ -12,6 +12,7 @@ import {
 	servedContentType,
 } from "../shared/attachment-risk";
 import { Folders } from "../shared/folders";
+import { isLabelId } from "../shared/labels";
 import { errorFields, log } from "../shared/log";
 import { type ApiContext, guard } from "./auth/middleware";
 import { mailboxExists } from "./auth/store";
@@ -31,6 +32,7 @@ import { mailboxQueries } from "./lib/mailbox-rpc";
 import { SendEmailRequestSchema } from "./lib/schemas";
 import { account } from "./routes/account";
 import { keys } from "./routes/keys";
+import { labels } from "./routes/labels";
 import { mailboxes } from "./routes/mailboxes";
 import { people } from "./routes/people";
 import { recovery } from "./routes/recovery";
@@ -53,18 +55,6 @@ const DraftBody = z.object({
 });
 
 // -- Helpers --------------------------------------------------------
-
-function slugify(text: string) {
-	// can return "" for non-alphanumeric input
-	return text
-		.toString()
-		.toLowerCase()
-		.replace(/\s+/g, "-")
-		.replace(/[^\w-]+/g, "")
-		.replace(/--+/g, "-")
-		.replace(/^-+/, "")
-		.replace(/-+$/, "");
-}
 
 function intQuery(c: AppContext, key: string): number | undefined {
 	const v = c.req.query(key);
@@ -92,6 +82,7 @@ app.route("/", account);
 app.route("/", mailboxes);
 app.route("/", people);
 app.route("/", keys);
+app.route("/", labels);
 app.route("/", recovery);
 
 // -- Config ---------------------------------------------------------
@@ -304,25 +295,6 @@ app.get("/api/v1/mailboxes/:mailboxId/folders", async (c: AppContext) =>
 	c.json(await c.var.mailboxStub.getFolders()),
 );
 
-app.post("/api/v1/mailboxes/:mailboxId/folders", async (c: AppContext) => {
-	const { name } = (await c.req.json()) as { name: string };
-	const slug = slugify(name);
-	if (!slug) return c.json({ error: "Folder name must contain alphanumeric characters" }, 400);
-	const f = await c.var.mailboxStub.createFolder(slug, name);
-	return f ? c.json(f, 201) : c.json({ error: "Folder with this name already exists" }, 409);
-});
-
-app.put("/api/v1/mailboxes/:mailboxId/folders/:id", async (c: AppContext) => {
-	const { name } = (await c.req.json()) as { name: string };
-	const f = await c.var.mailboxStub.updateFolder(c.req.param("id")!, name);
-	return f ? c.json(f) : c.json({ error: "Folder not found" }, 404);
-});
-
-app.delete("/api/v1/mailboxes/:mailboxId/folders/:id", async (c: AppContext) => {
-	const ok = await c.var.mailboxStub.deleteFolder(c.req.param("id")!);
-	return ok ? c.body(null, 204) : c.json({ error: "Folder not found or cannot be deleted" }, 400);
-});
-
 // -- Search ---------------------------------------------------------
 
 app.get("/api/v1/mailboxes/:mailboxId/search", async (c: AppContext) => {
@@ -337,7 +309,12 @@ app.get("/api/v1/mailboxes/:mailboxId/search", async (c: AppContext) => {
 		is_read: boolQuery(c, "is_read"),
 		is_starred: boolQuery(c, "is_starred"),
 		has_attachment: boolQuery(c, "has_attachment"),
+		label: isLabelId(c.req.query("label")) ? c.req.query("label") : undefined,
 	};
+	// A label that is asked for and is not one finds nothing, never everything.
+	if (c.req.query("label") !== undefined && searchOpts.label === undefined) {
+		return c.json({ emails: [], totalCount: 0 });
+	}
 	const stub = mailboxQueries(c.var.mailboxStub);
 	const emails = await stub.searchEmails({
 		...searchOpts,

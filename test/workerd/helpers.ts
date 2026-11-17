@@ -19,6 +19,8 @@ interface TestEnv {
 	TEST_MIGRATIONS: Parameters<typeof applyD1Migrations>[1];
 	SETUP_TOKEN: string;
 	AUTH_SECRET: string;
+	/** One Durable Object per mailbox address. */
+	MAILBOX: DurableObjectNamespace;
 }
 export const testEnv = env as unknown as TestEnv;
 

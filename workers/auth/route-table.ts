@@ -92,10 +92,15 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "GET", path: `${M}/threads/:threadId`, right: "mailbox.read" },
 	{ method: "POST", path: `${M}/threads/:threadId/read`, right: "mailbox.write" },
 
+	// The places of a mailbox are fixed: nobody makes, renames or removes one (ADR-0007).
 	{ method: "GET", path: `${M}/folders`, right: "mailbox.read" },
-	{ method: "POST", path: `${M}/folders`, right: "mailbox.write" },
-	{ method: "PUT", path: `${M}/folders/:id`, right: "mailbox.write" },
-	{ method: "DELETE", path: `${M}/folders/:id`, right: "mailbox.write" },
+
+	// Labels: anyone who reads the mailbox sees them; changing one, or what carries it, is a change.
+	{ method: "GET", path: `${M}/labels`, right: "mailbox.read" },
+	{ method: "POST", path: `${M}/labels`, right: "mailbox.write" },
+	{ method: "PUT", path: `${M}/labels/:labelId`, right: "mailbox.write" },
+	{ method: "DELETE", path: `${M}/labels/:labelId`, right: "mailbox.write" },
+	{ method: "PUT", path: `${M}/emails/:emailId/labels`, right: "mailbox.write" },
 
 	{ method: "GET", path: `${M}/search`, right: "mailbox.read" },
 ];

@@ -162,4 +162,50 @@ export const mailboxMigrations: Migration[] = [
             CREATE INDEX IF NOT EXISTS idx_emails_folder_date ON emails(folder_id, date DESC);
         `,
 	},
+	{
+		// ADR-0007: a message carries any number of labels. The name is unique without regard to
+		// ASCII case here; the code compares names in full before it writes one.
+		name: "9_labels",
+		sql: `
+            CREATE TABLE labels (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                color INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX idx_labels_name ON labels(name COLLATE NOCASE);
+
+            CREATE TABLE email_labels (
+                email_id TEXT NOT NULL,
+                label_id TEXT NOT NULL,
+                PRIMARY KEY (email_id, label_id),
+                FOREIGN KEY(email_id) REFERENCES emails(id) ON DELETE CASCADE,
+                FOREIGN KEY(label_id) REFERENCES labels(id) ON DELETE CASCADE
+            ) WITHOUT ROWID;
+            CREATE INDEX idx_email_labels_label ON email_labels(label_id, email_id);
+        `,
+	},
+	{
+		// ADR-0007, decision 3: every folder a person made becomes a label, its messages keep the
+		// label and go to Archive, and the folder is removed. The messages are moved before the
+		// folder goes, so nothing can be deleted with it. Two folders whose names differ only in
+		// case become one label.
+		name: "10_custom_folders_become_labels",
+		sql: `
+            INSERT OR IGNORE INTO labels (id, name, color, created_at)
+                SELECT 'lbl_' || lower(hex(randomblob(12))), name, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                FROM folders WHERE is_deletable = 1;
+
+            INSERT OR IGNORE INTO email_labels (email_id, label_id)
+                SELECT e.id, l.id
+                FROM emails e
+                JOIN folders f ON f.id = e.folder_id AND f.is_deletable = 1
+                JOIN labels l ON l.name = f.name COLLATE NOCASE;
+
+            UPDATE emails SET folder_id = 'archive'
+                WHERE folder_id IN (SELECT id FROM folders WHERE is_deletable = 1);
+
+            DELETE FROM folders WHERE is_deletable = 1;
+        `,
+	},
 ];

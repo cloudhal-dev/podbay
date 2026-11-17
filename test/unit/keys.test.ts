@@ -46,7 +46,14 @@ describe("the MCP tool list", () => {
 	it("marks every tool that changes a mailbox, so a read-only key is refused there", () => {
 		const reading = MCP_TOOLS.filter((tool) => !tool.changes).map((tool) => tool.name);
 		expect(reading.sort()).toEqual(
-			["get_email", "get_thread", "list_emails", "list_mailboxes", "search_emails"].sort(),
+			[
+				"get_email",
+				"get_thread",
+				"list_emails",
+				"list_labels",
+				"list_mailboxes",
+				"search_emails",
+			].sort(),
 		);
 	});
 });

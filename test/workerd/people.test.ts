@@ -223,7 +223,7 @@ describe("mailbox members", () => {
 	it("a reader sees the members but cannot change them or the mail", async () => {
 		expect((await members("ada")).status).toBe(200);
 		expect((await setMember("ada", ids.ada ?? "", "owner")).status).toBe(403);
-		const write = await request(`/api/v1/mailboxes/${encodeURIComponent(MAILBOX)}/folders`, {
+		const write = await request(`/api/v1/mailboxes/${encodeURIComponent(MAILBOX)}/labels`, {
 			method: "POST",
 			cookie: cookies.ada,
 			body: JSON.stringify({ name: "Mine" }),

@@ -380,7 +380,8 @@ describe("creating a mailbox", () => {
 
 describe("requests that change state", () => {
 	it("are refused from another origin, and without an Origin header", async () => {
-		const path = `/api/v1/mailboxes/${encodeURIComponent(MAILBOX)}/folders`;
+		// Making a label changes a mailbox; the owner may, from the app's own origin only.
+		const path = `/api/v1/mailboxes/${encodeURIComponent(MAILBOX)}/labels`;
 		const body = JSON.stringify({ name: "From elsewhere" });
 		const foreign = await request(path, {
 			method: "POST",
@@ -391,6 +392,9 @@ describe("requests that change state", () => {
 		expect(foreign.status).toBe(403);
 		const res = await SELF_FETCH_WITHOUT_ORIGIN(path, cookies.owner ?? "", body);
 		expect(res.status).toBe(403);
+		// The same request from the app itself is served, so it was the origin that was refused.
+		const own = await request(path, { method: "POST", cookie: cookies.owner, body });
+		expect(own.status).toBe(201);
 	});
 });
 

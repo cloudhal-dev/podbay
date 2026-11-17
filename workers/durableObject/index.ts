@@ -11,6 +11,7 @@ import { Folders } from "../../shared/folders";
 import * as schema from "../db/schema";
 import { parseSortColumn, type SearchFilterOptions, type SortColumn } from "../lib/list-options";
 import type { Env } from "../types";
+import * as labels from "./labels";
 import { applyMigrations, mailboxMigrations } from "./migrations";
 import type { AttachmentData, EmailData, GetEmailsOptions } from "./shapes";
 
@@ -106,11 +107,12 @@ export class MailboxDO extends DurableObject<Env> {
 			.offset(offset)
 			.all();
 
-		return result.map((email) => ({
+		const list = result.map((email) => ({
 			...email,
 			read: !!email.read,
 			starred: !!email.starred,
 		}));
+		return this.#labelled(list);
 	}
 
 	/**
@@ -207,7 +209,7 @@ export class MailboxDO extends DurableObject<Env> {
 			);
 
 			const rows = [...result];
-			return rows.map((row) => ({
+			const list = rows.map((row) => ({
 				...row,
 				read: !!row.read,
 				starred: !!row.starred,
@@ -215,6 +217,7 @@ export class MailboxDO extends DurableObject<Env> {
 				thread_unread_count: row.thread_unread_count || 0,
 				participants: row.participants || row.sender,
 			}));
+			return this.#labelled(list);
 		}
 
 		// Non-draft folders: full threading logic
@@ -304,7 +307,7 @@ export class MailboxDO extends DurableObject<Env> {
 		);
 
 		const rows = [...result];
-		return rows.map((row) => ({
+		const list = rows.map((row) => ({
 			...row,
 			read: !!row.read,
 			starred: !!row.starred,
@@ -314,6 +317,7 @@ export class MailboxDO extends DurableObject<Env> {
 			needs_reply: !!row.needs_reply,
 			has_draft: !!row.has_draft,
 		}));
+		return this.#labelled(list);
 	}
 
 	/**
@@ -378,12 +382,8 @@ export class MailboxDO extends DurableObject<Env> {
 			.where(eq(schema.attachments.email_id, id))
 			.all();
 
-		return {
-			...email,
-			read: !!email.read,
-			starred: !!email.starred,
-			attachments: emailAttachments,
-		};
+		const one = { ...email, read: !!email.read, starred: !!email.starred };
+		return this.#labelled([{ ...one, attachments: emailAttachments }])[0] ?? null;
 	}
 
 	/**
@@ -421,12 +421,13 @@ export class MailboxDO extends DurableObject<Env> {
 			attachmentsByEmail.set(emailId, list);
 		}
 
-		return emailRows.map((email) => ({
+		const list = emailRows.map((email) => ({
 			...email,
 			read: !!email.read,
 			starred: !!email.starred,
 			attachments: attachmentsByEmail.get(String(email.id)) || [],
 		}));
+		return this.#labelled(list);
 	}
 
 	async updateEmail(id: string, { read, starred }: { read?: boolean; starred?: boolean }) {
@@ -473,6 +474,7 @@ export class MailboxDO extends DurableObject<Env> {
 			.where(eq(schema.attachments.email_id, id))
 			.all();
 
+		labels.forgetLabelsOf(this.ctx.storage.sql, id);
 		this.db.delete(schema.emails).where(eq(schema.emails.id, id)).run();
 
 		return emailAttachments;
@@ -503,46 +505,31 @@ export class MailboxDO extends DurableObject<Env> {
 		return result;
 	}
 
-	async createFolder(id: string, name: string, is_deletable: number = 1) {
-		try {
-			const result = this.db
-				.insert(schema.folders)
-				.values({ id, name, is_deletable })
-				.returning({ id: schema.folders.id, name: schema.folders.name })
-				.get();
-			return { ...result, unreadCount: 0 };
-		} catch (e: unknown) {
-			if (e instanceof Error && e.message.includes("UNIQUE constraint failed")) {
-				return null;
-			}
-			throw e;
-		}
+	// ── Labels (ADR-0007; the SQL is in ./labels) ─────────────────
+
+	/** The same rows, each with the labels its conversation carries. */
+	#labelled<T extends object>(list: T[]) {
+		return labels.withLabels(this.ctx.storage.sql, list);
 	}
 
-	async updateFolder(id: string, name: string) {
-		const result = this.db
-			.update(schema.folders)
-			.set({ name })
-			.where(eq(schema.folders.id, id))
-			.returning({ id: schema.folders.id, name: schema.folders.name })
-			.get();
-		return result;
+	async getLabels() {
+		return labels.listLabels(this.ctx.storage.sql);
 	}
 
-	async deleteFolder(id: string) {
-		const folder = this.db
-			.select({ is_deletable: schema.folders.is_deletable })
-			.from(schema.folders)
-			.where(eq(schema.folders.id, id))
-			.get();
+	async createLabel(name: string, color: number) {
+		return labels.createLabel(this.ctx.storage.sql, name, color);
+	}
 
-		if (!folder || folder.is_deletable === 0) {
-			return false;
-		}
+	async updateLabel(id: string, change: { name?: string; color?: number }) {
+		return labels.updateLabel(this.ctx.storage.sql, id, change);
+	}
 
-		this.db.delete(schema.folders).where(eq(schema.folders.id, id)).run();
+	async deleteLabel(id: string) {
+		return labels.deleteLabel(this.ctx.storage, id);
+	}
 
-		return true;
+	async labelConversation(emailId: string, add: string[], remove: string[]) {
+		return labels.labelConversation(this.ctx.storage, emailId, add, remove);
 	}
 
 	async moveEmail(id: string, folderId: string) {
@@ -644,6 +631,13 @@ export class MailboxDO extends DurableObject<Env> {
 		if (has_attachment) {
 			conditions.push(`${prefix}id IN (SELECT DISTINCT email_id FROM attachments)`);
 		}
+		if (options.label) {
+			// A label's list never shows what is in Spam or Trash (ADR-0007, decision 8).
+			const p = addParam(options.label);
+			conditions.push(
+				`${prefix}id IN (SELECT email_id FROM email_labels WHERE label_id = ${p}) AND ${prefix}folder_id NOT IN ('spam', 'trash')`,
+			);
+		}
 
 		return { conditions, params };
 	}
@@ -669,11 +663,12 @@ export class MailboxDO extends DurableObject<Env> {
 		params.push(limit, offset);
 
 		const result = this.ctx.storage.sql.exec(query, ...params);
-		return [...result].map((row) => ({
+		const list = [...result].map((row) => ({
 			...row,
 			read: !!row.read,
 			starred: !!row.starred,
 		}));
+		return this.#labelled(list);
 	}
 
 	/**

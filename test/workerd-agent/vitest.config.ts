@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { randomBytes } from "node:crypto";
+import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
@@ -10,6 +11,8 @@ import { defineConfig } from "vitest/config";
 // binding local, so a test can never reach a real account or send real mail (rule D7). The two
 // secrets are generated for each run; none is ever written to the repository (rule S6).
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
+
+const TEST_FILES = readdirSync(here(".")).filter((name) => name.endsWith(".test.ts")).length;
 
 export default defineConfig({
 	plugins: [
@@ -34,6 +37,9 @@ export default defineConfig({
 	test: {
 		root: here("../.."),
 		include: ["test/workerd-agent/**/*.test.ts"],
+		// One worker for each test file. A worker that is given a second file exits ("Worker
+		// exited unexpectedly"), so the suite must not depend on how many cores the machine has.
+		maxWorkers: TEST_FILES,
 		testTimeout: 60_000,
 		hookTimeout: 60_000,
 	},

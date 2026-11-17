@@ -309,6 +309,8 @@ describe("the shared tool list and the server agree on what changes a mailbox", 
 		mark_email_read: { mailboxId: TEAM, emailId: "none", read: true },
 		move_email: { mailboxId: TEAM, emailId: "none", folderId: "archive" },
 		move_to_trash: { mailboxId: TEAM, emailId: "none" },
+		list_labels: { mailboxId: TEAM },
+		label_email: { mailboxId: TEAM, emailId: "none", add: [], remove: [] },
 	};
 	let readOnly: string;
 
@@ -330,6 +332,60 @@ describe("the shared tool list and the server agree on what changes a mailbox", 
 			expect(served.text).not.toContain("No such mailbox");
 		},
 	);
+});
+
+describe("labels through a key (ADR-0007)", () => {
+	const api = (mailbox: string) => `/api/v1/mailboxes/${encodeURIComponent(mailbox)}`;
+	const makeLabel = async (mailbox: string, name: string) => {
+		const res = await request(`${api(mailbox)}/labels`, {
+			method: "POST",
+			cookie: cookies.owner,
+			body: JSON.stringify({ name }),
+		});
+		return ((await res.json()) as { id: string }).id;
+	};
+
+	it("a key sees the labels, labels a conversation in its own mailbox, and reaches no other", async () => {
+		const mine = await makeLabel(TEAM, "For the team");
+		const theirs = await makeLabel(PRIVATE, "Private matter");
+		const key = (await newKey("sender", [TEAM], "write")).body.token;
+		const saved = await tool(key, "create_draft", {
+			mailboxId: TEAM,
+			to: "someone@elsewhere.test",
+			subject: "To be labelled",
+			bodyHtml: "<p>B</p>",
+		});
+		const emailId = (saved.value as { draftId: string }).draftId;
+
+		const listed = await tool(key, "list_labels", { mailboxId: TEAM });
+		expect((listed.value as { name: string }[]).map((label) => label.name)).toEqual([
+			"For the team",
+		]);
+		// A label of a mailbox the key cannot reach is not a label here, and its mailbox is not there.
+		expect((await tool(key, "list_labels", { mailboxId: PRIVATE })).isError).toBe(true);
+		const foreign = await tool(key, "label_email", { mailboxId: TEAM, emailId, add: [theirs] });
+		expect(foreign.isError).toBe(true);
+		expect(foreign.text).not.toContain("Private matter");
+
+		const done = await tool(key, "label_email", { mailboxId: TEAM, emailId, add: [mine] });
+		expect(done.isError).toBe(false);
+		expect(done.value).toMatchObject({ status: "labelled", labels: [mine] });
+		const after = await tool(key, "list_labels", { mailboxId: TEAM });
+		expect((after.value as { total: number }[])[0]?.total).toBe(1);
+
+		// Something that is not a label id never reaches the database.
+		const junk = await tool(key, "label_email", {
+			mailboxId: TEAM,
+			emailId,
+			add: ["inbox' OR 1=1"],
+		});
+		expect(junk.isError).toBe(true);
+	});
+
+	it("no tool makes, renames or deletes a label", () => {
+		const names = MCP_TOOLS.map((t) => t.name).filter((name) => name.includes("label"));
+		expect(names.sort()).toEqual(["label_email", "list_labels"]);
+	});
 });
 
 describe("a key stops working when what it was made from goes away", () => {

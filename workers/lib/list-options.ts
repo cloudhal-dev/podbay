@@ -29,6 +29,8 @@ export interface SearchFilterOptions {
 	is_read?: boolean;
 	is_starred?: boolean;
 	has_attachment?: boolean;
+	/** A label id: only messages that carry it, outside Spam and Trash. */
+	label?: string;
 }
 
 /** The sort column, or undefined when the value is not one of the allowed columns. */
