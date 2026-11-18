@@ -1,8 +1,8 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Input, LayerDialog } from "@cloudflare/kumo";
-import { type FormEvent, useEffect, useState } from "react";
+import { Checkbox, Input, Label, LayerDialog, Select } from "@cloudflare/kumo";
+import { type FormEvent, useEffect, useId, useState } from "react";
 import {
 	RULE_LIMITS,
 	type Rule,
@@ -15,9 +15,6 @@ import { t } from "~/i18n";
 import { labelDot } from "~/lib/labels";
 import { useLabels } from "~/queries/labels";
 import { type RuleDraft, useSaveRules } from "~/queries/rules";
-
-const NATIVE_FIELD =
-	"h-9 rounded-lg border border-kumo-line bg-kumo-control px-2 text-sm text-kumo-default";
 
 interface Form {
 	fromMatch: RuleMatch;
@@ -75,15 +72,13 @@ function Match({
 	onChange: (value: RuleMatch) => void;
 }) {
 	return (
-		<select
+		<Select
 			aria-label={name}
-			className={NATIVE_FIELD}
+			className="w-32 shrink-0"
 			value={value}
-			onChange={(event) => onChange(event.target.value === "is" ? "is" : "contains")}
-		>
-			<option value="contains">{t("contains")}</option>
-			<option value="is">{t("is exactly")}</option>
-		</select>
+			onValueChange={(chosen) => onChange(chosen === "is" ? "is" : "contains")}
+			items={{ contains: t("contains"), is: t("is exactly") }}
+		/>
 	);
 }
 
@@ -112,6 +107,8 @@ export default function FilterDialog({
 }) {
 	const { data: labels = [] } = useLabels(mailboxId);
 	const saveRules = useSaveRules();
+	const senderField = useId();
+	const recipientField = useId();
 	const [form, setForm] = useState<Form>(formOf());
 	const [error, setError] = useState<string | null>(null);
 	const set = (change: Partial<Form>) => setForm((held) => ({ ...held, ...change }));
@@ -162,104 +159,91 @@ export default function FilterDialog({
 							<legend className="mb-3 text-sm font-semibold text-kumo-default">
 								{t("When a message arrives and all of this is true")}
 							</legend>
-							<div className="flex items-end gap-2">
-								<Match
-									name={t("How the sender is compared")}
-									value={form.fromMatch}
-									onChange={(fromMatch) => set({ fromMatch })}
-								/>
-								<div className="min-w-0 flex-1">
-									<Input
-										label={t("The sender")}
-										size="sm"
-										value={form.from}
-										maxLength={RULE_LIMITS.condition}
-										onChange={(event) => set({ from: event.target.value })}
+							{/* The row's label stands at its left edge, above the comparison and the field both. */}
+							<div>
+								<Label htmlFor={senderField}>{t("The sender")}</Label>
+								<div className="mt-1.5 flex gap-2">
+									<Match
+										name={t("How the sender is compared")}
+										value={form.fromMatch}
+										onChange={(fromMatch) => set({ fromMatch })}
 									/>
+									<div className="min-w-0 flex-1">
+										<Input
+											id={senderField}
+											className="w-full"
+											value={form.from}
+											maxLength={RULE_LIMITS.condition}
+											onChange={(event) => set({ from: event.target.value })}
+										/>
+									</div>
 								</div>
 							</div>
-							<div className="flex items-end gap-2">
-								<Match
-									name={t("How a recipient is compared")}
-									value={form.toMatch}
-									onChange={(toMatch) => set({ toMatch })}
-								/>
-								<div className="min-w-0 flex-1">
-									<Input
-										label={t("A recipient")}
-										size="sm"
-										value={form.to}
-										maxLength={RULE_LIMITS.condition}
-										onChange={(event) => set({ to: event.target.value })}
+							{/* The row's label stands at its left edge, above the comparison and the field both. */}
+							<div>
+								<Label htmlFor={recipientField}>{t("A recipient")}</Label>
+								<div className="mt-1.5 flex gap-2">
+									<Match
+										name={t("How a recipient is compared")}
+										value={form.toMatch}
+										onChange={(toMatch) => set({ toMatch })}
 									/>
+									<div className="min-w-0 flex-1">
+										<Input
+											id={recipientField}
+											className="w-full"
+											value={form.to}
+											maxLength={RULE_LIMITS.condition}
+											onChange={(event) => set({ to: event.target.value })}
+										/>
+									</div>
 								</div>
 							</div>
 							<Input
 								label={t("The subject contains")}
-								size="sm"
 								value={form.subject}
 								maxLength={RULE_LIMITS.condition}
 								onChange={(event) => set({ subject: event.target.value })}
 							/>
 							<Input
 								label={t("The message has the words")}
-								size="sm"
 								value={form.words}
 								maxLength={RULE_LIMITS.condition}
 								onChange={(event) => set({ words: event.target.value })}
 							/>
-							<label className="flex cursor-pointer items-center gap-2 text-sm text-kumo-default">
-								<input
-									type="checkbox"
-									className="h-4 w-4"
-									checked={form.hasAttachment}
-									onChange={(event) => set({ hasAttachment: event.target.checked })}
-								/>
-								{t("It has an attachment")}
-							</label>
+							<Checkbox
+								label={t("It has an attachment")}
+								checked={form.hasAttachment}
+								onCheckedChange={(checked) => set({ hasAttachment: checked === true })}
+							/>
 						</fieldset>
 
 						<fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
 							<legend className="mb-3 text-sm font-semibold text-kumo-default">
 								{t("Do this")}
 							</legend>
-							<div>
-								<label
-									htmlFor="filter-place"
-									className="mb-1.5 block text-sm font-medium text-kumo-default"
-								>
-									{t("Where it goes")}
-								</label>
-								<select
-									id="filter-place"
-									className={`${NATIVE_FIELD} w-full`}
-									value={form.place}
-									onChange={(event) => set({ place: event.target.value as Form["place"] })}
-								>
-									<option value="inbox">{t("Leave it in the Inbox")}</option>
-									<option value="archive">{t("Skip the Inbox")}</option>
-									<option value="trash">{t("Move to Trash")}</option>
-									<option value="spam">{t("Move to Spam")}</option>
-								</select>
-							</div>
-							<label className="flex cursor-pointer items-center gap-2 text-sm text-kumo-default">
-								<input
-									type="checkbox"
-									className="h-4 w-4"
-									checked={form.read}
-									onChange={(event) => set({ read: event.target.checked })}
-								/>
-								{t("Mark as read")}
-							</label>
-							<label className="flex cursor-pointer items-center gap-2 text-sm text-kumo-default">
-								<input
-									type="checkbox"
-									className="h-4 w-4"
-									checked={form.star}
-									onChange={(event) => set({ star: event.target.checked })}
-								/>
-								{t("Star it")}
-							</label>
+							<Select
+								label={t("Where it goes")}
+								className="w-full"
+								value={form.place}
+								onValueChange={(place) => set({ place: place as Form["place"] })}
+								items={{
+									inbox: t("Leave it in the Inbox"),
+									archive: t("Skip the Inbox"),
+									trash: t("Move to Trash"),
+									spam: t("Move to Spam"),
+								}}
+							/>
+							<Checkbox
+								label={t("Mark as read")}
+								checked={form.read}
+								onCheckedChange={(checked) => set({ read: checked === true })}
+							/>
+							<Checkbox
+								label={t("Star it")}
+								checked={form.star}
+								onCheckedChange={(checked) => set({ star: checked === true })}
+							/>
 							{labels.length > 0 && (
 								<fieldset className="m-0 border-0 p-0">
 									<legend className="mb-1.5 text-sm font-medium text-kumo-default">
@@ -269,23 +253,21 @@ export default function FilterDialog({
 										{labels.map((label) => {
 											const given = form.labels.includes(label.id);
 											return (
-												<label
+												<Checkbox
 													key={label.id}
-													className="flex cursor-pointer items-center gap-2 text-sm text-kumo-default"
-												>
-													<input
-														type="checkbox"
-														className="h-4 w-4"
-														checked={given}
-														disabled={!given && form.labels.length >= RULE_LIMITS.labels}
-														onChange={(event) => toggleLabel(label.id, event.target.checked)}
-													/>
-													<span
-														className={`h-2 w-2 rounded-full ${labelDot(label.color)}`}
-														aria-hidden="true"
-													/>
-													{label.name}
-												</label>
+													label={
+														<span className="flex items-center gap-2">
+															<span
+																className={`h-2 w-2 rounded-full ${labelDot(label.color)}`}
+																aria-hidden="true"
+															/>
+															{label.name}
+														</span>
+													}
+													checked={given}
+													disabled={!given && form.labels.length >= RULE_LIMITS.labels}
+													onCheckedChange={(checked) => toggleLabel(label.id, checked === true)}
+												/>
 											);
 										})}
 									</div>

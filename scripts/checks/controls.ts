@@ -86,7 +86,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/SignInSteps.tsx": { button: 1 },
 	"app/components/email-panel/MessageHeader.tsx": { button: 4 },
 	"app/components/email-panel/ThreadMessage.tsx": { button: 1 },
-	"app/components/rules/FilterDialog.tsx": { input: 4, select: 2 },
 	"app/components/settings/AssistantSettings.tsx": { textarea: 1 },
 	"app/components/settings/AutoReplySettings.tsx": { input: 3, textarea: 1 },
 	"app/components/settings/SignatureSettings.tsx": { input: 1 },

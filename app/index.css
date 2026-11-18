@@ -36,6 +36,15 @@ body {
 }
 
 /*
+ * The list of a select opens over what it was opened from in the same way, a dialog too: in
+ * the filter dialog the list of "Where it goes" lay under the dialog, which took the click.
+ * Kumo gives a select's positioner no part of its own, so it is found by the list it holds.
+ */
+[data-base-ui-portal] > [data-side]:has([role="listbox"]) {
+	z-index: 50;
+}
+
+/*
  * A dialog lies over whatever it was opened from, the compose window too (z-40): "Send later"
  * and the link of the editor are asked from inside it. A menu of a dialog stays above the
  * dialog.
