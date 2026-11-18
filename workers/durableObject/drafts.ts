@@ -61,6 +61,22 @@ const isDraft = (sql: SqlStorage, id: string): boolean =>
 	[...sql.exec(`SELECT 1 FROM emails WHERE id = ?1 AND folder_id = ?2`, id, Folders.DRAFT)].length >
 	0;
 
+/**
+ * Whether a message is a draft wherever it is now: the mailbox wrote it and it never left. A
+ * draft is stored without a Message-ID, a header list or an original, and keeps none of them
+ * until it is sent; a message that left has the first two, one that arrived has the second or
+ * the third, and one taken back from Scheduled is given none again. A draft in Trash is one
+ * that was deleted, and only such a message may go back to Drafts (issue #31).
+ */
+export const writtenHere = (sql: SqlStorage, id: string): boolean =>
+	[
+		...sql.exec(
+			`SELECT 1 FROM emails WHERE id = ?1 AND message_id IS NULL AND raw_headers IS NULL
+				AND raw_key IS NULL AND unparsed IS NULL`,
+			id,
+		),
+	].length > 0;
+
 const filesOf = (sql: SqlStorage, draftId: string): FileRow[] =>
 	[...sql.exec(`SELECT * FROM attachments WHERE email_id = ?1`, draftId)] as unknown as FileRow[];
 

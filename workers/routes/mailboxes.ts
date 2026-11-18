@@ -80,10 +80,12 @@ mailboxes.post("/api/v1/mailboxes", async (c) => {
 
 	const settings = {
 		fromName: parsed.data.name,
-		forwarding: { enabled: false, email: "" },
 		signature: { enabled: false, text: "" },
 		autoReply: { enabled: false, subject: "", message: "" },
 		...parsed.data.settings,
+		// A new mailbox never forwards. Whoever creates one may not be able to read it, and
+		// forwarding is changed on its own route, with fresh proof.
+		forwarding: { enabled: false, email: "" },
 	};
 	if (JSON.stringify(settings).length > MAX_SETTINGS_BYTES) {
 		return c.json({ error: "Settings are too large" }, 400);
@@ -123,17 +125,13 @@ mailboxes.put("/api/v1/mailboxes/:mailboxId", async (c) => {
 	if ((before.enabled !== after.enabled || before.email !== after.email) && !c.var.fresh) {
 		return c.json(NOT_FRESH, 403);
 	}
-	await updateMailboxSettings(
-		c.env.DB,
-		mailbox.id,
-		parsed.data.settings,
-		c.var.user.id,
-		mailbox.address,
-	);
+	// What is stored is what was compared: forwarding in its one shape, never the raw value.
+	const settings = { ...parsed.data.settings, forwarding: after };
+	await updateMailboxSettings(c.env.DB, mailbox.id, settings, c.var.user.id, mailbox.address);
 	// The settings are in the index, so the mailbox object is told that they changed: it is
 	// the one change to a mailbox that is not made in it (ADR-0013, decision 6).
 	await settingsSaved(c.var.mailboxStub);
-	return c.json(view({ ...mailbox, settings: parsed.data.settings }, mailbox.role));
+	return c.json(view({ ...mailbox, settings }, mailbox.role));
 });
 
 /**

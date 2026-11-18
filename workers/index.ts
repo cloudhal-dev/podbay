@@ -164,10 +164,16 @@ app.delete("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
 });
 
 app.post("/api/v1/mailboxes/:mailboxId/emails/:id/move", async (c: AppContext) => {
-	const { folderId } = (await c.req.json()) as { folderId: string };
+	const body = (await c.req.json().catch(() => null)) as { folderId?: unknown } | null;
+	const folderId = body?.folderId;
+	if (typeof folderId !== "string") return c.json({ error: "Invalid request" }, 400);
 	const moved = await c.var.mailboxStub.moveEmail(c.req.param("id")!, folderId);
 	// Scheduled is neither a source nor a target: only a send fills it (ADR-0016, decision 2).
 	if (moved === "scheduled") return c.json(WAITS, 409);
+	// Sent is filled by sending, and Drafts takes back only a draft (issue #31).
+	if (moved === "not_a_target") {
+		return c.json({ error: "This place cannot take that message", code: "NOT_A_TARGET" }, 400);
+	}
 	return moved ? c.json({ status: "moved" }) : c.json({ error: "Folder not found" }, 400);
 });
 

@@ -228,15 +228,36 @@ export async function json<T>(res: Response): Promise<T> {
 }
 
 /** Enable the authenticator app for a signed-in browser. Returns what the person keeps. */
-export async function enableApp(browser: Browser): Promise<{ uri: string; codes: string[] }> {
+const handedOut = new Map<string, Set<string>>();
+
+/**
+ * A code the app would accept now that no earlier call handed out for the same secret. A code
+ * is used once (issue #12), and the server accepts the step before and after the present one,
+ * so a person has three codes at a time; a test that needs more waits for none, it fails.
+ */
+export async function nextCode(uri: string): Promise<string> {
+	const used = handedOut.get(uri) ?? new Set<string>();
+	handedOut.set(uri, used);
+	for (const offset of [0, 30_000, -30_000]) {
+		const code = await totpCode(uri, Date.now() + offset);
+		if (!used.has(code)) {
+			used.add(code);
+			return code;
+		}
+	}
+	throw new Error("Every code the app would accept now was handed out already.");
+}
+
+export async function enableApp(
+	browser: Browser,
+): Promise<{ uri: string; codes: string[]; confirmedWith: string }> {
 	const enabled = await browser.post(`${AUTH}/two-factor/enable`, { password: PASSWORD });
 	expect(enabled.status).toBe(200);
 	const { totpURI, backupCodes } = await json<{ totpURI: string; backupCodes: string[] }>(enabled);
-	const confirmed = await browser.post(`${AUTH}/two-factor/verify-totp`, {
-		code: await totpCode(totpURI),
-	});
+	const confirmedWith = await nextCode(totpURI);
+	const confirmed = await browser.post(`${AUTH}/two-factor/verify-totp`, { code: confirmedWith });
 	expect(confirmed.status).toBe(200);
-	return { uri: totpURI, codes: backupCodes };
+	return { uri: totpURI, codes: backupCodes, confirmedWith };
 }
 
 export async function registerPasskey(browser: Browser, name = "Laptop"): Promise<SoftwarePasskey> {

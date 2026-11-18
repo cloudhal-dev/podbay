@@ -20,6 +20,11 @@ import type { Action } from "./authorize";
  * the session cookie from any page of the same site, and what it opens stays open, so the
  * guard is stricter for it than for a read: the request must be an upgrade, it must name the
  * app's own origin, and its session is read from the database (workers/auth/middleware.ts).
+ *
+ * `sensitive` marks a route where only some requests are a sensitive change, so the route itself
+ * decides whether fresh proof is needed, by the flag the guard sets. Its session is read from the database,
+ * as for a route marked `fresh`: the copy cached in the cookie can be a minute old and says the
+ * session is as fresh as when the copy was made.
  */
 export type RouteRight = Action | "public";
 
@@ -29,6 +34,7 @@ export interface RouteEntry {
 	readonly right: RouteRight;
 	readonly fresh?: true;
 	readonly upgrade?: true;
+	readonly sensitive?: true;
 }
 
 const M = "/api/v1/mailboxes/:mailboxId";
@@ -73,7 +79,8 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 
 	// One mailbox
 	{ method: "GET", path: M, right: "mailbox.read" },
-	{ method: "PUT", path: M, right: "mailbox.manage" },
+	// Changing where the mailbox forwards its mail needs fresh proof; its other settings do not.
+	{ method: "PUT", path: M, right: "mailbox.manage", sensitive: true },
 	{ method: "DELETE", path: M, right: "mailbox.manage", fresh: true },
 	// The mailbox tells the open app that something changed (ADR-0013). Being told is a way of
 	// reading, so whoever may read may listen; what is told is four counters and no mail.

@@ -15,6 +15,8 @@
  * 6. A route marked `upgrade` opens a WebSocket (ADR-0013). Before a session is looked for,
  *    the request must be an upgrade (426) and name the app's own origin (403); then its
  *    session is read from the database, as for a route marked `fresh`.
+ * 7. A route marked `sensitive` decides for itself whether a request needs fresh proof, so its
+ *    session is read from the database too: the flag `fresh` it is given is never the cookie's.
  */
 import { createMiddleware } from "hono/factory";
 import { errorFields, log } from "../../shared/log";
@@ -53,7 +55,8 @@ export type ApiContext = {
 		instanceRole: InstanceRole;
 		/**
 		 * Whether the session signed in recently enough for a sensitive change. For a route that is
-		 * sensitive only for some requests; routes marked `fresh` in the table never run without it.
+		 * sensitive only for some requests, marked `sensitive` in the table so that this is read from
+		 * the database; routes marked `fresh` never run without it.
 		 */
 		fresh: boolean;
 		/**
@@ -190,8 +193,11 @@ export const guard = createMiddleware<ApiContext>(async (c, next) => {
 			headers: c.req.raw.headers,
 			// A sensitive change is decided on the session in the database, never on the copy cached
 			// in the cookie: a session revoked a moment ago must not pass. A connection that stays
-			// open is opened on the same footing.
-			query: { disableCookieCache: entry?.fresh === true || entry?.upgrade === true },
+			// open is opened on the same footing, and so is a route that decides by `fresh` itself.
+			query: {
+				disableCookieCache:
+					entry?.fresh === true || entry?.upgrade === true || entry?.sensitive === true,
+			},
 		});
 	} catch (error) {
 		if (error instanceof AuthNotConfigured) {

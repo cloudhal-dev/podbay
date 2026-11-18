@@ -17,14 +17,14 @@ import { expect, test } from "./fixtures.ts";
 const ADA = { email: "ada@example.com", name: "Ada", password: "a long passphrase for ada" };
 const root = fileURLToPath(new URL("../..", import.meta.url));
 
-/** The code an authenticator app shows for this secret now (RFC 6238). */
-function totp(secret: string): string {
+/** The code an authenticator app shows for this secret at a time, now by default (RFC 6238). */
+function totp(secret: string, at = Date.now()): string {
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 	let bits = "";
 	for (const char of secret) bits += alphabet.indexOf(char).toString(2).padStart(5, "0");
 	const key = Buffer.from((bits.match(/.{8}/g) ?? []).map((b) => Number.parseInt(b, 2)));
 	const counter = Buffer.alloc(8);
-	counter.writeUInt32BE(Math.floor(Date.now() / 30_000), 4);
+	counter.writeUInt32BE(Math.floor(at / 30_000), 4);
 	const mac = createHmac("sha1", key).update(counter).digest();
 	const offset = (mac[19] ?? 0) & 0x0f;
 	return ((mac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).toString().padStart(6, "0");
@@ -50,6 +50,7 @@ test("a person is invited, adds an authenticator app and a passkey, and is asked
 }) => {
 	test.setTimeout(180_000);
 	let secret = "";
+	let turnedOnWith = "";
 
 	const invitation =
 		await test.step("the owner invites a person and gets a link to pass on", async () => {
@@ -92,7 +93,8 @@ test("a person is invited, adds an authenticator app and a passkey, and is asked
 				.locator("code")
 				.filter({ hasText: /^[A-Z2-7]{16,}$/ })
 				.textContent()) ?? "";
-		await ada.getByLabel("Code from the app").fill(totp(secret));
+		turnedOnWith = totp(secret);
+		await ada.getByLabel("Code from the app").fill(turnedOnWith);
 		await ada.getByRole("button", { name: "Turn on" }).click();
 		await expect(ada.getByText("Save these recovery codes")).toBeVisible();
 		expect(await ada.locator("code span").count()).toBeGreaterThanOrEqual(8);
@@ -108,12 +110,18 @@ test("a person is invited, adds an authenticator app and a passkey, and is asked
 		await expect(code).toBeFocused();
 		expect((await ada.request.get("/api/v1/me")).status()).toBe(401);
 
-		await code.fill("000000");
+		// A code is used once: the one that turned the app on a moment ago signs nobody in, and is
+		// told as any wrong code is. One wrong try only: the sign-in library limits the requests to
+		// the second step in ten seconds, turning the app on counts, and a fifth is refused (429).
+		await code.fill(turnedOnWith);
+		const answered = ada.waitForResponse((res) => res.url().endsWith("/two-factor/verify-totp"));
 		await ada.getByRole("button", { name: "Continue" }).click();
+		expect((await answered).status()).toBe(401);
 		await expect(ada.getByRole("alert")).toBeVisible();
 		expect((await ada.request.get("/api/v1/me")).status()).toBe(401);
 
-		await code.fill(totp(secret));
+		// The app's next code is accepted, and is never the one already used.
+		await code.fill(totp(secret, Date.now() + 30_000));
 		await ada.getByRole("button", { name: "Continue" }).click();
 		await expect(ada.getByText(`Signed in as ${ADA.email}`)).toBeVisible();
 	});
