@@ -68,7 +68,7 @@ const KumoLink = forwardRef<
 	React.AnchorHTMLAttributes<HTMLAnchorElement> & { href?: string }
 >(function KumoLink({ href, onClick, ...props }, ref) {
 	const router = useRouter();
-	const internal = href !== undefined && href.startsWith("/");
+	const internal = href?.startsWith("/") ?? false;
 	return (
 		<a
 			href={href}

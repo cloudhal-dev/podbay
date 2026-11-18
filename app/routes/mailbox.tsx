@@ -97,11 +97,11 @@ export default function MailboxRoute() {
 				<div className="flex min-h-0 flex-1 print:block">
 					{/* Phone: the rail slides over the list */}
 					{isSidebarOpen && (
-						<div
+						<button
+							type="button"
 							className="fixed inset-0 z-30 bg-black/30 md:hidden"
 							onClick={closeSidebar}
 							onKeyDown={(e) => e.key === "Escape" && closeSidebar()}
-							role="button"
 							tabIndex={-1}
 							aria-label={t("Close sidebar")}
 						/>

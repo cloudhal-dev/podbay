@@ -33,6 +33,7 @@ function highlightTerms(text: string, query: string): React.ReactNode {
 		const lowerEscaped = escaped.toLowerCase();
 		return parts.map((part, i) =>
 			part.toLowerCase() === lowerEscaped ? (
+				// biome-ignore lint/suspicious/noArrayIndexKey: the pieces of one text in their order, made again whole for each text; the same word can be several of them
 				<mark key={i} className="bg-kumo-warning-muted text-kumo-default rounded-sm px-0.5">
 					{part}
 				</mark>

@@ -45,53 +45,5 @@
 		"parser": {
 			"tailwindDirectives": true
 		}
-	},
-	"overrides": [
-		{
-			"includes": [
-				"workers/index.ts",
-				"workers/durableObject/index.ts",
-				"workers/email-sender.ts",
-				"app/queries/*.ts"
-			],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noExplicitAny": "warn"
-					},
-					"style": {
-						"noNonNullAssertion": "warn"
-					}
-				}
-			}
-		},
-		{
-			"includes": [
-				"app/components/ComposePanel.tsx",
-				"app/components/EmailPanel.tsx",
-				"app/components/MCPPanel.tsx",
-				"app/components/email-panel/EmailPanelDialogs.tsx",
-				"app/lib/search-parser.ts",
-				"app/routes/email-list.tsx",
-				"app/routes/home.tsx",
-				"app/routes/mailbox.tsx",
-				"app/routes/search-results.tsx"
-			],
-			"linter": {
-				"rules": {
-					"a11y": {
-						"noLabelWithoutControl": "warn",
-						"useSemanticElements": "warn"
-					},
-					"correctness": {
-						"useExhaustiveDependencies": "warn"
-					},
-					"suspicious": {
-						"noArrayIndexKey": "warn",
-						"noAssignInExpressions": "warn"
-					}
-				}
-			}
-		}
-	]
+	}
 }
