@@ -6,12 +6,13 @@
  * (D12, CONTRIBUTING.md), and the range is read from git as it is. The CI job
  * `commits (form and sign-off)` runs `scripts/commits.ts` on the commits of a pull request.
  */
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { type Commit, commitProblems, commitsOf } from "../../scripts/commits.ts";
+import { type Commit, commitProblems, commitsOf } from "../../scripts/commit-form.ts";
 
 const AUTHOR = { authorName: "Ada Writer", authorEmail: "ada@contributors.test" };
 const signed = (subject: string, signer = "Ada Writer <ada@contributors.test>") =>
@@ -140,6 +141,35 @@ describe("a range read from git", () => {
 		expect(commits[1]?.message).toContain("A body\nof two lines.");
 		expect(commits.flatMap(commitProblems)).toHaveLength(2);
 		expect(commitProblems(commits[1] as Commit)).toEqual([]);
+	});
+
+	it("is a command that checks the range however it is started, and fails a range it reads nothing in", () => {
+		const script = fileURLToPath(new URL("../../scripts/commits.ts", import.meta.url));
+		const linked = join(repository, "linked-commits.ts");
+		symlinkSync(script, linked);
+		const run = (path: string, range: string) =>
+			spawnSync(process.execPath, [path, range], { cwd: repository, encoding: "utf8" });
+		const first = git("rev-list", "--max-parents=0", "HEAD");
+		const second = git("rev-parse", "HEAD~1");
+		for (const path of [script, linked]) {
+			// One good commit: read, and passed.
+			const good = run(path, `${first}..${second}`);
+			expect(good.stdout, path).toBe("commits: 1 read, 0 problem(s)\n");
+			expect(good.status, path).toBe(0);
+			// With the bad one: read, and failed, with the problems on their own lines.
+			const bad = run(path, `${first}..${head()}`);
+			expect(bad.stdout, path).toBe("commits: 2 read, 2 problem(s)\n");
+			expect(bad.stderr, path).toMatch(/the subject is not a conventional commit/);
+			expect(bad.status, path).toBe(1);
+			// A range with nothing in it checked nothing, and is not a pass.
+			const none = run(path, `${head()}..${head()}`);
+			expect(none.stdout, path).toBe("commits: 0 read, 0 problem(s)\n");
+			expect(none.status, path).toBe(1);
+			// Something that is not a range is refused before git runs.
+			const refused = run(path, "--output=/tmp/x");
+			expect(refused.stderr, path).toMatch(/not a range of two commit ids/);
+			expect(refused.status, path).toBe(2);
+		}
 	});
 
 	it("takes nothing but a range of two commit ids", () => {
