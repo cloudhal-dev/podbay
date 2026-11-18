@@ -24,7 +24,16 @@ The app is a single-page app served as static assets. It shows strangers' mail i
 3. **The Worker decides; the app shows.** Hiding a button is a convenience, never a control. Every action must be safe when called directly.
 4. **A sensitive change goes through `useFreshProof()`** ([`app/components/FreshProof.tsx`](../../../app/components/FreshProof.tsx)): it runs the change, and when the Worker asks for fresh proof it shows the sign-in steps and runs the change once more. Do not build a second confirmation.
 5. **A secret is shown once and kept nowhere**: a key, a link, a recovery code lives in component state until dismissed. Never in storage, a URL, a query cache or a log.
-6. **Every control has a name.** Kumo's `Input` takes `label`; a native control gets a `<label htmlFor>` or `aria-label`; an icon button gets `aria-label`. Errors are `role="alert"`. Move focus by a ref to the form, not by element id (the field library sets ids after the first paint).
+6. **A control is Kumo's, and has a name** (`pnpm static controls`). No `<select>`, `<textarea>`, `<input>` or `<button>` is written by hand:
+   - a choice from a list is `Select`, or `Combobox` when it can be typed into;
+   - one choice of a few is `Radio`, a yes or no is `Checkbox`, and an on or off that takes effect at once is `Switch`;
+   - a line of text is `Input`, several lines are `InputArea`, a secret is `SensitiveInput`, and addresses are `TagInput`;
+   - a date is `DatePicker`;
+   - an action is `Button`, and a field with its label and help is `Field` with `Label`.
+
+   Read the component's entry in Kumo's own documentation, shipped with the pinned version (`node_modules/@cloudflare/kumo/ai/component-registry.md`), before using it. A control's size is its `size` prop, never a class: the controls of one form share one size, and a height, a size, a corner or a type size written by hand on a Kumo control is refused. Where Kumo's component cannot do the job, one wrapper for it lives in `app/components/controls/` and every screen uses it. A native control that must stay (a whole line that opens a message, say) is one line of `ON_PURPOSE` in `scripts/checks/controls.ts`, with its reason. The controls written by hand before the check came in are its `TO_MOVE` debt, which only goes down (#82, #83).
+
+   Every control has a name: Kumo's controls take `label`; an icon button gets `aria-label`. Errors are `role="alert"`. Move focus by a ref to the form, not by element id (the field library sets ids after the first paint).
 7. **Attachments are downloads.** Link to a plain one; a risky one goes through the warning in `EmailAttachmentList`. Only plain image kinds are previewed or embedded (`isShowableImage`).
 8. **No lint warning.** `pnpm lint` fails on one; a rule kept off at a place needs a `biome-ignore` that says why.
 9. **The app asks in its own voice** (D16, `pnpm static dialogs`). Anything over the page is Kumo's `LayerDialog`: `LayerDialog.Root` for a form or a view, `LayerDialog.Alert` when the person must choose. `Content` takes exactly one `Title` and one `Body`, and at most one `Description` and one `Actions` with one `Action`; a form lives in `Body` with an `id`, and the `Action` submits it with `form="<id>"`. A confirmation is `useConfirm()` ([`app/components/Confirm.tsx`](../../../app/components/Confirm.tsx)). Never the browser's `confirm`, `alert` or `prompt`, and never Kumo's older `Dialog`. A menu is Kumo's `DropdownMenu`, not a hand-built list.
@@ -229,5 +238,7 @@ The app speaks English and Turkish. Every word a person reads or hears goes thro
 - [ ] `pnpm check` passes and the lint count did not rise.
 - [ ] `pnpm e2e` passes; a new page is in the policy test; a new journey has a browser test when it crosses a boundary.
 - [ ] You tried it in a browser on the built app, not only in development mode, and with the keyboard alone.
+- [ ] You opened every changed screen in a real browser at desktop width and at phone width, in the light and the dark theme, and compared its edges and heights with the screen beside it: every control of a form has one height, the left and right edges of the controls and of the footer line up, and the button that saves a form stands where its fields are.
+- [ ] The pictures of each changed screen (desktop and phone, light and dark) are in the pull request, taken by you. A change under `app/` that changes nothing on a screen says so instead.
 - [ ] Empty, loading and error states exist and say something true.
 - [ ] Every new word is a message with its Turkish (`pnpm static messages`), and you read the screen once in Turkish: nothing cut off, nothing left in English.
