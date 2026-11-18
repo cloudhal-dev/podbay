@@ -147,12 +147,17 @@
 		{
 			"id": "runtime.email.message.from",
 			"kind": "runtime",
-			"relies": "`message.from` is the envelope sender, not the `From:` header. It is kept with an arrival, and is the sender of a message that could not be read.",
+			"relies": "`message.from` is the envelope sender, not the `From:` header. It is kept with an arrival, is the sender of a message that could not be read, and is the only address an automatic reply goes to (ADR-0008, decision 9).",
 			"source": "https://developers.cloudflare.com/email-service/api/route-emails/email-handler/",
 			"pageUpdated": "2026-11-17",
-			"verifiedAt": "2026-11-17",
+			"verifiedAt": "2026-11-18",
 			"evidence": "readonly from: string; // Sender email address (envelope MAIL FROM)",
-			"code": ["workers/lib/inbound.ts", "workers/arrival.ts"]
+			"code": [
+				"workers/lib/inbound.ts",
+				"workers/arrival.ts",
+				"workers/durableObject/auto-reply.ts"
+			],
+			"note": "The page does not say what `from` holds for a message with an empty reverse path (a bounce). Podbay answers only something that is one whole address, so an empty value, `<>` and anything else get no automatic reply (test/workerd/auto-reply.test.ts)."
 		},
 		{
 			"id": "runtime.email.message.to",
@@ -1301,12 +1306,12 @@
 		{
 			"id": "runtime.durable_objects.id.name",
 			"kind": "runtime",
-			"relies": "The alarm handler reads the mailbox's address from `ctx.id.name`: the object is named after the address in the index, and nothing in a row says which mailbox it is. Without a name nothing leaves.",
+			"relies": "The alarm handler, and the step that files an arrival when it asks whether the automatic reply is owed, read the mailbox's address from `ctx.id.name`: the object is named after the address in the index, and nothing in a row says which mailbox it is. Without a name nothing leaves and no reply is made.",
 			"source": "https://developers.cloudflare.com/durable-objects/api/id/",
 			"pageUpdated": "2026-05-27",
 			"verifiedAt": "2026-11-18",
 			"evidence": "The `name` property is also available on `ctx.id` inside the Durable Object when the caller uses `idFromName()` or `getByName()`.",
-			"code": ["workers/durableObject/leaving.ts"],
+			"code": ["workers/durableObject/leaving.ts", "workers/durableObject/rules.ts"],
 			"note": "The page: the name is `undefined` when the caller used `idFromString()`, and for alarms created before 2026-03-15. Podbay reaches a mailbox only by `idFromName` (`getMailboxStub`, the guard). Seen to hold in the local runtime on 2026-11-18 (`test/workerd/sending.test.ts`)."
 		},
 		{
@@ -1370,6 +1375,31 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "Runs the provided `callback` inside the Durable Object that corresponds to the provided `stub`.",
 			"code": ["test/workerd/sending-helpers.ts"]
+		},
+		{
+			"id": "runtime.send_email.headers.auto_submitted",
+			"kind": "runtime",
+			"relies": "The sending service takes `Auto-Submitted` in the `headers` map. An automatic reply (ADR-0008, decision 9) is handed over with `Auto-Submitted: auto-replied`, so that no program answers it.",
+			"source": "https://developers.cloudflare.com/email-service/reference/headers/",
+			"pageUpdated": "2026-11-11",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Values include `no`, `auto-generated`, `auto-replied`, and extension tokens.",
+			"code": [
+				"workers/lib/outgoing-message.ts",
+				"workers/durableObject/auto-reply.ts",
+				"shared/rules.ts"
+			],
+			"note": "Not seen on Cloudflare's network: the automatic reply is tried with a send binding of the tests (test/workerd/auto-reply.test.ts)."
+		},
+		{
+			"id": "runtime.send_email.headers.allowlist",
+			"kind": "runtime",
+			"relies": "A header the service does not list refuses the whole send. Podbay hands over three and no other: `In-Reply-To` and `References` for an answer a person wrote, `Auto-Submitted` for an automatic reply.",
+			"source": "https://developers.cloudflare.com/email-service/reference/headers/",
+			"pageUpdated": "2026-11-11",
+			"verifiedAt": "2026-11-18",
+			"evidence": "Email Service rejects the entire send request if it contains a disallowed header.",
+			"code": ["workers/lib/outgoing-message.ts", "workers/lib/email-helpers.ts"]
 		}
 	]
 }
