@@ -9,9 +9,11 @@ on:
 permissions:
   contents: read
 
+# A pull request's newer run cancels its older one. A push to main is never cancelled or
+# replaced: each has a group of its own commit, so every commit on main is checked to the end.
 concurrency:
-  group: checks-${{ github.ref }}
-  cancel-in-progress: true
+  group: checks-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # D12: every commit of a pull request has a conventional subject and its author's sign-off.
