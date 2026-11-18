@@ -34,6 +34,8 @@ export function refetchMoved(client: QueryClient, mailboxId: string, kinds: Live
 	if (kinds.includes("settings")) {
 		invalidate(queryKeys.mailboxes.all);
 		invalidate(queryKeys.mailboxes.detail(mailboxId));
+		// The rules for incoming mail and the automatic reply are settings of the mailbox.
+		invalidate(queryKeys.rules.list(mailboxId));
 	}
 	// A notification of the device is raised from this and from nothing else.
 	if (kinds.includes("delivery")) invalidate(newMailKey(mailboxId));

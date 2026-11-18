@@ -7,6 +7,8 @@ import { Loader } from "@cloudflare/kumo";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 import AccountSettings from "~/components/settings/AccountSettings";
 import AssistantSettings from "~/components/settings/AssistantSettings";
+import AutoReplySettings from "~/components/settings/AutoReplySettings";
+import FilterSettings from "~/components/settings/FilterSettings";
 import GeneralSettings from "~/components/settings/GeneralSettings";
 import LabelSettings from "~/components/settings/LabelSettings";
 import MailboxDetails from "~/components/settings/MailboxDetails";
@@ -19,6 +21,8 @@ const TABS = [
 	{ id: "general", name: m("General") },
 	{ id: "signature", name: m("Signature") },
 	{ id: "labels", name: m("Labels") },
+	{ id: "filters", name: m("Filters and blocked senders") },
+	{ id: "auto-reply", name: m("Automatic reply") },
 	{ id: "mailbox", name: m("Mailbox") },
 	{ id: "assistant", name: m("Assistant") },
 	{ id: "account", name: m("Account") },
@@ -77,6 +81,12 @@ export default function SettingsRoute() {
 				{current === "signature" && <SignatureSettings mailbox={mailbox} />}
 				{current === "labels" && (
 					<LabelSettings mailboxId={mailboxId} canChange={mailbox.role !== "reader"} />
+				)}
+				{current === "filters" && (
+					<FilterSettings mailboxId={mailboxId} canChange={mailbox.role === "owner"} />
+				)}
+				{current === "auto-reply" && (
+					<AutoReplySettings mailboxId={mailboxId} canChange={mailbox.role === "owner"} />
 				)}
 				{current === "mailbox" && <MailboxDetails mailbox={mailbox} />}
 				{current === "assistant" && <AssistantSettings mailbox={mailbox} />}

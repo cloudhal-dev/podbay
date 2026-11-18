@@ -13,6 +13,7 @@ import type {
 } from "shared/bulk";
 import type { KnownAddressesAnswer } from "shared/known-addresses";
 import type { OriginalAnswer } from "shared/original";
+import type { AutoReply, AutoReplyAnswer, BlockedSender, Rule, RulesAnswer } from "shared/rules";
 import type { SendAnswer } from "shared/sending";
 import { t } from "~/i18n";
 import type {
@@ -105,8 +106,11 @@ function put<T>(url: string, body?: unknown) {
 	});
 }
 
-function del<T>(url: string) {
-	return request<T>(url, { method: "DELETE" });
+function del<T>(url: string, body?: unknown) {
+	return request<T>(url, {
+		method: "DELETE",
+		body: body != null ? JSON.stringify(body) : undefined,
+	});
 }
 
 /**
@@ -333,6 +337,23 @@ const api = {
 		del<void>(`/api/v1/mailboxes/${mailboxId}/known-addresses/${encodeURIComponent(id)}`),
 	forgetKnownAddresses: (mailboxId: string) =>
 		del<void>(`/api/v1/mailboxes/${mailboxId}/known-addresses`),
+
+	// The rules for incoming mail (ADR-0008). A sender is named in the body of a request,
+	// never in its address.
+	getRules: (mailboxId: string) => get<RulesAnswer>(`/api/v1/mailboxes/${mailboxId}/rules`),
+	saveRules: (mailboxId: string, rules: (Omit<Rule, "id"> & { id?: string })[]) =>
+		put<RulesAnswer>(`/api/v1/mailboxes/${mailboxId}/rules`, { rules }),
+	blockSender: (mailboxId: string, sender: string, kind?: "address" | "domain") =>
+		post<BlockedSender>(`/api/v1/mailboxes/${mailboxId}/blocked-senders`, {
+			sender,
+			...(kind === undefined ? {} : { kind }),
+		}),
+	unblockSender: (mailboxId: string, sender: string) =>
+		del<void>(`/api/v1/mailboxes/${mailboxId}/blocked-senders`, { sender }),
+	getAutoReply: (mailboxId: string) =>
+		get<AutoReplyAnswer>(`/api/v1/mailboxes/${mailboxId}/auto-reply`),
+	saveAutoReply: (mailboxId: string, reply: AutoReply) =>
+		put<AutoReplyAnswer>(`/api/v1/mailboxes/${mailboxId}/auto-reply`, reply),
 
 	// Search
 	searchEmails: (mailboxId: string, params: Record<string, string>) =>

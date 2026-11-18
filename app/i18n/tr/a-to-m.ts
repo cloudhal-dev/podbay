@@ -15,6 +15,10 @@ export const trAtoM: Readonly<Record<string, string>> = {
 		"Bir yazışma birden çok etiket taşıyabilir ve bu posta kutusuna erişimi olan herkes aynı etiketleri görür. {count} / {limit}.",
 	"A conversation can carry several labels. A slash in the name nests it, as in Clients/Acme.":
 		"Bir yazışma birden çok etiket taşıyabilir. Addaki eğik çizgi etiketi iç içe yerleştirir: Müşteriler/Acme gibi.",
+	"A filter acts on mail when it arrives, not on mail that is already here. Words are compared as they are written, without regard to capitals.":
+		"Filtre, postayı geldiği anda işler; zaten burada olan postaya dokunmaz. Sözcükler yazıldıkları gibi, büyük-küçük harf ayrımı yapılmadan karşılaştırılır.",
+	"A filter files mail when it arrives, for everyone who uses this mailbox. Filters run from the top; when two disagree about the place, Trash wins over Spam, and Spam over Archive. {count} of {limit}.":
+		"Filtre, postayı geldiği anda bu posta kutusunu kullanan herkes için yerine koyar. Filtreler yukarıdan aşağıya çalışır; ikisi yer konusunda ayrışırsa Çöp Kutusu Spam'e, Spam de Arşiv'e üstün gelir. {count} / {limit}.",
 	"A message can go to {count} recipients at most.": "Bir ileti en çok {count} alıcıya gidebilir.",
 	"A message carries {count} files at most.": "Bir ileti en çok {count} dosya taşır.",
 	"A notification of this device when mail arrives while Podbay is open in a tab. It shows who wrote and the subject.":
@@ -24,6 +28,9 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"A passkey signs you in with your device's fingerprint, face or PIN. It works only on this site, so it cannot be given away to a look-alike page, and it needs no code afterwards.":
 		"Geçiş anahtarı, cihazınızın parmak izi, yüz tanıma veya PIN'i ile oturum açmanızı sağlar. Yalnızca bu sitede çalışır; bu yüzden benzer görünen bir sayfaya kaptırılamaz ve ardından kod gerektirmez.",
 	"A person whose account is gone": "Hesabı artık olmayan bir kişi",
+	"A recipient": "Bir alıcı",
+	"A recipient contains {value}": "Alıcılardan biri şunu içeriyor: {value}",
+	"A recipient is {value}": "Alıcılardan biri: {value}",
 	"A recovery link works once and for a limited time. Ask the person who gave it to you for a new one.":
 		"Kurtarma bağlantısı bir kez ve sınırlı bir süre çalışır. Bağlantıyı size veren kişiden yenisini isteyin.",
 	"A second button on an answer: send it and file its conversation in one press.":
@@ -63,14 +70,18 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Already set up": "Kurulum zaten yapılmış",
 	"An AI client can read the mailboxes you choose, organise them and prepare drafts. It can never send: a person opens the draft here and sends it. Each client gets its own key, and a key stops working the moment you revoke it or lose access to a mailbox.":
 		"Bir yapay zekâ istemcisi seçtiğiniz posta kutularını okuyabilir, düzenleyebilir ve taslak hazırlayabilir. Hiçbir zaman gönderemez: taslağı bir kişi burada açar ve gönderir. Her istemcinin kendi anahtarı olur; anahtarı iptal ettiğiniz ya da posta kutusuna erişiminizi yitirdiğiniz anda anahtar çalışmaz.",
+	"An address or a domain": "Bir adres ya da alan adı",
 	"An empty file cannot be attached.": "Boş bir dosya eklenemez.",
 	"An invitation works once and for a limited time. Ask the person who invited you for a new one.":
 		"Davet bir kez ve sınırlı bir süre çalışır. Sizi davet eden kişiden yenisini isteyin.",
 	"An owner of this mailbox can change it.": "Bunu bu posta kutusunun bir sahibi değiştirebilir.",
+	"An owner of this mailbox can change its filters and blocked senders.":
+		"Filtreleri ve engellenen gönderenleri bu posta kutusunun bir sahibi değiştirebilir.",
 	"An owner of this mailbox can have it forget them all.":
 		"Bu posta kutusunun bir sahibi tümünün unutulmasını sağlayabilir.",
 	"An unexpected error occurred. Please try again.":
 		"Beklenmeyen bir hata oluştu. Lütfen yeniden deneyin.",
+	"Answer mail that arrives": "Gelen postayı yanıtla",
 	Any: "Herhangi biri",
 	"Any unread emails?": "Okunmamış e-posta var mı?",
 	Appearance: "Görünüm",
@@ -93,6 +104,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 		"Ekli dosyalar toplamda en çok {limit} MB olabilir. Bunlarla {size} MB olurdu.",
 	"Attaching {percent}%": "Ekleniyor: %{percent}",
 	"Authenticator app": "Kimlik doğrulama uygulaması",
+	"Automatic reply": "Otomatik yanıt",
 	"Back to list": "Listeye dön",
 	"Back to sign in": "Oturum açmaya dön",
 	"Back to the built-in prompt": "Yerleşik isteme dön",
@@ -101,6 +113,11 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	Before: "Şu tarihten önce",
 	"Below the list": "Listenin altında",
 	"Beside the list, on its right": "Listenin yanında, sağında",
+	Between: "Tarih aralığı",
+	Block: "Engelle",
+	"Block the sender": "Göndereni engelle",
+	"Block {address}?": "{address} engellensin mi?",
+	"Blocked senders": "Engellenen gönderenler",
 	Blockquote: "Alıntı",
 	Blue: "Mavi",
 	Bold: "Kalın",
@@ -173,6 +190,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 		"Alan adınızla e-posta gönderip almaya başlamak için bir posta kutusu oluşturun.",
 	"Create a recovery link": "Kurtarma bağlantısı oluştur",
 	"Create account": "Hesap oluştur",
+	"Create filter": "Filtre oluştur",
 	"Create invitation": "Davet oluştur",
 	"Create key": "Anahtar oluştur",
 	"Create owner": "Sahibi oluştur",
@@ -188,11 +206,13 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Delete all spam": "Tüm spam'i sil",
 	"Delete all spam now": "Tüm spam'i şimdi sil",
 	"Delete all spam?": "Tüm spam silinsin mi?",
+	"Delete filter": "Filtreyi sil",
 	"Delete forever": "Kalıcı olarak sil",
 	"Delete label": "Etiketi sil",
 	"Delete mailbox {name}": "{name} posta kutusunu sil",
 	'Delete the label "{name}"?': '"{name}" etiketi silinsin mi?',
 	"Delete this conversation forever?": "Bu yazışma kalıcı olarak silinsin mi?",
+	"Delete this filter?": "Bu filtre silinsin mi?",
 	"Delete this mailbox?": "Bu posta kutusu silinsin mi?",
 	"Delete this message": "Bu iletiyi sil",
 	"Delete this message forever": "Bu iletiyi kalıcı olarak sil",
@@ -207,6 +227,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Discarding draft": "Taslak siliniyor",
 	Display: "Görüntüleme",
 	"Display Name (optional)": "Görünen ad (isteğe bağlı)",
+	"Do this": "Şunu yap",
 	Domain: "Alan adı",
 	Download: "İndir",
 	"Download anyway": "Yine de indir",
@@ -223,6 +244,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Drafting reply": "Yanıt taslağı hazırlanıyor",
 	Edit: "Düzenle",
 	"Edit & send in composer": "Yazma penceresinde düzenle ve gönder",
+	"Edit filter": "Filtreyi düzenle",
 	"Edit label": "Etiketi düzenle",
 	Email: "E-posta",
 	"Email Address": "E-posta adresi",
@@ -237,10 +259,12 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	End: "Sonlandır",
 	"End all other sessions": "Diğer tüm oturumları sonlandır",
 	"End the session of {device}": "{device} oturumunu sonlandır",
+	Ends: "Bitiş",
 	"Every browser that is signed in to your account. End one you do not recognise, then change your password.":
 		"Hesabınızda oturumu açık olan her tarayıcı. Tanımadığınız birini sonlandırın, ardından parolanızı değiştirin.",
 	"Every change to who has access, newest first. It cannot be edited.":
 		"Kimin erişimi olduğuna ilişkin her değişiklik, en yenisi en üstte. Düzenlenemez.",
+	"Everyone at {domain}": "{domain} alan adındaki herkes",
 	"Everyone with an account here. A recovery link lets a person who cannot sign in choose a new password; make one only when you are sure who is asking.":
 		"Burada hesabı olan herkes. Kurtarma bağlantısı, oturum açamayan bir kişinin yeni parola seçmesini sağlar; yalnızca kimin istediğinden emin olduğunuzda oluşturun.",
 	"Everything in {place} is selected.": "{place} içindeki her şey seçili.",
@@ -258,6 +282,9 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Fetching emails": "E-postalar getiriliyor",
 	"Files that were not carried over": "Aktarılmayan dosyalar",
 	"Files to attach": "Eklenecek dosyalar",
+	"Filter messages like this": "Bunun gibi iletileri filtrele",
+	Filters: "Filtreler",
+	"Filters and blocked senders": "Filtreler ve engellenen gönderenler",
 	"Find messages from this sender": "Bu gönderenin iletilerini bul",
 	Folders: "Klasörler",
 	"For an hour you can take it back.": "Bir saat boyunca geri alabilirsiniz.",
@@ -278,6 +305,9 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	From: "Kimden",
 	"From:": "Kimden:",
 	General: "Genel",
+	"Give an address, or a domain such as example.com.":
+		"Bir adres ya da example.com gibi bir alan adı girin.",
+	"Give it these labels": "Şu etiketleri ver",
 	"Give this link to {email} yourself, by a channel you trust. It works once, until {date}, and is shown only now. Using it ends their sessions and removes their authenticator app, passkeys and keys.":
 		"Bu bağlantıyı {email} adresinin sahibine, güvendiğiniz bir kanaldan kendiniz iletin. {date} tarihine kadar, bir kez çalışır ve yalnızca şimdi gösterilir. Kullanıldığında kişinin oturumları sonlanır; kimlik doğrulama uygulaması, geçiş anahtarları ve anahtarları kaldırılır.",
 	"Go Home": "Ana sayfaya git",
@@ -296,9 +326,11 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Hide it": "Gizle",
 	Highlight: "Vurgu",
 	"Horizontal rule": "Yatay çizgi",
+	"How a recipient is compared": "Alıcının nasıl karşılaştırılacağı",
 	"How many lines a list shows before it pages.":
 		"Bir listenin sayfalara bölünmeden önce kaç satır gösterdiği.",
 	"How tall a line of a list is.": "Listedeki bir satırın yüksekliği.",
+	"How the sender is compared": "Gönderenin nasıl karşılaştırılacağı",
 	Huge: "Çok büyük",
 	"I can read emails, search conversations, and draft replies.":
 		"E-postaları okuyabilir, yazışmalarda arama yapabilir ve yanıt taslakları hazırlayabilirim.",
@@ -307,15 +339,20 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	Image: "Görsel",
 	"In place of the list": "Listenin yerinde",
 	"In the inbox": "Gelen Kutusu'nda",
+	"In this device's time zone. Leave a field empty for no beginning or no end.":
+		"Bu cihazın saat diliminde. Başlangıç ya da bitiş olmasın istiyorsanız alanı boş bırakın.",
 	"In your AI client, add a remote MCP server with the URL above and the header {header} followed by this key.":
 		"Yapay zekâ istemcinize, yukarıdaki adresle uzak bir MCP sunucusu ekleyin; başlık olarak {header} ve ardından bu anahtarı yazın.",
 	"Indent less": "Girintiyi azalt",
 	"Indent more": "Girintiyi artır",
 	Info: "Bilgi",
 	"Invite a person": "Kişi davet et",
+	"It has an attachment": "Eki var",
 	"It is built in a way Podbay does not read.": "Podbay'in okumadığı bir biçimde kurulmuş.",
 	"It is kept exactly as it arrived, and you can see or save that.":
 		"Tam geldiği haliyle saklanıyor; onu görebilir veya kaydedebilirsiniz.",
+	"It is on, but nothing is being answered: the person who turned it on is no longer an owner of this mailbox, or their account was recovered since. An owner saves it again to turn it on.":
+		"Açık, ama hiçbir ileti yanıtlanmıyor: onu açan kişi artık bu posta kutusunun sahibi değil ya da hesabı o zamandan beri kurtarıldı. Yeniden çalışması için bir sahip tekrar kaydeder.",
 	"It is taken off one message. No message is deleted or moved.":
 		"Bir iletiden kaldırılır. Hiçbir ileti silinmez ya da taşınmaz.",
 	"It is taken off {count} messages. No message is deleted or moved.":
@@ -328,6 +365,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Keyboard shortcuts": "Klavye kısayolları",
 	Label: "Etiket",
 	"Label as": "Etiketle",
+	"Label it {name}": "Şu etiketi ver: {name}",
 	"Label {holds} {name}?": "{holds} şu etiketle etiketlensin mi: {name}?",
 	"Label {name}": "Etiket: {name}",
 	"Label {name} taken off the conversation": "Etiket yazışmadan kaldırıldı: {name}",
@@ -336,6 +374,8 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	Language: "Dil",
 	Large: "Büyük",
 	"Last used {date}": "Son kullanım: {date}",
+	"Leave it in the Inbox": "Gelen Kutusu'nda bırak",
+	"Left empty, the subject is “Automatic reply”.": "Boş bırakılırsa konu “Automatic reply” olur.",
 	"Let me edit this draft first. Show me what you have so I can modify it.":
 		"Önce bu taslağı düzenleyeyim. Değiştirebilmem için hazırladığını göster.",
 	Light: "Açık",
@@ -345,7 +385,13 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Loading the original": "Özgün ileti yükleniyor",
 	"Loading thread": "Yazışma yükleniyor",
 	Mail: "Posta",
+	"Mail from a blocked sender goes to Spam when it arrives. Nobody is told that they are blocked. {count} of {limit}.":
+		"Engellenen bir gönderenin postası geldiği anda Spam'e gider. Kimseye engellendiği bildirilmez. {count} / {limit}.",
+	"Mail from this address will go to Spam when it arrives, for everyone who uses this mailbox. Mail that is already here stays where it is, and the sender is not told.":
+		"Bu adresten gelen posta, bu posta kutusunu kullanan herkes için geldiği anda Spam'e gidecek. Zaten burada olan posta yerinde kalır ve gönderene bildirilmez.",
 	"Mail sent to this address arrives here.": "Bu adrese gönderilen postalar buraya gelir.",
+	"Mail that arrives from now on is no longer filed by it. No mail is deleted or moved.":
+		"Bundan sonra gelen posta artık bu filtreyle yerine konmaz. Hiçbir posta silinmez ya da taşınmaz.",
 	Mailbox: "Posta kutusu",
 	"Mailbox created successfully!": "Posta kutusu oluşturuldu!",
 	"Mailbox deleted": "Posta kutusu silindi",
@@ -364,6 +410,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Mark {holds} as unread?": "{holds} okunmadı olarak işaretlensin mi?",
 	Member: "Üye",
 	Members: "Üyeler",
+	Message: "İleti",
 	"Message headers": "İleti üstbilgileri",
 	"Message marked as read": "İleti okundu olarak işaretlendi",
 	"Message marked as spam": "İleti spam olarak işaretlendi",
@@ -379,8 +426,11 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	Move: "Taşı",
 	"Move emails here to keep your inbox clean without deleting them.":
 		"E-postaları silmeden gelen kutunuzu derli toplu tutmak için buraya taşıyın.",
+	"Move this filter down": "Bu filtreyi aşağı taşı",
+	"Move this filter up": "Bu filtreyi yukarı taşı",
 	"Move to": "Taşı",
 	"Move to Inbox": "Gelen Kutusu'na taşı",
+	"Move to Spam": "Spam'e taşı",
 	"Move to Trash": "Çöp Kutusu'na taşı",
 	"Move {holds} to Inbox?": "{holds} Gelen Kutusu'na taşınsın mı?",
 	"Move {holds} to Trash?": "{holds} Çöp Kutusu'na taşınsın mı?",
@@ -390,12 +440,14 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"added {date}": "{date} tarihinde eklendi",
 	"added {date} by themselves": "{date} tarihinde kendisi ekledi",
 	"added {date} by {who}": "{date} tarihinde {who} ekledi",
+	contains: "içerir",
 	"ends {date}": "bitiş: {date}",
 	"g  then  d": "g  ardından  d",
 	"g  then  i": "g  ardından  i",
 	"g  then  s": "g  ardından  s",
 	"g  then  t": "g  ardından  t",
 	info: "bilgi",
+	"is exactly": "tam olarak şu",
 	"make one with the setup token": "kurulum anahtarıyla bir bağlantı oluşturabilir",
 	me: "ben",
 	"Messages here have not left yet. Each leaves at its time.":

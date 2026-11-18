@@ -12,6 +12,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"New Mailbox": "Yeni posta kutusu",
 	"New emails will appear here when they arrive. Send an email to get the conversation started.":
 		"Yeni e-postalar geldiklerinde burada görünür. Yazışmayı başlatmak için bir e-posta gönderin.",
+	"New filter": "Yeni filtre",
 	"New key": "Yeni anahtar",
 	"New label": "Yeni etiket",
 	"New message": "Yeni ileti",
@@ -134,12 +135,15 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Role of {name}": "{name} kişisinin rolü",
 	Save: "Kaydet",
 	"Save and close": "Kaydet ve kapat",
+	"Save automatic reply": "Otomatik yanıtı kaydet",
 	"Save draft": "Taslağı kaydet",
 	"Save prompt": "İstemi kaydet",
 	"Save signature": "İmzayı kaydet",
 	"Save these recovery codes somewhere safe. Each one signs you in once if you lose your authenticator app. They are shown only now.":
 		"Bu kurtarma kodlarını güvenli bir yere kaydedin. Kimlik doğrulama uygulamanızı kaybederseniz her biri bir kez oturum açmanızı sağlar. Yalnızca şimdi gösterilir.",
 	Saved: "Kaydedildi",
+	"Say at least one thing the filter does.": "Filtrenin yapacağı en az bir şey belirtin.",
+	"Say at least one thing the filter looks for.": "Filtrenin arayacağı en az bir şey belirtin.",
 	"Scan this with your authenticator app, then enter the code it shows.":
 		"Bunu kimlik doğrulama uygulamanızla tarayın, ardından gösterdiği kodu girin.",
 	Search: "Ara",
@@ -202,12 +206,14 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Single keys that act on mail, such as c to write.":
 		"Postada işlem yapan tek tuşlar; örneğin yazmak için c.",
 	Size: "Boyut",
+	"Skip the Inbox": "Gelen Kutusu'nu atla",
 	Small: "Küçük",
 	Snippets: "Önizleme metni",
 	"Something went wrong": "Bir sorun oluştu",
 	Star: "Yıldızla",
 	"Star a conversation to find it here again.":
 		"Bir yazışmayı burada yeniden bulmak için yıldızlayın.",
+	"Star it": "Yıldızla",
 	"Star or unstar": "Yıldızla ya da yıldızı kaldır",
 	"Star taken off the conversation": "Yazışmanın yıldızı kaldırıldı",
 	"Star taken off the message": "İletinin yıldızı kaldırıldı",
@@ -215,6 +221,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Star this message": "Bu iletiyi yıldızla",
 	Starred: "Yıldızlı",
 	"Starred first": "Önce yıldızlılar",
+	Starts: "Başlangıç",
 	"Stop generating": "Üretmeyi durdur",
 	"Stop this key working?": "Bu anahtar çalışmaz olsun mu?",
 	Strikethrough: "Üstü çizili",
@@ -240,12 +247,20 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The addresses are forgotten": "Adresler unutuldu",
 	"The addresses could not be forgotten": "Adresler unutulamadı",
 	"The authenticator app could not be set up.": "Kimlik doğrulama uygulaması kurulamadı.",
+	"The automatic reply could not be loaded.": "Otomatik yanıt yüklenemedi.",
+	"The automatic reply could not be saved.": "Otomatik yanıt kaydedilemedi.",
+	"The automatic reply is off": "Otomatik yanıt kapalı",
+	"The automatic reply is on": "Otomatik yanıt açık",
 	"The conversation with the assistant will be removed. Your mail is not touched.":
 		"Asistanla olan sohbet kaldırılır. Postalarınıza dokunulmaz.",
 	"The draft will be deleted. This cannot be undone.": "Taslak silinir. Bu işlem geri alınamaz.",
+	"The end must be after the beginning.": "Bitiş, başlangıçtan sonra olmalı.",
 	"The file could not be downloaded.": "Dosya indirilemedi.",
 	"The file holds the whole message as it arrived, with every attachment. Another program will open it without Podbay's protections.":
 		"Dosya, iletinin geldiği haliyle tamamını ve bütün eklerini içerir. Başka bir program onu Podbay'in korumaları olmadan açar.",
+	"The filter could not be saved.": "Filtre kaydedilemedi.",
+	"The filters could not be loaded.": "Filtreler yüklenemedi.",
+	"The filters could not be saved": "Filtreler kaydedilemedi",
 	"The first {shown} of {size}. Download the message to have all of it.":
 		"{size} boyutundaki iletinin ilk {shown} kadarı. Tamamı için iletiyi indirin.",
 	"The invitation could not be created.": "Davet oluşturulamadı.",
@@ -263,6 +278,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The member could not be removed.": "Üye çıkarılamadı.",
 	"The message as it arrived, before Podbay read it.":
 		"İletinin, Podbay onu okumadan önce geldiği hali.",
+	"The message has the words": "İletide şu sözcükler var",
+	"The message has the words {value}": "İletide şu sözcükler var: {value}",
 	"The name could not be saved": "Ad kaydedilemedi",
 	"The name people see on mail sent from this mailbox.":
 		"Bu posta kutusundan gönderilen postalarda görünen ad.",
@@ -288,6 +305,11 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The second step could not be turned off.": "İkinci adım kapatılamadı.",
 	"The selected text will open this address. Leave it empty to remove the link.":
 		"Seçili metin bu adresi açar. Bağlantıyı kaldırmak için boş bırakın.",
+	"The sender": "Gönderen",
+	"The sender contains {value}": "Gönderen şunu içeriyor: {value}",
+	"The sender could not be blocked.": "Gönderen engellenemedi.",
+	"The sender could not be unblocked": "Gönderenin engeli kaldırılamadı",
+	"The sender is {value}": "Gönderen: {value}",
 	"The session could not be ended.": "Oturum sonlandırılamadı.",
 	"The sessions could not be ended.": "Oturumlar sonlandırılamadı.",
 	"The signature belongs to the mailbox: everyone who writes from it gets the same one, and a message already written keeps what it has.":
@@ -295,6 +317,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The signature could not be saved": "İmza kaydedilemedi",
 	"The start of a message after its subject, in a list.":
 		"Listede, konudan sonra iletinin başlangıcı.",
+	"The subject contains": "Konu şunu içeriyor",
+	"The subject contains {value}": "Konu şunu içeriyor: {value}",
 	"The two passwords are not the same.": "İki parola aynı değil.",
 	"The whole message as it arrived: {size}.": "İletinin geldiği haliyle tamamı: {size}.",
 	"Their email": "Kişinin e-postası",
@@ -327,8 +351,12 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"This instance has an owner.": "Bu kurulumun bir sahibi var.",
 	"This instance has no owner yet. {link}.": "Bu kurulumun henüz sahibi yok. {link}.",
 	"This link is not valid any more": "Bu bağlantı artık geçerli değil",
+	"This mailbox blocks no sender.": "Bu posta kutusu hiçbir göndereni engellemiyor.",
 	"This mailbox does not exist, or you may not see its members.":
 		"Bu posta kutusu yok ya da üyelerini görme yetkiniz yok.",
+	"This mailbox has as many filters as it can hold.":
+		"Bu posta kutusunda olabilecek en çok sayıda filtre var.",
+	"This mailbox has no filters yet.": "Bu posta kutusunda henüz filtre yok.",
 	"This mailbox has no labels yet.": "Bu posta kutusunda henüz etiket yok.",
 	"This mailbox remembers the addresses mail was sent to from it, and offers them to everyone who writes from it while an address is typed. Mail that arrives teaches it nothing.":
 		"Bu posta kutusu, buradan posta gönderilen adresleri hatırlar ve adres yazılırken bunları buradan yazan herkese önerir. Gelen postalardan hiçbir şey öğrenmez.",
@@ -348,6 +376,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Turn on": "Aç",
 	"Type something to search by subject, sender or content.":
 		"Konuya, gönderene ya da içeriğe göre aramak için bir şey yazın.",
+	Unblock: "Engeli kaldır",
+	"Unblock the sender": "Gönderenin engelini kaldır",
 	"Under the list": "Listenin altında",
 	Underline: "Altı çizili",
 	Undo: "Geri al",
@@ -373,19 +403,28 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"What a list puts on top. Inside each group the newest is first.":
 		"Bir listenin en üste koyduğu şey. Her grubun içinde en yeni olan önce gelir.",
 	"What follows the header": "Üstbilgiden sonrası",
+	"What people who write to this mailbox are told.": "Bu posta kutusuna yazanlara söylenecek olan.",
 	"What the Reply button on a message does.": "Bir iletideki Yanıtla düğmesinin ne yaptığı.",
+	"When a message arrives and all of this is true":
+		"Bir ileti geldiğinde ve bunların hepsi doğruysa",
 	"Where a conversation opens when the screen has room.":
 		"Ekranda yer olduğunda yazışmanın nerede açıldığı.",
+	"Where it goes": "Nereye gideceği",
 	"Where this key will be used": "Bu anahtarın kullanılacağı yer",
 	"Where to go after the open conversation is archived, deleted, moved or reported.":
 		"Açık yazışma arşivlendikten, silindikten, taşındıktan ya da bildirildikten sonra nereye gidileceği.",
 	"Where you are signed in": "Oturum açtığınız yerler",
 	"Whether a message and the answers to it are one line and one screen.":
 		"Bir iletinin ve yanıtlarının tek satırda ve tek ekranda gösterilip gösterilmeyeceği.",
+	"Whether the mailbox answers by itself.":
+		"Posta kutusunun kendiliğinden yanıt verip vermeyeceği.",
+	"While it is on, this mailbox answers people who write to it, by itself and in its own name. A sender is answered once in seven days. Lists, automatic mail, mail in Spam and mail that does not name this address are never answered, and nothing of the message that arrived is in the answer.":
+		"Açıkken bu posta kutusu, kendisine yazanları kendiliğinden ve kendi adıyla yanıtlar. Bir gönderen yedi günde bir kez yanıtlanır. Listeler, otomatik postalar, Spam'deki postalar ve bu adresi belirtmeyen postalar hiçbir zaman yanıtlanmaz; gelen iletiden hiçbir şey yanıtta yer almaz.",
 	"Who has access": "Kimlerin erişimi var",
 	"Who may read this mailbox and send as it.":
 		"Bu posta kutusunu kimlerin okuyabileceği ve onun adına gönderebileceği.",
 	"Write a new message": "Yeni ileti yaz",
+	"Write the message before turning it on.": "Açmadan önce iletiyi yazın.",
 	"Write to this sender": "Bu gönderene yaz",
 	Yellow: "Sarı",
 	You: "Siz",
@@ -435,7 +474,9 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"to {names}": "alıcı: {names}",
 	"to {names} and {count} more": "alıcı: {names} ve {count} kişi daha",
 	"{address} could not be forgotten": "{address} unutulamadı",
+	"{address} is blocked": "{address} engellendi",
 	"{address} is forgotten": "{address} unutuldu",
+	"{address} is no longer blocked": "{address} artık engelli değil",
 	"{browser} on {system}": "{system} üzerinde {browser}",
 	"{by} left the mailbox": "{by} posta kutusundan ayrıldı",
 	"{by} made themselves a member": "{by} kendisini üye yaptı",

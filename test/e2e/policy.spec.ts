@@ -36,6 +36,8 @@ test("no page of the app breaks its own content policy", async ({ page, app }) =
 		[`/mailbox/${mailbox}/emails/inbox`, "Inbox"],
 		[`/mailbox/${mailbox}/emails/scheduled`, "Scheduled"],
 		[`/mailbox/${mailbox}/settings`, "Settings"],
+		[`/mailbox/${mailbox}/settings?tab=filters`, "Settings"],
+		[`/mailbox/${mailbox}/settings?tab=auto-reply`, "Settings"],
 		[`/members/${mailbox}`, "Members"],
 		["/account/security", "Sign-in and security"],
 	];
