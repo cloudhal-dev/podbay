@@ -26,9 +26,15 @@ import { check as secrets } from "./checks/secrets.ts";
 import { check as sender } from "./checks/sender.ts";
 import { check as vendored } from "./checks/vendored-skills.ts";
 import { check as workflows } from "./checks/workflows.ts";
-import { checkPins, readManifest } from "./pins.ts";
+import { checkPins, readAll } from "./pins.ts";
 
-const pins: Check = { name: "pins", run: () => checkPins(readManifest()) };
+const pins: Check = {
+	name: "pins",
+	run() {
+		const read = readAll();
+		return "problems" in read ? read.problems : checkPins(read.workspace, read.packages);
+	},
+};
 const ALL: Check[] = [
 	pins,
 	copies,

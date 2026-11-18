@@ -2,15 +2,18 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 /**
- * Tier 0: `biome.json` names the schema of the Biome that `package.json` pins
- * (`pnpm static schemas`), so an update of the tool cannot leave its configuration behind.
+ * Tier 0: `biome.json` follows what the workspace's catalog pins (`pnpm static schemas`): it names
+ * the schema of that Biome, so an update of the tool cannot leave its configuration behind, and it
+ * names every domain of Biome's rules a catalog entry would turn on, since an entry written as
+ * `catalog:` turns none on by itself.
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { schemaProblems } from "../../scripts/checks/schemas.ts";
+import { readAll } from "../../scripts/pins.ts";
 
 const at = (version: string) => ({ $schema: `https://biomejs.dev/schemas/${version}/schema.json` });
-const pinned = (version: string) => ({ devDependencies: { "@biomejs/biome": version } });
+const pinned = (version: string) => ({ "@biomejs/biome": version });
 
 describe("the schema biome.json names", () => {
 	it("is the pinned version", () => {
@@ -31,13 +34,33 @@ describe("the schema biome.json names", () => {
 		expect(schemaProblems(biome, pinned("2.6.8"))).toHaveLength(1);
 	});
 
-	it("is refused when the tool is not a dependency", () => {
-		expect(schemaProblems(at("2.6.8"), { devDependencies: {} })).toHaveLength(1);
+	it("is refused when the tool is not in the catalog", () => {
+		expect(schemaProblems(at("2.6.8"), {})).toHaveLength(1);
 	});
 
 	it("holds for this repository", () => {
-		const read = (path: string) =>
-			JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8")) as never;
-		expect(schemaProblems(read("biome.json"), read("package.json"))).toEqual([]);
+		const read = readAll();
+		if ("problems" in read) throw new Error(read.problems.join("; "));
+		const biome = JSON.parse(readFileSync(new URL("../../biome.json", import.meta.url), "utf8"));
+		expect(schemaProblems(biome, read.workspace.catalog)).toEqual([]);
+	});
+});
+
+describe("the domains of Biome's rules", () => {
+	const named = (...domains: string[]) => ({
+		...at("2.6.8"),
+		linter: { domains: Object.fromEntries(domains.map((one) => [one, "recommended"])) },
+	});
+
+	it("are named for every catalog entry that would turn one on", () => {
+		const catalog = { ...pinned("2.6.8"), react: "19.3.1", vitest: "5.1.0" };
+		expect(schemaProblems(named("react", "test"), catalog)).toEqual([]);
+		expect(schemaProblems(named("react"), catalog)).toEqual([
+			'biome.json: the catalog has vitest, which turns Biome\'s "test" rules on; name it under linter.domains, as a catalog entry turns nothing on by itself',
+		]);
+	});
+
+	it("are not asked for below the version that turns them on", () => {
+		expect(schemaProblems(named(), { ...pinned("2.6.8"), react: "15.6.2" })).toEqual([]);
 	});
 });

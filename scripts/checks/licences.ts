@@ -62,13 +62,21 @@ export function checkLicences(listing: Record<string, Listed[]>): string[] {
 	return problems;
 }
 
+/**
+ * The licences of every package installed for the workspace at `cwd`, every workspace package's
+ * dependencies included: without `-r`, `pnpm licenses list` reads the root package's alone (tried
+ * with a throwaway workspace on 2026-11-19, pnpm 12.10.1; ADR-0018, decision 4).
+ */
+export function licenceProblems(cwd = "."): string[] {
+	const json = execFileSync("pnpm", ["licenses", "list", "--json", "-r"], {
+		cwd,
+		encoding: "utf8",
+		maxBuffer: 128 * 1024 * 1024,
+	});
+	return checkLicences(JSON.parse(json) as Record<string, Listed[]>);
+}
+
 export const check: Check = {
 	name: "licences",
-	run() {
-		const json = execFileSync("pnpm", ["licenses", "list", "--json"], {
-			encoding: "utf8",
-			maxBuffer: 128 * 1024 * 1024,
-		});
-		return checkLicences(JSON.parse(json) as Record<string, Listed[]>);
-	},
+	run: () => licenceProblems(),
 };
