@@ -1,0 +1,110 @@
+// Copyright 2026 Cloudhal and the Podbay contributors
+// Licensed under the Apache 2.0 license found in the LICENSE file.
+
+/**
+ * Tier 0: the app's controls are Kumo's (`pnpm static controls`, issue #84). A control written by
+ * hand is refused unless it is a listed debt or kept on purpose with its reason, a debt only goes
+ * down, and a Kumo control gets no size, height or corner by hand.
+ */
+import { describe, expect, it } from "vitest";
+import { controlProblems, type OnPurpose, tagsOf } from "../../scripts/checks/controls.ts";
+
+const FILE = "app/components/Thing.tsx";
+const files = (text: string) => new Map([[FILE, text]]);
+const problems = (
+	text: string,
+	options: {
+		onPurpose?: OnPurpose[];
+		toMove?: Record<string, Record<string, number>>;
+		sized?: Record<string, number>;
+	} = {},
+) =>
+	controlProblems(files(text), options.onPurpose ?? [], options.toMove ?? {}, options.sized ?? {});
+
+describe("controls written by hand", () => {
+	it.each([
+		["a select", '<select aria-label="Size"><option>1</option></select>'],
+		["a text area", '<textarea aria-label="Message" />'],
+		["an input", '<input type="checkbox" />'],
+		["a button", '<button type="button">Go</button>'],
+	])("refuses %s in a file with no debt", (_what, text) => {
+		expect(problems(text)).toHaveLength(1);
+	});
+
+	it("passes Kumo's controls", () => {
+		expect(
+			problems('<Select aria-label="Size" /><Input label="Name" size="sm" /><Button>Go</Button>'),
+		).toEqual([]);
+	});
+
+	it("reads a tag whole, across lines and braces, and does not take a longer name for the element", () => {
+		expect(
+			tagsOf('<input\n  type="text"\n  onChange={(e) => go(e.target.value > 1)}\n/>', ["input"]),
+		).toHaveLength(1);
+		expect(problems("<inputs /><buttonish />")).toEqual([]);
+	});
+
+	it("holds a debt where it is, and refuses one more", () => {
+		const toMove = { [FILE]: { button: 1 } };
+		expect(problems('<button type="button">One</button>', { toMove })).toEqual([]);
+		expect(
+			problems('<button type="button">One</button><button type="button">Two</button>', { toMove }),
+		).toHaveLength(1);
+	});
+
+	it("asks for a debt to be lowered when a control has moved", () => {
+		const out = problems("<Button>One</Button>", { toMove: { [FILE]: { button: 1 } } });
+		expect(out).toEqual([
+			`${FILE}: 0 <button> written by hand, fewer than the 1 listed; lower TO_MOVE in scripts/checks/controls.ts`,
+		]);
+	});
+
+	it("keeps a native control on purpose only with its reason", () => {
+		const kept: OnPurpose = {
+			file: FILE,
+			element: "button",
+			count: 1,
+			reason: "The whole line of a message opens it.",
+		};
+		expect(problems('<button type="button">A line</button>', { onPurpose: [kept] })).toEqual([]);
+		expect(
+			problems('<button type="button">A line</button>', { onPurpose: [{ ...kept, reason: "" }] }),
+		).toHaveLength(1);
+	});
+
+	it("refuses a listed file that is gone", () => {
+		const out = controlProblems(new Map(), [], { "app/gone.tsx": { input: 1 } }, {});
+		expect(out).toEqual(["app/gone.tsx: listed in TO_MOVE and gone; remove its line"]);
+	});
+});
+
+describe("Kumo controls sized by hand", () => {
+	it.each([
+		["a height", '<Input label="Name" className="h-9" />'],
+		["a smallest height", '<Button className="min-h-8">Go</Button>'],
+		["a size", '<Button className="size-6">Go</Button>'],
+		["a corner", '<Button className="rounded-full">Go</Button>'],
+		["a corner by itself", '<Select className="rounded" />'],
+		["a type size", '<Input label="Name" className="text-sm" />'],
+		["one under a breakpoint", '<Button className="md:h-10">Go</Button>'],
+		["one in cn()", '<Button className={cn("w-full", "rounded-lg")}>Go</Button>'],
+		["one on its own line", '<Button\n  variant="primary"\n  className="h-12"\n>Go</Button>'],
+	])("refuses %s", (_what, text) => {
+		expect(problems(text)).toHaveLength(1);
+	});
+
+	it("leaves width, margins and the screen's layout alone", () => {
+		expect(
+			problems(
+				'<Button className="w-full mt-2 shrink-0">Go</Button><Input label="N" className="max-w-md" />',
+			),
+		).toEqual([]);
+	});
+
+	it("holds a listed debt and asks for it to be lowered", () => {
+		expect(
+			problems('<Button className="rounded-full">Go</Button>', { sized: { [FILE]: 1 } }),
+		).toEqual([]);
+		expect(problems("<Button>Go</Button>", { sized: { [FILE]: 1 } })).toHaveLength(1);
+	});
+});
