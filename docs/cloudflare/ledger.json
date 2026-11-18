@@ -519,14 +519,15 @@
 			"kind": "runtime",
 			"relies": "A Durable Object can set one alarm at a time. The mailbox object keeps every time it waits for in rows and sets its one alarm to the earliest (ADR-0016, decision 17); snooze (ADR-0010) adds its times to the same function.",
 			"source": "https://developers.cloudflare.com/durable-objects/api/alarms/",
-			"pageUpdated": "2026-04-21",
-			"verifiedAt": "2026-11-18",
+			"pageUpdated": "2026-11-18",
+			"verifiedAt": "2026-11-19",
 			"evidence": "Each Durable Object is able to schedule a single alarm at a time by calling `setAlarm()`.",
 			"code": [
 				"workers/durableObject/alarm.ts",
 				"workers/durableObject/submissions.ts",
 				"workers/durableObject/index.ts",
-				"docs/adr/0010-snooze-and-mute.md"
+				"docs/adr/0010-snooze-and-mute.md",
+				"docs/adr/0018-one-workspace-one-worker-many-modules.md"
 			],
 			"note": "The same page: `Alarms have guaranteed at-least-once execution and are retried automatically when the alarm() handler throws.` Since ADR-0016 the mailbox object has an alarm: outgoing mail leaves from it."
 		},
@@ -781,8 +782,8 @@
 			"kind": "limit",
 			"relies": "One file of a message (at most 18 MiB) is sent in one request, on every plan.",
 			"source": "https://developers.cloudflare.com/workers/platform/limits/",
-			"pageUpdated": "2026-11-13",
-			"verifiedAt": "2026-11-17",
+			"pageUpdated": "2026-11-18",
+			"verifiedAt": "2026-11-19",
 			"evidence": "request body size limits depend on the domain's Cloudflare plan, not your Workers plan",
 			"code": ["workers/routes/drafts.ts", "shared/sending-limits.ts"]
 		},
@@ -1400,6 +1401,146 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "Email Service rejects the entire send request if it contains a disallowed header.",
 			"code": ["workers/lib/outgoing-message.ts", "workers/lib/email-helpers.ts"]
+		},
+		{
+			"id": "limit.workers.script_size",
+			"kind": "limit",
+			"relies": "A Worker may be 64 MiB uncompressed on both plans, with no limit on its compressed size, so every module can live in the one Worker (ADR-0018, decision 1).",
+			"source": "https://developers.cloudflare.com/workers/platform/limits/",
+			"pageUpdated": "2026-11-18",
+			"verifiedAt": "2026-11-19",
+			"evidence": "There is no compressed size limit. Only the uncompressed bundle size counts.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"]
+		},
+		{
+			"id": "runtime.static_assets.one_collection",
+			"kind": "runtime",
+			"relies": "A Worker has one collection of static assets, so the single-page app is served by one Worker; a second Worker would not serve it (ADR-0018).",
+			"source": "https://developers.cloudflare.com/workers/static-assets/binding/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-19",
+			"evidence": "Only one collection of static assets can be configured in each Worker.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md", "wrangler.jsonc"]
+		},
+		{
+			"id": "runtime.service_bindings.limits",
+			"kind": "runtime",
+			"relies": "A call from one Worker to another through a service binding counts against the calling request's subrequests and its 32 Worker invocations. ADR-0018 keeps every module in one Worker, so no module call pays this.",
+			"source": "https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-19",
+			"evidence": "A single request has a maximum of 32 Worker invocations, and each call to a Service binding counts towards this limit.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"],
+			"note": "The same page says service bindings \"don't increase costs\"; the pricing page says such calls \"do not incur additional request fees\"."
+		},
+		{
+			"id": "config.durable_objects.script_name",
+			"kind": "config",
+			"relies": "A Durable Object class defined in one Worker can be bound from another by naming that Worker. ADR-0018 does not use it: every class stays in the one Worker.",
+			"source": "https://developers.cloudflare.com/workers/wrangler/configuration/",
+			"pageUpdated": null,
+			"verifiedAt": "2026-11-19",
+			"evidence": "The name of the Worker where the Durable Object is defined, if it is external to this Worker.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"]
+		},
+		{
+			"id": "runtime.durable_objects.migrations.tags",
+			"kind": "runtime",
+			"relies": "A migration tag names a migration that has been applied, once per environment. The tags `v1` and `v2` stay as they are through any move of files (ADR-0018, decision 3).",
+			"source": "https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/",
+			"pageUpdated": "2026-09-28",
+			"verifiedAt": "2026-11-19",
+			"evidence": "Migration tags are treated like unique names and are used to determine which migrations have already been applied.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md", "wrangler.jsonc"],
+			"note": "Neither page says whether an applied tag may be edited or removed; ADR-0018 treats them as never changed."
+		},
+		{
+			"id": "runtime.durable_objects.migrations.transfer",
+			"kind": "runtime",
+			"relies": "Moving a class's stored objects to a class of another Worker is a transfer migration. ADR-0018 makes no transfer part of the move.",
+			"source": "https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/",
+			"pageUpdated": "2026-09-28",
+			"verifiedAt": "2026-11-19",
+			"evidence": "Transfer migrations are used to transfer stored Durable Objects between two Durable Object classes",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"],
+			"note": "The page on `exports` says a transfer is \"a multi-deploy flow\" because \"two Workers must coordinate\"."
+		},
+		{
+			"id": "runtime.durable_objects.migrations.delete",
+			"kind": "runtime",
+			"relies": "Deleting a class deletes every object of it with its data. No delete migration is part of the move (ADR-0018, decision 3).",
+			"source": "https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/",
+			"pageUpdated": "2026-09-28",
+			"verifiedAt": "2026-11-19",
+			"evidence": "Running a Delete migration will delete all Durable Objects associated with the deleted class",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"]
+		},
+		{
+			"id": "runtime.durable_objects.migrations.exports",
+			"kind": "runtime",
+			"relies": "Declaring classes with `exports` cannot be undone once deployed. Podbay keeps the `migrations` list; a change to `exports` needs its own record (ADR-0018).",
+			"source": "https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/",
+			"pageUpdated": "2026-09-28",
+			"verifiedAt": "2026-11-19",
+			"evidence": "Once a Worker has been deployed with `exports`, subsequent deploys cannot return to the legacy `migrations` array.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md", "wrangler.jsonc"]
+		},
+		{
+			"id": "tooling.vite_plugin.auxiliary_workers",
+			"kind": "tooling",
+			"relies": "With more than one Worker in the Vite plugin, every request goes through the entry Worker and only it is deployed by `wrangler deploy`; each other Worker is deployed on its own. One reason ADR-0018 keeps one Worker.",
+			"source": "https://developers.cloudflare.com/workers/vite-plugin/reference/api/",
+			"pageUpdated": "2026-06-25",
+			"verifiedAt": "2026-11-19",
+			"evidence": "All requests are routed through your entry Worker.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md", "vite.config.ts"]
+		},
+		{
+			"id": "tooling.vitest.auxiliary_workers",
+			"kind": "tooling",
+			"relies": "In the Workers test integration, a Worker beside the one under test must be compiled to JavaScript and cannot use `cloudflare:test`, which the tier-3 tests rely on. One reason ADR-0018 keeps one Worker.",
+			"source": "https://developers.cloudflare.com/workers/testing/vitest-integration/configuration/",
+			"pageUpdated": "2026-11-18",
+			"verifiedAt": "2026-11-19",
+			"evidence": "Cannot have TypeScript entrypoints. You must compile auxiliary Workers to JavaScript first.",
+			"code": [
+				"docs/adr/0018-one-workspace-one-worker-many-modules.md",
+				"test/workerd/vitest.config.ts"
+			],
+			"note": "The same list says auxiliary Workers \"Cannot access the cloudflare:test module.\""
+		},
+		{
+			"id": "runtime.nodejs.dns",
+			"kind": "runtime",
+			"relies": "A Worker can resolve DNS with `node:dns`, over DNS over HTTPS to 1.1.1.1, each query a subrequest, with nothing to switch on at Podbay's compatibility date. So a Domains screen can read a domain's records without an account token (ADR-0018, decision 9).",
+			"source": "https://developers.cloudflare.com/workers/runtime-apis/nodejs/dns/",
+			"pageUpdated": "2026-11-18",
+			"verifiedAt": "2026-11-19",
+			"evidence": "You can use node:dns for name resolution via DNS over HTTPS using Cloudflare DNS at 1.1.1.1.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"],
+			"note": "All node:dns functions are available except lookupService. Nothing uses it yet."
+		},
+		{
+			"id": "runtime.request.methods",
+			"kind": "runtime",
+			"relies": "The runtime takes every HTTP method but CONNECT on a Request. Whether WebDAV's and CalDAV's methods reach a Worker through Cloudflare's network is not stated, and the HTTP library under the runtime does not list MKCALENDAR. ADR-0018 lets no first slice depend on them until a test on a real custom domain shows which arrive.",
+			"source": "https://developers.cloudflare.com/workers/runtime-apis/request/",
+			"pageUpdated": "2026-11-18",
+			"verifiedAt": "2026-11-19",
+			"evidence": "In Workers, all HTTP request methods are supported, except for `CONNECT`.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"],
+			"note": "The method list `KJ_HTTP_FOR_EACH_REQUEST_METHOD` in capnproto's `c++/src/kj/compat/http.h` (branch v2, read 2026-11-19) has PROPFIND, PROPPATCH, LOCK, MKCOL and REPORT and not MKCALENDAR; the commit workerd pins was not read."
+		},
+		{
+			"id": "runtime.web_crypto.operations",
+			"kind": "runtime",
+			"relies": "The runtime's Web Crypto lists ECDH, HKDF, AES-GCM and ECDSA, the operations Web Push needs (RFC 8291, RFC 8292). Nothing uses them yet (ADR-0018, decision 7).",
+			"source": "https://developers.cloudflare.com/workers/runtime-apis/web-crypto/",
+			"pageUpdated": "2026-09-30",
+			"verifiedAt": "2026-11-19",
+			"evidence": "Workers implements all operations of the WebCrypto standard",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"],
+			"note": "The page does not name the P-256 curve both RFCs require; that is not verified, and is tested before push is built."
 		}
 	]
 }

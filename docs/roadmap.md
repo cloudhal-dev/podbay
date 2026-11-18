@@ -51,7 +51,7 @@ Known defects that stand in the way are in [status](status.md), section 3: conve
 
 ## 5. What is decided about the client
 
-The app is a single-page React app on TanStack Router, served as static assets, talking to one JSON API ([ADR-0005](adr/0005-client-stack.md)). Two alternatives, TanStack Start and Exact, were looked at on 2026-11-17 and are not adopted now; the ADR records why and the triggers that make the project look again. Exact is the first candidate when a native client is decided on. The triggers are read again at the end of each milestone, and the result is written here.
+The app is a single-page React app on TanStack Router, served as static assets, talking to one JSON API ([ADR-0005](adr/0005-client-stack.md)). Two alternatives, TanStack Start and Exact, were looked at on 2026-11-17 and are not adopted now; the ADR records why and the triggers that make the project look again. Exact is the first candidate when a native client is decided on. The triggers are read again at the end of each milestone, and the result is written here. Read again on 2026-11-19 for [ADR-0018](adr/0018-one-workspace-one-worker-many-modules.md) (proposed): none of Exact's triggers is met.
 
 ## 6. How the direction changes
 
