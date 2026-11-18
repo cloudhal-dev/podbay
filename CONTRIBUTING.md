@@ -44,6 +44,6 @@ Read [`AGENTS.md`](AGENTS.md) first. It is one page for people and coding agents
 - Branch from `main`; keep pull requests focused.
 - **Conventional commits**: `feat(inbox): …`, `fix(worker): …`, `docs: …`, `chore: …`.
 - **DCO sign-off**: every commit needs `Signed-off-by:`; use `git commit -s`. This certifies the [Developer Certificate of Origin](https://developercertificate.org/); there is no CLA.
-- CI checks both on every commit of a pull request (the job `commits (form and sign-off)`). Run it yourself with `node scripts/commits.ts $(git merge-base origin/main HEAD)..$(git rev-parse HEAD)`.
+- CI checks both on every commit of a pull request (the job `commits (form and sign-off)`). A revert is written `revert: …`: the subject GitHub and `git revert` write by themselves (`Revert "…"`) does not pass. Run it yourself with `node scripts/commits.ts $(git merge-base origin/main HEAD)..$(git rev-parse HEAD)`.
 - `pnpm check`, `pnpm test:workerd` and `pnpm e2e` must be green; CI runs all three.
 - `main` takes changes through pull requests only, and an owner of the code in [`.github/CODEOWNERS`](.github/CODEOWNERS) reviews the paths listed there.
