@@ -656,9 +656,23 @@ test("settings are in tabs; a person's choices take effect at once and stay, a m
 	await page.getByLabel("Add a signature to new messages").check();
 	await page.locator(".ProseMirror").click();
 	await page.keyboard.type("Kind regards from the pod bay");
+	// The app reads the mailbox again after a save. That answer is held back here, so that
+	// "saved" said before it arrived would open a window without the signature.
+	const held: Promise<void>[] = [];
+	const mailboxRead = (url: URL) => /^\/api\/v1\/mailboxes(\/[^/]+)?$/.test(url.pathname);
+	await page.route(mailboxRead, (route) => {
+		if (route.request().method() !== "GET") return route.continue();
+		const answered = new Promise((resolve) => setTimeout(resolve, 1000)).then(() =>
+			route.continue(),
+		);
+		held.push(answered);
+		return answered;
+	});
 	await page.getByRole("button", { name: "Save signature" }).click();
 	await expect(page.getByText("Signature saved")).toBeVisible();
 	await page.getByRole("button", { name: "Compose" }).click();
+	await Promise.all(held);
+	await page.unroute(mailboxRead);
 	const compose = page.getByRole("region", { name: "Compose" });
 	await expect(compose.locator(".ProseMirror")).toContainText("Kind regards from the pod bay");
 	await compose.getByRole("button", { name: "Discard" }).click();
