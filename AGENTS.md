@@ -38,6 +38,7 @@ pnpm pins:outdated                       # pins that are behind (network, read-o
 node scripts/checks/copies.ts --fix      # after editing a seed file: set its status and add the notice
 node scripts/checks/ratchets.ts --update # after paying down debt: lower the baseline (never raise it)
 node scripts/checks/ledger.ts --stale     # Cloudflare facts that are unverified or older than 90 days (a report, exit 0)
+node scripts/commits.ts <base>..<head>    # every commit after <base>: a conventional subject and its author's sign-off
 ```
 
 Deliver a test message to the local server:
