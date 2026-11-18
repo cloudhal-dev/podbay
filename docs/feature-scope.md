@@ -21,7 +21,7 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 
 - **Phase A** is the standalone v0.1: the core mail experience, safe for more than one person.
 - **Phase B** is the complete mail product, shipped in slices.
-- **Phase C** is beyond mail. Whether to build it is decided after phase B.
+- **Phase C** is beyond mail. Whether to build it is decided after phase B. [ADR-0018](adr/0018-one-workspace-one-worker-many-modules.md) (accepted 2026-11-19) leaves room for it: a calendar, files, booking or administration would each be a module of the one Worker, off until an instance turns it on. It builds none of them and moves none of them forward.
 
 ## 3. Feature matrix
 
