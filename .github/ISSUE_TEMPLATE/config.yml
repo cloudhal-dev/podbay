@@ -6,3 +6,6 @@ contact_links:
   - name: Roadmap and status
     url: https://github.com/cloudhal-dev/podbay/blob/main/docs/roadmap.md
     about: What is planned and what is knowingly left open. Read these before asking for a feature.
+  - name: Ask a question
+    url: https://github.com/cloudhal-dev/podbay/discussions
+    about: Questions about running or building Podbay. An issue is for a defect or a planned piece of work.

@@ -56,7 +56,7 @@ None of them needs an account or a secret. Which tier proves what is in the [`po
 - [Sign-in and access](docs/auth-and-access.md): accounts, roles, mailbox memberships, credentials for programs.
 - [Engineering rules](docs/engineering-rules.md): the version policy, the security rules and the developer rules, each with its automated check.
 - [Decisions](docs/adr/README.md): one record for each decision that changes a contract, a stored format or the direction.
-- [The repository and its settings](docs/repository.md): which protections are in force and what is done on the day it becomes public.
+- [The repository and its settings](docs/repository.md): which protections are in force since the repository opened, and what is still open.
 - [Cloudflare facts](docs/cloudflare/README.md): what the code relies on about the platform, each with its source and the date it was read.
 
 ## Contributing
