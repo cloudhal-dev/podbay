@@ -90,7 +90,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/MessageListToolbar.tsx": { input: 1 },
 	"app/components/ScheduledList.tsx": { button: 1 },
 	"app/components/SearchOptions.tsx": { input: 4, select: 2 },
-	"app/components/SendLater.tsx": { input: 1 },
 	"app/components/SignInSteps.tsx": { button: 1 },
 	"app/components/email-panel/MessageHeader.tsx": { button: 4 },
 	"app/components/email-panel/ThreadMessage.tsx": { button: 1 },
