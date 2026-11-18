@@ -4,6 +4,16 @@ Self-hosted mail that runs entirely in your own Cloudflare account. Email Routin
 
 > **Status: early development. Nothing here is ready for real mail.** The project has no release yet, and no full security audit has run. Version 0.1 is gated on one ([security records](docs/security/README.md)).
 
+## What it looks like
+
+A conversation open beside the list. Every message and every person in these pictures is invented.
+
+![A conversation open beside the list of the inbox](docs/images/conversation.png)
+
+| The inbox | Writing, in the dark theme |
+|---|---|
+| ![The list of the inbox](docs/images/inbox.png) | ![The window a message is written in, with its formatting bar](docs/images/writing-dark.png) |
+
 ## What exists today
 
 Everything below is built and tested in this repository. What is missing is in the [roadmap](docs/roadmap.md), and what is knowingly left open is in the [status](docs/status.md), section 3.
