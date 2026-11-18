@@ -13,6 +13,7 @@
 		"app/lib/user-agent.ts",
 		"app/lib/session.ts",
 		"app/lib/live.ts",
+		"app/lib/utils.ts",
 		"app/hooks/useDisplay.ts",
 		"app/services/api.ts",
 		"app/types/**/*.ts",

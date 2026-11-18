@@ -136,7 +136,7 @@ const NAMED: Record<string, string> = {
 };
 
 /** Character references back to characters, each once: what one makes is not read again. */
-function decodeEntities(text: string): string {
+export function decodeEntities(text: string): string {
 	return text.replace(
 		/&(#\d{1,7}|#x[0-9a-f]{1,6}|lt|gt|quot|apos|nbsp|amp);/gi,
 		(match: string, name: string) => {
@@ -158,4 +158,13 @@ function decodeEntities(text: string): string {
  */
 export function plainTextOf(html: string): string {
 	return decodeEntities(htmlToText(html, { keepLineBreaks: true }));
+}
+
+/**
+ * The text of an HTML fragment on one line, its character references decoded once: for what a
+ * model, a tool or a quoted reply is given. Text, never markup: whatever uses it as HTML
+ * escapes it first.
+ */
+export function oneLineTextOf(html: string): string {
+	return decodeEntities(htmlToText(html));
 }
