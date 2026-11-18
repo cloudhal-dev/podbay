@@ -85,15 +85,22 @@ test("a choice made in one browser is there in a second browser of the same pers
 	// Its own reading pane is still its own.
 	await expect(choice(page, "Reading pane", "Beside the list, on its right")).toBeChecked();
 	let asked = 0;
-	await page.route(`**${CHOICES}`, async (route) => {
+	const held: Promise<void>[] = [];
+	await page.route(`**${CHOICES}`, (route) => {
 		asked += 1;
-		await new Promise((resolve) => setTimeout(resolve, 1500));
-		await route.continue();
+		const answered = new Promise((resolve) => setTimeout(resolve, 1500)).then(() =>
+			route.continue(),
+		);
+		held.push(answered);
+		return answered;
 	});
 	await page.reload();
 	await expect(pageSize(page)).toHaveValue("100");
 	await expect(page.locator("html")).toHaveAttribute("data-mode", "light");
 	await expect.poll(() => asked).toBeGreaterThan(0);
+	// A request this handler still holds is let through by the browser when the handler is taken
+	// away, and the handler's own answer then fails: wait for what it holds first.
+	await Promise.all(held);
 	await page.unroute(`**${CHOICES}`);
 
 	// A change that cannot be sent stays in force in that browser and goes at the next contact.
