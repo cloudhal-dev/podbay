@@ -249,7 +249,7 @@ test("the automatic reply is turned on in the settings, answers a person once, a
 	const subject = unique("Away");
 	const asker = `asker-${subject.toLowerCase()}@sender.test`;
 	await page.goto(settings("auto-reply"));
-	const on = page.getByLabel("Answer mail that arrives");
+	const on = page.getByRole("checkbox", { name: "Answer mail that arrives" });
 	await expect(on).not.toBeChecked();
 	await on.check();
 	// One that is on must say something: the button waits for the message.
@@ -355,7 +355,7 @@ test("a reply saved elsewhere with HTML is saved from the settings as the words 
 	).toBeHidden();
 
 	// Turned off again, so the other tests of the mailbox are not answered.
-	await page.getByLabel("Answer mail that arrives").uncheck();
+	await page.getByRole("checkbox", { name: "Answer mail that arrives" }).uncheck();
 	await page.getByRole("button", { name: "Save automatic reply" }).click();
 	await expect(page.getByText("The automatic reply is off")).toBeVisible();
 	expect(await app.contacted(), "hosts the browser tried to reach").toEqual([]);

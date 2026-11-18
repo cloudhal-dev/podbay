@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Button, Input, useKumoToastManager } from "@cloudflare/kumo";
+import { Button, Checkbox, Input, InputArea, useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useState } from "react";
 import { AUTO_REPLY } from "shared/rules";
 import { useFreshProof } from "~/components/FreshProof";
@@ -11,8 +11,13 @@ import { fieldValue } from "~/lib/sending-words";
 import { useAutoReply, useSaveAutoReply } from "~/queries/rules";
 import Row from "./Row";
 
+/**
+ * Kumo has no field for a date with a time of day (its DatePicker is a calendar without a time):
+ * the two ends stay the browser's own field, at the height and type of Kumo's default size,
+ * until a wrapper is decided (issue #82).
+ */
 const NATIVE_FIELD =
-	"h-9 w-full rounded-lg border border-kumo-line bg-kumo-control px-3 text-sm text-kumo-default";
+	"h-9 w-full rounded-lg border border-kumo-line bg-kumo-control px-3 text-base text-kumo-default";
 
 /** An instant as the date and time field of this device shows it; empty for none. */
 const shown = (instant: string | null): string =>
@@ -105,15 +110,11 @@ export default function AutoReplySettings({
 			)}
 			<fieldset disabled={!canChange} className="m-0 border-0 p-0">
 				<Row name={t("Automatic reply")} about={t("Whether the mailbox answers by itself.")}>
-					<label className="flex cursor-pointer items-center gap-2">
-						<input
-							type="checkbox"
-							className="h-4 w-4"
-							checked={enabled}
-							onChange={(event) => setEnabled(event.target.checked)}
-						/>
-						{t("Answer mail that arrives")}
-					</label>
+					<Checkbox
+						label={t("Answer mail that arrives")}
+						checked={enabled}
+						onCheckedChange={(checked) => setEnabled(checked === true)}
+					/>
 				</Row>
 				<Row
 					name={t("Between")}
@@ -152,16 +153,14 @@ export default function AutoReplySettings({
 					)}
 				</Row>
 				<Row name={t("Subject")} about={t("Left empty, the subject is “Automatic reply”.")}>
-					<div className="flex max-w-md">
-						<div className="min-w-0 flex-1">
-							<Input
-								aria-label={t("Subject")}
-								size="sm"
-								value={subject}
-								maxLength={AUTO_REPLY.subject}
-								onChange={(event) => setSubject(event.target.value)}
-							/>
-						</div>
+					<div className="max-w-md">
+						<Input
+							aria-label={t("Subject")}
+							className="w-full"
+							value={subject}
+							maxLength={AUTO_REPLY.subject}
+							onChange={(event) => setSubject(event.target.value)}
+						/>
 					</div>
 				</Row>
 				<Row name={t("Message")} about={t("What people who write to this mailbox are told.")}>
@@ -172,13 +171,16 @@ export default function AutoReplySettings({
 							)}
 						</p>
 					)}
-					<textarea
-						aria-label={t("Message")}
-						className="block min-h-40 w-full max-w-xl rounded-lg border border-kumo-line bg-kumo-control p-3 text-sm text-kumo-default"
-						value={text}
-						maxLength={AUTO_REPLY.text}
-						onChange={(event) => setText(event.target.value)}
-					/>
+					<div className="max-w-md">
+						<InputArea
+							aria-label={t("Message")}
+							autoResize
+							minRows={8}
+							value={text}
+							maxLength={AUTO_REPLY.text}
+							onValueChange={setText}
+						/>
+					</div>
 					{empty && (
 						<p className="m-0 mt-2 text-xs text-kumo-subtle">
 							{t("Write the message before turning it on.")}
@@ -191,22 +193,24 @@ export default function AutoReplySettings({
 					{error}
 				</p>
 			)}
-			<div className="pt-4">
-				{canChange ? (
-					<Button
-						type="submit"
-						variant="primary"
-						size="sm"
-						loading={saveAutoReply.isPending}
-						disabled={backwards || empty || !data}
-					>
-						{t("Save automatic reply")}
-					</Button>
-				) : (
-					<p className="m-0 text-xs text-kumo-subtle">
-						{t("An owner of this mailbox can change it.")}
-					</p>
-				)}
+			{/* The button stands where the fields are: in the column of the controls, as a row has it. */}
+			<div className="grid gap-x-8 pt-4 md:grid-cols-[220px_1fr]">
+				<div className="md:col-start-2">
+					{canChange ? (
+						<Button
+							type="submit"
+							variant="primary"
+							loading={saveAutoReply.isPending}
+							disabled={backwards || empty || !data}
+						>
+							{t("Save automatic reply")}
+						</Button>
+					) : (
+						<p className="m-0 text-xs text-kumo-subtle">
+							{t("An owner of this mailbox can change it.")}
+						</p>
+					)}
+				</div>
 			</div>
 		</form>
 	);
