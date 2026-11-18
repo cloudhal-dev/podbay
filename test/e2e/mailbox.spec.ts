@@ -386,7 +386,7 @@ test("search options write the query a person could type", async ({ page, app })
 	const options = page.getByRole("dialog", { name: "Search options" });
 	await options.getByLabel("Subject").fill("find me by parts");
 	await options.getByLabel("Has the words").fill("needle");
-	await options.getByLabel("Search in").selectOption({ label: "Inbox" });
+	await choose(options.getByRole("combobox", { name: "Search in" }), "Inbox");
 	await options.getByRole("button", { name: "Search", exact: true }).click();
 
 	await expect(options).toHaveCount(0);

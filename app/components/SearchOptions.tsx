@@ -1,8 +1,9 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Input, LayerDialog } from "@cloudflare/kumo";
+import { Checkbox, Input, LayerDialog, Select } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useState } from "react";
+import DateTimeField from "~/components/controls/DateTimeField";
 import { t } from "~/i18n";
 import { placeName } from "~/lib/places";
 import {
@@ -14,9 +15,6 @@ import {
 import { useFolders } from "~/queries/folders";
 import { useLabels } from "~/queries/labels";
 import type { Folder } from "~/types";
-
-const NATIVE_FIELD =
-	"h-9 w-full rounded-lg border border-kumo-line bg-kumo-control px-3 text-sm text-kumo-default";
 
 /**
  * A search by its parts: who, what, where and when. It writes the same query a person could type
@@ -61,126 +59,74 @@ export default function SearchOptions({
 				<LayerDialog.Body>
 					<form id="search-options" onSubmit={submit} className="space-y-3">
 						<Input
-							size="sm"
 							label={t("From")}
 							value={options.from}
 							onChange={(event) => set({ from: event.target.value })}
 						/>
 						<Input
-							size="sm"
 							label={t("To")}
 							value={options.to}
 							onChange={(event) => set({ to: event.target.value })}
 						/>
 						<Input
-							size="sm"
 							label={t("Subject")}
 							value={options.subject}
 							onChange={(event) => set({ subject: event.target.value })}
 						/>
 						<Input
-							size="sm"
 							label={t("Has the words")}
 							value={options.words}
 							onChange={(event) => set({ words: event.target.value })}
 						/>
-						<div>
-							<label
-								htmlFor="search-label"
-								className="mb-1.5 block text-sm font-medium text-kumo-default"
-							>
-								{t("Label")}
-							</label>
-							<select
-								id="search-label"
-								className={NATIVE_FIELD}
-								value={options.label}
-								onChange={(event) => set({ label: event.target.value })}
-							>
-								<option value="">{t("Any")}</option>
-								{/* A label the box names that no longer exists is still shown, so it is not lost silently */}
-								{options.label !== "" && !labels.some((l) => l.name === options.label) && (
-									<option value={options.label}>{options.label}</option>
-								)}
-								{labels.map((label) => (
-									<option key={label.id} value={label.name}>
-										{label.name}
-									</option>
-								))}
-							</select>
-						</div>
+						<Select
+							label={t("Label")}
+							className="w-full"
+							value={options.label}
+							onValueChange={(label) => set({ label: String(label ?? "") })}
+							items={[
+								{ label: t("Any"), value: "" },
+								// A label the box names that no longer exists is still shown, so it is not lost silently
+								...(options.label !== "" && !labels.some((l) => l.name === options.label)
+									? [{ label: options.label, value: options.label }]
+									: []),
+								...labels.map((label) => ({ label: label.name, value: label.name })),
+							]}
+						/>
 						<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-							<div>
-								<label
-									htmlFor="search-in"
-									className="mb-1.5 block text-sm font-medium text-kumo-default"
-								>
-									{t("Search in")}
-								</label>
-								<select
-									id="search-in"
-									className={NATIVE_FIELD}
-									value={options.folder}
-									onChange={(event) => set({ folder: event.target.value })}
-								>
-									<option value="">{t("All mail")}</option>
-									{folders.map((folder) => (
-										<option key={folder.id} value={folder.id}>
-											{placeName(folder.id)}
-										</option>
-									))}
-								</select>
-							</div>
-							<div>
-								<label
-									htmlFor="search-after"
-									className="mb-1.5 block text-sm font-medium text-kumo-default"
-								>
-									{t("After")}
-								</label>
-								<input
-									id="search-after"
-									type="date"
-									className={NATIVE_FIELD}
-									value={options.after}
-									onChange={(event) => set({ after: event.target.value })}
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor="search-before"
-									className="mb-1.5 block text-sm font-medium text-kumo-default"
-								>
-									{t("Before")}
-								</label>
-								<input
-									id="search-before"
-									type="date"
-									className={NATIVE_FIELD}
-									value={options.before}
-									onChange={(event) => set({ before: event.target.value })}
-								/>
-							</div>
+							<Select
+								label={t("Search in")}
+								className="w-full"
+								value={options.folder}
+								onValueChange={(folder) => set({ folder: String(folder ?? "") })}
+								items={[
+									{ label: t("All mail"), value: "" },
+									...folders.map((folder) => ({ label: placeName(folder.id), value: folder.id })),
+								]}
+							/>
+							<DateTimeField
+								kind="date"
+								label={t("After")}
+								value={options.after}
+								onChange={(after) => set({ after })}
+							/>
+							<DateTimeField
+								kind="date"
+								label={t("Before")}
+								value={options.before}
+								onChange={(before) => set({ before })}
+							/>
 						</div>
 						<div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
-							<label className="flex items-center gap-2 text-sm text-kumo-default">
-								<input
-									type="checkbox"
-									className="h-4 w-4"
-									checked={options.hasAttachment}
-									onChange={(event) => set({ hasAttachment: event.target.checked })}
-								/>
-								{t("Has an attachment")}
-							</label>
-							<label className="flex items-center gap-2 text-sm text-kumo-default">
-								<input
-									type="checkbox"
-									className="h-4 w-4"
-									checked={options.unreadOnly}
-									onChange={(event) => set({ unreadOnly: event.target.checked })}
-								/>
-								{t("Unread only")}
-							</label>
+							<Checkbox
+								label={t("Has an attachment")}
+								checked={options.hasAttachment}
+								onCheckedChange={(checked) => set({ hasAttachment: checked === true })}
+							/>
+							<Checkbox
+								label={t("Unread only")}
+								checked={options.unreadOnly}
+								onCheckedChange={(checked) => set({ unreadOnly: checked === true })}
+							/>
 						</div>
 					</form>
 				</LayerDialog.Body>
