@@ -22,6 +22,7 @@ import {
 	REFUSED_AUTH_PATHS,
 	SECOND_STEP_VERIFY_PATHS,
 } from "./fresh.ts";
+import { CODE_PATH, claimCode } from "./used-codes.ts";
 
 export interface AuthConfig {
 	/** A D1 database in the Worker; an in-memory SQLite database when generating the tables. */
@@ -72,6 +73,8 @@ async function beforeAuthEndpoint(ctx: HookContext): Promise<void> {
 			throw new APIError("FORBIDDEN", { message: NOT_FRESH.error, code: NOT_FRESH_CODE });
 		}
 	}
+	// Last, so that a request refused above uses up no code: an authenticator code is used once.
+	if (ctx.path === CODE_PATH) await claimCode(ctx);
 }
 
 /**

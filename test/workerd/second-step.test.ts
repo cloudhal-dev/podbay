@@ -21,6 +21,7 @@ import {
 	enableApp,
 	json,
 	migrate,
+	nextCode,
 	ORIGIN,
 	PASSWORD,
 	passkeySignIn,
@@ -53,7 +54,18 @@ beforeAll(async () => {
 	const owner = await signedIn("owner@example.com");
 	ids.owner = (await owner.me()).id ?? "";
 	expect((await createMailbox(owner.cookie, MAILBOX)).status).toBe(201);
-	for (const who of ["app", "codes", "limited", "key", "both", "stale", "outsider", "cached"]) {
+	for (const who of [
+		"app",
+		"codes",
+		"limited",
+		"key",
+		"both",
+		"stale",
+		"outsider",
+		"cached",
+		"replay",
+		"race",
+	]) {
 		ids[who] = await seedUser(`${who}@example.com`, "member");
 	}
 	await seedMembership(MAILBOX, ids.stale ?? "", "owner");
@@ -107,7 +119,7 @@ describe("the authenticator app", () => {
 		expect((await browser.me()).status).toBe(401);
 
 		const right = await browser.post(`${AUTH}/two-factor/verify-totp`, {
-			code: await totpCode(uri),
+			code: await nextCode(uri),
 		});
 		expect(right.status).toBe(200);
 		expect((await browser.me()).email).toBe("app@example.com");
@@ -145,7 +157,7 @@ describe("the authenticator app", () => {
 		expect((await browser.me()).status).toBe(401);
 
 		expect(
-			(await browser.post(`${AUTH}/two-factor/verify-totp`, { code: await totpCode(uri) })).status,
+			(await browser.post(`${AUTH}/two-factor/verify-totp`, { code: await nextCode(uri) })).status,
 		).toBe(200);
 		expect([...browser.jar.keys()].filter((name) => name.includes("trust"))).toEqual([]);
 
@@ -184,6 +196,79 @@ describe("the authenticator app", () => {
 		}
 		expect(statuses).toContain(429);
 		expect(statuses).not.toContain(200);
+	});
+});
+
+describe("an authenticator code", () => {
+	const verify = (browser: Browser, code: string) =>
+		browser.post(`${AUTH}/two-factor/verify-totp`, { code });
+	async function passwordStep(email: string): Promise<Browser> {
+		const browser = new Browser();
+		const first = await browser.signIn(email);
+		expect((await json<{ twoFactorRedirect: boolean }>(first)).twoFactorRedirect).toBe(true);
+		return browser;
+	}
+	let uri: string;
+	let turnedOn: string;
+	let wrong: { status: number; body: unknown };
+
+	beforeAll(async () => {
+		const browser = await signedIn("replay@example.com");
+		({ uri, confirmedWith: turnedOn } = await enableApp(browser));
+		const asked = await passwordStep("replay@example.com");
+		const res = await verify(asked, "000000");
+		wrong = { status: res.status, body: await res.json() };
+		expect(wrong.status).toBe(401);
+	});
+
+	it("that turned the app on does not sign in", async () => {
+		// Still a code the server would accept by its time, so only its use can refuse it.
+		const accepted = await Promise.all(
+			[-30_000, 0, 30_000].map((offset) => totpCode(uri, Date.now() + offset)),
+		);
+		expect(accepted).toContain(turnedOn);
+		const browser = await passwordStep("replay@example.com");
+		const res = await verify(browser, turnedOn);
+		expect({ status: res.status, body: await res.json() }).toEqual(wrong);
+		expect((await browser.me()).status).toBe(401);
+	});
+
+	it("that signed in once does not sign in again, and the next code does", async () => {
+		const code = await nextCode(uri);
+		const first = await passwordStep("replay@example.com");
+		expect((await verify(first, code)).status).toBe(200);
+		expect((await first.me()).email).toBe("replay@example.com");
+
+		const second = await passwordStep("replay@example.com");
+		const res = await verify(second, code);
+		// Answered as a wrong code is: whoever replays it learns nothing more.
+		expect({ status: res.status, body: await res.json() }).toEqual(wrong);
+		expect((await second.me()).status).toBe(401);
+
+		expect((await verify(second, await nextCode(uri))).status).toBe(200);
+		expect((await second.me()).email).toBe("replay@example.com");
+	});
+
+	it("lets in one of two sign-ins that give it at the same moment", async () => {
+		const browser = await signedIn("race@example.com");
+		const { uri: theirs } = await enableApp(browser);
+		const code = await nextCode(theirs);
+		const before = await sessionsOf(ids.race ?? "");
+		const one = await passwordStep("race@example.com");
+		const other = await passwordStep("race@example.com");
+		const answers = await Promise.all([verify(one, code), verify(other, code)]);
+		expect(answers.map((res) => res.status).sort()).toEqual([200, 401]);
+		expect(await sessionsOf(ids.race ?? "")).toBe(before + 1);
+	});
+
+	it("is kept used without the code itself", async () => {
+		const rows = await testEnv.DB.prepare(
+			`select "id", "identifier", "value" from "verification" where "identifier" like 'podbay-used-code-%'`,
+		).all<Record<string, string>>();
+		expect(rows.results.length).toBeGreaterThan(0);
+		const text = JSON.stringify(rows.results);
+		expect(text).not.toContain(turnedOn);
+		expect(text).not.toContain("000000");
 	});
 });
 
