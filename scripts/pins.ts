@@ -81,7 +81,7 @@ export function newestSettled(
 }
 
 async function settled(name: string, now: number): Promise<string | undefined> {
-	const res = await fetch(`${REGISTRY}/${name.replace("/", "%2F")}`, {
+	const res = await fetch(`${REGISTRY}/${name.replaceAll("/", "%2F")}`, {
 		headers: { accept: "application/json" },
 	});
 	if (!res.ok) throw new Error(`${name}: registry answered ${res.status}`);
