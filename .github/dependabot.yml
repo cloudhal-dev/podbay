@@ -20,6 +20,10 @@ updates:
     groups:
       cloudflare:
         patterns: ["wrangler", "@cloudflare/*"]
+      # Better Auth's packages are released together, and sign-in runs them as a pair (the
+      # core and the passkey plugin): they are updated in one pull request, never apart.
+      auth:
+        patterns: ["better-auth", "@better-auth/*"]
       agent:
         patterns: ["agents", "ai", "@ai-sdk/*", "@modelcontextprotocol/*", "workers-ai-provider"]
       react:
