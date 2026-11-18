@@ -12,6 +12,11 @@ updates:
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore(deps)"
+    # @types/node follows the lowest Node Podbay supports (24), not the newest: its pin
+    # exception in package.json says so. Minor and patch updates of 24 still arrive.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       cloudflare:
         patterns: ["wrangler", "@cloudflare/*"]
