@@ -39,10 +39,14 @@ export function useUpdateMailbox() {
 	return useMutation({
 		mutationFn: ({ mailboxId, settings }: { mailboxId: string; settings: unknown }) =>
 			api.updateMailbox(mailboxId, settings),
-		onSuccess: (_data, { mailboxId }) => {
-			qc.invalidateQueries({ queryKey: queryKeys.mailboxes.detail(mailboxId) });
-			qc.invalidateQueries({ queryKey: queryKeys.mailboxes.all });
-		},
+		// The save is over when the app holds what was saved: the two lists are read again before
+		// the caller is told. Told earlier, a person who saved a signature and wrote at once got a
+		// message without it.
+		onSuccess: (_data, { mailboxId }) =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: queryKeys.mailboxes.detail(mailboxId) }),
+				qc.invalidateQueries({ queryKey: queryKeys.mailboxes.all }),
+			]),
 	});
 }
 
