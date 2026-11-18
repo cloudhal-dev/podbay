@@ -48,7 +48,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Addresses written to": "Yazılan adresler",
 	Administrator: "Yönetici",
 	After: "Şu tarihten sonra",
-	"After filing a conversation": "Bir yazışma dosyalandıktan sonra",
+	"After filing a conversation": "Yazışma işlendikten sonra",
 	"After your password, Podbay asks for a six-digit code from an app on your phone. Recovery codes are the way back in if you lose the phone.":
 		"Podbay, parolanızdan sonra telefonunuzdaki bir uygulamanın ürettiği altı haneli kodu ister. Telefonu kaybederseniz geri dönüş yolunuz kurtarma kodlarıdır.",
 	Agent: "Asistan",
@@ -138,8 +138,8 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Collapse message": "İletiyi daralt",
 	Colour: "Renk",
 	Comfortable: "Rahat",
-	Compact: "Sıkışık",
-	Compose: "Oluştur",
+	Compact: "Kompakt",
+	Compose: "Yaz",
 	"Confirm it is you": "Siz olduğunuzu doğrulayın",
 	"Connect an AI client": "Bir yapay zekâ istemcisi bağlayın",
 	"Connecting...": "Bağlanıyor...",
@@ -177,7 +177,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Create key": "Anahtar oluştur",
 	"Create owner": "Sahibi oluştur",
 	"Create the first owner. You need the setup token that was set when this instance was deployed.":
-		"İlk sahibi oluşturun. Bu kurulum yapılırken belirlenen kurulum anahtarı gerekir.",
+		"İlk sahibi oluşturun. Bu kurulum yapılırken belirlenen kurulum belirteci gerekir.",
 	"Current password": "Geçerli parola",
 	Custom: "Özel",
 	Dark: "Koyu",
@@ -264,7 +264,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"For example: laptop": "Örneğin: dizüstü bilgisayar",
 	"For new mail": "Yeni posta için",
 	"For the person who deployed this instance. It needs the setup token, the secret named {secret} on the deployment, and makes a one-time link that lets an owner choose a new password.":
-		"Bu kurulumu yapan kişi içindir. Kurulum anahtarını, yani dağıtımdaki {secret} adlı gizli değeri ister ve bir sahibin yeni parola seçmesini sağlayan tek kullanımlık bir bağlantı oluşturur.",
+		"Bu kurulumu yapan kişi içindir. Kurulum belirtecini, yani dağıtımdaki {secret} adlı gizli değeri ister ve bir sahibin yeni parola seçmesini sağlayan tek kullanımlık bir bağlantı oluşturur.",
 	"For {email}. This signs you out everywhere and removes your authenticator app, passkeys and keys, so only the new password opens the account.":
 		"{email} için. Bu işlem her yerde oturumunuzu kapatır; kimlik doğrulama uygulamanızı, geçiş anahtarlarınızı ve anahtarlarınızı kaldırır. Böylece hesabı yalnızca yeni parola açar.",
 	"Forget all addresses": "Tüm adresleri unut",
@@ -328,7 +328,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Keyboard shortcuts": "Klavye kısayolları",
 	Label: "Etiket",
 	"Label as": "Etiketle",
-	"Label {holds} {name}?": "{holds} şu etiketle etiketlensin mi: {name}?",
+	"Label {holds} {name}?": "{holds} için şu etiket eklensin mi: {name}?",
 	"Label {name}": "Etiket: {name}",
 	"Label {name} taken off the conversation": "Etiket yazışmadan kaldırıldı: {name}",
 	"Label {name} taken off {count} conversations": "Etiket {count} yazışmadan kaldırıldı: {name}",
@@ -396,7 +396,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"g  then  s": "g  ardından  s",
 	"g  then  t": "g  ardından  t",
 	info: "bilgi",
-	"make one with the setup token": "kurulum anahtarıyla bir bağlantı oluşturabilir",
+	"make one with the setup token": "kurulum belirteciyle bir bağlantı oluşturabilir",
 	me: "ben",
 	"Messages here have not left yet. Each leaves at its time.":
 		"Buradaki iletiler henüz gitmedi. Her biri kendi saatinde gider.",
@@ -404,7 +404,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Date and time": "Tarih ve saat",
 	"Choose a date and a time.": "Bir tarih ve saat seçin.",
 	"It is a draft again: send it again, change it or discard it.":
-		"Yeniden bir taslak: tekrar gönderin, değiştirin ya da atın.",
+		"Yeniden bir taslak: tekrar gönderin, değiştirin ya da silin.",
 	Dismiss: "Kapat",
 	"Change the time": "Saati değiştir",
 	"Cancel send": "Gönderimi iptal et",
