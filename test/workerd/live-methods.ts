@@ -18,10 +18,12 @@ export const READS = [
 	"findThreadBySubject",
 	"findThreadOfReferences",
 	"getAttachment",
+	"getAutoReply",
 	"getEmail",
 	"getEmails",
 	"getFolders",
 	"getLabels",
+	"getRules",
 	"getThreadEmails",
 	"getThreadedEmails",
 	"holdsFiles",
@@ -63,6 +65,11 @@ export const WRITES: Record<string, LiveKind[]> = {
 	deleteLabel: ["labels", "mail"],
 	// Settings: the method moves its own counter
 	settingsSaved: [],
+	// The rules of a mailbox (ADR-0008) are settings of it
+	blockSender: ["settings"],
+	setAutoReply: ["settings"],
+	setRules: ["settings"],
+	unblockSender: ["settings"],
 	// Rows no read of mail shows
 	beginArrival: [],
 	claimArrival: [],

@@ -99,6 +99,12 @@ export const ABOUT: Readonly<Record<string, Kinds | ((answer: unknown) => Kinds)
 		typeof answer === "object" && answer !== null && "more" in answer ? MAIL : NOTHING,
 	// It moves its own counter: the settings are not in this database.
 	settingsSaved: NOTHING,
+	// The rules of a mailbox (ADR-0008) are settings of it: an open settings screen reads them
+	// again. What a rule does to a message is told by the arrival itself.
+	setRules: ["settings"],
+	blockSender: ["settings"],
+	unblockSender: ["settings"],
+	setAutoReply: ["settings"],
 	// An arrival before it is filed, and a file before its bytes are there, are not mail yet.
 	beginArrival: NOTHING,
 	dropArrival: NOTHING,

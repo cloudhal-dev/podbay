@@ -194,9 +194,9 @@ describe("what is told", () => {
 			return answer;
 		};
 		const owner = as("owner");
-		const put = (path: string, body: unknown) =>
+		const put = (path: string, body: unknown, method = "PUT") =>
 			owner.fetch(`${base}${path}`, {
-				method: "PUT",
+				method,
 				body: typeof body === "string" ? body : JSON.stringify(body),
 			});
 		const del = (path: string) => owner.fetch(`${base}${path}`, { method: "DELETE" });
@@ -454,6 +454,30 @@ describe("what is told", () => {
 			),
 		);
 		await step("settings that are refused", [], () => ok(put("", { settings: "x" }), 400));
+
+		// ── The rules for incoming mail (ADR-0008): settings of the mailbox ──
+		const blocked = { sender: `${MARK}@blocked.test` };
+		const filter = { conditions: { subject: MARK }, actions: { place: "archive", star: true } };
+		const reply = { isEnabled: false, fromDate: null, toDate: null, htmlBody: null };
+		await step("a filter saved", ["settings"], () => ok(put("/rules", { rules: [filter] })));
+		await step("a filter that is refused", [], () =>
+			ok(put("/rules", { rules: [{ ...filter, actions: {} }] }), 400),
+		);
+		await step("mail arrives and a rule files it", ["delivery", "mail"], () =>
+			deliver(address, marked(address, "Filed by a rule")),
+		);
+		await step("a sender blocked", ["settings"], () =>
+			ok(owner.post(`${base}/blocked-senders`, blocked), 201),
+		);
+		await step("a sender blocked again", [], () =>
+			ok(owner.post(`${base}/blocked-senders`, blocked)),
+		);
+		await step("a sender unblocked", ["settings"], () =>
+			ok(put("/blocked-senders", blocked, "DELETE"), 204),
+		);
+		await step("the automatic reply saved", ["settings"], () =>
+			ok(put("/auto-reply", { ...reply, subject: MARK, textBody: MARK })),
+		);
 		await step("known addresses forgotten", [], () => ok(del("/known-addresses"), 204));
 
 		// ── What is refused tells nobody ──
@@ -586,10 +610,12 @@ describe("the signal cannot be forgotten", () => {
 			findThreadBySubject: ["Seed"],
 			findThreadOfReferences: [["<seed@sender.test>"], "Seed"],
 			getAttachment: ["seed-file"],
+			getAutoReply: [],
 			getEmail: ["seed-1"],
 			getEmails: [{ folder: "inbox" }],
 			getFolders: [],
 			getLabels: [],
+			getRules: [],
 			getThreadEmails: ["seed-thread"],
 			getThreadedEmails: [{ folder: "inbox" }],
 			holdsFiles: ["seed-draft"],

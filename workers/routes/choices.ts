@@ -15,35 +15,10 @@ import { MAX_CHOICES_BYTES } from "../../shared/choices";
 import { parseChange } from "../../shared/choices-schema";
 import { choicesOf, mergeChoices } from "../auth/choices";
 import type { ApiContext } from "../auth/middleware";
+import { bodyWithin } from "../lib/body";
 
 const TOO_LARGE = { error: "The request is too large.", code: "TOO_LARGE" } as const;
 const INVALID = { error: "Invalid request.", code: "INVALID" } as const;
-
-/** The body as text, or `null` when it is longer than `max` bytes. Never reads past the limit. */
-async function bodyWithin(request: Request, max: number): Promise<string | null> {
-	if (Number(request.headers.get("content-length") ?? 0) > max) return null;
-	if (request.body === null) return "";
-	const reader = request.body.getReader();
-	const chunks: Uint8Array[] = [];
-	let size = 0;
-	for (;;) {
-		const { done, value } = await reader.read();
-		if (done) break;
-		size += value.byteLength;
-		if (size > max) {
-			await reader.cancel();
-			return null;
-		}
-		chunks.push(value);
-	}
-	const bytes = new Uint8Array(size);
-	let at = 0;
-	for (const chunk of chunks) {
-		bytes.set(chunk, at);
-		at += chunk.byteLength;
-	}
-	return new TextDecoder().decode(bytes);
-}
 
 export const choices = new Hono<ApiContext>();
 

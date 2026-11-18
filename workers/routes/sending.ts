@@ -11,6 +11,8 @@
  * - `POST …/emails/:id/reschedule` gives a waiting message a new time: `{ send_at }`, or
  *   nothing for "now". Whoever does it becomes the person whose right is asked when the
  *   message leaves.
+ * - Neither route takes the automatic reply the mailbox made by itself (ADR-0008): it is
+ *   nobody's draft and nobody's to send, and both answer 404 for it.
  *
  * The guard has already checked the right (`mailbox.send` for both) and picked the mailbox,
  * so an id here only ever looks a row up in the database of the mailbox in the address.

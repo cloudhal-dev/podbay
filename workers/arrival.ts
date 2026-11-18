@@ -12,7 +12,8 @@
  *   d  the bytes are stored under that key, all of them, exactly as they came;
  *   e  the message is parsed;
  *   f  one transaction writes the message's row and its attachment rows and removes the
- *      arrival's row;
+ *      arrival's row; the mailbox's rules (ADR-0008) decide in that step where the row is
+ *      filed and how it is marked, and after it whether the automatic reply is owed;
  *   g  the attachments' bytes are written to the bucket.
  *
  * Step d is the line. Before the original is stored a failure removes what was written and
@@ -36,6 +37,7 @@ import { storageFilename } from "./lib/filenames";
 import { type InboundEnvelope, routeInbound } from "./lib/inbound";
 import { mailboxQueries } from "./lib/mailbox-rpc";
 import { newRawKey, platformStatement } from "./lib/original";
+import { factsOfParsed } from "./lib/rule-facts";
 import type { Env } from "./types";
 
 type Stub = DurableObjectStub<MailboxDO>;
@@ -177,6 +179,9 @@ async function finish(
 					email,
 					attachments: files.map((file) => file.row),
 					auth_results: authResults,
+					// What the mailbox's rules are told about the message (ADR-0008). They run in the
+					// mailbox, with this call: after the message was parsed, before its row is written.
+					facts: factsOfParsed(parsed),
 				});
 	if (filed === "too_large") {
 		log.warn("inbound.unparsed", { emailId: id, error: "too_large" });
@@ -197,6 +202,9 @@ async function finish(
 		log.error("inbound.files_unfinished", { emailId: id, ...errorFields(error) });
 	}
 	if (stored.length > 0) await stub.filesStored(id, stored);
+	// Only mail filed in the Inbox is given to the assistant: what the rules filed elsewhere,
+	// and mail from a blocked sender, is not (ADR-0008).
+	if (filed !== "filed") return null;
 	return { emailId: id, sender: email.sender, subject: email.subject, threadId: email.thread_id };
 }
 

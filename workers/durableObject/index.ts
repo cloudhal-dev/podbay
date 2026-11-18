@@ -13,6 +13,7 @@ import * as schema from "../db/schema";
 import type { ListOrder, SearchFilterOptions } from "../lib/list-options";
 import type { Env } from "../types";
 import * as alarm from "./alarm";
+import * as autoReply from "./auto-reply";
 import { countConversations, listConversations } from "./conversations";
 import * as steps from "./deed-steps";
 import * as deeds from "./deeds";
@@ -23,6 +24,7 @@ import * as labels from "./labels";
 import * as live from "./live";
 import { applyMigrations, mailboxMigrations } from "./migrations";
 import * as originals from "./originals";
+import * as rules from "./rules";
 import { countSearchResults, searchEmails } from "./search";
 import type { AttachmentData, EmailData, GetEmailsOptions } from "./shapes";
 import * as submissions from "./submissions";
@@ -305,8 +307,9 @@ export class MailboxDO extends DurableObject<Env> {
 	async dropArrival(id: string) {
 		return originals.dropArrival(this.ctx.storage, id);
 	}
+	/** Files an arrival where the mailbox's rules put it (ADR-0008), and answers it when owed. */
 	async fileArrival(id: string, filed: originals.Filed) {
-		return originals.fileArrival(this.ctx.storage, id, filed, Date.now());
+		return rules.file(this.ctx, id, filed, Date.now());
 	}
 	async filesStored(emailId: string, fileIds: string[]) {
 		return originals.filesStored(this.ctx.storage, emailId, fileIds);
@@ -391,6 +394,28 @@ export class MailboxDO extends DurableObject<Env> {
 	 */
 	async alarm() {
 		await alarm.wake({ ctx: this.ctx, env: this.env, answerWithinMs: this.answerWithinMs });
+	}
+
+	// ── Rules for incoming mail (ADR-0008, ./rules, ./auto-reply) ──
+	// The assistant and MCP get a handle on the mailbox without these (`workers/agent/tools.ts`).
+
+	async getRules() {
+		return rules.list(this.ctx.storage.sql);
+	}
+	async setRules(list: Parameters<typeof rules.replace>[1], by: string) {
+		return rules.replace(this.ctx.storage, list, by, Date.now());
+	}
+	async blockSender(sender: string, by: string) {
+		return rules.block(this.ctx.storage, sender, by, Date.now());
+	}
+	async unblockSender(sender: string) {
+		return rules.unblock(this.ctx.storage.sql, sender);
+	}
+	async getAutoReply() {
+		return autoReply.read(this.ctx.storage.sql);
+	}
+	async setAutoReply(reply: Parameters<typeof autoReply.save>[1], by: string) {
+		return autoReply.save(this.ctx.storage.sql, reply, by, Date.now());
 	}
 
 	// ── Known addresses (ADR-0012, ./known) ────────────────────────

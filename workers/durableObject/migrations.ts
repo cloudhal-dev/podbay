@@ -357,4 +357,35 @@ export const mailboxMigrations: Migration[] = [
 				WHERE folder_id = 'sent' AND date >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day');
 		`,
 	},
+	{
+		// ADR-0008: a mailbox has rules for its incoming mail. `rules` has one row for each
+		// rule: a blocked sender (`block`: an address or `@domain` in `sender`), a filter
+		// (`filter`: its conditions and actions as JSON in `body`, its place in the order in
+		// `position`), and the one automatic reply (`auto_reply`, with the id `auto_reply` and
+		// the object in `body`). `set_by` and `set_at` say who made it and when: for the
+		// automatic reply that person's right is asked again whenever a reply leaves.
+		// `auto_reply_log` has one row for each address that was answered, with the time and
+		// nothing of any message: a sender is answered once in seven days. Both tables start
+		// empty: no mail that is already here is filed again, and nobody is answered for it.
+		name: "18_rules",
+		sql: `
+			CREATE TABLE rules (
+				id TEXT PRIMARY KEY,
+				kind TEXT NOT NULL,
+				position INTEGER NOT NULL DEFAULT 0,
+				sender TEXT,
+				body TEXT NOT NULL DEFAULT '{}',
+				set_at TEXT NOT NULL,
+				set_by TEXT NOT NULL DEFAULT ''
+			);
+			CREATE UNIQUE INDEX idx_rules_kind_sender ON rules(kind, sender);
+			CREATE INDEX idx_rules_kind_position ON rules(kind, position);
+
+			CREATE TABLE auto_reply_log (
+				sender TEXT PRIMARY KEY,
+				at TEXT NOT NULL
+			) WITHOUT ROWID;
+			CREATE INDEX idx_auto_reply_log_at ON auto_reply_log(at);
+		`,
+	},
 ];

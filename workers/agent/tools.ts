@@ -59,19 +59,39 @@ const REFUSING_SENDER: SendEmail = {
  */
 export const SENDING_METHODS: readonly string[] = ["submit", "unsend", "reschedule", "alarm"];
 
+/**
+ * The methods of the mailbox object that are not a tool's to call (ADR-0008). The rules of a
+ * mailbox decide where everyone's mail goes, and the automatic reply makes the mailbox send:
+ * the record gives neither to the assistant or to MCP, so no tool reads or changes them. And
+ * mail arrives by the `email` handler alone: filing an arrival is what the automatic reply
+ * answers, so no tool files one.
+ */
+export const RULE_METHODS: readonly string[] = [
+	"getRules",
+	"setRules",
+	"blockSender",
+	"unblockSender",
+	"getAutoReply",
+	"setAutoReply",
+	"beginArrival",
+	"fileArrival",
+];
+
+const CLOSED_METHODS: readonly string[] = [...SENDING_METHODS, ...RULE_METHODS];
+
 const refuseSending = (): Promise<never> => {
 	log.warn("agent.send_refused");
 	return Promise.reject(new AgentSendRefused());
 };
 
 /**
- * A handle on a mailbox without the methods that send. Everything else is passed on to the
- * mailbox as it is.
+ * A handle on a mailbox without the methods that send, and without the ones about the rules
+ * for incoming mail. Everything else is passed on to the mailbox as it is.
  */
 function withoutSending<T extends object>(stub: T): T {
 	return new Proxy(stub, {
 		get(target, name) {
-			if (typeof name === "string" && SENDING_METHODS.includes(name)) return refuseSending;
+			if (typeof name === "string" && CLOSED_METHODS.includes(name)) return refuseSending;
 			const value: unknown = Reflect.get(target, name);
 			// A method is called on the handle itself, never taken off it.
 			return typeof name === "string" && typeof value === "function"
