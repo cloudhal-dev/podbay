@@ -49,10 +49,21 @@ The bar is the mail people know from Gmail and Google Workspace ([feature scope]
 
 Known defects that stand in the way are in [status](status.md), section 3: conversations formed before the fix of 2026-11-17 are not regrouped.
 
-## 5. What is decided about the client
+## 5. The shape of the repository
 
-The app is a single-page React app on TanStack Router, served as static assets, talking to one JSON API ([ADR-0005](adr/0005-client-stack.md)). Two alternatives, TanStack Start and Exact, were looked at on 2026-11-17 and are not adopted now; the ADR records why and the triggers that make the project look again. Exact is the first candidate when a native client is decided on. The triggers are read again at the end of each milestone, and the result is written here. Read again on 2026-11-19 for [ADR-0018](adr/0018-one-workspace-one-worker-many-modules.md) (proposed): none of Exact's triggers is met.
+[ADR-0018](adr/0018-one-workspace-one-worker-many-modules.md), accepted on 2026-11-19, makes the repository a pnpm workspace of apps, modules and shared packages, with every module in the one Worker and nothing an installed instance depends on renamed. It builds no module and moves no phase. The move is several small pull requests, in this order:
 
-## 6. How the direction changes
+1. The checks that pin versions and read licences read every package of the workspace. This may come at any time.
+2. The shared packages, one at a time, out of `shared/`.
+3. Mail into `modules/mail`, its Worker side and its app side each in its own change.
+4. The shell into `apps/podbay`.
+
+The file moves begin after the work on the screens' controls ([#84](https://github.com/cloudhal-dev/podbay/issues/84), [#82](https://github.com/cloudhal-dev/podbay/issues/82), [#83](https://github.com/cloudhal-dev/podbay/issues/83)) has merged.
+
+## 6. What is decided about the client
+
+The app is a single-page React app on TanStack Router, served as static assets, talking to one JSON API ([ADR-0005](adr/0005-client-stack.md)). Two alternatives, TanStack Start and Exact, were looked at on 2026-11-17 and are not adopted now; the ADR records why and the triggers that make the project look again. Exact is the first candidate when a native client is decided on. The triggers are read again at the end of each milestone, and the result is written here. Read again on 2026-11-19 for [ADR-0018](adr/0018-one-workspace-one-worker-many-modules.md): none of Exact's triggers is met.
+
+## 7. How the direction changes
 
 By an ADR, proposed by whoever needs the change and accepted by the project lead. A milestone is not reordered, a phase B feature is not pulled forward and a non-goal of the [architecture](architecture.md#2-non-goals) is not taken up without one.

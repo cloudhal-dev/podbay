@@ -21,4 +21,4 @@ Decisions are immutable once accepted. A later ADR supersedes an earlier one; th
 | [0015](0015-the-original-message-is-kept.md) | The original message is kept | Accepted, 2026-11-17 |
 | [0016](0016-outgoing-mail-waits-before-it-leaves.md) | Outgoing mail waits before it leaves | Accepted, 2026-11-17 |
 | [0017](0017-the-repository-opens-before-the-name-is-reviewed.md) | The repository opens before the name is reviewed (amends 0001, decision 8, and 0003) | Accepted, 2026-11-18 |
-| [0018](0018-one-workspace-one-worker-many-modules.md) | One workspace, one Worker, many modules: the shape that leaves room for a suite | Proposed, 2026-11-19 |
+| [0018](0018-one-workspace-one-worker-many-modules.md) | One workspace, one Worker, many modules: the shape that leaves room for a suite | Accepted, 2026-11-19 |

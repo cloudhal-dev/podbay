@@ -1,8 +1,9 @@
 # ADR-0018: One workspace, one Worker, many modules: the shape that leaves room for a suite
 
-- Status: **Proposed**
+- Status: **Accepted**
 - Date: 2026-11-19
-- Proposed by: the coding agent, for issue [#57](https://github.com/cloudhal-dev/podbay/issues/57). Only the project lead accepts it.
+- Decided by: Halil (@madraka), project lead, as proposed
+- Proposed by: the coding agent, for issue [#57](https://github.com/cloudhal-dev/podbay/issues/57)
 - Sources: read on 2026-11-19 and listed at the end. Each Cloudflare fact is in the [ledger](../cloudflare/ledger.json) with its address and a quote; every other fact was read in its standard's or project's own text on that day.
 
 ## Context
@@ -100,7 +101,7 @@ B costs a separate deploy for each module, compiled auxiliary Workers in tests w
 
 **For messages:** keep the TypeScript catalogs keyed by English and add plural categories (no dependency); or adopt a MessageFormat 2 runtime now (a dependency on every page, for a proposal at Stage 1); or move to XLIFF or PO files and generate code from them (a generated-file step for a workflow nobody runs yet).
 
-## Decision (proposed)
+## Decision
 
 1. **One Worker, as today.** Every module runs in the one Worker and is served from its one hostname. A module brings:
    - its routes, each entered in the one route table with its right;
