@@ -8,7 +8,8 @@
 import { execFileSync } from "node:child_process";
 import type { Check } from "./lib.ts";
 
-const ALLOWED = new Set([
+/** The licences a package may have. The dependency review in `.github/workflows/checks.yml` names the same list. */
+export const ALLOWED = new Set([
 	"MIT",
 	"MIT-0",
 	"ISC",
@@ -23,7 +24,8 @@ const ALLOWED = new Set([
 	"MPL-2.0",
 	"Python-2.0",
 ]);
-const LGPL_TOOLING = /^@img\/sharp-libvips-/;
+/** LGPL packages of the local toolchain, never shipped; the dependency review names them too. */
+export const LGPL_TOOLING = /^@img\/sharp-libvips-/;
 const FORBIDDEN = /\b(AGPL|GPL|SSPL|BUSL|Commons[- ]Clause)\b/i;
 
 interface Listed {
