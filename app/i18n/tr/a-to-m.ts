@@ -456,7 +456,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Date and time": "Tarih ve saat",
 	"Choose a date and a time.": "Bir tarih ve saat seçin.",
 	"It is a draft again: send it again, change it or discard it.":
-		"Yeniden bir taslak: tekrar gönderin, değiştirin ya da atın.",
+		"Yeniden bir taslak: tekrar gönderin, değiştirin ya da silin.",
 	Dismiss: "Kapat",
 	"Change the time": "Saati değiştir",
 	"Cancel send": "Gönderimi iptal et",
