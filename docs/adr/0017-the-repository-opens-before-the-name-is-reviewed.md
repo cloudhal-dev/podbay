@@ -9,7 +9,7 @@
 
 ADR-0001 (decision 8) made the repository public only after the name "Podbay" had passed a domain and trademark check, and ADR-0003 repeated it: the review "still happens before the repository becomes public". The review ([issue #4](https://github.com/cloudhal-dev/podbay/issues/4)) is not done.
 
-Keeping the repository private had a cost. The organisation is on GitHub's free plan, and on that plan the protections the project depends on exist only for a public repository. GitHub refused each of them for this repository on 2026-11-18 ([repository](../repository.md), section 3 as it stood): the rulesets for `main` and for release tags, secret scanning with push protection, private vulnerability reporting and code scanning. While it was private, `main` was guarded by review alone (rule S16 in the [status](../status.md), section 2).
+Keeping the repository private had a cost. The organisation is on GitHub's free plan, and on that plan the protections the project depends on exist only for a public repository. On 2026-11-18 GitHub refused four of them for this repository, each with an answer: the rulesets for `main` and for release tags, and classic branch protection ("Upgrade to GitHub Pro or make this repository public"); secret scanning with push protection ("not available for this repository"); private vulnerability reporting (not found); and the approval for workflows from forks ("not allowed for private repositories"). Code scanning was not asked for while the repository was private; it was left for the day it opened. While it was private, `main` was guarded by review alone (rule S16 in the [status](../status.md), section 2).
 
 ## Decision
 
