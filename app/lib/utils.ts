@@ -11,7 +11,7 @@
  */
 import DOMPurify from "dompurify";
 import { formatQuotedDate } from "shared/dates";
-import { htmlToText } from "shared/html-text";
+import { oneLineTextOf, plainTextOf } from "shared/html-text";
 import { quoteLanguage, t } from "../i18n";
 
 export {
@@ -57,37 +57,23 @@ export function toEmailListValue(addresses: string[]): string | string[] | undef
  * Convert HTML content to plain text, keeping line breaks between blocks.
  */
 export function htmlToPlainText(html: string): string {
-	// No DOM and no HTML injection: script and style content is never text (shared/html-text).
-	return decodeHtmlEntities(htmlToText(html, { keepLineBreaks: true }));
+	// No DOM and no HTML injection: script and style content is never text, and each character
+	// reference is decoded once (shared/html-text).
+	return plainTextOf(html);
 }
 
 /**
  * Strip all HTML tags from a string.
  */
 export function stripHtml(html: string): string {
-	return htmlToText(html);
-}
-
-function decodeHtmlEntities(text: string): string {
-	return text
-		.replace(/&#(\d+);/g, (_match: string, code: string) => String.fromCharCode(Number(code)))
-		.replace(/&#x([0-9a-f]+);/gi, (_match: string, hex: string) =>
-			String.fromCharCode(Number.parseInt(hex, 16)),
-		)
-		.replace(/&amp;/g, "&")
-		.replace(/&lt;/g, "<")
-		.replace(/&gt;/g, ">")
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;/g, "'")
-		.replace(/&apos;/g, "'")
-		.replace(/&nbsp;/g, " ");
+	return oneLineTextOf(html);
 }
 
 export function getSnippetText(snippet?: string | null, maxLength = 100): string {
 	if (!snippet) return "";
 
-	// htmlToText never shows script or style content, even when the snippet is cut mid-element.
-	const clean = decodeHtmlEntities(htmlToText(snippet)).replace(/\s+/g, " ").trim();
+	// Never script or style content, even when the snippet is cut mid-element.
+	const clean = oneLineTextOf(snippet);
 
 	if (!clean) return "";
 	return clean.length > maxLength ? `${clean.slice(0, maxLength)}...` : clean;

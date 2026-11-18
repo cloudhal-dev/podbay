@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { getSnippetText, htmlToPlainText, stripHtml } from "../../app/lib/utils.ts";
 import { htmlToText } from "../../shared/html-text.ts";
+import { buildQuotedReplyBlock, stripHtmlToText } from "../../workers/lib/email-helpers.ts";
 
 describe("htmlToText", () => {
 	it("keeps the text and drops the tags", () => {
@@ -75,5 +77,54 @@ describe("htmlToText with line breaks kept", () => {
 		expect(text).not.toMatch(/\n{3,}/);
 		expect(text.startsWith("a")).toBe(true);
 		expect(text.endsWith("b")).toBe(true);
+	});
+});
+
+describe("the text Podbay makes of a stranger's HTML", () => {
+	// The forms a regular expression over markup misses: an end tag with a space or a line
+	// break in it, capitals, a tag inside a tag, and a character reference written twice.
+	const HOSTILE = [
+		"<p>before</p><script >steal()</script ><p>after</p>",
+		"<p>before</p><SCRIPT>steal()</SCRIPT><p>after</p>",
+		"<p>before</p><script>steal()</script\n><p>after</p>",
+		"<p>before</p><style >p{}</style ><p>after</p>",
+	];
+	// A tag inside a tag is one tag named "scr<script", as a browser reads it: what follows is
+	// text, and no tag is left to put back together.
+	const NESTED = "<p>before</p><scr<script>ipt>steal()</script><p>after</p>";
+	const makers = {
+		"the Worker's text for a model, a tool and a quote": stripHtmlToText,
+		"the app's one-line text": stripHtml,
+		"the app's list snippet": (html: string) => getSnippetText(html, 500),
+		"the app's text part of a message": htmlToPlainText,
+	};
+
+	for (const [who, make] of Object.entries(makers)) {
+		it(`${who}: never keeps script or style content, and never a tag`, () => {
+			for (const html of HOSTILE) {
+				const text = make(html);
+				expect(text, html).toContain("before");
+				expect(text, html).not.toContain("steal()");
+				expect(text, html).not.toContain("p{}");
+				expect(text, html).not.toMatch(/<\/?[a-z]/i);
+			}
+			expect(make(NESTED)).not.toMatch(/<\/?[a-z]/i);
+		});
+
+		it(`${who}: decodes each character reference once`, () => {
+			expect(make("<p>a &amp;lt;b&amp;gt; c</p>")).toBe("a &lt;b&gt; c");
+			expect(make("<p>caf&#233; &amp; co</p>")).toBe("café & co");
+		});
+	}
+
+	it("a quoted reply shows what was written as text, and the reply holds no element of it", () => {
+		const quoted = buildQuotedReplyBlock({
+			sender: "ada@sender.test",
+			date: "2026-11-18T10:00:00Z",
+			body: "<p>&lt;script&gt;steal()&lt;/script&gt;</p><script >steal()</script >",
+		});
+		expect(quoted).toContain("&lt;script&gt;steal()&lt;/script&gt;");
+		expect(quoted).not.toContain("<script");
+		expect(quoted.match(/steal\(\)/g)).toHaveLength(1);
 	});
 });

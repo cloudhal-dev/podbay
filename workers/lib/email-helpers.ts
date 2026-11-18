@@ -5,6 +5,7 @@
 
 import { formatQuotedDate } from "../../shared/dates";
 import { Folders } from "../../shared/folders";
+import { oneLineTextOf } from "../../shared/html-text";
 /**
  * Shared email helpers to eliminate duplication across API routes, MCP, and agent.
  *
@@ -156,18 +157,14 @@ export function textToHtml(text: string): string {
 }
 
 /**
- * Strip HTML tags and normalize whitespace to produce plain text.
- * Removes <style> and <script> blocks first to avoid injecting their
- * content into the output.
+ * The text of an HTML body on one line, for a model, a tool and a quoted reply. One scan of the
+ * markup (shared/html-text), not regular expressions over it: the content of a script or a
+ * style is never text, however its tags are written, and each character reference is decoded
+ * once. The result is text; a quoted reply escapes it before it becomes HTML.
  */
 export function stripHtmlToText(html: string): string {
 	if (!html) return "";
-	return html
-		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-		.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-		.replace(/<[^>]+>/g, " ")
-		.replace(/\s+/g, " ")
-		.trim();
+	return oneLineTextOf(html);
 }
 
 /**

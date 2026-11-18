@@ -27,7 +27,7 @@ import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
 import { plural, t } from "~/i18n";
 import { unsubscribeOf } from "~/lib/unsubscribe";
-import { splitEmailList, toEmailListValue } from "~/lib/utils";
+import { htmlToPlainText, splitEmailList, toEmailListValue } from "~/lib/utils";
 import { useDeleteEmail, useEmail, useThreadReplies } from "~/queries/emails";
 import { useMailbox } from "~/queries/mailboxes";
 import api from "~/services/api";
@@ -322,7 +322,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 				from,
 				subject: target.subject || t("(no subject)"),
 				html: target.body || "",
-				text: target.body ? target.body.replace(/<[^>]*>/g, "").trim() : "",
+				text: target.body ? htmlToPlainText(target.body) : "",
 			};
 			// The mailbox takes it; the notes that follow, Undo and what became of it, are the
 			// hook's. Nothing here says "sent" (ADR-0016).

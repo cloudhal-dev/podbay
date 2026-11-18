@@ -84,7 +84,9 @@ describe("the frame's sizing script", () => {
 			allowRemote: false,
 			nonce,
 		});
-		const scripts = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+		const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)].map(
+			(m) => m[1],
+		);
 		expect(scripts).toEqual([MAIL_FRAME_SCRIPT]);
 		const without = mailDocument({
 			sanitizedBody: "<p>Hi</p>",

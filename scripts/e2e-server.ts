@@ -26,6 +26,16 @@ const QUIET = { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" };
 /** What the build put next to the Worker, so it can be put back when the tests are done. */
 let builtVarsBefore: string | null = null;
 
+/** A file's text, or null when it is not there: read without asking first, so nothing can change between. */
+function readIfThere(path: string): string | null {
+	try {
+		return readFileSync(path, "utf8");
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+		throw error;
+	}
+}
+
 function restore(): void {
 	if (builtVarsBefore !== null) writeFileSync(BUILT_VARS, builtVarsBefore, { mode: 0o600 });
 	else rmSync(BUILT_VARS, { force: true });
@@ -45,7 +55,7 @@ function prepare(): void {
 	};
 	// The build copied the developer's local variables next to the Worker. They are replaced
 	// for the run and put back afterwards.
-	builtVarsBefore = existsSync(BUILT_VARS) ? readFileSync(BUILT_VARS, "utf8") : null;
+	builtVarsBefore = readIfThere(BUILT_VARS);
 	writeFileSync(
 		BUILT_VARS,
 		`AUTH_SECRET=${secrets.authSecret}\nSETUP_TOKEN=${secrets.setupToken}\n`,
