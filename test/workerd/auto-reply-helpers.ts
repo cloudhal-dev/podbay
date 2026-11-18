@@ -80,7 +80,7 @@ export function aMailboxThatAnswers(): void {
 			sql.exec(`DELETE FROM send_log`);
 			sql.exec(`DELETE FROM submissions`);
 			sql.exec(`DELETE FROM emails WHERE folder_id IN ('sent', 'scheduled', 'draft')`);
-			sql.exec(`DELETE FROM rules WHERE kind IN ('block', 'filter')`);
+			sql.exec(`DELETE FROM rules WHERE kind IN ('block', 'filter', 'auto_reply_stopped')`);
 			sql.exec(`DELETE FROM known_addresses`);
 		});
 		const fake = sender.fake;

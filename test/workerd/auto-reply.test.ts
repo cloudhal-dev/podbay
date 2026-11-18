@@ -32,6 +32,7 @@ import {
 	waiting,
 } from "./auto-reply-helpers.ts";
 import { json, mime } from "./helpers.ts";
+import { stoppedAt } from "./original-helpers.ts";
 import { as, DESK, deliver, ids, inMailbox, M, rows, stored } from "./rules-helpers.ts";
 import { age, type FakeSender, letLeave, MINUTE } from "./sending-helpers.ts";
 
@@ -241,6 +242,9 @@ describe("who never gets one (decision 9; RFC 3834)", () => {
 		["the door of a list", "news-request@sender.test"],
 		["something that is not one address", "ada@sender.test, grace@sender.test"],
 		["the mailbox itself", DESK],
+		// Routing delivers name+anything@domain to name@domain: that is the mailbox too.
+		["the mailbox itself under a tag", "desk+away@example.com"],
+		["the mailbox itself under a tag, in capitals", "DESK+Away@Example.COM"],
 	])("%s", async (_what, envelope) => {
 		expect(await arrives("Nobody to answer", {}, envelope)).toMatchObject({ folder_id: "inbox" });
 		expect(fake.calls).toEqual([]);
@@ -531,6 +535,64 @@ describe("it is still the mailbox sending (decision 10)", () => {
 		fake.calls.length = 0;
 		await arrives("Once it is on again", {}, "off@sender.test");
 		expect(answered()).toEqual(["off@sender.test"]);
+	});
+
+	it("does not leave with the words of an earlier save when it was saved again while it waited", async () => {
+		await on({ ...REPLY, textBody: "The words of the first save." });
+		fake.next = [{ code: "E_RATE_LIMIT_EXCEEDED" }];
+		await arrives("Waiting while it is saved again", {}, "early@sender.test");
+		expect(fake.calls).toHaveLength(1);
+		// Saved again, with other words, while the first reply waits for its next try.
+		await on({ ...REPLY, textBody: "The words of the second save." });
+		await age(DESK, 2 * MINUTE);
+		await letLeave(DESK);
+		// The waiting reply was made from a save that is no longer in force: it does not leave,
+		// nothing of it is kept, and its sender was not answered.
+		expect(fake.calls).toHaveLength(1);
+		expect(await kept()).toEqual([]);
+		expect(await rows(`SELECT 1 FROM submissions`)).toEqual([]);
+		expect(await rows(`SELECT 1 FROM auto_reply_log`)).toEqual([]);
+		// When they write again, they are answered with the words in force.
+		await arrives("Writing again after the second save", {}, "early@sender.test");
+		expect(fake.calls).toHaveLength(2);
+		expect(JSON.stringify(fake.calls[1])).toContain("The words of the second save.");
+		expect(JSON.stringify(fake.calls[1])).not.toContain("first save");
+		expect(answered()).toEqual(["early@sender.test", "early@sender.test"]);
+	});
+});
+
+describe("an arrival that was left half done", () => {
+	it("is answered once when the next arrival finishes it", async () => {
+		await on();
+		// The handler is stopped after the bytes are stored and before the message is filed.
+		const left = await deliver(
+			mime({ From: "Ada <ada@sender.test>", To: DESK, Subject: "Left half done" }),
+			{
+				from: "resumed@sender.test",
+				env: stoppedAt("fileArrival") as unknown as Record<string, unknown>,
+			},
+		);
+		expect(left).toEqual({ rejections: [], threw: null });
+		expect(await stored("Left half done")).toBeUndefined();
+		expect(fake.calls).toEqual([]);
+		await inMailbox((sql) =>
+			sql.exec(
+				`UPDATE arrivals SET started_at = ?1`,
+				new Date(Date.now() - 20 * MINUTE).toISOString(),
+			),
+		);
+		// The next arrival finishes it: both are answered, each once.
+		await arrives("The next arrival", {}, "next@sender.test");
+		expect(await stored("Left half done")).toMatchObject({ folder_id: "inbox" });
+		expect(answered().sort()).toEqual(["next@sender.test", "resumed@sender.test"]);
+		// And the one after that finds nothing left to finish, and answers nobody twice.
+		await arrives("The one after", {}, "after@sender.test");
+		expect(answered().sort()).toEqual([
+			"after@sender.test",
+			"next@sender.test",
+			"resumed@sender.test",
+		]);
+		expect(await rows(`SELECT 1 FROM arrivals`)).toEqual([]);
 	});
 });
 

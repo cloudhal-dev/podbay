@@ -61,6 +61,7 @@ describe("whether the automatic reply is owed (decision 9; RFC 3834)", () => {
 		now: NOW,
 		mailbox: "desk@example.com",
 		envelopeFrom: "Ada@Sender.test",
+		envelopeRoutesTo: "ada@sender.test",
 		facts: { recipients: ["desk@example.com"], autoSubmitted: null, list: false },
 		outcome: { place: "inbox", blocked: false },
 		blocked: [],
@@ -164,6 +165,21 @@ describe("whether the automatic reply is owed (decision 9; RFC 3834)", () => {
 		["the door of a list", "news-request@sender.test"],
 	])("never answers %s", (_what, envelopeFrom) => {
 		expect(replyOwed(asked({ envelopeFrom }))).toEqual({ no: "no_sender" });
+	});
+
+	it("never answers the mailbox under a tag: routing delivers it to the mailbox", () => {
+		expect(
+			replyOwed(
+				asked({ envelopeFrom: "Desk+Away@Example.com", envelopeRoutesTo: "desk@example.com" }),
+			),
+		).toEqual({ no: "no_sender" });
+		// Another mailbox, under a tag or not, is someone to answer.
+		expect(
+			replyOwed(
+				asked({ envelopeFrom: "team+a@example.com", envelopeRoutesTo: "team@example.com" }),
+			),
+		).toEqual({ to: "team+a@example.com" });
+		expect(replyOwed(asked({ envelopeRoutesTo: null }))).toEqual({ to: "ada@sender.test" });
 	});
 
 	it("names a sender in one form, whatever form the envelope gave it in", () => {

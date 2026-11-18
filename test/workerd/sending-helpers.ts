@@ -101,7 +101,8 @@ const SHIFT = (column: string) =>
 
 /**
  * Moves a mailbox's clock forward by ageing what it waits for: every time of every message on
- * its way, and what it counted against its caps, is `ms` earlier afterwards.
+ * its way, what it counted against its caps, and when its rules were saved, is `ms` earlier
+ * afterwards.
  */
 export async function age(address: string, ms: number, where = "1 = 1"): Promise<void> {
 	const seconds = (ms / 1000).toFixed(3);
@@ -112,6 +113,9 @@ export async function age(address: string, ms: number, where = "1 = 1"): Promise
 			seconds,
 		);
 		sql.exec(`UPDATE send_log SET ${SHIFT("at")}`, seconds);
+		// The time a rule was saved, too: a waiting automatic reply knows the save it was made
+		// from by that time (ADR-0008), and the clock moves for both.
+		sql.exec(`UPDATE rules SET ${SHIFT("set_at")}`, seconds);
 	});
 }
 

@@ -31,6 +31,7 @@ import {
 	path,
 	people,
 	rows,
+	signedInAgain,
 	stored,
 } from "./rules-helpers.ts";
 
@@ -622,6 +623,46 @@ describe("what a request may say (decisions 2, 3 and 11)", () => {
 			"in-the-body@sender.test",
 		]);
 		await inMailbox((sql) => sql.exec(`DELETE FROM rules WHERE kind = 'block'`));
+	});
+
+	it("reads a body up to 256 KiB and refuses a larger one, at every route that takes one", async () => {
+		const KIB = 1024;
+		/** The JSON of `body`, padded with spaces to `size` bytes: still the same JSON. */
+		const padded = (body: unknown, size: number) => {
+			const text = JSON.stringify(body);
+			return text + " ".repeat(size - new TextEncoder().encode(text).length);
+		};
+		const send = (method: string, at: string, body: unknown, size: number) =>
+			as("owner").fetch(at, { method, body: padded(body, size) });
+		await signedInAgain("owner");
+		const routes: [string, string, unknown, number][] = [
+			["PUT", `${M}/rules`, { rules: [good] }, 200],
+			["POST", `${M}/blocked-senders`, { sender: "padded@sender.test" }, 201],
+			["DELETE", `${M}/blocked-senders`, { sender: "padded@sender.test" }, 204],
+			[
+				"PUT",
+				`${M}/auto-reply`,
+				{
+					isEnabled: false,
+					fromDate: null,
+					toDate: null,
+					subject: null,
+					textBody: null,
+					htmlBody: null,
+				},
+				200,
+			],
+		];
+		for (const [method, at, body, taken] of routes) {
+			await setRules([]);
+			// One byte over the limit is refused, and changes nothing.
+			const over = await send(method, at, body, 256 * KIB + 1);
+			expect(over.status, `${method} ${at} over the limit`).toBe(400);
+			// The same request at the limit is taken.
+			expect((await send(method, at, body, 256 * KIB)).status, `${method} ${at}`).toBe(taken);
+		}
+		expect((await getRules()).rules).toEqual([]);
+		expect((await getRules()).blocked).toEqual([]);
 	});
 });
 

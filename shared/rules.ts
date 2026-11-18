@@ -533,6 +533,12 @@ export interface ReplyQuestion {
 	mailbox: string;
 	/** The envelope sender of the message: the only address a reply goes to. */
 	envelopeFrom: string;
+	/**
+	 * The mailbox the envelope sender would be delivered to, by the step that routes incoming
+	 * mail (`name+tag@domain` is `name@domain`), or `null` when it would be delivered nowhere.
+	 * A reply to the mailbox itself, under any tag, is never owed.
+	 */
+	envelopeRoutesTo: string | null;
 	facts: Pick<MessageFacts, "recipients" | "autoSubmitted" | "list">;
 	outcome: Pick<Outcome, "place" | "blocked">;
 	/**
@@ -594,7 +600,12 @@ export function replyOwed(question: ReplyQuestion): { to: string } | { no: NoRep
 		return { no: "not_addressed" };
 	}
 	const to = replySender(question.envelopeFrom);
-	if (!isAddress(to) || to === mailbox || isProgram(to.slice(0, to.indexOf("@")))) {
+	if (
+		!isAddress(to) ||
+		to === mailbox ||
+		(question.envelopeRoutesTo !== null && fold(question.envelopeRoutesTo) === mailbox) ||
+		isProgram(to.slice(0, to.indexOf("@")))
+	) {
 		return { no: "no_sender" };
 	}
 	if (isBlocked(question.blocked, to)) return { no: "filed_away" };

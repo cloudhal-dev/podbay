@@ -31,6 +31,16 @@ describe("htmlToText", () => {
 		expect(htmlToText('<SCRIPT type="text/javascript">x()</SCRIPT>ok')).toBe("ok");
 	});
 
+	it("is not slowed down by many raw-text elements: the work grows with the input, not its square", () => {
+		// 60,000 elements in 900,000 characters. Copying the whole input once for each of them is
+		// about fifty thousand million characters, and takes far longer than the bound.
+		const html = `${"<style></style>".repeat(60_000)}<STYLE>x</STYLE>shown`;
+		expect(html.length).toBeGreaterThan(900_000);
+		const began = performance.now();
+		expect(htmlToText(html)).toBe("shown");
+		expect(performance.now() - began).toBeLessThan(1000);
+	});
+
 	it("keeps a bare less-than sign", () => {
 		expect(htmlToText("a < b and c > d")).toBe("a < b and c > d");
 	});

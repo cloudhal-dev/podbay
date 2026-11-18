@@ -126,10 +126,12 @@ rules.get(`${M}/auto-reply`, async (c) => {
 	// A reply leaves on the standing of the person who saved it. When that person may no longer
 	// send here nothing is answered, and the answer says so instead of showing a reply that is
 	// on and does nothing.
+	// A save that was marked as stopped stays stopped until it is saved again.
 	const stopped =
 		held.reply.isEnabled && held.by !== null && held.at !== null
-			? (await standingOf(c.env.DB, c.var.mailbox.address, held.by, held.at, AUTO_REPLY_RIGHT)) !==
-				"ok"
+			? held.stopped ||
+				(await standingOf(c.env.DB, c.var.mailbox.address, held.by, held.at, AUTO_REPLY_RIGHT)) !==
+					"ok"
 			: false;
 	const answer: AutoReplyAnswer = { ...held.reply, stopped };
 	return c.json(answer);

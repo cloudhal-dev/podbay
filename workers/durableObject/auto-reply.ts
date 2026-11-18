@@ -36,6 +36,7 @@ import {
 } from "../../shared/rules";
 import { SENDING } from "../../shared/sending";
 import { textToHtml } from "../lib/email-helpers";
+import { mailboxAddressFor } from "../lib/inbound";
 import { headerList } from "../lib/outgoing-message";
 import { capFull } from "./sending";
 import { take, waitingCount } from "./submissions";
@@ -46,6 +47,13 @@ interface Storage {
 }
 
 const ID = "auto_reply";
+/**
+ * The mark that the reply, as it was saved at one time, stopped: a reply of that save did not
+ * leave because the person who saved it may no longer have it leave. Its `set_at` is the time
+ * of that save. While it is there no reply of that save is made, so a stopped reply costs
+ * nothing for each message that arrives; saving the reply again is a new save, and the mark goes.
+ */
+const STOPPED = "auto_reply_stopped";
 const HOUR_MS = 60 * 60_000;
 const iso = (time: number) => new Date(time).toISOString();
 
@@ -82,10 +90,20 @@ function stored(sql: SqlStorage): Stored | null {
 	}
 }
 
-/** The automatic reply of the mailbox, and who saved it and when. Off when none was saved. */
-export function read(sql: SqlStorage): { reply: AutoReply; by: string | null; at: string | null } {
+/**
+ * The automatic reply of the mailbox, who saved it and when, and whether that save was marked
+ * as stopped. Off when none was saved.
+ */
+export function read(sql: SqlStorage): {
+	reply: AutoReply;
+	by: string | null;
+	at: string | null;
+	stopped: boolean;
+} {
 	const held = stored(sql);
-	return held === null ? { reply: { ...NO_AUTO_REPLY }, by: null, at: null } : held;
+	return held === null
+		? { reply: { ...NO_AUTO_REPLY }, by: null, at: null, stopped: false }
+		: { ...held, stopped: stopped(sql, held) };
 }
 
 /**
@@ -101,6 +119,7 @@ export function save(sql: SqlStorage, reply: AutoReply, by: string, now: number)
 	if (reply.isEnabled) {
 		sql.exec(`DELETE FROM auto_reply_log WHERE at < ?1`, iso(now - AUTO_REPLY.oncePerSenderMs));
 	} else sql.exec(`DELETE FROM auto_reply_log`);
+	sql.exec(`DELETE FROM rules WHERE id = ?1`, STOPPED);
 	sql.exec(
 		`INSERT OR REPLACE INTO rules (id, kind, position, sender, body, set_at, set_by)
 		 VALUES (?1, 'auto_reply', 0, NULL, ?2, ?3, ?4)`,
@@ -113,12 +132,38 @@ export function save(sql: SqlStorage, reply: AutoReply, by: string, now: number)
 }
 
 /**
- * Whether the reply, as it is stored now, answers at this time. A reply that waits is asked
- * this again when it leaves: turned off, or past its end date, it does not leave.
+ * Whether a reply that waits may still leave, asked when it leaves: `off` when the reply is
+ * turned off or past its end date, `changed` when it was saved again since the reply was made
+ * (other words, or another person's standing), `yes` otherwise. `madeUnder` is the time of
+ * the save the waiting reply was made from: its `requested_at`.
  */
-export function answersNow(sql: SqlStorage, now: number): boolean {
+export function stillAnswers(
+	sql: SqlStorage,
+	madeUnder: string,
+	now: number,
+): "yes" | "off" | "changed" {
 	const held = stored(sql);
-	return held !== null && answersAt(held.reply, now);
+	if (held === null || !answersAt(held.reply, now)) return "off";
+	return held.at === madeUnder ? "yes" : "changed";
+}
+
+/**
+ * Marks the save the reply was made from as stopped: the person who saved it may no longer
+ * have it leave. Nothing more is made from that save (`consider`).
+ */
+export function stop(sql: SqlStorage, madeUnder: string): void {
+	sql.exec(
+		`INSERT OR REPLACE INTO rules (id, kind, position, sender, body, set_at, set_by)
+		 VALUES (?1, ?1, 0, NULL, '{}', ?2, '')`,
+		STOPPED,
+		madeUnder,
+	);
+}
+
+/** Whether the reply as it is saved now was marked as stopped. */
+function stopped(sql: SqlStorage, held: Stored): boolean {
+	const row = [...sql.exec(`SELECT set_at FROM rules WHERE id = ?1`, STOPPED)][0];
+	return row !== undefined && String(row.set_at) === held.at;
 }
 
 /** The record that a reply was made: the address it goes to, and when it was made. */
@@ -136,7 +181,7 @@ export function answeredBy(sql: SqlStorage, emailId: string): Answered | null {
 
 /**
  * Takes back the record of a reply that did not leave because of the mailbox itself: it was
- * turned off, or the person who saved it may no longer send. Its sender was not answered, so
+ * turned off or saved again, or the person who saved it may no longer have it leave. Its sender was not answered, so
  * they are not held off for seven days and the reply's caps do not count them. A reply the
  * service refused keeps its record: it is not tried again for that sender.
  */
@@ -185,16 +230,22 @@ export interface Arrived {
  * is, takes the reply as a message that waits to leave. Returns `queued`, or why not. The
  * record of who was answered is written with the reply, in the same turn.
  */
-export function consider(storage: Storage, arrived: Arrived, now: number): "queued" | NoReply {
+export function consider(
+	storage: Storage,
+	arrived: Arrived,
+	now: number,
+): "queued" | "stopped" | NoReply {
 	const { sql } = storage;
 	const held = stored(sql);
 	if (held === null) return "off";
+	if (stopped(sql, held)) return "stopped";
 	const envelopeFrom = replySender(arrived.envelopeFrom);
 	const owed = replyOwed({
 		reply: held.reply,
 		now,
 		mailbox: arrived.address,
 		envelopeFrom,
+		envelopeRoutesTo: mailboxAddressFor(envelopeFrom),
 		facts: arrived.facts,
 		outcome: arrived.outcome,
 		blocked: arrived.blocked,

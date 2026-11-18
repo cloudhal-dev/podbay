@@ -17,7 +17,7 @@
  *
  * **The rules hold when it leaves** (decision 15), asked in this order: is the mailbox still
  * in the index; may the person who sent it still send here, and is the account still theirs;
- * for a reply the mailbox makes by itself, is that reply still on; is `From` still this
+ * for a reply the mailbox makes by itself, is that reply still on and saved as it was; is `From` still this
  * mailbox's address; does the message still fit what the service takes; do the caps allow
  * one more. A message 24 hours past its time does not leave.
  *
@@ -152,10 +152,19 @@ async function leaveOne(
 	);
 	if (standing === "gone") return "gone";
 	if (clock() - Date.parse(seen.send_at) > SENDING.lateAfterMs) return failed("late");
-	if (standing === "right") return failed("right");
-	// The automatic reply is asked again when it leaves: turned off, or past its end date
-	// since it was made, it does not leave.
-	if (automatic && !autoReply.answersNow(storage.sql, clock())) return failed("off");
+	if (standing === "right") {
+		// A reply of the mailbox whose saver may no longer have it leave stops that save: no
+		// more replies are made from it until an owner saves it again.
+		if (automatic) autoReply.stop(storage.sql, seen.requested_at);
+		return failed("right");
+	}
+	// The automatic reply is asked again when it leaves: turned off or past its end date, or
+	// saved again since it was made, it does not leave. The words that leave are always those
+	// of the save that is in force, on the standing of the person who made it.
+	if (automatic) {
+		const still = autoReply.stillAnswers(storage.sql, seen.requested_at, clock());
+		if (still !== "yes") return failed(still);
+	}
 
 	if (stored === null) return "skipped";
 	const message = fromStored(stored);

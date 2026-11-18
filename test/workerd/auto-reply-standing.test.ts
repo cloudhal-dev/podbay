@@ -148,6 +148,42 @@ describe("a standing instruction of a person (decisions 8 and 10)", () => {
 		expect(answered()).toEqual(["early@sender.test", "again@sender.test", "later@sender.test"]);
 	});
 
+	it("once stopped, makes nothing for mail that arrives until it is saved again", async () => {
+		const { seedMembership, seedUser } = await import("./helpers.ts");
+		ids.away = await seedUser("away@example.com", "member");
+		await seedMembership(DESK, ids.away, "owner");
+		await signedInAgain("away");
+		expect((await save(REPLY, "away")).status).toBe(200);
+		const membership = (role: string | null) =>
+			role === null
+				? testEnv.DB.prepare(`delete from "memberships" where "user_id" = ?1`).bind(ids.away).run()
+				: seedMembership(DESK, ids.away ?? "", "owner");
+		await membership(null);
+		// The first reply after they left does not leave, and stops the reply.
+		await arrives("The first after they left", {}, "first@sender.test");
+		expect(answered()).toEqual([]);
+		// From then on a message that arrives makes no reply at all: nothing waits, nothing is
+		// asked of the index, nothing is recorded.
+		const { deliver } = await import("./rules-helpers.ts");
+		const { mime } = await import("./helpers.ts");
+		for (const from of ["second@sender.test", "third@sender.test"]) {
+			await deliver(mime({ From: `<${from}>`, To: DESK, Subject: `From ${from}` }), { from });
+			expect(await rows(`SELECT 1 FROM submissions`), from).toEqual([]);
+			expect(await rows(`SELECT 1 FROM emails WHERE folder_id = 'scheduled'`), from).toEqual([]);
+		}
+		expect(await rows(`SELECT 1 FROM auto_reply_log`)).toEqual([]);
+		// Their membership given back changes nothing: the reply stays stopped until it is saved.
+		await membership("owner");
+		await arrives("After they came back", {}, "fourth@sender.test");
+		expect(answered()).toEqual([]);
+		await signedInAgain("owner");
+		expect(await read()).toMatchObject({ isEnabled: true, stopped: true });
+		expect((await save(REPLY)).status).toBe(200);
+		expect(await read()).toMatchObject({ isEnabled: true, stopped: false });
+		await arrives("Once it was saved again", {}, "fifth@sender.test");
+		expect(answered()).toEqual(["fifth@sender.test"]);
+	});
+
 	it("stops when the person who saved it is no longer an owner, though they may still send", async () => {
 		const { seedMembership, seedUser } = await import("./helpers.ts");
 		ids.lowered = await seedUser("lowered@example.com", "member");

@@ -18,9 +18,12 @@ function nameAt(html: string, from: number): string {
 	return html.slice(from, end).toLowerCase();
 }
 
-/** Index just past the `</name ...>` that closes a raw-text element, or -1 when it never closes. */
-function endOfRawText(html: string, from: number, name: string): number {
-	const lower = html.toLowerCase();
+/**
+ * Index just past the `</name ...>` that closes a raw-text element, or -1 when it never closes.
+ * `lower` is the whole input in lower case, made once for each call of `htmlToText`: made here,
+ * the work would grow with the square of the input, one copy for every such element.
+ */
+function endOfRawText(html: string, lower: string, from: number, name: string): number {
 	let at = from;
 	while (at < html.length) {
 		const close = lower.indexOf(`</${name}`, at);
@@ -84,6 +87,8 @@ export function htmlToText(html: string, options: { keepLineBreaks?: boolean } =
 	};
 	let out = "";
 	let i = 0;
+	// Only for finding where a raw-text element closes; nothing is read from it as text.
+	let lower: string | null = null;
 	while (i < html.length) {
 		const lt = html.indexOf("<", i);
 		if (lt === -1) {
@@ -108,7 +113,8 @@ export function htmlToText(html: string, options: { keepLineBreaks?: boolean } =
 		const gt = html.indexOf(">", lt);
 		if (gt === -1) break;
 		if (!closing && RAW_TEXT_ELEMENTS.includes(name)) {
-			const end = endOfRawText(html, gt + 1, name);
+			lower ??= html.toLowerCase();
+			const end = endOfRawText(html, lower, gt + 1, name);
 			if (end === -1) break;
 			i = end;
 			out += " ";
