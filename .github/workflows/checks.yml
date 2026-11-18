@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Once a week the same checks run on main's latest commit, to catch what changes without a
+  # commit: a runner image, a tool fetched at run time, the browser. A failed run is seen
+  # through GitHub's own notice, which goes to whoever last changed this line. No job opens an
+  # issue: that would need a permission that writes, which no job has.
+  schedule:
+    - cron: "0 4 * * 1"
 
 # S16: least privilege. No job here needs more than read access, and none uses a secret.
 permissions:
@@ -11,6 +17,8 @@ permissions:
 
 # A pull request's newer run cancels its older one. A push to main is never cancelled or
 # replaced: each has a group of its own commit, so every commit on main is checked to the end.
+# The weekly run is in the group of the commit it runs on: if that commit's push run is still
+# going, the weekly one waits for it, and neither is cancelled.
 concurrency:
   group: checks-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
