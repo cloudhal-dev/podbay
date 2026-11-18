@@ -20,6 +20,7 @@ import { check as licences } from "./checks/licences.ts";
 import { check as messages } from "./checks/messages.ts";
 import { check as names } from "./checks/names.ts";
 import { check as ratchets } from "./checks/ratchets.ts";
+import { check as schemas } from "./checks/schemas.ts";
 import { check as secrets } from "./checks/secrets.ts";
 import { check as sender } from "./checks/sender.ts";
 import { check as vendored } from "./checks/vendored-skills.ts";
@@ -48,6 +49,7 @@ const ALL: Check[] = [
 	docs,
 	guidance,
 	ratchets,
+	schemas,
 ];
 
 const wanted = process.argv.slice(2);
