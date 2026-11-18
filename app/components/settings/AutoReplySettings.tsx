@@ -4,20 +4,13 @@
 import { Button, Checkbox, Input, InputArea, useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useState } from "react";
 import { AUTO_REPLY } from "shared/rules";
+import DateTimeField from "~/components/controls/DateTimeField";
 import { useFreshProof } from "~/components/FreshProof";
 import { t } from "~/i18n";
 import { replyToSave, shownText } from "~/lib/auto-reply";
 import { fieldValue } from "~/lib/sending-words";
 import { useAutoReply, useSaveAutoReply } from "~/queries/rules";
 import Row from "./Row";
-
-/**
- * Kumo has no field for a date with a time of day (its DatePicker is a calendar without a time):
- * the two ends stay the browser's own field, at the height and type of Kumo's default size,
- * until a wrapper is decided (issue #82).
- */
-const NATIVE_FIELD =
-	"h-9 w-full rounded-lg border border-kumo-line bg-kumo-control px-3 text-base text-kumo-default";
 
 /** An instant as the date and time field of this device shows it; empty for none. */
 const shown = (instant: string | null): string =>
@@ -121,30 +114,18 @@ export default function AutoReplySettings({
 					about={t("In this device's time zone. Leave a field empty for no beginning or no end.")}
 				>
 					<div className="grid max-w-md gap-3 sm:grid-cols-2">
-						<div>
-							<label htmlFor="auto-reply-from" className="mb-1.5 block text-xs text-kumo-subtle">
-								{t("Starts")}
-							</label>
-							<input
-								id="auto-reply-from"
-								type="datetime-local"
-								className={NATIVE_FIELD}
-								value={from}
-								onChange={(event) => setFrom(event.target.value)}
-							/>
-						</div>
-						<div>
-							<label htmlFor="auto-reply-until" className="mb-1.5 block text-xs text-kumo-subtle">
-								{t("Ends")}
-							</label>
-							<input
-								id="auto-reply-until"
-								type="datetime-local"
-								className={NATIVE_FIELD}
-								value={until}
-								onChange={(event) => setUntil(event.target.value)}
-							/>
-						</div>
+						<DateTimeField
+							label={t("Starts")}
+							labelClassName="text-xs text-kumo-subtle"
+							value={from}
+							onChange={setFrom}
+						/>
+						<DateTimeField
+							label={t("Ends")}
+							labelClassName="text-xs text-kumo-subtle"
+							value={until}
+							onChange={setUntil}
+						/>
 					</div>
 					{backwards && (
 						<p role="alert" className="m-0 mt-2 text-sm text-kumo-danger">
