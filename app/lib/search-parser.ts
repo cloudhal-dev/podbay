@@ -45,13 +45,10 @@ export function parseSearchQuery(input: string): ParsedSearch {
 
 	// Extract all operators
 	let remaining = input;
-	let match: RegExpExecArray | null;
-
-	// Reset lastIndex since we reuse the regex
-	OPERATOR_RE.lastIndex = 0;
 	const matches: { fullMatch: string; op: string; value: string }[] = [];
 
-	while ((match = OPERATOR_RE.exec(input)) !== null) {
+	// `matchAll` works on its own copy of the expression, so no `lastIndex` is shared.
+	for (const match of input.matchAll(OPERATOR_RE)) {
 		const op = match[1].toLowerCase();
 		const value = match[2] ?? match[3]; // quoted or unquoted
 		matches.push({ fullMatch: match[0], op, value });
@@ -123,7 +120,7 @@ export function parseSearchQuery(input: string): ParsedSearch {
 function normalizeDate(value: string): string | undefined {
 	try {
 		const d = new Date(value);
-		if (isNaN(d.getTime())) return undefined;
+		if (Number.isNaN(d.getTime())) return undefined;
 		return d.toISOString();
 	} catch {
 		return undefined;

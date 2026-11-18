@@ -97,6 +97,7 @@ export default function EmailPanelDialogs({
 							<tbody>
 								{sourceHeaders.map((header, idx) => (
 									<tr
+										// biome-ignore lint/suspicious/noArrayIndexKey: the rows are a message's fields in their order, made once and never reordered, and two fields can share a name
 										key={`${header.key}-${idx}`}
 										className={idx % 2 === 0 ? "bg-kumo-tint/50" : ""}
 									>

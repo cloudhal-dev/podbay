@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "~/services/api";
 import type { Mailbox } from "~/types";
+import { defined } from "./defined";
 import { queryKeys } from "./keys";
 
 export function useMailboxes() {
@@ -18,7 +19,7 @@ export function useMailboxes() {
 export function useMailbox(mailboxId: string | undefined) {
 	return useQuery<Mailbox>({
 		queryKey: mailboxId ? queryKeys.mailboxes.detail(mailboxId) : ["mailboxes", "_disabled"],
-		queryFn: () => api.getMailbox(mailboxId!) as Promise<Mailbox>,
+		queryFn: () => api.getMailbox(defined(mailboxId)) as Promise<Mailbox>,
 		enabled: !!mailboxId,
 	});
 }

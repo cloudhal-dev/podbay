@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api, { type DraftToSave } from "~/services/api";
 import type { Email } from "~/types";
+import { defined } from "./defined";
 import { queryKeys } from "./keys";
 
 // ---------- Types ----------
@@ -29,7 +30,9 @@ export function useEmails(
 	return useQuery<EmailListResponse>({
 		queryKey: mailboxId ? queryKeys.emails.list(mailboxId, queryParams) : ["emails", "_disabled"],
 		queryFn: async () => {
-			const data = (await api.listEmails(mailboxId!, queryParams)) as EmailListResponse | Email[];
+			const data = (await api.listEmails(defined(mailboxId), queryParams)) as
+				| EmailListResponse
+				| Email[];
 			if (data && typeof data === "object" && "emails" in data) {
 				return {
 					emails: (data as EmailListResponse).emails ?? [],
@@ -50,7 +53,7 @@ export function useEmail(mailboxId: string | undefined, emailId: string | undefi
 			mailboxId && emailId
 				? queryKeys.emails.detail(mailboxId, emailId)
 				: ["emails", "_disabled_detail"],
-		queryFn: () => api.getEmail(mailboxId!, emailId!) as Promise<Email>,
+		queryFn: () => api.getEmail(defined(mailboxId), defined(emailId)) as Promise<Email>,
 		enabled: !!mailboxId && !!emailId,
 	});
 }
@@ -70,12 +73,14 @@ export function useThreadReplies(
 			// Single request returns all thread emails with full bodies +
 			// attachments. Eliminates the previous N+1 pattern that fired
 			// a separate getEmail call per thread message.
-			const emails = (await api.getThread(mailboxId!, threadId!, { signal })) as Email[];
+			const emails = (await api.getThread(defined(mailboxId), defined(threadId), {
+				signal,
+			})) as Email[];
 
 			// Populate individual email detail caches so clicking a thread
 			// message in the panel doesn't re-fetch.
 			for (const email of emails) {
-				qc.setQueryData(queryKeys.emails.detail(mailboxId!, email.id), email);
+				qc.setQueryData(queryKeys.emails.detail(defined(mailboxId), email.id), email);
 			}
 
 			return emails;

@@ -19,7 +19,7 @@
 		"dev": "node scripts/dev-setup.ts && vite dev",
 		"build": "vite build",
 		"cf-typegen": "wrangler types",
-		"lint": "biome check .",
+		"lint": "biome check . --error-on-warnings",
 		"format": "biome check . --write",
 		"static": "node scripts/check-static.ts && node scripts/auth-ddl.ts --check",
 		"typecheck": "wrangler types && tsc -b",

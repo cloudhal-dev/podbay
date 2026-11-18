@@ -6,12 +6,13 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "~/services/api";
 import type { Folder } from "~/types";
+import { defined } from "./defined";
 import { queryKeys } from "./keys";
 
 export function useFolders(mailboxId: string | undefined) {
 	return useQuery<Folder[]>({
 		queryKey: mailboxId ? queryKeys.folders.list(mailboxId) : ["folders", "_disabled"],
-		queryFn: () => api.listFolders(mailboxId!) as Promise<Folder[]>,
+		queryFn: () => api.listFolders(defined(mailboxId)) as Promise<Folder[]>,
 		enabled: !!mailboxId,
 	});
 }

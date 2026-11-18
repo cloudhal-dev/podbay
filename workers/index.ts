@@ -144,7 +144,7 @@ app.post("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 });
 
 app.get("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
-	const email = await c.var.mailboxStub.getEmail(c.req.param("id")!);
+	const email = await c.var.mailboxStub.getEmail(c.req.param("id") ?? "");
 	if (!email) return c.json({ error: "Email not found" }, 404);
 	return new Response(JSON.stringify(email), {
 		headers: { "Content-Type": "application/json" },
@@ -153,13 +153,13 @@ app.get("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
 
 app.put("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
 	const { read, starred } = (await c.req.json()) as { read?: boolean; starred?: boolean };
-	const email = await c.var.mailboxStub.updateEmail(c.req.param("id")!, { read, starred });
+	const email = await c.var.mailboxStub.updateEmail(c.req.param("id") ?? "", { read, starred });
 	if (email === "scheduled") return c.json(WAITS, 409);
 	return email ? c.json(email) : c.json({ error: "Email not found" }, 404);
 });
 
 app.delete("/api/v1/mailboxes/:mailboxId/emails/:id", async (c: AppContext) => {
-	const deleted = await deleteMessage(c.env.BUCKET, c.var.mailboxStub, c.req.param("id")!);
+	const deleted = await deleteMessage(c.env.BUCKET, c.var.mailboxStub, c.req.param("id") ?? "");
 	// A message that waits to leave is taken back first: it is not deleted from under its send.
 	if (deleted === "scheduled") return c.json(WAITS, 409);
 	return deleted ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
@@ -169,7 +169,7 @@ app.post("/api/v1/mailboxes/:mailboxId/emails/:id/move", async (c: AppContext) =
 	const body = (await c.req.json().catch(() => null)) as { folderId?: unknown } | null;
 	const folderId = body?.folderId;
 	if (typeof folderId !== "string") return c.json({ error: "Invalid request" }, 400);
-	const moved = await c.var.mailboxStub.moveEmail(c.req.param("id")!, folderId);
+	const moved = await c.var.mailboxStub.moveEmail(c.req.param("id") ?? "", folderId);
 	// Scheduled is neither a source nor a target: only a send fills it (ADR-0016, decision 2).
 	if (moved === "scheduled") return c.json(WAITS, 409);
 	// Sent is filled by sending, and Drafts takes back only a draft (issue #31).
@@ -182,11 +182,13 @@ app.post("/api/v1/mailboxes/:mailboxId/emails/:id/move", async (c: AppContext) =
 // -- Threads --------------------------------------------------------
 
 app.get("/api/v1/mailboxes/:mailboxId/threads/:threadId", async (c: AppContext) => {
-	return c.json(await mailboxQueries(c.var.mailboxStub).getThreadEmails(c.req.param("threadId")!));
+	return c.json(
+		await mailboxQueries(c.var.mailboxStub).getThreadEmails(c.req.param("threadId") ?? ""),
+	);
 });
 
 app.post("/api/v1/mailboxes/:mailboxId/threads/:threadId/read", async (c: AppContext) => {
-	await c.var.mailboxStub.markThreadRead(c.req.param("threadId")!);
+	await c.var.mailboxStub.markThreadRead(c.req.param("threadId") ?? "");
 	return c.json({ status: "marked_read" });
 });
 

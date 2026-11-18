@@ -26,7 +26,7 @@ The app is a single-page app served as static assets. It shows strangers' mail i
 5. **A secret is shown once and kept nowhere**: a key, a link, a recovery code lives in component state until dismissed. Never in storage, a URL, a query cache or a log.
 6. **Every control has a name.** Kumo's `Input` takes `label`; a native control gets a `<label htmlFor>` or `aria-label`; an icon button gets `aria-label`. Errors are `role="alert"`. Move focus by a ref to the form, not by element id (the field library sets ids after the first paint).
 7. **Attachments are downloads.** Link to a plain one; a risky one goes through the warning in `EmailAttachmentList`. Only plain image kinds are previewed or embedded (`isShowableImage`).
-8. **No new lint warning.** The count in `ratchets.json` only goes down.
+8. **No lint warning.** `pnpm lint` fails on one; a rule kept off at a place needs a `biome-ignore` that says why.
 9. **The app asks in its own voice** (D16, `pnpm static dialogs`). Anything over the page is Kumo's `LayerDialog`: `LayerDialog.Root` for a form or a view, `LayerDialog.Alert` when the person must choose. `Content` takes exactly one `Title` and one `Body`, and at most one `Description` and one `Actions` with one `Action`; a form lives in `Body` with an `id`, and the `Action` submits it with `form="<id>"`. A confirmation is `useConfirm()` ([`app/components/Confirm.tsx`](../../../app/components/Confirm.tsx)). Never the browser's `confirm`, `alert` or `prompt`, and never Kumo's older `Dialog`. A menu is Kumo's `DropdownMenu`, not a hand-built list.
 
 ## 3. How a mailbox behaves

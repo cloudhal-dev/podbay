@@ -9,6 +9,7 @@ import { filterOf, filterParams } from "~/lib/search-filter";
 import { parseSearchQuery } from "~/lib/search-parser";
 import api from "~/services/api";
 import type { Email } from "~/types";
+import { defined } from "./defined";
 import { queryKeys } from "./keys";
 
 interface SearchResponse {
@@ -35,8 +36,8 @@ export function useSearchEmails(
 				parseSearchQuery(query).label === undefined
 					? []
 					: await queryClient.ensureQueryData({
-							queryKey: queryKeys.labels.list(mailboxId!),
-							queryFn: () => api.listLabels(mailboxId!),
+							queryKey: queryKeys.labels.list(defined(mailboxId)),
+							queryFn: () => api.listLabels(defined(mailboxId)),
 						});
 			const params: Record<string, string> = {
 				...filterParams(filterOf(query, labels)),
@@ -45,7 +46,7 @@ export function useSearchEmails(
 			};
 			if (order !== "newest") params.order = order;
 
-			const data = (await api.searchEmails(mailboxId!, params)) as SearchResponse | Email[];
+			const data = (await api.searchEmails(defined(mailboxId), params)) as SearchResponse | Email[];
 			if (data && typeof data === "object" && "emails" in data) {
 				return {
 					results: (data as SearchResponse).emails ?? [],

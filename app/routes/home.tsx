@@ -100,7 +100,7 @@ export default function HomeRoute() {
 		return () => {
 			cancelled = true;
 		};
-	}, [emailAddresses, mailboxes, refetchMailboxes]);
+	}, [emailAddresses, mailboxes, mailboxesFetched, refetchMailboxes]);
 
 	const handleCreate = async (e: FormEvent) => {
 		e.preventDefault();
