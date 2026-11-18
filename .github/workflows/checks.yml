@@ -14,6 +14,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # D12: every commit of a pull request has a conventional subject and its author's sign-off.
+  # The repository's own script, run by Node alone: nothing is installed. The two commit ids
+  # reach it through the environment, never written into the command.
+  commits:
+    name: commits (form and sign-off)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The base and every commit of the pull request.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: node scripts/commits.ts "$PR_BASE..$PR_HEAD"
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+
   check:
     name: pnpm check (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
