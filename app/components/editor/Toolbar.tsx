@@ -143,6 +143,10 @@ const Gap = () => <div className="mx-1 h-5 w-px bg-kumo-fill" />;
 /** The formatting bar above the text of a message. */
 export default function Toolbar({ editor, onLink }: { editor: Editor; onLink: () => void }) {
 	const run = () => editor.chain().focus();
+	// A choice from a menu does not ask for the cursor itself: the menu gives it back to the text
+	// when it closes (`finalFocus`). Asked for twice, the second one arrived a moment later and, on
+	// a slow machine, closed the next menu a person had already opened.
+	const pick = () => editor.chain();
 	const text = () => editor.view.dom;
 	// The editor does not draw the bar again by itself: what the bar shows of the selection is
 	// read here, and the bar is drawn again when one of these changes.
@@ -189,7 +193,7 @@ export default function Toolbar({ editor, onLink }: { editor: Editor; onLink: ()
 				{SIZES.map(([name, size]) => (
 					<DropdownMenu.Item
 						key={name}
-						onClick={() => (size ? run().setFontSize(size).run() : run().unsetFontSize().run())}
+						onClick={() => (size ? pick().setFontSize(size).run() : run().unsetFontSize().run())}
 					>
 						<span style={{ fontSize: size ?? undefined }}>{t(name)}</span>
 					</DropdownMenu.Item>
@@ -214,24 +218,24 @@ export default function Toolbar({ editor, onLink }: { editor: Editor; onLink: ()
 				onClick={() => run().toggleUnderline().run()}
 			/>
 			<ToolMenu name={t("Text colour")} icon={<TextAUnderlineIcon size={16} />} text={text}>
-				<DropdownMenu.Item onClick={() => run().unsetColor().run()}>
+				<DropdownMenu.Item onClick={() => pick().unsetColor().run()}>
 					{t("Usual colour")}
 				</DropdownMenu.Item>
 				{TEXT_COLOURS.map(([name, colour]) => (
-					<DropdownMenu.Item key={colour} onClick={() => run().setColor(colour).run()}>
+					<DropdownMenu.Item key={colour} onClick={() => pick().setColor(colour).run()}>
 						<Swatch colour={colour} />
 						{t(name)}
 					</DropdownMenu.Item>
 				))}
 			</ToolMenu>
 			<ToolMenu name={t("Highlight")} icon={<HighlighterIcon size={16} />} text={text}>
-				<DropdownMenu.Item onClick={() => run().unsetHighlight().run()}>
+				<DropdownMenu.Item onClick={() => pick().unsetHighlight().run()}>
 					{t("No highlight")}
 				</DropdownMenu.Item>
 				{HIGHLIGHTS.map(([name, colour]) => (
 					<DropdownMenu.Item
 						key={colour}
-						onClick={() => run().setHighlight({ color: colour }).run()}
+						onClick={() => pick().setHighlight({ color: colour }).run()}
 					>
 						<Swatch colour={colour} />
 						{t(name)}
@@ -245,7 +249,7 @@ export default function Toolbar({ editor, onLink }: { editor: Editor; onLink: ()
 					<DropdownMenu.Item
 						key={value}
 						icon={Icon}
-						onClick={() => run().setTextAlign(value).run()}
+						onClick={() => pick().setTextAlign(value).run()}
 					>
 						{t(name)}
 					</DropdownMenu.Item>
