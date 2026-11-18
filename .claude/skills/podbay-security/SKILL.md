@@ -51,7 +51,7 @@ State on 2026-11-17: accounts, sign-in, memberships, the MCP keys, the content p
 | B7 | The setup and operator tokens | S6, S10, S14 | Partly: the setup token guards the first owner and the operator's recovery call, both tested. No deploy token, no rate limit. Static checks for S6 and S14 exist |
 | B8 | Queues and exports | S1, S2, S3, S5, S13, D2 | Not built yet |
 | B9 | Dependencies and original work | V1, V2, V3, V6, S15, S17, S18 | Yes: five static checks, four with unit tests; weekly update pull requests |
-| B10 | CI and releases | S6, S16, S18, D11 | Partly: three jobs (the commits of a pull request, checks, browser tests); the commit check has unit tests, the workflow itself is read by review. Releases not built yet |
+| B10 | CI and releases | S6, S16, S18, D11 | Partly: four jobs (the commits of a pull request, the dependency review, checks, browser tests); the commit check has unit tests, and `pnpm static workflows` reads the workflows (pins, permissions, triggers, runners, secrets, expressions in commands). Releases not built yet |
 | B11 | Where the project hosts things | ADR-0003, S11 | Yes: a static check with unit tests |
 
 Each boundary below has the same five lines: what crosses it, the invariant, the code, the proof, and what is open.
@@ -134,8 +134,8 @@ Each boundary below has the same five lines: what crosses it, the invariant, the
 - **Crosses:** pull requests from forks, workflow tokens, and the artefact a deployer installs.
 - **Invariant:** actions are pinned by commit. Tokens are least-privilege. A fork pull request gets no secret. CI runs `pnpm check`, the same command as a contributor. Security-sensitive paths have code owners; `main` is protected. A release is built once, attested and signed, and needs a current audit record.
 - **Code today:** `.github/workflows/checks.yml` (read-only token, pinned actions, no secret, no persisted credentials) and `.github/CODEOWNERS`. The job `commits (form and sign-off)` runs `scripts/commits.ts` on the commits of every pull request, with the rules in `scripts/commit-form.ts`: a conventional subject and the author's sign-off (D12). It installs nothing, and the two commit ids reach it through the environment, where the script takes nothing but a range of two ids. The command runs however it is started and fails a range it read nothing in. It is the pull request's own copy of the script that runs. When the browser run fails, its traces (`test-results/`) are uploaded for seven days by `actions/upload-artifact`, pinned by commit; a trace holds only the throwaway instance's own data, and the run's secrets in `.e2e/` are not uploaded (`test/unit/e2e-traces.test.ts`).
-- **Proof today:** review, for the workflow itself: no check reads it yet. The commit check has `test/unit/commits.test.ts`, which also refuses a range that is not two commit ids.
-- **Open:** the workflow lint, repository settings in a checked file, and the whole release side: the workflow, signing, attestation and the audit-record gate.
+- **Proof today:** `pnpm static workflows` (`scripts/checks/workflows.ts`, `test/unit/workflows.test.ts`): no `pull_request_target` or `workflow_run`, permissions that only read, actions pinned by commit and no image, `ubuntu-latest` only, the word `secrets` in no expression, no expression inside a `run:` script, checkouts without persisted credentials. Its reader knows a small part of YAML and refuses every line outside it, so a workflow cannot pass by being written unusually. It does not prove that a pinned id belongs to the repository it names, nor that no action runs an expression given in its `with:`; both are by review. The commit check has `test/unit/commits.test.ts`, which also refuses a range that is not two commit ids.
+- **Open:** repository settings compared with their record by a check, and the whole release side: the workflow, signing, attestation and the audit-record gate.
 
 ### B11. Where the project hosts things
 

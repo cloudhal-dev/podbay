@@ -23,6 +23,7 @@ import { check as ratchets } from "./checks/ratchets.ts";
 import { check as secrets } from "./checks/secrets.ts";
 import { check as sender } from "./checks/sender.ts";
 import { check as vendored } from "./checks/vendored-skills.ts";
+import { check as workflows } from "./checks/workflows.ts";
 import { checkPins, readManifest } from "./pins.ts";
 
 const pins: Check = { name: "pins", run: () => checkPins(readManifest()) };
@@ -39,6 +40,7 @@ const ALL: Check[] = [
 	dialogs,
 	messages,
 	hosts,
+	workflows,
 	headers,
 	compat,
 	ledger,
