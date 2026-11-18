@@ -80,3 +80,16 @@ jobs:
       # Tier 6: the built app in the runner's own Chrome. The server it starts keeps every binding
       # local and uses secrets generated for the run; the job needs no secret and no account.
       - run: pnpm e2e
+      # When the run fails, the trace of each failed test is kept for seven days, so a failure
+      # seen once can be read afterwards (#47). The repository is public, so anyone may download
+      # it. It holds the throwaway instance's own data and nothing else: the
+      # pages, requests and answers of a server that lived for this run only, its generated
+      # account, password and session, and the test's own mail. The run's other secrets are in
+      # `.e2e/`, which is not uploaded. Nothing in it opens anything once the run is over.
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-traces-${{ github.run_attempt }}
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
