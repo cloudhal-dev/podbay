@@ -30,6 +30,8 @@ import { threadOfReferences, threadOfSubject } from "./threads";
 
 /** What a method answers for a message that waits to leave: nothing else changes it. */
 const SCHEDULED = "scheduled" as const;
+/** What a move answers when the place cannot take that message. */
+const NOT_A_TARGET = "not_a_target" as const;
 
 export class MailboxDO extends DurableObject<Env> {
 	declare __DURABLE_OBJECT_BRAND: never;
@@ -466,11 +468,17 @@ export class MailboxDO extends DurableObject<Env> {
 
 	/**
 	 * Moves one message. Scheduled is neither a source nor a target: a message enters and
-	 * leaves it only by being sent, taken back or let go (ADR-0016, decision 2).
+	 * leaves it only by being sent, taken back or let go (ADR-0016, decision 2). Sent is never a
+	 * target, since a message is there because the sending service took it, and Drafts takes
+	 * back only a draft, which is how the app undoes deleting one (issue #31).
 	 */
 	async moveEmail(id: string, folderId: string) {
 		if (folderId === Folders.SCHEDULED) return SCHEDULED;
 		if (submissions.inScheduled(this.ctx.storage.sql, id)) return SCHEDULED;
+		if (folderId === Folders.SENT) return NOT_A_TARGET;
+		if (folderId === Folders.DRAFT && !drafts.writtenHere(this.ctx.storage.sql, id)) {
+			return NOT_A_TARGET;
+		}
 		const folder = this.db
 			.select({ id: schema.folders.id })
 			.from(schema.folders)
