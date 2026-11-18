@@ -39,6 +39,8 @@ What the answer has to keep, whatever it is:
 | What survives a class's rename or move? | A rename keeps the data in the same Worker. A move to another Worker is a transfer, which needs several coordinated deploys. A delete "will delete all Durable Objects associated with the deleted class". A migration tag is a unique name that is applied once | `runtime.durable_objects.migrations.*` |
 | Is there a newer way to declare classes? | `exports` replaces the `migrations` list, and a Worker "cannot return to the legacy `migrations` array" once it is deployed with it | `runtime.durable_objects.migrations.exports` |
 | Local development and tests with several Workers | Auxiliary Workers run beside the entry Worker, and "all requests are routed through your entry Worker". In tests they "cannot have TypeScript entrypoints" and "cannot access the `cloudflare:test` module" | `tooling.vite_plugin.auxiliary_workers`, `tooling.vitest.auxiliary_workers` |
+| Can one Worker answer on several hostnames? | "You can add multiple Custom Domains" to a Worker | `config.custom_domains.multiple` |
+| How does D1 order migrations? | "Every migration file in the `migrations` folder has a specified version number in the filename. Files are listed in sequential order", and the applied ones are recorded in the `d1_migrations` table | `tooling.d1.migrations_order` |
 | Can a Worker read a domain's DNS without a token? | `node:dns` resolves "via DNS over HTTPS using Cloudflare DNS at 1.1.1.1"; each query is a subrequest; nothing to switch on at this compatibility date | `runtime.nodejs.dns` |
 | Do the methods of calendar and file sync reach a Worker? | The runtime takes "all HTTP request methods … except for `CONNECT`". But the HTTP library under it does not list `MKCALENDAR`, which CalDAV uses to make a calendar, and no page says whether WebDAV's methods pass Cloudflare's network to a Worker on a custom domain. **Not verified** | `runtime.request.methods` |
 | How many alarms does a mailbox have? | "Each Durable Object is able to schedule a single alarm at a time", run at least once and retried up to six times | `runtime.durable_objects.alarms` |
@@ -108,22 +110,39 @@ B costs a separate deploy for each module, compiled auxiliary Workers in tests w
 
    The shell, the Worker's entry and the app's frame, composes them. No module has its own guard, and no service binding is added between modules.
 
+   **A module other than mail can be off**, and is off until the deployer turns it on. This is the pattern the assistant and the MCP endpoint already follow (`workers/lib/features.ts`): a variable of the Worker, on only when it is exactly `"true"`. Mail is the product and has no switch. For a module that is off:
+   - its routes stay in the route table, and the guard answers them 404, as if they did not exist, as the MCP endpoint does today;
+   - the shell shows none of its screens, and the app loads none of its code or messages;
+   - its Durable Object classes are declared and its D1 tables made in every instance all the same, so that the order of migrations is one order everywhere. Nothing is written to them while the module is off;
+   - turning a module off deletes nothing, and turning it on again finds what it held.
+
+   What an installer is told about each module (its switch, what turning it on needs) is part of the installer's contract ([#44](https://github.com/cloudhal-dev/podbay/issues/44)).
+
+   **One sequence of D1 migrations, owned by the repository.** The one folder `migrations/` stays the one list, and D1 applies its files in the order of the number in their names. A module's migration takes the next free number in the pull request that adds it, and its file name carries the module (`0008_mail_….sql`). Two modules developed side by side reserve no numbers: the second to merge takes the next free number before it merges, and a check will refuse two files with one number. A migration once applied is never renumbered, renamed, edited or removed: migrations are additive only, as `AGENTS.md` already says.
+
 2. **The repository becomes a pnpm workspace of three kinds of directory.**
    - `apps/`: what is deployed or run. First `apps/podbay`: the Worker's entry, `wrangler.jsonc`, the app's shell, the Vite configuration and the browser tests. A native client would be another app.
    - `modules/`: one product area each, first `modules/mail`. A module holds its Worker side (routes, Durable Objects, arrival), its app side (screens, hooks, queries), its messages and its tests. Mail's renderer, the mail frame and everything about a message's bytes stay in mail.
    - `packages/`: what modules share, with no product logic:
-     - `contract`: the shapes of requests and answers, the error codes and the rights. It is the one thing a client of any kind takes, and it may import nothing else here.
+     - `contract`: what every module's API has in common: the form of an error answer and its code, the vocabulary of rights, how a list is paged. It imports nothing else here.
      - `auth`: sign-in, `authorize`, the guard and the route table's machinery.
      - `ui`: the design components on Kumo, the layout and the frame of a screen.
      - `i18n`: the message runtime, plurals and loading.
      - `platform`: the one log module, the storage-key helpers and the queue behind a Durable Object's one alarm, once a second user of it exists.
 
-   A module imports packages and never another module's inside: what one module offers another is exported from its own entry. `pnpm static imports`, which holds the direction between the UI and the Worker today, will hold this too, in the change that makes the first module. `scripts/` stays the tooling of the whole repository.
+   A module is two programs and what they share, in one directory with three entries:
+   - `worker/`, run by the Workers runtime: routes, Durable Objects, arrival;
+   - `app/`, run in a browser: screens, hooks, queries;
+   - `shared/`, run by neither and so by both: the module's contract (the shapes of its requests and answers, their schemas, its error codes) and the pure functions both sides run, such as the rules' `evaluate` and the text of a message's HTML. It keeps the rule `shared/` keeps today: no Node-only, browser-only or Workers-only API.
+
+   `worker/` and `app/` never import each other; both import their module's `shared/` and the packages. So the Worker's code cannot reach a page, and a screen cannot reach a binding. A client of any kind takes `packages/contract` and the `shared/` entry of each module it speaks to, and nothing else.
+
+   Of the 21 files in today's `shared/`, about fifteen are mail's own (places, labels, rules and their schema, sending, bulk, the original, known addresses, attachment risk, the text of HTML, the mail frame), and go to `modules/mail/shared/`. The rest (the log, the security headers, a person's choices and their schema, fresh proof, dates) go to packages. A module imports packages and never another module's inside: what one module offers another is exported from that side's entry. `pnpm static imports`, which holds the direction between the UI and the Worker today, will hold both rules, the two sides and the modules, in the change that makes the first module. `scripts/` stays the tooling of the whole repository.
 
 3. **Nothing an instance depends on changes name.** The following stay exactly as they are; a moved file never touches them:
    - the Worker's name in `wrangler.jsonc`;
    - the classes `MailboxDO` and `EmailAgent`, exported under those names from the Worker's entry;
-   - the bindings `MAILBOX`, `EMAIL_AGENT`, `DB`, `BUCKET` and `EMAIL`;
+   - the bindings `MAILBOX`, `EMAIL_AGENT`, `DB`, `BUCKET`, `EMAIL` and `AI`. `AI` holds no data, but the assistant's code and an installer's configuration both name it;
    - the migration tags `v1` and `v2`, and the `migrations` list itself;
    - the D1 migrations in their order;
    - the R2 keys under `raw/` and `attachments/`.
@@ -140,7 +159,7 @@ B costs a separate deploy for each module, compiled auxiliary Workers in tests w
    - No task runner: pnpm runs the work in dependency order.
    - CI keeps running everything on every pull request. A pull request costs about fourteen job-minutes and waits about eight, measured on [#56](https://github.com/cloudhal-dev/podbay/issues/56). Running only what changed (`--filter "...[origin/main]"`) waits for a trigger below.
 
-6. **A module's API comes before its screens.** A module's routes and their shapes are written in `packages/contract` and tested in the Workers runtime before its screens exist. So a second client is never blocked on a screen's internals, and the API keeps to [ADR-0005](0005-client-stack.md), decision 2: the JSON API is the only contract.
+6. **A module's API comes before its screens.** A module's routes and their shapes are written in its `shared/` entry and tested in the Workers runtime before its screens exist. So a second client is never blocked on a screen's internals, and the API keeps to [ADR-0005](0005-client-stack.md), decision 2: the JSON API is the only contract.
 
 7. **What any client other than the web app needs is decided before one is built.** This is not a choice of technology, which stays with ADR-0005 and its triggers. It is a set of conditions on any client:
    - **A session it can hold.** A client without a cookie jar uses a bearer credential. It is granted to one person on one device, can be ended in the app like a session, and is read by the same guard. Whether it is Better Auth's bearer plugin with signatures required, or a grant beside the keys of [#24](https://github.com/cloudhal-dev/podbay/issues/24), is decided with its own record. Nothing is built before that.
@@ -166,7 +185,7 @@ B costs a separate deploy for each module, compiled auxiliary Workers in tests w
    - **Administration:** a Domains screen can read a domain's records from the Worker with `node:dns`, so it fits the architecture's non-goal ("no Cloudflare account credential inside the Worker") as it is.
    - **Calendar and files:** no first slice depends on CalDAV or WebDAV. Whether their methods reach a deployed Worker is tried on a real custom domain before any record chooses them.
    - **Anything that waits for a time** (reminders, snoozed mail, outgoing mail) is a queue behind a Durable Object's one alarm, from one shared helper.
-   - **Files:** a module that serves content people upload serves it from a hostname of its own, never the app's origin. That is a decision for that module's record, under ADR-0003.
+   - **Files:** a module that serves content people upload serves it from a hostname of its own, never the app's origin. One Worker can answer on several custom domains, so this asks for no second Worker. It asks that the Worker answers by hostname, that the guard knows which hostname a request came in on and never accepts the app's session on the other one, and that each hostname has its own content policy. That is a decision for that module's record, under ADR-0003.
 
 10. **The order.** The move is several pull requests, each small enough to read, and no large pull request is open across one:
     1. the checks that must read every package (decision 4);
@@ -183,6 +202,7 @@ B costs a separate deploy for each module, compiled auxiliary Workers in tests w
 - **The technology of a native client.** That stays with ADR-0005 and its triggers, none of which is met.
 - **A second Worker.** Not now. The triggers below say when to look again.
 - **The format of the session a native client holds,** and of push: each gets its own record before it is built.
+- **Whose a module's things are.** Mail's rights hang on a mailbox's membership; a calendar's or a file's will not. Each module's record decides that, and `authorize` in `workers/auth/authorize.ts` stays the one function that answers (hard rule 3 of `AGENTS.md`).
 
 ## Security: the boundaries it touches
 
@@ -195,7 +215,8 @@ B costs a separate deploy for each module, compiled auxiliary Workers in tests w
 ## Consequences
 
 - An installed instance notices nothing: the move changes paths, not names.
-- The move costs several pull requests that change many paths and every check that names one. Until they are done, `shared/` and the folders of today stay as they are.
+- **One Worker is one version.** The suite is built, tested and released as one thing, and a module cannot ship without the others. The release is [#21](https://github.com/cloudhal-dev/podbay/issues/21). A module that must ship on its own schedule is the first trigger below.
+- The move costs several pull requests that change many paths and every check that names one. Measured on `main` on 2026-11-19: about 230 code files (`app/`, `workers/`, `shared/`) and 115 test files change path. Until they are done, `shared/` and the folders of today stay as they are.
 - A second module starts from packages it can use without copying mail. It cannot depend on mail's inside, and it cannot add a way into the Worker that is not in the one route table.
 - Every new message from now on is written in the form of decision 8. The catalogs that exist are brought to it when the messages check learns plural categories.
 
@@ -204,7 +225,7 @@ B costs a separate deploy for each module, compiled auxiliary Workers in tests w
 Look again at **one Worker** when one of these is true:
 
 - A module needs to be deployed on its own schedule, or needs a CPU or subrequest budget of its own.
-- A module must be served from another hostname, like content people upload.
+- A hostname needs a deployment of its own, not only an answer of its own. Another hostname alone is not a trigger: one Worker answers on several custom domains.
 - The Worker's uncompressed size comes within a quarter of its 64 MiB limit.
 
 Look again at **running everything on every pull request** when a pull request's wait passes fifteen minutes, or a second module's tests double the job-minutes.

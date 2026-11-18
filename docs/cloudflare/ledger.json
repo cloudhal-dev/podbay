@@ -1541,6 +1541,31 @@
 			"evidence": "Workers implements all operations of the WebCrypto standard",
 			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"],
 			"note": "The page does not name the P-256 curve both RFCs require; that is not verified, and is tested before push is built."
+		},
+		{
+			"id": "config.custom_domains.multiple",
+			"kind": "config",
+			"relies": "One Worker can answer on several custom domains, so a hostname of its own for content people upload does not by itself ask for a second Worker (ADR-0018, decision 9). The Worker then answers by hostname.",
+			"source": "https://developers.cloudflare.com/workers/configuration/routing/custom-domains/",
+			"pageUpdated": "2026-11-12",
+			"verifiedAt": "2026-11-19",
+			"evidence": "You can add multiple Custom Domains.",
+			"code": ["docs/adr/0018-one-workspace-one-worker-many-modules.md"]
+		},
+		{
+			"id": "tooling.d1.migrations_order",
+			"kind": "tooling",
+			"relies": "D1 applies the files of the one migrations folder in the order of the version number in their names, and records the applied ones in the `d1_migrations` table. So every module's migrations share one numbered sequence, and a number once applied is never reused or moved (ADR-0018, decision 1).",
+			"source": "https://developers.cloudflare.com/d1/reference/migrations/",
+			"pageUpdated": "2026-06-08",
+			"verifiedAt": "2026-11-19",
+			"evidence": "Every migration file in the `migrations` folder has a specified version number in the filename. Files are listed in sequential order.",
+			"code": [
+				"docs/adr/0018-one-workspace-one-worker-many-modules.md",
+				"migrations/0001_auth.sql",
+				"wrangler.jsonc"
+			],
+			"note": "The page records applied migrations \"in the `d1_migrations` table found in your database\"; it does not say in so many words that an applied migration is never applied again, only that wrangler lists and applies the unapplied ones."
 		}
 	]
 }
