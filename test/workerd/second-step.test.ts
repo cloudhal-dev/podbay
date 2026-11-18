@@ -53,10 +53,11 @@ beforeAll(async () => {
 	const owner = await signedIn("owner@example.com");
 	ids.owner = (await owner.me()).id ?? "";
 	expect((await createMailbox(owner.cookie, MAILBOX)).status).toBe(201);
-	for (const who of ["app", "codes", "limited", "key", "both", "stale", "outsider"]) {
+	for (const who of ["app", "codes", "limited", "key", "both", "stale", "outsider", "cached"]) {
 		ids[who] = await seedUser(`${who}@example.com`, "member");
 	}
 	await seedMembership(MAILBOX, ids.stale ?? "", "owner");
+	await seedMembership(MAILBOX, ids.cached ?? "", "owner");
 });
 
 describe("the authenticator app", () => {
@@ -383,5 +384,89 @@ describe("fresh proof for sensitive changes", () => {
 		});
 		expect(key.status).toBe(201);
 		expect((await put(M, settings("elsewhere@outside.test"))).status).toBe(200);
+	});
+});
+
+describe("forwarding, which needs fresh proof only when it changes", () => {
+	const M = `/api/v1/mailboxes/${encodeURIComponent(MAILBOX)}`;
+	const settings = (forwardTo: string, signature = "Regards") => ({
+		settings: {
+			fromName: "Team",
+			forwarding: { enabled: forwardTo !== "", email: forwardTo },
+			signature: { enabled: true, text: signature },
+			autoReply: { enabled: false, subject: "", message: "" },
+		},
+	});
+	const put = (browser: Browser, body: unknown) =>
+		browser.fetch(M, { method: "PUT", body: JSON.stringify(body) });
+	const forwarding = async (browser: Browser) =>
+		(
+			await json<{ settings: { forwarding: { enabled: boolean; email: string } } }>(
+				await browser.fetch(M),
+			)
+		).settings.forwarding;
+
+	it("is decided on the session in the database, not on the copy in the cookie", async () => {
+		const browser = await signedIn("cached@example.com");
+		expect((await put(browser, settings(""))).status).toBe(200);
+		// The database says the session is old; the copy cached in the cookie, made at sign-in,
+		// still says it is new. Only the database may decide.
+		await ageSessions(ids.cached ?? "", 11);
+		const res = await put(browser, settings("elsewhere@outside.test"));
+		expect(res.status).toBe(403);
+		expect((await json<{ code: string }>(res)).code).toBe("SESSION_NOT_FRESH");
+		expect(await forwarding(browser)).toEqual({ enabled: false, email: "" });
+		// The other settings are still saved by an older session.
+		expect((await put(browser, settings("", "Kind regards"))).status).toBe(200);
+	});
+
+	it("is refused to a session ended a moment ago, whose copy is still in the cookie", async () => {
+		const browser = await signedIn("cached@example.com");
+		await testEnv.DB.prepare(`delete from "session" where "userId" = ?1`).bind(ids.cached).run();
+		// An ordinary read may still pass on the cookie's copy for up to a minute.
+		expect((await browser.fetch(`${M}/emails?folder=inbox`)).status).toBe(200);
+		expect((await put(browser, settings("elsewhere@outside.test"))).status).toBe(401);
+		const owner = await signedIn("cached@example.com");
+		expect(await forwarding(owner)).toEqual({ enabled: false, email: "" });
+	});
+
+	it("is stored as it was compared, whatever form it is sent in", async () => {
+		const browser = await signedIn("cached@example.com");
+		expect((await put(browser, settings(""))).status).toBe(200);
+		await ageSessions(ids.cached ?? "", 11);
+		browser.forget("session_data");
+		// Not a change by the comparison, so an older session may save it; what is kept is the
+		// compared value, never a form a later reader could take for "on".
+		const odd = settings("");
+		odd.settings.forwarding = { enabled: 1, email: ["elsewhere@outside.test"] } as never;
+		expect((await put(browser, odd)).status).toBe(200);
+		const stored = await testEnv.DB.prepare(
+			`select "settings" from "mailboxes" where "address" = ?1`,
+		)
+			.bind(MAILBOX)
+			.first<{ settings: string }>();
+		expect(JSON.parse(stored?.settings ?? "{}").forwarding).toEqual({ enabled: false, email: "" });
+	});
+
+	it("is never set by creating a mailbox", async () => {
+		const owner = await signedIn("owner@example.com");
+		const address = "new-box@example.com";
+		const made = await createMailbox(owner.cookie, address, {
+			settings: { forwarding: { enabled: true, email: "elsewhere@outside.test" } },
+		});
+		expect(made.status).toBe(201);
+		const read = await owner.fetch(`/api/v1/mailboxes/${encodeURIComponent(address)}`);
+		expect(await forwarding(owner)).toEqual({ enabled: false, email: "" });
+		expect((await json<{ settings: { forwarding: unknown } }>(read)).settings.forwarding).toEqual({
+			enabled: false,
+			email: "",
+		});
+	});
+
+	it("is changed by a session that signed in a moment ago", async () => {
+		const browser = await signedIn("cached@example.com");
+		expect((await put(browser, settings("elsewhere@outside.test"))).status).toBe(200);
+		expect(await forwarding(browser)).toEqual({ enabled: true, email: "elsewhere@outside.test" });
+		expect((await put(browser, settings(""))).status).toBe(200);
 	});
 });

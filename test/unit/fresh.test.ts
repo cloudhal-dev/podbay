@@ -2,6 +2,7 @@
  * Fresh proof (rule S10): when a session counts as fresh, which routes need it, and that every
  * Better Auth path Podbay names in its rules is a real endpoint of the installed version.
  */
+import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { betterAuth } from "better-auth";
 import { describe, expect, it } from "vitest";
@@ -60,6 +61,42 @@ describe("the routes that need fresh proof", () => {
 		for (const route of ROUTE_TABLE.filter((r) => r.fresh)) {
 			expect(route.right, route.path).not.toBe("public");
 			expect(route.method, route.path).not.toBe("GET");
+		}
+	});
+
+	it("are joined by the routes that decide for some requests, each read from the database", () => {
+		const sensitive = ROUTE_TABLE.filter((r) => r.sensitive).map((r) => `${r.method} ${r.path}`);
+		expect(sensitive).toEqual(["PUT /api/v1/mailboxes/:mailboxId"]);
+		for (const route of ROUTE_TABLE.filter((r) => r.sensitive)) {
+			expect(route.fresh, route.path).toBeUndefined();
+			expect(route.method, route.path).not.toBe("GET");
+		}
+	});
+
+	it("are decided by the flag only in the code of a route marked sensitive", () => {
+		// The guard sets `fresh` for every request, from the cookie's copy of the session unless
+		// the route is marked. A route that reads the flag and is not marked decides on that copy.
+		// Every way of reading it: a property, an index, `get`, and taking it apart from `c.var`.
+		const read =
+			/\bvar\s*(?:\.\s*fresh\b|\[\s*["'`]fresh["'`]\s*\])|\bget\(\s*["'`]fresh["'`]\s*\)|\{[^}]*\bfresh\b[^}]*\}\s*=\s*\w+\.var\b/g;
+		const readers = readdirSync("workers", { recursive: true, encoding: "utf8" })
+			.filter((name) => name.endsWith(".ts") && name !== "auth/middleware.ts")
+			.flatMap((name) =>
+				[...readFileSync(`workers/${name}`, "utf8").matchAll(read)].map(() => name),
+			);
+		// One read, in the handler of the one route marked sensitive.
+		expect(readers).toEqual(["routes/mailboxes.ts"]);
+		expect(readFileSync("workers/routes/mailboxes.ts", "utf8")).toMatch(
+			/mailboxes\.put\("\/api\/v1\/mailboxes\/:mailboxId"[\s\S]*?!c\.var\.fresh[\s\S]*?\n\}\);/,
+		);
+		for (const sample of [
+			"c.var.fresh",
+			'c.var["fresh"]',
+			'c.get("fresh")',
+			"const { fresh } = c.var",
+			"const { user, fresh: ok } = c.var",
+		]) {
+			expect(sample.match(read), sample).not.toBeNull();
 		}
 	});
 
