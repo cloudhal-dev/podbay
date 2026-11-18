@@ -93,6 +93,7 @@ These rules are accepted but their checks land with the code they guard. Until t
 | S8 (the cap for the whole instance; the one send path is enforced since ADR-0016), S12 (constrained outbound requests); keys for the HTTP API and management keys; OAuth 2.1 with a consent screen for MCP clients ([ADR-0004](adr/0004-mcp-keys-first.md)) | Milestone 3 |
 | S18 (audit records and the release gate; the skill and the hash check exist) | Before v0.1 |
 | D2, D3, D9, D10, D13 (schemas at every entry point, migration tests, design lint, drift check, budgets) | Milestones 1 to 3 |
+| S16 on the repository itself: the rulesets for `main` and for release tags, secret scanning with push protection, private vulnerability reporting, code scanning. GitHub offers them to this organisation only for a public repository, and the repository is private until the name is reviewed ([ADR-0001](adr/0001-founding-decisions.md), decision 8) | The day the repository is public ([repository](repository.md)) |
 
 ## 3. Known debt and known gaps
 
