@@ -10,16 +10,23 @@ import { describe, expect, it } from "vitest";
 import { controlProblems, type OnPurpose, tagsOf } from "../../scripts/checks/controls.ts";
 
 const FILE = "app/components/Thing.tsx";
-const files = (text: string) => new Map([[FILE, text]]);
 const problems = (
 	text: string,
 	options: {
 		onPurpose?: OnPurpose[];
 		toMove?: Record<string, Record<string, number>>;
 		sized?: Record<string, number>;
+		roles?: Record<string, number>;
 	} = {},
+	more: [string, string][] = [],
 ) =>
-	controlProblems(files(text), options.onPurpose ?? [], options.toMove ?? {}, options.sized ?? {});
+	controlProblems(
+		new Map([[FILE, text], ...more]),
+		options.onPurpose ?? [],
+		options.toMove ?? {},
+		options.sized ?? {},
+		options.roles ?? {},
+	);
 
 describe("controls written by hand", () => {
 	it.each([
@@ -73,7 +80,7 @@ describe("controls written by hand", () => {
 	});
 
 	it("refuses a listed file that is gone", () => {
-		const out = controlProblems(new Map(), [], { "app/gone.tsx": { input: 1 } }, {});
+		const out = controlProblems(new Map(), [], { "app/gone.tsx": { input: 1 } }, {}, {});
 		expect(out).toEqual(["app/gone.tsx: listed in TO_MOVE and gone; remove its line"]);
 	});
 });
@@ -89,8 +96,26 @@ describe("Kumo controls sized by hand", () => {
 		["one under a breakpoint", '<Button className="md:h-10">Go</Button>'],
 		["one in cn()", '<Button className={cn("w-full", "rounded-lg")}>Go</Button>'],
 		["one on its own line", '<Button\n  variant="primary"\n  className="h-12"\n>Go</Button>'],
+		["padding", '<Button className="px-6">Go</Button>'],
+		["padding on one side", '<Input label="Name" className="pt-1" />'],
+		["padding all round", '<Button className="p-0">Go</Button>'],
+		["an arbitrary type size", '<Input label="Name" className="text-[13px]" />'],
+		["a line height", '<Button className="leading-tight">Go</Button>'],
+		["the important mark before", '<Button className="!h-9">Go</Button>'],
+		["the important mark after", '<Button className="h-9!">Go</Button>'],
+		["a style attribute", '<Input label="Name" style={{ height: 36 }} />'],
+		["a dotted part of Kumo's", '<Select.Trigger className="h-9" />'],
 	])("refuses %s", (_what, text) => {
 		expect(problems(text)).toHaveLength(1);
+	});
+
+	it("holds a wrapper of app/components/controls/ as it holds Kumo's", () => {
+		const wrapper: [string, string] = [
+			"app/components/controls/DateField.tsx",
+			"export function DateField() { return null; }",
+		];
+		expect(problems('<DateField className="h-9" />', {}, [wrapper])).toHaveLength(1);
+		expect(problems('<DateField className="w-full" />', {}, [wrapper])).toEqual([]);
 	});
 
 	it("leaves width, margins and the screen's layout alone", () => {
@@ -106,5 +131,26 @@ describe("Kumo controls sized by hand", () => {
 			problems('<Button className="rounded-full">Go</Button>', { sized: { [FILE]: 1 } }),
 		).toEqual([]);
 		expect(problems("<Button>Go</Button>", { sized: { [FILE]: 1 } })).toHaveLength(1);
+	});
+});
+
+describe("controls made of a role", () => {
+	it.each(["button", "checkbox", "radio", "switch", "combobox", "listbox", "textbox", "slider"])(
+		"refuses a plain element with the role %s",
+		(role) => {
+			expect(problems(`<div role="${role}" tabIndex={0}>x</div>`)).toHaveLength(1);
+			expect(problems(`<span role={"${role}"}>x</span>`)).toHaveLength(1);
+		},
+	);
+
+	it("leaves the roles of what is not a control alone", () => {
+		expect(problems('<div role="alert">x</div><ul role="list" /><div role="dialog" />')).toEqual(
+			[],
+		);
+	});
+
+	it("holds a listed debt and asks for it to be lowered", () => {
+		expect(problems('<div role="listbox">x</div>', { roles: { [FILE]: 1 } })).toEqual([]);
+		expect(problems("<div>x</div>", { roles: { [FILE]: 1 } })).toHaveLength(1);
 	});
 });
