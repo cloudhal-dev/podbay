@@ -29,12 +29,19 @@ test("a person chooses Turkish, and the screens, the notes and the dates follow"
 
 	// A click, not a check: the whole app is drawn again in the new language, so the button
 	// that was pressed is not there to be looked at afterwards.
-	await page.getByRole("radiogroup", { name: "Language" }).getByLabel("Türkçe").click();
+	await page
+		.getByRole("radiogroup", { name: "Language" })
+		.getByRole("radio", { name: "Türkçe", exact: true })
+		.click();
 	// At once, without a reload: the settings themselves and the frame around them.
 	await expect(page.locator("html")).toHaveAttribute("lang", "tr");
 	await expect(page.getByRole("radiogroup", { name: "Dil" })).toBeVisible();
 	// The keyboard stays on the choice that was made, though everything was drawn again.
-	await expect(page.getByRole("radiogroup", { name: "Dil" }).getByLabel("Türkçe")).toBeFocused();
+	await expect(
+		page
+			.getByRole("radiogroup", { name: "Dil" })
+			.getByRole("radio", { name: "Türkçe", exact: true }),
+	).toBeFocused();
 	await expect(page.getByRole("link", { name: "Genel", exact: true })).toBeVisible();
 	await expect(page.getByRole("radiogroup", { name: "Language" })).toHaveCount(0);
 
@@ -66,7 +73,10 @@ test("a person chooses Turkish, and the screens, the notes and the dates follow"
 
 	// And English comes back the same way.
 	await page.goto(`${base}/settings`);
-	await page.getByRole("radiogroup", { name: "Dil" }).getByLabel("English").click();
+	await page
+		.getByRole("radiogroup", { name: "Dil" })
+		.getByRole("radio", { name: "English", exact: true })
+		.click();
 	await expect(page.locator("html")).toHaveAttribute("lang", "en");
 	await expect(page.getByRole("radiogroup", { name: "Language" })).toBeVisible();
 	expect(app.watch.errors).toEqual([]);

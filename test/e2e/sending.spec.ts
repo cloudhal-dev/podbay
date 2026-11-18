@@ -56,9 +56,9 @@ test.beforeEach(async ({ page, app }) => {
 	// The shortest window: a person's choice, made where the others are made.
 	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/settings`);
 	const window = page.getByRole("radiogroup", { name: "Undo send" });
-	await expect(window.getByLabel("10 seconds")).toBeChecked();
-	await window.getByLabel("5 seconds").check();
-	await expect(window.getByLabel("5 seconds")).toBeChecked();
+	await expect(window.getByRole("radio", { name: "10 seconds", exact: true })).toBeChecked();
+	await window.getByRole("radio", { name: "5 seconds", exact: true }).check();
+	await expect(window.getByRole("radio", { name: "5 seconds", exact: true })).toBeChecked();
 });
 
 test("Send offers Undo for the window, and Undo makes the message a draft again with its files", async ({

@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { Radio } from "@cloudflare/kumo";
 import type { ReactNode } from "react";
 import { t } from "~/i18n";
 
@@ -25,33 +26,25 @@ export default function Row({
 	);
 }
 
-/** A choice between a few named things, as radio buttons under one name. */
+/** A choice between a few named things, as Kumo's radio buttons under one name. */
 export function Choice<T extends string | number>({
 	legend,
 	value,
 	options,
 	onChange,
 }: {
-	/** What is being chosen, for assistive technology. */
+	/** What is being chosen, for assistive technology; the row shows it as the setting's name. */
 	legend: string;
 	value: T;
 	options: readonly (readonly [T, string])[];
 	onChange: (value: T) => void;
 }) {
 	return (
-		<div role="radiogroup" aria-label={legend} className="flex flex-col gap-1.5">
+		<Radio.Group value={value} onValueChange={(chosen) => onChange(chosen as T)}>
+			<Radio.Legend className="sr-only">{legend}</Radio.Legend>
 			{options.map(([option, label]) => (
-				<label key={String(option)} className="flex cursor-pointer items-center gap-2">
-					<input
-						type="radio"
-						name={legend}
-						className="h-4 w-4"
-						checked={value === option}
-						onChange={() => onChange(option)}
-					/>
-					{t(label)}
-				</label>
+				<Radio.Item key={String(option)} label={t(label)} value={option} />
 			))}
-		</div>
+		</Radio.Group>
 	);
 }

@@ -8,7 +8,7 @@
  * own count; every deed can be taken back from its note; a line is a whole conversation.
  */
 import type { Page } from "@playwright/test";
-import { expect, mime, test } from "./fixtures.ts";
+import { choose, expect, mime, test } from "./fixtures.ts";
 
 const row = (page: Page, subject: string) =>
 	page.getByRole("button", { name: new RegExp(subject) });
@@ -95,7 +95,7 @@ test("everything in a place or a search is chosen from a line, asked with its co
 	}
 	const base = `/mailbox/${encodeURIComponent(app.account.mailbox)}`;
 	await page.goto(`${base}/settings`);
-	await page.getByLabel("Conversations on a page").selectOption("10");
+	await choose(page.getByRole("combobox", { name: "Conversations on a page" }), "10");
 
 	// Everything a search finds. A page that is only partly ticked offers nothing.
 	await page.goto(`${base}/search?q=${encodeURIComponent('subject:"Bulk: many"')}`);
@@ -221,8 +221,8 @@ test("a person puts unread conversations first, and the choice stays", async ({ 
 	await place;
 	await page.goto(`${base}/settings`);
 	const choice = page.getByRole("radiogroup", { name: "Order of a list" });
-	await expect(choice.getByLabel("Unread first")).toBeChecked();
-	await choice.getByLabel("Newest first").check();
+	await expect(choice.getByRole("radio", { name: "Unread first", exact: true })).toBeChecked();
+	await choice.getByRole("radio", { name: "Newest first", exact: true }).check();
 	await page.goto(search);
 	await expect.poll(order).toEqual(["newer", "older"]);
 	expect(app.watch.errors).toEqual([]);

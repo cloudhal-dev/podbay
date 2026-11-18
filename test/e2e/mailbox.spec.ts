@@ -7,12 +7,15 @@
  * These are the behaviours a person coming from a first-class web mail client expects.
  */
 import type { Page } from "@playwright/test";
-import { expect, mime, test } from "./fixtures.ts";
+import { choose, expect, mime, test } from "./fixtures.ts";
 
 const row = (page: Page, subject: string) =>
 	page.getByRole("button", { name: new RegExp(subject) });
 const select = (page: Page, subject: string) =>
 	page.getByLabel(new RegExp(`Select the conversation "${subject}`));
+/** One of Kumo's radios in a group of the settings, by the group's name and its own. */
+const radio = (page: Page, group: string, name: string) =>
+	page.getByRole("radiogroup", { name: group }).getByRole("radio", { name, exact: true });
 
 test.beforeEach(async ({ page, app }) => {
 	await app.signIn();
@@ -623,28 +626,26 @@ test("settings are in tabs; a person's choices take effect at once and stay, a m
 	await expect(tabs.getByRole("link", { name: "General" })).toHaveAttribute("aria-current", "page");
 
 	// A page of ten.
-	await page.getByLabel("Conversations on a page").selectOption("10");
+	await choose(page.getByRole("combobox", { name: "Conversations on a page" }), "10");
 	await page.goto(`${base}/emails/inbox`);
 	await expect(page.getByText(/^1–10 of \d+$/)).toBeVisible();
 
 	// Shortcuts off: a key is only a key. On again: `c` writes.
 	await page.goto(`${base}/settings`);
-	await page.getByRole("radiogroup", { name: "Keyboard shortcuts" }).getByLabel("Off").check();
+	await radio(page, "Keyboard shortcuts", "Off").check();
 	await page.keyboard.press("c");
 	await expect(page.getByRole("region", { name: "Compose" })).toHaveCount(0);
-	await page.getByRole("radiogroup", { name: "Keyboard shortcuts" }).getByLabel("On").check();
+	await radio(page, "Keyboard shortcuts", "On").check();
 
 	// The Reply button of a message can mean reply to all.
-	await page.getByRole("radiogroup", { name: "Reply button" }).getByLabel("Reply to all").check();
+	await radio(page, "Reply button", "Reply to all").check();
 	// Dark, at once and after a reload.
-	await page.getByRole("radiogroup", { name: "Appearance" }).getByLabel("Dark").check();
+	await radio(page, "Appearance", "Dark").check();
 	await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
 	await page.reload();
 	await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
-	await expect(
-		page.getByRole("radiogroup", { name: "Appearance" }).getByLabel("Dark"),
-	).toBeChecked();
-	await page.getByRole("radiogroup", { name: "Appearance" }).getByLabel("Light").check();
+	await expect(radio(page, "Appearance", "Dark")).toBeChecked();
+	await radio(page, "Appearance", "Light").check();
 	await expect(page.locator("html")).toHaveAttribute("data-mode", "light");
 
 	await page.goto(`${base}/emails/inbox`);

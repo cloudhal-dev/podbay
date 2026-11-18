@@ -8,12 +8,12 @@
  * address is typed, whatever is on screen; mail that arrives teaches it nothing.
  */
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { expect, SENT_WITHIN, test } from "./fixtures.ts";
+import { choose, expect, SENT_WITHIN, test } from "./fixtures.ts";
 
 const CHOICES = "/api/v1/me/choices";
 
 const choice = (page: Page, group: string, option: string) =>
-	page.getByRole("radiogroup", { name: group }).getByLabel(option);
+	page.getByRole("radiogroup", { name: group }).getByRole("radio", { name: option, exact: true });
 const pageSize = (page: Page) => page.getByRole("combobox", { name: "Conversations on a page" });
 /** What the account keeps for the person, asked as the page asks it. */
 const kept = async (page: Page) =>
@@ -45,10 +45,10 @@ test("a choice made in one browser is there in a second browser of the same pers
 }) => {
 	const settings = `/mailbox/${encodeURIComponent(app.account.mailbox)}/settings`;
 	await page.goto(settings);
-	await expect(pageSize(page)).toHaveValue("25");
+	await expect(pageSize(page)).toHaveText("25");
 
 	// Three choices that travel, and one that belongs to this device.
-	await pageSize(page).selectOption("50");
+	await choose(pageSize(page), "50");
 	await choice(page, "Snippets", "Subject only").check();
 	await choice(page, "Appearance", "Dark").check();
 	await choice(page, "Reading pane", "Beside the list, on its right").check();
@@ -66,7 +66,7 @@ test("a choice made in one browser is there in a second browser of the same pers
 	// The second browser starts with nothing of its own and has them after it loads.
 	const other = await secondBrowser(browser, context, baseURL);
 	await other.page.goto(settings);
-	await expect(pageSize(other.page)).toHaveValue("50");
+	await expect(pageSize(other.page)).toHaveText("50");
 	await expect(choice(other.page, "Snippets", "Subject only")).toBeChecked();
 	await expect(choice(other.page, "Appearance", "Dark")).toBeChecked();
 	await expect(other.page.locator("html")).toHaveAttribute("data-mode", "dark");
@@ -77,10 +77,10 @@ test("a choice made in one browser is there in a second browser of the same pers
 	// A change in the second browser reaches the first when it loads again; from then on the
 	// first paint has it, before the account is asked.
 	await choice(other.page, "Appearance", "Light").check();
-	await pageSize(other.page).selectOption("100");
+	await choose(pageSize(other.page), "100");
 	await expect.poll(async () => (await kept(other.page)).pageSize).toBe(100);
 	await page.reload();
-	await expect(pageSize(page)).toHaveValue("100");
+	await expect(pageSize(page)).toHaveText("100");
 	await expect(page.locator("html")).toHaveAttribute("data-mode", "light");
 	// Its own reading pane is still its own.
 	await expect(choice(page, "Reading pane", "Beside the list, on its right")).toBeChecked();
@@ -95,7 +95,7 @@ test("a choice made in one browser is there in a second browser of the same pers
 		return answered;
 	});
 	await page.reload();
-	await expect(pageSize(page)).toHaveValue("100");
+	await expect(pageSize(page)).toHaveText("100");
 	await expect(page.locator("html")).toHaveAttribute("data-mode", "light");
 	await expect.poll(() => asked).toBeGreaterThan(0);
 	// A request this handler still holds is let through by the browser when the handler is taken
