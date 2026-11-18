@@ -34,6 +34,14 @@
 			"style": {
 				"noNonNullAssertion": "error"
 			}
+		},
+		"domains": {
+			"drizzle": "recommended",
+			"playwright": "recommended",
+			"react": "recommended",
+			"tailwind": "recommended",
+			"tanstackQuery": "recommended",
+			"test": "recommended"
 		}
 	},
 	"javascript": {

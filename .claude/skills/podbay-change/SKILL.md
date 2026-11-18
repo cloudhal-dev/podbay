@@ -38,7 +38,7 @@ Podbay stores other people's mail. The way of working is part of the product: ev
    | Edit a file that came from the seed | `node scripts/checks/copies.ts --fix` |
    | Remove lint warnings or shrink an oversized file | `node scripts/checks/ratchets.ts --update` (it only ever goes down) |
    | Finish or reorder roadmap work | [`docs/roadmap.md`](../../../docs/roadmap.md) |
-   | Add a dependency | An exact version at least three days old (`node scripts/pins.ts --resolve <name>`); a 0.x one needs a dated `pinExceptions` entry |
+   | Add a dependency | An exact version at least three days old (`node scripts/pins.ts --resolve <name>`), written in the catalog of `pnpm-workspace.yaml`, with `catalog:` in the package; a 0.x one needs a dated `pinExceptions` entry in the root `package.json` |
 
 6. **Commit.** Conventional commits, signed off (`git commit -s`). Code with its tests in one commit, documents in another when both are large. Add files by explicit path, then read `git show --stat` of each commit: a commit must contain what its message says. Never push, publish, deploy or open a pull request unless asked.
 

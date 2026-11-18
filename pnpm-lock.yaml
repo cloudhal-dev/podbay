@@ -162,163 +162,319 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@ai-sdk/provider':
+      specifier: 4.0.38
+      version: 4.0.38
+    '@ai-sdk/react':
+      specifier: 4.0.177
+      version: 4.0.177
+    '@better-auth/passkey':
+      specifier: 1.7.25
+      version: 1.7.25
+    '@biomejs/biome':
+      specifier: 2.6.8
+      version: 2.6.8
+    '@cloudflare/ai-chat':
+      specifier: 0.12.2
+      version: 0.12.2
+    '@cloudflare/kumo':
+      specifier: 2.18.1
+      version: 2.18.1
+    '@cloudflare/vite-plugin':
+      specifier: 1.69.1
+      version: 1.69.1
+    '@cloudflare/vitest-plugin':
+      specifier: 1.8.2
+      version: 1.8.2
+    '@modelcontextprotocol/sdk':
+      specifier: 1.32.2
+      version: 1.32.2
+    '@modelcontextprotocol/server':
+      specifier: 2.4.0
+      version: 2.4.0
+    '@phosphor-icons/react':
+      specifier: 2.1.10
+      version: 2.1.10
+    '@playwright/test':
+      specifier: 1.65.1
+      version: 1.65.1
+    '@tailwindcss/vite':
+      specifier: 4.3.5
+      version: 4.3.5
+    '@tanstack/react-query':
+      specifier: 5.107.1
+      version: 5.107.1
+    '@tanstack/react-router':
+      specifier: 1.170.46
+      version: 1.170.46
+    '@tiptap/extension-color':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/extension-highlight':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/extension-image':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/extension-link':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/extension-text-align':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/extension-text-style':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/extension-underline':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/pm':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/react':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@tiptap/starter-kit':
+      specifier: 3.34.0
+      version: 3.34.0
+    '@types/jsdom':
+      specifier: 30.0.0
+      version: 30.0.0
+    '@types/node':
+      specifier: 24.19.2
+      version: 24.19.2
+    '@types/react':
+      specifier: 19.3.0
+      version: 19.3.0
+    '@types/react-dom':
+      specifier: 19.3.0
+      version: 19.3.0
+    '@vitejs/plugin-react':
+      specifier: 6.3.0
+      version: 6.3.0
+    agents:
+      specifier: 0.33.0
+      version: 0.33.0
+    ai:
+      specifier: 7.0.173
+      version: 7.0.173
+    better-auth:
+      specifier: 1.7.25
+      version: 1.7.25
+    dompurify:
+      specifier: 3.4.18
+      version: 3.4.18
+    drizzle-orm:
+      specifier: 0.45.4
+      version: 0.45.4
+    hono:
+      specifier: 4.13.18
+      version: 4.13.18
+    jose:
+      specifier: 6.2.17
+      version: 6.2.17
+    jsdom:
+      specifier: 31.0.1
+      version: 31.0.1
+    postal-mime:
+      specifier: 4.2.1
+      version: 4.2.1
+    react:
+      specifier: 19.3.1
+      version: 19.3.1
+    react-dom:
+      specifier: 19.3.1
+      version: 19.3.1
+    react-markdown:
+      specifier: 10.1.0
+      version: 10.1.0
+    remark-gfm:
+      specifier: 4.0.1
+      version: 4.0.1
+    tailwindcss:
+      specifier: 4.3.5
+      version: 4.3.5
+    typescript:
+      specifier: 7.0.2
+      version: 7.0.2
+    uqr:
+      specifier: 0.1.3
+      version: 0.1.3
+    vite:
+      specifier: 8.3.8
+      version: 8.3.8
+    vitest:
+      specifier: 5.1.0
+      version: 5.1.0
+    wrangler:
+      specifier: 4.162.0
+      version: 4.162.0
+    zod:
+      specifier: 4.6.7
+      version: 4.6.7
+    zustand:
+      specifier: 5.1.0
+      version: 5.1.0
+
 importers:
 
   .:
     dependencies:
       '@ai-sdk/provider':
-        specifier: 4.0.38
+        specifier: 'catalog:'
         version: 4.0.38
       '@ai-sdk/react':
-        specifier: 4.0.177
+        specifier: 'catalog:'
         version: 4.0.177(react@19.3.1)(zod@4.6.7)
       '@better-auth/passkey':
-        specifier: 1.7.25
+        specifier: 'catalog:'
         version: 1.7.25(@better-auth/core@1.7.25(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.17)(kysely@0.29.9)(nanostores@1.5.5))(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(better-auth@1.7.25(@opentelemetry/api@1.10.0)(drizzle-orm@0.45.4(@opentelemetry/api@1.10.0)(kysely@0.29.9))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))))(better-call@1.4.5(zod@4.6.7))(nanostores@1.5.5)
       '@cloudflare/ai-chat':
-        specifier: 0.12.2
+        specifier: 'catalog:'
         version: 0.12.2(@ai-sdk/react@4.0.177(react@19.3.1)(zod@4.6.7))(agents@0.33.0(@ai-sdk/provider@4.0.38)(@ai-sdk/react@4.0.177(react@19.3.1)(zod@4.6.7))(@babel/core@8.1.2)(@babel/runtime@8.1.2)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.4.0)(ai@7.0.173(zod@4.6.7))(react@19.3.1)(rolldown@1.2.19)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(zod@4.6.7))(ai@7.0.173(zod@4.6.7))(react@19.3.1)
       '@cloudflare/kumo':
-        specifier: 2.18.1
+        specifier: 'catalog:'
         version: 2.18.1(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@modelcontextprotocol/sdk':
-        specifier: 1.32.2
+        specifier: 'catalog:'
         version: 1.32.2(@cfworker/json-schema@4.1.6)(supports-color@10.2.2)(zod@4.6.7)
       '@modelcontextprotocol/server':
-        specifier: 2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@phosphor-icons/react':
-        specifier: 2.1.10
+        specifier: 'catalog:'
         version: 2.1.10(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-query':
-        specifier: 5.107.1
+        specifier: 'catalog:'
         version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router':
-        specifier: 1.170.46
+        specifier: 'catalog:'
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tiptap/extension-color':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0(@tiptap/extension-text-style@3.34.0(@tiptap/core@3.34.0(@tiptap/pm@3.34.0)))
       '@tiptap/extension-highlight':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0(@tiptap/core@3.34.0(@tiptap/pm@3.34.0))
       '@tiptap/extension-image':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0(@tiptap/core@3.34.0(@tiptap/pm@3.34.0))
       '@tiptap/extension-link':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0(@tiptap/core@3.34.0(@tiptap/pm@3.34.0))(@tiptap/pm@3.34.0)
       '@tiptap/extension-text-align':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0(@tiptap/core@3.34.0(@tiptap/pm@3.34.0))
       '@tiptap/extension-text-style':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0(@tiptap/core@3.34.0(@tiptap/pm@3.34.0))
       '@tiptap/extension-underline':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0(@tiptap/core@3.34.0(@tiptap/pm@3.34.0))
       '@tiptap/pm':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0
       '@tiptap/react':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0(@floating-ui/dom@1.8.0)(@tiptap/core@3.34.0(@tiptap/pm@3.34.0))(@tiptap/pm@3.34.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tiptap/starter-kit':
-        specifier: 3.34.0
+        specifier: 'catalog:'
         version: 3.34.0
       agents:
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(@ai-sdk/provider@4.0.38)(@ai-sdk/react@4.0.177(react@19.3.1)(zod@4.6.7))(@babel/core@8.1.2)(@babel/runtime@8.1.2)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.4.0)(ai@7.0.173(zod@4.6.7))(react@19.3.1)(rolldown@1.2.19)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(zod@4.6.7)
       ai:
-        specifier: 7.0.173
+        specifier: 'catalog:'
         version: 7.0.173(zod@4.6.7)
       better-auth:
-        specifier: 1.7.25
+        specifier: 'catalog:'
         version: 1.7.25(@opentelemetry/api@1.10.0)(drizzle-orm@0.45.4(@opentelemetry/api@1.10.0)(kysely@0.29.9))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       dompurify:
-        specifier: 3.4.18
+        specifier: 'catalog:'
         version: 3.4.18
       drizzle-orm:
-        specifier: 0.45.4
+        specifier: 'catalog:'
         version: 0.45.4(@opentelemetry/api@1.10.0)(kysely@0.29.9)
       hono:
-        specifier: 4.13.18
+        specifier: 'catalog:'
         version: 4.13.18
       jose:
-        specifier: 6.2.17
+        specifier: 'catalog:'
         version: 6.2.17
       postal-mime:
-        specifier: 4.2.1
+        specifier: 'catalog:'
         version: 4.2.1
       react:
-        specifier: 19.3.1
+        specifier: 'catalog:'
         version: 19.3.1
       react-dom:
-        specifier: 19.3.1
+        specifier: 'catalog:'
         version: 19.3.1(react@19.3.1)
       react-markdown:
-        specifier: 10.1.0
+        specifier: 'catalog:'
         version: 10.1.0(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2)
       remark-gfm:
-        specifier: 4.0.1
+        specifier: 'catalog:'
         version: 4.0.1(supports-color@10.2.2)
       uqr:
-        specifier: 0.1.3
+        specifier: 'catalog:'
         version: 0.1.3
       zod:
-        specifier: 4.6.7
+        specifier: 'catalog:'
         version: 4.6.7
       zustand:
-        specifier: 5.1.0
+        specifier: 'catalog:'
         version: 5.1.0(@types/react@19.3.0)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
     devDependencies:
       '@biomejs/biome':
-        specifier: 2.6.8
+        specifier: 'catalog:'
         version: 2.6.8
       '@cloudflare/vite-plugin':
-        specifier: 1.69.1
+        specifier: 'catalog:'
         version: 1.69.1(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(workerd@1.20261113.1)(wrangler@4.162.0(@types/node@24.19.2))
       '@cloudflare/vitest-plugin':
-        specifier: 1.8.2
+        specifier: 'catalog:'
         version: 1.8.2(@types/node@24.19.2)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       '@playwright/test':
-        specifier: 1.65.1
+        specifier: 'catalog:'
         version: 1.65.1
       '@tailwindcss/vite':
-        specifier: 4.3.5
+        specifier: 'catalog:'
         version: 4.3.5(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@types/jsdom':
-        specifier: 30.0.0
+        specifier: 'catalog:'
         version: 30.0.0
       '@types/node':
-        specifier: 24.19.2
+        specifier: 'catalog:'
         version: 24.19.2
       '@types/react':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: 19.3.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
-        specifier: 6.3.0
+        specifier: 'catalog:'
         version: 6.3.0(@rolldown/plugin-babel@0.2.4(@babel/core@8.1.2)(@babel/runtime@8.1.2)(rolldown@1.2.19)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       jsdom:
-        specifier: 31.0.1
+        specifier: 'catalog:'
         version: 31.0.1(@noble/hashes@2.4.0)
       tailwindcss:
-        specifier: 4.3.5
+        specifier: 'catalog:'
         version: 4.3.5
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
-        specifier: 8.3.8
+        specifier: 'catalog:'
         version: 8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
       vitest:
-        specifier: 5.1.0
+        specifier: 'catalog:'
         version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       wrangler:
-        specifier: 4.162.0
+        specifier: 'catalog:'
         version: 4.162.0(@types/node@24.19.2)
 
 packages:
