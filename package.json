@@ -4,6 +4,11 @@
 	"private": true,
 	"description": "Self-hosted mail that runs entirely in your own Cloudflare account",
 	"homepage": "https://podbay.cloudhal.dev",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/cloudhal-dev/podbay.git"
+	},
+	"bugs": "https://github.com/cloudhal-dev/podbay/issues",
 	"license": "Apache-2.0",
 	"type": "module",
 	"packageManager": "pnpm@12.10.1",

@@ -23,7 +23,7 @@ pnpm check            # lint → static checks → typecheck → unit tests → 
 pnpm test:workerd [name]   # handlers in the real Workers runtime, every binding local, two suites, four files
                       #   at a time (scripts/test-workerd.ts; about three minutes); with a name, only the files that hold it
 pnpm e2e              # the built app in the installed Chrome, under its real headers, on its own throwaway
-                      #   instance; every binding local, all outside traffic caught by a proxy (about 1 min)
+                      #   instance; every binding local, all outside traffic caught by a proxy (about 6 min)
 pnpm dev              # local development on http://localhost:5173, simulated mail, no account;
                       #   first writes .dev.vars (generated secrets) and applies the local D1 migrations
 PODBAY_STATE_DIR=<dir> pnpm exec vite preview   # the built app with its real response headers, on its own

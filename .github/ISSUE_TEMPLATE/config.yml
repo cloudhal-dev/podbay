@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/cloudhal-dev/podbay/security/advisories/new
+    about: Never in a public issue. SECURITY.md says what is in scope and what to include.
+  - name: Roadmap and status
+    url: https://github.com/cloudhal-dev/podbay/blob/main/docs/roadmap.md
+    about: What is planned and what is knowingly left open. Read these before asking for a feature.

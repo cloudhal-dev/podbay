@@ -17,6 +17,20 @@ pnpm check      # everything CI runs: lint, static checks, typecheck, tests, bui
 pnpm dev        # local development with simulated mail
 ```
 
+The two slower suites run in CI on every pull request; run them yourself when you touch what they prove:
+
+```bash
+pnpm test:workerd   # the handlers in the real Workers runtime, every binding local
+pnpm e2e            # the built app in a real browser, on its own throwaway instance
+```
+
+## Before you start
+
+- **A bug**: open an issue with the steps that show it. Never paste real mail, real addresses or a token.
+- **A vulnerability**: never in an issue. Follow [`SECURITY.md`](SECURITY.md).
+- **A feature**: look at the [roadmap](docs/roadmap.md) and the open [issues](https://github.com/cloudhal-dev/podbay/issues) first. For anything larger than a small fix, open an issue and agree on the shape before writing code. A change to a contract, a stored format, a sticky name or the access model needs a decision first ([`GOVERNANCE.md`](GOVERNANCE.md)).
+- Everyone taking part follows the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
 ## Rules
 
 Read [`AGENTS.md`](AGENTS.md) first. It is one page for people and coding agents alike: the rules, the commands, and which skill in `.claude/skills/` describes each kind of work (start with `podbay-change`). Where the project is going is [`docs/roadmap.md`](docs/roadmap.md); what is enforced today is [`docs/status.md`](docs/status.md). Every rule on that page is enforced by a check in `pnpm check`. The full text is [`docs/engineering-rules.md`](docs/engineering-rules.md). Three that surprise people:
@@ -30,4 +44,5 @@ Read [`AGENTS.md`](AGENTS.md) first. It is one page for people and coding agents
 - Branch from `main`; keep pull requests focused.
 - **Conventional commits**: `feat(inbox): …`, `fix(worker): …`, `docs: …`, `chore: …`.
 - **DCO sign-off**: every commit needs `Signed-off-by:`; use `git commit -s`. This certifies the [Developer Certificate of Origin](https://developercertificate.org/); there is no CLA.
-- `pnpm check` must be green.
+- `pnpm check`, `pnpm test:workerd` and `pnpm e2e` must be green; CI runs all three.
+- `main` takes changes through pull requests only, and an owner of the code in [`.github/CODEOWNERS`](.github/CODEOWNERS) reviews the paths listed there.

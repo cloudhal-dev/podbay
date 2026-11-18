@@ -3,7 +3,7 @@
 - Companion to the [architecture](architecture.md), the [feature scope](feature-scope.md) and the [status](status.md).
 - Question answered here: where the project is going, what is done, and what comes next.
 
-This is the one place that says what comes next. Decisions that set the direction are in [`adr/`](adr/README.md); what each rule is held by today is in [status](status.md). Update this file in the change that finishes or reorders work. Last updated: 2026-11-17.
+This is the one place that says what comes next. Decisions that set the direction are in [`adr/`](adr/README.md); what each rule is held by today is in [status](status.md). Update this file in the change that finishes or reorders work. Each piece of work that is left has an issue in the project's [issue tracker](https://github.com/cloudhal-dev/podbay/issues), filed under the milestone it belongs to; this file gives the order, the issues carry the detail. Last updated: 2026-11-18.
 
 ## 1. Where Podbay is going
 

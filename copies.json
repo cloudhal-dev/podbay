@@ -234,9 +234,9 @@
 					"status": "modified"
 				},
 				{
-					"path": "demo_app.png",
+					"path": null,
 					"upstream": "demo_app.png",
-					"status": "verbatim"
+					"status": "removed"
 				},
 				{
 					"path": null,

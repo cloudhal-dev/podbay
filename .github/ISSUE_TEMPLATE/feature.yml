@@ -1,0 +1,39 @@
+name: Feature or change
+description: Something Podbay should do, or do differently.
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The order of work is in the [roadmap](https://github.com/cloudhal-dev/podbay/blob/main/docs/roadmap.md) and the scope in the [feature scope](https://github.com/cloudhal-dev/podbay/blob/main/docs/feature-scope.md). A change to a contract, a stored format or the direction needs a decision record first ([GOVERNANCE.md](https://github.com/cloudhal-dev/podbay/blob/main/GOVERNANCE.md)).
+
+        Podbay is an original work: describe what a person needs, in your own words. Do not paste another product's screens, text or code.
+  - type: textarea
+    id: need
+    attributes:
+      label: What a person needs
+      description: Who is doing what, and what stands in their way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What Podbay should do
+      description: The behaviour you propose. Say what it must never do, if anything.
+    validations:
+      required: true
+  - type: dropdown
+    id: boundary
+    attributes:
+      label: Does it touch a trust boundary?
+      description: Sign-in, authorisation, mail rendering, attachments, sending, the assistant or MCP, tokens, exports, CI or releases.
+      options:
+        - "No"
+        - "Yes"
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Other ways considered

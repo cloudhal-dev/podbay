@@ -4,7 +4,7 @@
 // Modified by the Podbay contributors.
 
 /**
- * Parse a Gmail-style search query into structured filters.
+ * Parse a search query with operators into structured filters.
  *
  * Supported operators:
  *   from:user@example.com    — filter by sender

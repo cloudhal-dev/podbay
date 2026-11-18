@@ -1,0 +1,53 @@
+name: Bug
+description: Something Podbay does wrong. For a vulnerability, follow SECURITY.md instead.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste real mail, real addresses, tokens or the contents of `.dev.vars` here. This page is public.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to see it
+      description: The shortest list of steps that shows it, from a fresh `pnpm dev` if you can.
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: The output of `git rev-parse --short HEAD`.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it runs
+      options:
+        - Local development (pnpm dev)
+        - The tests (pnpm check, pnpm test:workerd, pnpm e2e)
+        - My own Cloudflare account
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and system
+      description: Leave empty when the bug is not in the app.
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: Errors from the terminal or the browser's console, with anything private taken out.
+      render: text

@@ -147,7 +147,7 @@ export function escapeHtml(text: string): string {
 /**
  * Convert plain text to a simple HTML block with preserved whitespace.
  * Uses both `white-space:pre-wrap` (modern clients) and `<br>` tags
- * (clients that strip inline styles, e.g. Outlook) as a belt-and-suspenders approach.
+ * (for mail programs that strip inline styles), so that either one keeps the line breaks.
  */
 export function textToHtml(text: string): string {
 	if (!text) return "";

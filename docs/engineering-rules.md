@@ -98,7 +98,7 @@ The trust boundaries S18 refers to: inbound mail bytes; mail HTML and attachment
 |---|---|
 | Worker: HTTP API | S1, S2, S10, S11, D2, D6 |
 | Worker: `email` handler and inbound consumer | S2, S3, S7, D2, D6, D13 |
-| Worker: outbound consumer and send adapter | S8, S9, S14, D7 |
+| Mailbox object: outgoing mail, which waits in a row and leaves through the one caller of the send binding ([ADR-0016](adr/0016-outgoing-mail-waits-before-it-leaves.md)) | S8, S9, S14, D7 |
 | Durable Objects and D1 | S2, S13, D3, D6 |
 | R2: raw messages, attachments, exports | S2, S5, S13 |
 | UI | S4, S5, S11, D8, D9, D13, D16 |
