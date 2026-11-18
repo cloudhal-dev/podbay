@@ -16,6 +16,7 @@
 | Every Cloudflare surface in the configuration has a sourced ledger entry | V5 | `pnpm static ledger` |
 | Copied files listed, modified ones marked | S17 | `pnpm static copies` |
 | Licence allow-list over every installed package | S15, S17 | `pnpm static licences` |
+| What a pull request adds to the dependencies is read before it merges: it fails on a known vulnerability of any severity in every scope, and on a licence the static check does not allow (the same list, and the same LGPL packages of the toolchain). A licence it cannot detect is reported there and fails only `pnpm static licences`. Not yet a required check | V2, S15, S17 | The job `dependency review` in `.github/workflows/checks.yml` (GitHub's `actions/dependency-review-action`, v5.0.0 pinned by commit); `test/unit/dependency-review.test.ts` holds its inputs to the static check's lists and the lockfile |
 | No other mail product named | S17 | `pnpm static names` |
 | No credential shapes, no tracked environment file | S6 | `pnpm static secrets` |
 | No Cloudflare REST call or account credential in shipped code | S14 | `pnpm static account` |
