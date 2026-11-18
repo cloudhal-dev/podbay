@@ -28,6 +28,7 @@
 | Markdown links and anchors | D14 | `pnpm static docs` |
 | The guidance is consistent: `AGENTS.md` is one page and names every skill and subagent; skills are named as their folders; a rule's paths still match files; a subagent names only skills that exist and cannot edit; the settings keep local secrets unread and ask before a push or a deploy | D15 | `pnpm static guidance`, `test/unit/guidance.test.ts` |
 | No lint warning: every rule has one level for every file, no file is exempt, and `pnpm lint` fails on a warning (`--error-on-warnings`), so a clean run prints none. A rule is kept off at a place only by a `biome-ignore` that says why (two keyed lists that are never reordered). File size only goes down | D1, D4 | `pnpm lint`, `pnpm static ratchets` (lint warnings at 0) |
+| `biome.json` names the schema of the Biome `package.json` pins: an update of the tool cannot leave its configuration behind | V1 | `pnpm static schemas`; `test/unit/schemas.test.ts` |
 | Lint errors, formatting | D1 | `pnpm lint` |
 | Types | D1 | `pnpm typecheck` |
 | Every API route is in the route table; a non-member gets 404 on every mailbox route; readers cannot change, senders cannot manage | S1 | `test/workerd/access.test.ts`, `test/unit/authorize.test.ts` |
