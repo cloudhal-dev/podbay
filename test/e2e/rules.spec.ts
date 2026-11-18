@@ -9,7 +9,9 @@
  *   the settings ends it;
  * - "Filter messages like this" opens a new filter that starts with the sender;
  * - the automatic reply is turned on in the settings, answers a person once in the mailbox's
- *   own name, and stops when it is turned off.
+ *   own name, and stops when it is turned off;
+ * - a reply saved elsewhere with HTML is saved from the settings as the words they show, so
+ *   nobody becomes the sender of markup they did not see.
  *
  * The tests have a mailbox of their own: a blocked sender or an automatic reply in the mailbox
  * the other tests share would change what they see.
@@ -295,5 +297,64 @@ test("the automatic reply is turned on in the settings, answers a person once, a
 	await expect.poll(() => listed(page, "scheduled")).toEqual([]);
 	expect((await listed(page, "sent")).filter((email) => email.subject === subject)).toHaveLength(1);
 
+	expect(await app.contacted(), "hosts the browser tried to reach").toEqual([]);
+});
+
+test("a reply saved elsewhere with HTML is saved from the settings as the words they show, and nothing more", async ({
+	page,
+	app,
+}) => {
+	await page.goto("/sign-in");
+	await page.getByLabel("Email").fill(app.account.email);
+	await page.getByLabel("Password").fill(app.account.password);
+	await page.getByRole("button", { name: "Sign in" }).click();
+	await expect(page.getByRole("heading", { name: "Mailboxes", exact: true })).toBeVisible();
+
+	// Saved through the API with markup the screen does not show: a link and a remote image.
+	const html =
+		'<p>Away until Monday, <a href="https://elsewhere.test/">see here</a>.<img src="https://elsewhere.test/p.gif"></p>';
+	const put = await page.request.put(api("/auto-reply"), {
+		headers: { origin: BASE },
+		data: {
+			isEnabled: true,
+			fromDate: null,
+			toDate: null,
+			subject: "Saved elsewhere",
+			textBody: null,
+			htmlBody: html,
+		},
+	});
+	expect(put.status()).toBe(200);
+
+	// Another save on the screen, of the subject only: the screen says what it does not show,
+	// and saves the words it shows and no markup.
+	await page.goto(settings("auto-reply"));
+	await expect(
+		page.getByText("This reply was saved with formatting this screen does not show."),
+	).toBeVisible();
+	await expect(page.getByRole("textbox", { name: "Message" })).toHaveValue(
+		"Away until Monday, see here.",
+	);
+	await page.getByRole("textbox", { name: "Subject" }).fill("Saved on the screen");
+	await page.getByRole("button", { name: "Save automatic reply" }).click();
+	await expect(page.getByText("The automatic reply is on")).toBeVisible();
+	const saved = (await (await page.request.get(api("/auto-reply"))).json()) as {
+		subject: string;
+		textBody: string | null;
+		htmlBody: string | null;
+	};
+	expect(saved).toMatchObject({
+		subject: "Saved on the screen",
+		textBody: "Away until Monday, see here.",
+		htmlBody: null,
+	});
+	await expect(
+		page.getByText("This reply was saved with formatting this screen does not show."),
+	).toBeHidden();
+
+	// Turned off again, so the other tests of the mailbox are not answered.
+	await page.getByLabel("Answer mail that arrives").uncheck();
+	await page.getByRole("button", { name: "Save automatic reply" }).click();
+	await expect(page.getByText("The automatic reply is off")).toBeVisible();
 	expect(await app.contacted(), "hosts the browser tried to reach").toEqual([]);
 });

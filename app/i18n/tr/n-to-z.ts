@@ -368,6 +368,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"This message has no original.": "Bu iletinin özgün hali yok.",
 	"This opens {host} in a new tab, where the list takes you off. Podbay sends nothing by itself.":
 		"{host} yeni bir sekmede açılır; listeden orada çıkarsınız. Podbay kendiliğinden hiçbir şey göndermez.",
+	"This reply was saved with formatting this screen does not show. Saved here, it keeps its words and loses the formatting.":
+		"Bu yanıt, bu ekranın göstermediği bir biçimlendirmeyle kaydedildi. Burada kaydedilirse sözcükleri kalır, biçimlendirmesi gider.",
 	To: "Kime",
 	"Toggle agent panel": "Asistan panelini aç ya da kapat",
 	"Trash is empty": "Çöp Kutusu boş",

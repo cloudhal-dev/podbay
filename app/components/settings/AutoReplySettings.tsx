@@ -3,10 +3,10 @@
 
 import { Button, Input, useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useState } from "react";
-import { plainTextOf } from "shared/html-text";
-import { AUTO_REPLY, type AutoReply } from "shared/rules";
+import { AUTO_REPLY } from "shared/rules";
 import { useFreshProof } from "~/components/FreshProof";
 import { t } from "~/i18n";
+import { replyToSave, shownText } from "~/lib/auto-reply";
 import { fieldValue } from "~/lib/sending-words";
 import { useAutoReply, useSaveAutoReply } from "~/queries/rules";
 import Row from "./Row";
@@ -20,13 +20,6 @@ const shown = (instant: string | null): string =>
 /** What the field holds as an instant in UTC; `null` for an empty field. */
 const instantOf = (field: string): string | null =>
 	field === "" || Number.isNaN(Date.parse(field)) ? null : new Date(field).toISOString();
-
-/**
- * The words the screen shows: the text of the reply, or the text of its HTML when it has only
- * HTML. The server keeps the two in agreement, so what is shown is what is sent.
- */
-const shownText = (reply: Pick<AutoReply, "textBody" | "htmlBody">): string =>
-	reply.textBody ?? (reply.htmlBody === null ? "" : plainTextOf(reply.htmlBody));
 
 /**
  * The automatic reply of the mailbox (ADR-0008): a message the mailbox sends by itself to
@@ -63,22 +56,21 @@ export default function AutoReplySettings({
 	}, [data]);
 
 	const backwards = from !== "" && until !== "" && new Date(until) <= new Date(from);
-	const empty = enabled && text.trim() === "" && !data?.htmlBody;
+	const empty = enabled && text.trim() === "";
 
 	async function save(event: FormEvent) {
 		event.preventDefault();
 		setError(null);
 		if (backwards || empty) return;
-		const reply: AutoReply = {
-			isEnabled: enabled,
+		// What this screen shows, and nothing else: a body saved elsewhere as HTML is saved here as
+		// its words, so nobody is made the sender of markup they did not see.
+		const reply = replyToSave({
+			enabled,
 			fromDate: instantOf(from),
 			toDate: instantOf(until),
-			subject: subject.trim() === "" ? null : subject.trim(),
-			textBody: text.trim() === "" ? null : text,
-			// A body written elsewhere as HTML is kept as long as its text, which is what this screen
-			// shows, was not changed here. The server takes the two together only when they agree.
-			htmlBody: data?.htmlBody && text === shownText(data) ? data.htmlBody : null,
-		};
+			subject,
+			text,
+		});
 		try {
 			await withFreshProof(() => saveAutoReply.mutateAsync({ mailboxId, reply }));
 			toasts.add({
@@ -173,6 +165,13 @@ export default function AutoReplySettings({
 					</div>
 				</Row>
 				<Row name={t("Message")} about={t("What people who write to this mailbox are told.")}>
+					{data?.htmlBody != null && (
+						<p className="m-0 mb-2 max-w-xl text-xs text-kumo-subtle">
+							{t(
+								"This reply was saved with formatting this screen does not show. Saved here, it keeps its words and loses the formatting.",
+							)}
+						</p>
+					)}
 					<textarea
 						aria-label={t("Message")}
 						className="block min-h-40 w-full max-w-xl rounded-lg border border-kumo-line bg-kumo-control p-3 text-sm text-kumo-default"
