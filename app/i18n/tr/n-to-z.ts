@@ -66,7 +66,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Open in a new tab": "Yeni sekmede aç",
 	"Open in a window": "Pencerede aç",
 	"Open or fold every message of the open conversation":
-		"Açık yazışmanın tüm iletilerini aç ya da katla",
+		"Açık yazışmanın tüm iletilerini genişlet ya da daralt",
 	"Open sign-in and security": "Oturum açma ve güvenliği aç",
 	"Open the conversation": "Yazışmayı aç",
 	"Open the page": "Sayfayı aç",
