@@ -31,7 +31,8 @@
 				"required_status_checks": [
 					{ "context": "pnpm check (Node 24)", "integration_id": 15368 },
 					{ "context": "pnpm check (Node 26)", "integration_id": 15368 },
-					{ "context": "pnpm e2e (browser)", "integration_id": 15368 }
+					{ "context": "pnpm e2e (browser)", "integration_id": 15368 },
+					{ "context": "commits (form and sign-off)", "integration_id": 15368 }
 				]
 			}
 		},
