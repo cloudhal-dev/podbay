@@ -23,6 +23,7 @@ import {
 	DRAFT_SAVED_MESSAGE,
 	DRAFT_TOOL_NAMES,
 	isSavedDraft,
+	RULE_METHODS,
 	SENDING_METHODS,
 	withoutSend,
 } from "../../workers/agent/tools.ts";
@@ -340,6 +341,36 @@ describe("the environment the assistant's tools run with", () => {
 		expect(mailbox.in(Folders.ARCHIVE)).toHaveLength(1);
 		// A handle is not something to await: it has no `then`.
 		expect((stub as unknown as { then?: unknown }).then).toBeUndefined();
+	});
+
+	it("has a handle on the mailbox without its rules, and without a way to file an arrival (ADR-0008)", async () => {
+		// The record gives the rules and the automatic reply to people and says nothing of a
+		// tool; and filing an arrival is what the automatic reply answers.
+		const { env, mailbox, send } = world();
+		const stub = getMailboxStub(withoutSend(env), MAILBOX) as unknown as Record<
+			string,
+			(...args: unknown[]) => Promise<unknown>
+		>;
+		expect([...RULE_METHODS].sort()).toEqual([
+			"beginArrival",
+			"blockSender",
+			"fileArrival",
+			"getAutoReply",
+			"getRules",
+			"setAutoReply",
+			"setRules",
+			"unblockSender",
+		]);
+		for (const method of RULE_METHODS) {
+			await expect(stub[method]?.("x"), method).rejects.toBeInstanceOf(AgentSendRefused);
+		}
+		expect(mailbox.sendingCalls).toEqual([]);
+		expect(send.calls).toEqual([]);
+		// No file of the assistant, of MCP or of their shared tools names one of them.
+		for (const file of ["workers/mcp/server.ts", "workers/lib/tools.ts", "shared/mcp-tools.ts"]) {
+			const source = readFileSync(file, "utf8");
+			for (const method of RULE_METHODS) expect(source, `${file}: ${method}`).not.toContain(method);
+		}
 	});
 
 	it("control: the caller's own handle has those methods, and they send", async () => {

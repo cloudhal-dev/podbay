@@ -33,7 +33,7 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 | Compose | Rich text, attachments, signatures, addresses completed from mail sent ([ADR-0012](adr/0012-a-persons-choices-and-known-addresses.md)); a send that can be taken back for a few seconds, and sending later at a time ([ADR-0016](adr/0016-outgoing-mail-waits-before-it-leaves.md), which moved scheduled send from phase B) | Rich text, attachments | A; follow-up reminders in B |
 | Search | Full-text search with a query grammar: phrases, exclusions, `from:`, `to:`, `subject:`, `has:attachment`, `is:unread`, `after:`, `before:` | Substring match | A |
 | Sender authentication | SPF, DKIM and DMARC results shown on each message; failures treated as suspicious | None | A |
-| Spam | Authentication results, allow and block lists, Report spam and Not spam | An empty Spam folder | A; scoring that learns per mailbox in B |
+| Spam | Authentication results, allow and block lists, Report spam and Not spam. The block list is built ([ADR-0008](adr/0008-rules-for-incoming-mail.md)): a blocked address or domain goes to Spam. An allow list has nothing to override until Podbay scores spam itself, and is not built | An empty Spam folder | A; scoring that learns per mailbox in B |
 | Attachments | Download only; risky types flagged and held until the user acknowledges, enforced by the server | Plain download | A |
 | Original message | The raw message is kept and can be downloaded. Built on 2026-11-17 for mail that arrives from then on: shown as text, saved as a `.eml` file ([ADR-0015](adr/0015-the-original-message-is-kept.md)) | Not kept | A |
 | Live updates | New mail appears without a refresh. Built on 2026-11-17: the mailbox tells the open app that something changed, and the app reads what changed as it always did ([ADR-0013](adr/0013-the-mailbox-tells-the-open-app.md)) | None | A; notifications while the app is closed in B |
@@ -43,7 +43,7 @@ A complete mail product is large, and the seed is small (70 files, no tests). Th
 | MCP | AI tools connect with a key limited to chosen mailboxes, to read or to read and draft; they never send. Consent by OAuth with per-tool grants follows in phase B | Yes, without limits | A |
 | Keyboard and mobile | Shortcuts for every common action; a phone layout | Partly | A |
 | Languages | English and Turkish, with message keys everywhere | English and Turkish in the app; the Worker's own words are English | A; a wider list in B |
-| Rules | Sort, forward or reject incoming mail; a forwarding loop guard | None | B |
+| Rules | Filters that sort incoming mail (skip the inbox, mark as read, star, label, Trash, Spam), blocked senders and an automatic reply while away: built on 2026-11-18 ([ADR-0008](adr/0008-rules-for-incoming-mail.md)). Forwarding and rejecting incoming mail, with a forwarding loop guard, stay in phase B | None | A; forwarding and rejecting in B |
 | Contacts | An address book and notes on a conversation | None | B |
 | Import and export | IMAP, mailbox archives, `.eml` and `.mbox` | None | B |
 | Mail apps | JMAP (RFC 8620 and 8621) with app passwords, so mail apps that speak it can connect | None | B |

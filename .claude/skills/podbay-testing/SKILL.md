@@ -19,7 +19,7 @@ Put a test in the lowest tier that can prove the rule. A rule about access is pr
 
 ## 2. What exists already
 
-**Tier 3, `test/workerd/helpers.ts`:** `migrate`, `setupOwner`, `seedUser`, `seedMembership`, `signIn`, `request` (sends the app's own `Origin`), `createMailbox`, `mime` and `inbound` (a message for the `email` handler), `ageSessions` (make a session old instead of waiting), and `Browser`: a cookie-keeping client with a client address of its own, so the per-address sign-in limits do not couple tests. `enableApp`, `registerPasskey` and `passkeySignIn` do the second step and passkeys as a person's devices do.
+**Tier 3, `test/workerd/helpers.ts`:** `migrate`, `setupOwner`, `seedUser`, `seedMembership`, `signIn`, `request` (sends the app's own `Origin`), `createMailbox`, `mime` and `inbound` (a message for the `email` handler), `ageSessions` (make a session old instead of waiting), and `Browser`: a cookie-keeping client with a client address of its own, so the per-address sign-in limits do not couple tests. `enableApp`, `registerPasskey` and `passkeySignIn` do the second step and passkeys as a person's devices do. `test/workerd/sending-helpers.ts` has a send binding of the tests (`fakeSender`) and `letLeave`, which runs the mailbox's alarm until nothing is due; `test/workerd/rules-helpers.ts` has one mailbox with an owner, a sender, a reader and two people without a membership, `deliver` with an envelope sender of the test's choosing, and `audited`.
 
 **Doubles, `test/helpers/`:** `authenticator.ts` (a software passkey that makes real attestations and signatures, and `totpCode`), `fake-ai.ts` (the model; no test ever calls a real one).
 

@@ -12,9 +12,11 @@ import {
 	DotsThreeVerticalIcon,
 	DownloadSimpleIcon,
 	EnvelopeSimpleIcon,
+	FunnelIcon,
 	MagnifyingGlassIcon,
 	PencilSimpleIcon,
 	PrinterIcon,
+	ProhibitIcon,
 	StarIcon,
 	TrashIcon,
 	WarningOctagonIcon,
@@ -49,6 +51,12 @@ export interface MessageActions {
 	onDownloadOriginal?: () => void;
 	/** Only for mail from a list that says how to leave it. */
 	onUnsubscribe?: () => void;
+	/** Only for an owner of the mailbox (ADR-0008): mail from this sender goes to Spam. */
+	onBlockSender?: () => void;
+	/** In place of blocking, for a sender whose address is blocked. */
+	onUnblockSender?: () => void;
+	/** Only for an owner: opens a new filter that starts with this sender. */
+	onFilterLikeThis?: () => void;
 }
 
 interface MessageHeaderProps {
@@ -163,6 +171,16 @@ export default function MessageHeader({
 									>
 										{t("Copy the address")}
 									</DropdownMenu.Item>
+									{actions.onBlockSender && (
+										<DropdownMenu.Item icon={ProhibitIcon} onClick={actions.onBlockSender}>
+											{t("Block the sender")}
+										</DropdownMenu.Item>
+									)}
+									{actions.onUnblockSender && (
+										<DropdownMenu.Item icon={ProhibitIcon} onClick={actions.onUnblockSender}>
+											{t("Unblock the sender")}
+										</DropdownMenu.Item>
+									)}
 								</DropdownMenu.Group>
 							</DropdownMenu.Content>
 						</DropdownMenu>
@@ -259,7 +277,22 @@ export default function MessageHeader({
 										{t("Report spam")}
 									</DropdownMenu.Item>
 								)}
+								{actions.onBlockSender && (
+									<DropdownMenu.Item icon={ProhibitIcon} onClick={actions.onBlockSender}>
+										{t("Block the sender")}
+									</DropdownMenu.Item>
+								)}
+								{actions.onUnblockSender && (
+									<DropdownMenu.Item icon={ProhibitIcon} onClick={actions.onUnblockSender}>
+										{t("Unblock the sender")}
+									</DropdownMenu.Item>
+								)}
 								<DropdownMenu.Separator />
+								{actions.onFilterLikeThis && (
+									<DropdownMenu.Item icon={FunnelIcon} onClick={actions.onFilterLikeThis}>
+										{t("Filter messages like this")}
+									</DropdownMenu.Item>
+								)}
 								<DropdownMenu.Item icon={MagnifyingGlassIcon} onClick={actions.onFindFromSender}>
 									{t("Find messages from this sender")}
 								</DropdownMenu.Item>

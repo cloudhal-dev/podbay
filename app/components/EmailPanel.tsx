@@ -22,6 +22,7 @@ import { LabelChips } from "~/components/LabelChip";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useDisplay } from "~/hooks/useDisplay";
 import { useOpenConversation } from "~/hooks/useOpenConversation";
+import { useSenderRules } from "~/hooks/useSenderRules";
 import { useSending } from "~/hooks/useSending";
 import { useShortcuts } from "~/hooks/useShortcuts";
 import { useUIStore } from "~/hooks/useUIStore";
@@ -73,6 +74,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 	const { data: currentMailbox } = useMailbox(mailboxId) as {
 		data?: Mailbox;
 	};
+	const senderRules = useSenderRules(mailboxId, currentMailbox);
 	const { closePanel, startCompose } = useUIStore();
 	const toastManager = useKumoToastManager();
 	const confirm = useConfirm();
@@ -406,6 +408,8 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 		onShowOriginal: msg.has_original ? () => setOriginalOf(msg) : undefined,
 		onDownloadOriginal: msg.has_original ? () => setSavingOf(msg) : undefined,
 		onUnsubscribe: leaveList(msg),
+		// Blocking the sender and filtering mail like this change the mailbox's rules (ADR-0008).
+		...senderRules.actionsFor(msg),
 	});
 	const allExpanded = allMessages.every((msg) => expandedMessages.has(msg.id));
 	// With five messages or more, the ones between the first and the last two that are folded
@@ -584,6 +588,7 @@ export default function EmailPanel({ emailId, siblings = [], inPane = false }: E
 					setSavingOf(msg);
 				}}
 			/>
+			{senderRules.dialog}
 			<EmailPanelDialogs
 				sourceViewEmail={sourceViewEmail}
 				mailboxEmail={currentMailbox?.email}

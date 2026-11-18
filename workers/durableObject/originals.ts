@@ -16,6 +16,7 @@
 
 import { Folders } from "../../shared/folders";
 import type { Unparsed } from "../../shared/original";
+import type { MessageFacts, Outcome } from "../../shared/rules";
 import { fileKey } from "./drafts";
 import type { AttachmentData, EmailData } from "./shapes";
 
@@ -50,10 +51,20 @@ export type Filed =
 			email: Omit<EmailData, "id" | "date">;
 			attachments: Omit<AttachmentData, "email_id">[];
 			auth_results: string | null;
+			/** What the rules are told about the message (ADR-0008); without them it is not answered. */
+			facts?: MessageFacts;
 	  }
 	| { kind: "unparsed"; why: Unparsed; recipient: string; auth_results: string | null };
 
 export type FiledAs = "filed" | "gone" | "too_large";
+
+/** The places the rules can file a message in. Nothing else is ever a target here. */
+const PLACES: Readonly<Record<string, string>> = {
+	inbox: Folders.INBOX,
+	archive: Folders.ARCHIVE,
+	spam: Folders.SPAM,
+	trash: Folders.TRASH,
+};
 
 /** Step c: the arrival's row, before a byte is stored. */
 export function beginArrival(
@@ -109,10 +120,21 @@ const tooBig = (error: unknown): boolean =>
  * own row, never from the caller. The attachment rows are written before their bytes, marked
  * as on their way (`uploading_since`), so a file is never in the bucket without a row.
  *
+ * `outcome` is what the mailbox's rules decided for the message (ADR-0008, decision 5): the
+ * place it is filed in, whether it is read or starred, and the labels it gets. Without one it
+ * is unread in the Inbox. A label is given only when it is a label of this mailbox, and never
+ * to a message that is filed in Spam or Trash.
+ *
  * `gone` when there is no such arrival: it was filed or removed already, and nothing is
  * written. `too_large` when the row would not fit: the caller files the message as unparsed.
  */
-export function fileArrival(storage: Storage, id: string, filed: Filed, now: number): FiledAs {
+export function fileArrival(
+	storage: Storage,
+	id: string,
+	filed: Filed,
+	now: number,
+	outcome?: Pick<Outcome, "place" | "read" | "starred" | "labels">,
+): FiledAs {
 	const { sql } = storage;
 	if (filed.kind === "parsed" && rowWeight(filed.email) > MAX_ROW_BYTES) return "too_large";
 	try {
@@ -120,13 +142,14 @@ export function fileArrival(storage: Storage, id: string, filed: Filed, now: num
 			const arrival = arrivalOf(sql, id);
 			if (arrival === null) return "gone";
 			const email = filed.kind === "parsed" ? filed.email : null;
+			const place = PLACES[outcome?.place ?? "inbox"] ?? Folders.INBOX;
 			sql.exec(
 				`INSERT INTO emails (id, folder_id, subject, sender, recipient, cc, bcc, date, read, starred,
 					body, in_reply_to, email_references, thread_id, message_id, raw_headers,
 					raw_key, raw_size, unparsed, auth_results)
-				 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0, 0, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)`,
+				 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?19, ?20, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)`,
 				arrival.id,
-				Folders.INBOX,
+				place,
 				email?.subject ?? "",
 				// A message that could not be read has the envelope sender as its sender.
 				email === null ? arrival.envelope_from.toLowerCase() : email.sender,
@@ -146,7 +169,19 @@ export function fileArrival(storage: Storage, id: string, filed: Filed, now: num
 				arrival.raw_size,
 				filed.kind === "parsed" ? null : filed.why,
 				filed.auth_results,
+				outcome?.read === true ? 1 : 0,
+				outcome?.starred === true ? 1 : 0,
 			);
+			if (place !== Folders.SPAM && place !== Folders.TRASH) {
+				for (const label of outcome?.labels ?? []) {
+					sql.exec(
+						`INSERT OR IGNORE INTO email_labels (email_id, label_id)
+						 SELECT ?1, id FROM labels WHERE id = ?2`,
+						arrival.id,
+						label,
+					);
+				}
+			}
 			if (filed.kind === "parsed") {
 				const since = new Date(now).toISOString();
 				for (const file of filed.attachments) {

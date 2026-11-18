@@ -53,6 +53,8 @@ describe("the routes that need fresh proof", () => {
 				"POST /api/v1/mailboxes/:mailboxId/members",
 				"PUT /api/v1/mailboxes/:mailboxId/members/:userId",
 				"DELETE /api/v1/mailboxes/:mailboxId/members/:userId",
+				// The automatic reply makes the mailbox send (ADR-0008, decision 8).
+				"PUT /api/v1/mailboxes/:mailboxId/auto-reply",
 			].sort(),
 		);
 	});

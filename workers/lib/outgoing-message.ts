@@ -10,9 +10,13 @@
  * Pure functions: no binding and no storage.
  */
 import { plainTextOf } from "../../shared/html-text";
+import { AUTO_REPLY } from "../../shared/rules";
 import { MAX_ATTACHMENTS, MAX_MESSAGE_BYTES, MAX_RECIPIENTS } from "../../shared/sending-limits";
 import type { SendEmailParams } from "../email-sender";
 import { buildThreadingHeaders } from "./email-helpers";
+
+/** The key of the field that marks an automatic reply, as a stored header list has it. */
+const AUTOMATIC = AUTO_REPLY.header.toLowerCase();
 
 /** Who a message is from, as a request gives it. */
 export type From = string | { email: string; name: string };
@@ -36,6 +40,8 @@ export function headerList(message: {
 	messageId: string;
 	inReplyTo: string | null;
 	references: readonly string[];
+	/** Mail the mailbox sends by itself (ADR-0008): marked, so that no program answers it. */
+	automatic?: true;
 }): string {
 	const { from, cc, bcc, inReplyTo, references } = message;
 	const headers: Header[] = [
@@ -50,6 +56,7 @@ export function headerList(message: {
 		...(references.length > 0
 			? [{ key: "references", value: references.map((one) => `<${one}>`).join(" ") }]
 			: []),
+		...(message.automatic === true ? [{ key: AUTOMATIC, value: AUTO_REPLY.headerValue }] : []),
 	];
 	return JSON.stringify(headers);
 }
@@ -108,14 +115,27 @@ function referencesOf(stored: string | null): string[] {
 	}
 }
 
+/**
+ * Whether a stored message is mail the mailbox sends by itself (ADR-0008): its header list
+ * says so, and only the automatic reply writes that. A send route never does, and a message
+ * that is taken back to Drafts loses its header list.
+ */
+export function isAutomatic(message: Pick<StoredMessage, "raw_headers">): boolean {
+	return headerOf(message.raw_headers, AUTOMATIC) !== null;
+}
+
 /** What the service is given for a stored message, without its files. */
 export function fromStored(message: StoredMessage): SendEmailParams & { to: string[] } {
 	const html = message.body ?? "";
 	const cc = addresses(message.cc);
 	const bcc = addresses(message.bcc);
-	const headers = message.in_reply_to
-		? buildThreadingHeaders(message.in_reply_to, referencesOf(message.email_references))
-		: {};
+	const headers: Record<string, string> = {
+		...(message.in_reply_to
+			? buildThreadingHeaders(message.in_reply_to, referencesOf(message.email_references))
+			: {}),
+		// RFC 3834: an automatic reply says that it is one, whatever else it carries.
+		...(isAutomatic(message) ? { [AUTO_REPLY.header]: AUTO_REPLY.headerValue } : {}),
+	};
 	return {
 		to: addresses(message.recipient),
 		...(cc.length > 0 ? { cc } : {}),

@@ -540,12 +540,12 @@ describe("forwarding, which needs fresh proof only when it changes", () => {
 			settings: { forwarding: { enabled: true, email: "elsewhere@outside.test" } },
 		});
 		expect(made.status).toBe(201);
+		// A new mailbox's settings carry no forwarding at all (ADR-0008, decision 12).
 		const read = await owner.fetch(`/api/v1/mailboxes/${encodeURIComponent(address)}`);
 		expect(await forwarding(owner)).toEqual({ enabled: false, email: "" });
-		expect((await json<{ settings: { forwarding: unknown } }>(read)).settings.forwarding).toEqual({
-			enabled: false,
-			email: "",
-		});
+		expect((await json<{ settings: { forwarding?: unknown } }>(read)).settings.forwarding).toBe(
+			undefined,
+		);
 	});
 
 	it("is changed by a session that signed in a moment ago", async () => {

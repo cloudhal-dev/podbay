@@ -26,6 +26,7 @@
  */
 import { Folders } from "../../shared/folders";
 import { retryAfterMs, SENDING, type Submission, type SubmissionState } from "../../shared/sending";
+import { isAutomatic } from "../lib/outgoing-message";
 import { dropUnfinished, type SentFields } from "./drafts";
 import { type CapFull, capFull, capsFreeAt, logSend, type SendKind, unlogSend } from "./sending";
 
@@ -104,6 +105,11 @@ export interface ToTake {
 	later: boolean;
 	/** The person whose right is asked again when it leaves. */
 	by: string;
+	/**
+	 * When that person asked, when it was not now: an automatic reply (ADR-0008) leaves on a
+	 * standing instruction, and the right is asked as of the time that was given.
+	 */
+	askedAt?: number;
 }
 
 export type Taken =
@@ -192,7 +198,7 @@ export function take(storage: Storage, message: ToTake, now: number): Taken {
 			 VALUES (?1, 'waiting', ?2, NULL, 0, NULL, ?3, ?4, NULL, NULL, NULL)`,
 			id,
 			sendAt,
-			iso(now),
+			iso(message.askedAt ?? now),
 			message.by,
 		);
 		return { id, send_at: sendAt, swept };
@@ -229,11 +235,23 @@ export type TakenBack = "draft" | "started" | "not_found";
  * Takes a message back (decision 10): a waiting one is a draft again, and a failed one loses
  * its mark. `started` when it was handed to the service already: too late.
  */
+/**
+ * Whether a message is a reply the mailbox made by itself (ADR-0008). It waits on the standing
+ * of the person who saved the reply, to the stranger who wrote: nobody takes it back as their
+ * draft, and nobody gives it a time, which would make it theirs to send.
+ */
+function mailboxOwn(sql: SqlStorage, id: string): boolean {
+	const row = [...sql.exec(`SELECT raw_headers FROM emails WHERE id = ?1`, id)][0];
+	return (
+		row !== undefined && isAutomatic({ raw_headers: (row.raw_headers as string | null) ?? null })
+	);
+}
+
 export function takeBack(storage: Storage, id: string, now: number): TakenBack {
 	const { sql } = storage;
 	return storage.transactionSync((): TakenBack => {
 		const row = submissionOf(sql, id);
-		if (row === null) return "not_found";
+		if (row === null || mailboxOwn(sql, id)) return "not_found";
 		if (row.state === "sending" || row.state === "sent") return "started";
 		sql.exec(`DELETE FROM submissions WHERE email_id = ?1`, id);
 		if (row.state === "waiting") toDraft(sql, id, now);
@@ -256,6 +274,7 @@ export function giveTime(
 ): NewTime {
 	const { sql } = storage;
 	return storage.transactionSync((): NewTime => {
+		if (mailboxOwn(sql, id)) return "not_found";
 		const changed = sql.exec(
 			`UPDATE submissions SET send_at = ?1, retry_at = NULL, attempts = 0, error = NULL,
 				requested_by = ?2, requested_at = ?3
@@ -392,6 +411,22 @@ export function fail(
 		const row = submissionOf(sql, id);
 		if (row === null || (row.state !== "waiting" && row.state !== "sending")) return false;
 		failRow(sql, row, reason, now, counted);
+		return true;
+	});
+}
+
+/**
+ * Removes a message that failed and that nobody wrote: an automatic reply (ADR-0008) that did
+ * not leave is not a draft of anyone's. It has no file and no original, so its rows are all
+ * there is. False when the message is not one that failed.
+ */
+export function forgetFailed(storage: Storage, id: string): boolean {
+	const { sql } = storage;
+	return storage.transactionSync(() => {
+		const row = submissionOf(sql, id);
+		if (row === null || row.state !== "failed") return false;
+		sql.exec(`DELETE FROM submissions WHERE email_id = ?1`, id);
+		sql.exec(`DELETE FROM emails WHERE id = ?1 AND folder_id = ?2`, id, Folders.DRAFT);
 		return true;
 	});
 }

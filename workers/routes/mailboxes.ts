@@ -78,14 +78,14 @@ mailboxes.post("/api/v1/mailboxes", async (c) => {
 		return c.json({ error: "Mailbox creation is restricted to configured EMAIL_ADDRESSES" }, 403);
 	}
 
+	// A mailbox's settings carry no `forwarding` and no `autoReply` (ADR-0008, decision 12):
+	// nothing forwards, and the automatic reply is an object of its own in the mailbox
+	// (`./rules`). A value an older mailbox has stored under either key is read by nothing.
+	const { forwarding: _forwarding, autoReply: _autoReply, ...given } = parsed.data.settings ?? {};
 	const settings = {
 		fromName: parsed.data.name,
 		signature: { enabled: false, text: "" },
-		autoReply: { enabled: false, subject: "", message: "" },
-		...parsed.data.settings,
-		// A new mailbox never forwards. Whoever creates one may not be able to read it, and
-		// forwarding is changed on its own route, with fresh proof.
-		forwarding: { enabled: false, email: "" },
+		...given,
 	};
 	if (JSON.stringify(settings).length > MAX_SETTINGS_BYTES) {
 		return c.json({ error: "Settings are too large" }, 400);

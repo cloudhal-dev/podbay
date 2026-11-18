@@ -155,6 +155,16 @@ export const ROUTE_TABLE: readonly RouteEntry[] = [
 	{ method: "GET", path: `${M}/known-addresses`, right: "mailbox.write" },
 	{ method: "DELETE", path: `${M}/known-addresses/:knownId`, right: "mailbox.write" },
 	{ method: "DELETE", path: `${M}/known-addresses`, right: "mailbox.manage" },
+
+	// The rules for incoming mail (ADR-0008). Whoever reads the mailbox sees them; changing
+	// them is the owner's, because in a shared mailbox a rule decides where everyone's mail
+	// goes. The automatic reply makes the mailbox send, so changing it also needs fresh proof.
+	{ method: "GET", path: `${M}/rules`, right: "mailbox.read" },
+	{ method: "PUT", path: `${M}/rules`, right: "mailbox.manage" },
+	{ method: "POST", path: `${M}/blocked-senders`, right: "mailbox.manage" },
+	{ method: "DELETE", path: `${M}/blocked-senders`, right: "mailbox.manage" },
+	{ method: "GET", path: `${M}/auto-reply`, right: "mailbox.read" },
+	{ method: "PUT", path: `${M}/auto-reply`, right: "mailbox.manage", fresh: true },
 ];
 
 /** The table entry of a matched route, or undefined when the route is not in the table. */

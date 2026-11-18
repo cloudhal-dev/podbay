@@ -33,6 +33,7 @@ import { people } from "./routes/people";
 import { places } from "./routes/places";
 import { recovery } from "./routes/recovery";
 import { handleForwardEmail, handleReplyEmail } from "./routes/reply-forward";
+import { rules } from "./routes/rules";
 import { sending } from "./routes/sending";
 
 type AppContext = Context<ApiContext>;
@@ -85,6 +86,7 @@ app.route("/", bulk);
 app.route("/", knownAddresses);
 app.route("/", live);
 app.route("/", sending);
+app.route("/", rules);
 app.route("/", recovery);
 
 // -- Config ---------------------------------------------------------

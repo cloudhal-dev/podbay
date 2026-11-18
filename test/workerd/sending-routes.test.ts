@@ -467,9 +467,9 @@ describe("the mailbox's database", () => {
 			sent("received", MINUTE, "inbox");
 			applyMigrations(sql, mailboxMigrations, state.storage);
 		});
-		// The last migration is this record's, and it is the seventeenth.
-		expect(mailboxMigrations.at(-1)?.name).toBe("17_submissions");
-		expect(mailboxMigrations).toHaveLength(17);
+		// This record's migration is the seventeenth. The one after it is ADR-0008's
+		// (test/workerd/rules.test.ts).
+		expect(mailboxMigrations[16]?.name).toBe("17_submissions");
 
 		// Nothing is rewritten: mail in Sent has no row and reads as sent.
 		expect(await rowsOf(address, `SELECT email_id FROM submissions`)).toEqual([]);
