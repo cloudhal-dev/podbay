@@ -20,3 +20,4 @@ Decisions are immutable once accepted. A later ADR supersedes an earlier one; th
 | [0014](0014-acting-on-many-conversations.md) | One request acts on many conversations, and a list has an order a person chooses | Accepted, 2026-11-17 |
 | [0015](0015-the-original-message-is-kept.md) | The original message is kept | Accepted, 2026-11-17 |
 | [0016](0016-outgoing-mail-waits-before-it-leaves.md) | Outgoing mail waits before it leaves | Accepted, 2026-11-17 |
+| [0017](0017-the-repository-opens-before-the-name-is-reviewed.md) | The repository opens before the name is reviewed (amends 0001, decision 8, and 0003) | Accepted, 2026-11-18 |
