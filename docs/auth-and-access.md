@@ -28,7 +28,7 @@ Better Auth is used for identity only. Authorisation is Podbay's own code, in on
 
 | Topic | Design |
 |---|---|
-| Methods | Password, passkey, or both. An authenticator app with recovery codes as the second step. A passkey satisfies the second step by itself: it is bound to the site and must verify the person. There are no trusted devices and no codes by mail or text message: a mail product cannot mail a code to the mailbox being opened |
+| Methods | Password, passkey, or both. An authenticator app with recovery codes as the second step. A passkey satisfies the second step by itself: it is bound to the site and must verify the person. A code from the app works once. There are no trusted devices and no codes by mail or text message: a mail product cannot mail a code to the mailbox being opened |
 | New accounts | By invitation only. An administrator creates a single-use invitation link. There is no open registration, ever |
 | First owner | A new instance is closed. The first owner is created only by a call that carries the setup token the deployer set. The setup page never trusts the first visitor |
 | Sessions | Server-side sessions in D1. Cookies are host-only, `HttpOnly`, `Secure`, `SameSite=Lax`. A person sees and can end their sessions. A password change ends all of them |
