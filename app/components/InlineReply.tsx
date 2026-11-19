@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { Button } from "@cloudflare/kumo";
 import { ArrowSquareOutIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 import { useUIStore } from "~/hooks/useUIStore";
@@ -46,24 +47,26 @@ export default function InlineReply() {
 				<h2 className="m-0 min-w-0 flex-1 truncate text-sm font-medium text-kumo-default">
 					{t(TITLES[mode])}
 				</h2>
-				<button
-					type="button"
+				{/* Kumo's square buttons at the default size, 36 px in the 40 px bar, as the writing
+				    window's title bar has; under the pointer they take the fill they had. */}
+				<Button
+					variant="ghost"
+					shape="square"
 					onClick={() => useUIStore.setState({ composePlacement: "window" })}
 					aria-label={t("Open in a window")}
 					title={t("Open in a window")}
-					className="cursor-pointer rounded border-0 bg-transparent p-1.5 text-kumo-strong hover:bg-kumo-fill"
-				>
-					<ArrowSquareOutIcon size={16} />
-				</button>
-				<button
-					type="button"
+					className="text-kumo-strong hover:bg-kumo-fill"
+					icon={<ArrowSquareOutIcon size={16} />}
+				/>
+				<Button
+					variant="ghost"
+					shape="square"
 					onClick={() => void form.saveAndClose()}
 					aria-label={t("Save and close")}
 					title={t("Save and close")}
-					className="cursor-pointer rounded border-0 bg-transparent p-1.5 text-kumo-strong hover:bg-kumo-fill"
-				>
-					<XIcon size={16} />
-				</button>
+					className="text-kumo-strong hover:bg-kumo-fill"
+					icon={<XIcon size={16} />}
+				/>
 			</div>
 			<ComposePanel form={form} />
 		</section>
