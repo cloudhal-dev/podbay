@@ -3,28 +3,15 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import {
-	Button,
-	Input,
-	LayerDialog,
-	Loader,
-	Select,
-	Text,
-	useKumoToastManager,
-} from "@cloudflare/kumo";
-import { EnvelopeIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
+import { Button, Loader } from "@cloudflare/kumo";
+import { EnvelopeIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useEffect, useRef, useState } from "react";
-import { Folders } from "shared/folders";
-import { useFreshProof } from "~/components/FreshProof";
-import Registry from "~/components/Registry";
-import { plural, t } from "~/i18n";
-import { rich } from "~/i18n/rich";
+import { useEffect, useRef } from "react";
+import { t } from "~/i18n";
 import { signOut, useMe } from "~/lib/session";
-import { useFolders } from "~/queries/folders";
 import { queryKeys } from "~/queries/keys";
-import { useCreateMailbox, useDeleteMailbox, useMailboxes } from "~/queries/mailboxes";
+import { useMailboxes } from "~/queries/mailboxes";
 import api from "~/services/api";
 
 export function meta() {
@@ -32,15 +19,11 @@ export function meta() {
 }
 
 export default function HomeRoute() {
-	const toastManager = useKumoToastManager();
 	const {
 		data: mailboxes = [],
 		refetch: refetchMailboxes,
 		isFetched: mailboxesFetched,
 	} = useMailboxes();
-	const createMailbox = useCreateMailbox();
-	const deleteMailbox = useDeleteMailbox();
-	const withFreshProof = useFreshProof();
 
 	const { data: configData } = useQuery({
 		queryKey: queryKeys.config,
@@ -54,25 +37,6 @@ export default function HomeRoute() {
 	const { data: me } = useMe();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
-	const [isCreateOpen, setIsCreateOpen] = useState(false);
-	const [newPrefix, setNewPrefix] = useState("");
-	const [selectedDomain, setSelectedDomain] = useState("");
-	const [newName, setNewName] = useState("");
-	const [isCreating, setIsCreating] = useState(false);
-	const [createError, setCreateError] = useState<string | null>(null);
-	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-	const [mailboxToDelete, setMailboxToDelete] = useState<{
-		id: string;
-		email: string;
-	} | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
-
-	// Set default domain when config loads
-	useEffect(() => {
-		if (domains.length > 0 && !selectedDomain) {
-			setSelectedDomain(domains[0]);
-		}
-	}, [domains, selectedDomain]);
 
 	// Auto-create mailboxes from config (run once when both data sources are ready)
 	const autoCreateDone = useRef(false);
@@ -100,51 +64,6 @@ export default function HomeRoute() {
 		};
 	}, [emailAddresses, mailboxes, mailboxesFetched, refetchMailboxes]);
 
-	const handleCreate = async (e: FormEvent) => {
-		e.preventDefault();
-		setCreateError(null);
-		if (!newPrefix || !selectedDomain) {
-			setCreateError(t("Please fill in all fields"));
-			return;
-		}
-		const email = `${newPrefix}@${selectedDomain}`;
-		const name = newName || newPrefix;
-		setIsCreating(true);
-		try {
-			await createMailbox.mutateAsync({ email, name });
-			toastManager.add({ title: t("Mailbox created successfully!") });
-			setIsCreateOpen(false);
-			setNewPrefix("");
-			setNewName("");
-		} catch (err: unknown) {
-			const message = (err instanceof Error ? err.message : null) || t("Failed to create mailbox");
-			setCreateError(message);
-		} finally {
-			setIsCreating(false);
-		}
-	};
-
-	// How many messages wait to leave the mailbox that is about to be deleted.
-	const { data: placesOfDoomed = [] } = useFolders(isDeleteOpen ? mailboxToDelete?.id : undefined);
-	const waitingToLeave =
-		placesOfDoomed.find((place) => place.id === Folders.SCHEDULED)?.waiting ?? 0;
-
-	const handleDelete = async () => {
-		if (!mailboxToDelete) return;
-		setIsDeleting(true);
-		try {
-			const id = mailboxToDelete.id;
-			await withFreshProof(() => deleteMailbox.mutateAsync(id));
-			toastManager.add({ title: t("Mailbox deleted") });
-			setIsDeleteOpen(false);
-			setMailboxToDelete(null);
-		} catch {
-			toastManager.add({ title: t("Failed to delete mailbox"), variant: "error" });
-		} finally {
-			setIsDeleting(false);
-		}
-	};
-
 	const isConfigured = emailAddresses.length > 0;
 	const accounts = isConfigured
 		? emailAddresses.map((addr) => ({
@@ -164,15 +83,6 @@ export default function HomeRoute() {
 				<div className="mb-8">
 					<div className="flex items-center justify-between">
 						<h1 className="text-2xl font-bold text-kumo-default">{t("Mailboxes")}</h1>
-						{!isConfigured && canManage && (
-							<Button
-								variant="primary"
-								icon={<PlusIcon size={16} />}
-								onClick={() => setIsCreateOpen(true)}
-							>
-								{t("New Mailbox")}
-							</Button>
-						)}
 					</div>
 					{me && (
 						<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-kumo-subtle">
@@ -228,24 +138,6 @@ export default function HomeRoute() {
 									</div>
 									<div className="text-sm text-kumo-subtle">{account.email}</div>
 								</div>
-								{!isConfigured && (
-									<Button
-										variant="ghost"
-										size="sm"
-										shape="square"
-										icon={<TrashIcon size={16} />}
-										aria-label={t("Delete mailbox {name}", { name: account.email })}
-										onClick={(e) => {
-											e.preventDefault();
-											e.stopPropagation();
-											setMailboxToDelete({
-												id: account.id,
-												email: account.email,
-											});
-											setIsDeleteOpen(true);
-										}}
-									/>
-								)}
 							</RouterLink>
 						))}
 					</div>
@@ -267,130 +159,16 @@ export default function HomeRoute() {
 										? t("Create a mailbox to start sending and receiving emails with your domain.")
 										: t("You are not a member of any mailbox yet. A mailbox owner can add you.")}
 							</p>
+							{/* Mailboxes are made in the administration area (#127). */}
 							{!isConfigured && canManage && (
-								<Button
-									variant="primary"
-									icon={<PlusIcon size={16} />}
-									onClick={() => setIsCreateOpen(true)}
-								>
-									{t("Create Mailbox")}
-								</Button>
+								<RouterLink to="/admin/mailboxes" className="text-sm text-kumo-default underline">
+									{t("Mailboxes in Administration")}
+								</RouterLink>
 							)}
 						</div>
 					</div>
 				)}
 			</div>
-
-			{canManage && (
-				<div className="mx-auto max-w-2xl px-4 pb-16 md:px-6">
-					<Registry />
-				</div>
-			)}
-
-			<LayerDialog.Root open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-				<LayerDialog.Content size="sm">
-					<LayerDialog.Title>{t("Create a mailbox")}</LayerDialog.Title>
-					<LayerDialog.Body>
-						<form id="create-mailbox" onSubmit={handleCreate} className="space-y-4">
-							{createError && (
-								<Text variant="error" size="sm">
-									{createError}
-								</Text>
-							)}
-							<div>
-								<span className="text-sm font-medium text-kumo-default mb-1.5 block">
-									{t("Email Address")}
-								</span>
-								<div className="flex items-center gap-2">
-									<div className="flex-1">
-										<Input
-											aria-label={t("Address prefix")}
-											placeholder={t("info")}
-											size="sm"
-											value={newPrefix}
-											onChange={(e) => setNewPrefix(e.target.value)}
-											required
-										/>
-									</div>
-									<span className="text-sm text-kumo-subtle">@</span>
-									{domains.length > 1 ? (
-										<div className="flex-1">
-											<Select
-												aria-label={t("Domain")}
-												value={selectedDomain}
-												onValueChange={(value) => {
-													if (value) setSelectedDomain(value);
-												}}
-											>
-												{domains.map((d) => (
-													<Select.Option key={d} value={d}>
-														{d}
-													</Select.Option>
-												))}
-											</Select>
-										</div>
-									) : (
-										<span className="text-sm text-kumo-subtle">
-											{selectedDomain || t("no domain")}
-										</span>
-									)}
-								</div>
-							</div>
-							<Input
-								label={t("Display Name (optional)")}
-								placeholder={t("Info")}
-								size="sm"
-								value={newName}
-								onChange={(e) => setNewName(e.target.value)}
-							/>
-						</form>
-					</LayerDialog.Body>
-					<LayerDialog.Actions dismissLabel={t("Cancel")}>
-						<LayerDialog.Action
-							type="submit"
-							form="create-mailbox"
-							loading={isCreating}
-							disabled={!selectedDomain}
-						>
-							{t("Create")}
-						</LayerDialog.Action>
-					</LayerDialog.Actions>
-				</LayerDialog.Content>
-			</LayerDialog.Root>
-
-			<LayerDialog.Alert
-				open={isDeleteOpen}
-				onOpenChange={(open) => {
-					setIsDeleteOpen(open);
-					if (!open) setMailboxToDelete(null);
-				}}
-			>
-				<LayerDialog.Content size="sm">
-					<LayerDialog.Title>{t("Delete this mailbox?")}</LayerDialog.Title>
-					<LayerDialog.Body>
-						<p className="text-sm text-kumo-strong">
-							{rich("{mailbox} and every message in it will be deleted. This cannot be undone.", {
-								mailbox: <strong className="text-kumo-default">{mailboxToDelete?.email}</strong>,
-							})}
-						</p>
-						{/* A deleted mailbox sends nothing: what waits in it is said first (ADR-0016). */}
-						{waitingToLeave > 0 && (
-							<p className="mt-2 text-sm text-kumo-strong">
-								{plural(
-									waitingToLeave,
-									"{count} message is waiting to be sent from it. It will not be sent.",
-									"{count} messages are waiting to be sent from it. They will not be sent.",
-								)}
-							</p>
-						)}
-					</LayerDialog.Body>
-					<LayerDialog.Actions dismissLabel={t("Cancel")}>
-						<LayerDialog.Action variant="destructive" loading={isDeleting} onClick={handleDelete}>
-							{t("Delete")}
-						</LayerDialog.Action>
-					</LayerDialog.Actions>
-				</LayerDialog.Content>
-			</LayerDialog.Alert>
 		</div>
 	);
 }

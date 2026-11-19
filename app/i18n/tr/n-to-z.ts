@@ -63,6 +63,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	On: "Açık",
 	"On {date}, {sender} wrote:": "{sender}, {date} tarihinde şunu yazdı:",
 	"On: messages of a conversation together": "Açık: bir yazışmanın iletileri bir arada",
+	"Only an owner of this mailbox can delete it.":
+		"Bu posta kutusunu yalnızca bir sahibi silebilir.",
 	Open: "Aç",
 	"Open in a new tab": "Yeni sekmede aç",
 	"Open in a window": "Pencerede aç",
@@ -79,6 +81,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Order of a list": "Liste sırası",
 	"Original message": "Özgün ileti",
 	Owner: "Sahip",
+	Owners: "Sahipler",
 	Passkey: "Geçiş anahtarı",
 	Passkeys: "Geçiş anahtarları",
 	Password: "Parola",
@@ -278,6 +281,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The link sent to {email} stops working. You can invite them again.":
 		"{email} adresine gönderilen bağlantı artık çalışmaz. Bu kişiyi yeniden davet edebilirsiniz.",
 	"The list of people could not be loaded.": "Kişi listesi yüklenemedi.",
+	"The mailbox and every message in it are deleted. This cannot be undone.":
+		"Posta kutusu ve içindeki her ileti silinir. Bu geri alınamaz.",
 	"The mailboxes could not be loaded.": "Posta kutuları yüklenemedi.",
 	"The mailboxes you can open, and the keys of the AI clients you connected.":
 		"Açabildiğiniz posta kutuları ve bağladığınız yapay zekâ istemcilerinin anahtarları.",

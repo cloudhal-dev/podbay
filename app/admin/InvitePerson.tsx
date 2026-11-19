@@ -8,6 +8,7 @@ import { useFreshProof } from "~/components/FreshProof";
 import { t } from "~/i18n";
 import { type CreatedInvitation, invite } from "~/lib/session";
 import { ApiError } from "~/services/api";
+import Card from "./Card";
 import { INVITATIONS } from "./Invitations";
 
 /**
@@ -43,14 +44,13 @@ export default function InvitePerson({ canInviteAdmin }: { canInviteAdmin: boole
 	}
 
 	return (
-		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
-			<h2 className="text-base font-semibold text-kumo-default">{t("Invite a person")}</h2>
-			<p className="text-sm text-kumo-subtle mt-1">
-				{t(
-					"They get an account on this instance. They see no mailbox until a mailbox owner adds them.",
-				)}
-			</p>
-			<form onSubmit={submit} className="mt-4 flex flex-wrap items-end gap-2">
+		<Card
+			title={t("Invite a person")}
+			description={t(
+				"They get an account on this instance. They see no mailbox until a mailbox owner adds them.",
+			)}
+		>
+			<form onSubmit={submit} className="flex flex-wrap items-end gap-2">
 				<div className="flex-1 min-w-48">
 					<Input
 						label={t("Email")}
@@ -96,6 +96,6 @@ export default function InvitePerson({ canInviteAdmin }: { canInviteAdmin: boole
 					<code className="mt-1 block break-all text-xs text-kumo-default">{created.link}</code>
 				</div>
 			)}
-		</section>
+		</Card>
 	);
 }
