@@ -20,7 +20,8 @@
  *   alone. The count of such controls in a listed file must be the number listed.
  * - **No control made of a role.** A plain element with the role of a control (`button`,
  *   `checkbox`, `radio`, `switch`, `combobox`, `listbox`, `textbox`, `slider`) is refused, except
- *   as a debt in `ROLES_TO_MOVE`.
+ *   as a debt in `ROLES_TO_MOVE`, or where `ROLES_ON_PURPOSE` keeps that role in that file with its
+ *   reason and its count.
  *
  * A tag is read whole, across lines, braces and quotes, so an attribute on its own line counts.
  *
@@ -71,6 +72,13 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 		count: 1,
 		reason:
 			"Kumo 2.18.1 has no field for a date and a time: its DatePicker is a calendar only. The browser's own field stands here alone, sized to Kumo's default, and every screen uses this wrapper.",
+	},
+	{
+		file: "app/components/AddressField.tsx",
+		element: "input",
+		count: 1,
+		reason:
+			"The field of addresses in a line of the writing window: no box, no line, no corner, 13 px type, the addresses as chips before it and the line's hairline under it. Kumo 2.18.1's Input, Combobox and TagInput are boxes with a line and a corner, and a height, padding or type size by hand is refused, so the line would become a form's field.",
 	},
 	{
 		file: "app/components/Header.tsx",
@@ -162,7 +170,6 @@ export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
  */
 export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> = {
 	"app/components/AccessKeys.tsx": { input: 1, select: 2 },
-	"app/components/AddressField.tsx": { button: 2, input: 1 },
 	"app/components/AgentPanel.tsx": { button: 1, textarea: 1 },
 	"app/components/AgentSidebar.tsx": { button: 2 },
 	"app/components/ComposePanel.tsx": { button: 3, input: 2 },
@@ -187,13 +194,30 @@ export const SIZED_BY_HAND: Readonly<Record<string, number>> = {
 	"app/components/SendLater.tsx": 1,
 };
 
+/** A plain element with the role of a control, kept on purpose: one line is one file and role. */
+export interface RoleOnPurpose {
+	file: string;
+	role: string;
+	count: number;
+	reason: string;
+}
+
+/** Plain elements that keep the role of a control on purpose, each with why. */
+export const ROLES_ON_PURPOSE: readonly RoleOnPurpose[] = [
+	{
+		file: "app/components/AddressField.tsx",
+		role: "listbox",
+		count: 1,
+		reason:
+			"The addresses the address field offers as one types: the list its combobox controls (aria-controls, aria-activedescendant), which keeps the focus in the field while a suggestion is pressed. It belongs to the field, which stays the browser's own (see ON_PURPOSE), so it cannot be Kumo's Combobox list.",
+	},
+];
+
 /**
  * Plain elements with the role of a control when the check came in, by file. #82 and #83 decide
  * them. Lower a number when one goes; never raise one.
  */
-export const ROLES_TO_MOVE: Readonly<Record<string, number>> = {
-	"app/components/AddressField.tsx": 1,
-};
+export const ROLES_TO_MOVE: Readonly<Record<string, number>> = {};
 
 /** The components a file of `app/components/controls/` exports: wrappers, held as Kumo's are. */
 function wrappersOf(files: ReadonlyMap<string, string>): string[] {
@@ -258,6 +282,7 @@ export function controlProblems(
 	sizedByHand: Readonly<Record<string, number>> = SIZED_BY_HAND,
 	rolesToMove: Readonly<Record<string, number>> = ROLES_TO_MOVE,
 	roundOnPurpose: readonly RoundOnPurpose[] = ROUND_ON_PURPOSE,
+	rolesOnPurpose: readonly RoleOnPurpose[] = ROLES_ON_PURPOSE,
 ): string[] {
 	const problems: string[] = [];
 	// A control is Kumo's, one of its dotted parts, or a wrapper of app/components/controls/.
@@ -325,9 +350,20 @@ export function controlProblems(
 				`${file}: ${sized.length} Kumo controls sized by hand, fewer than the ${allowed} listed; lower SIZED_BY_HAND in scripts/checks/controls.ts`,
 			);
 		}
-		const roles = tagsOf(text, ["[a-z][a-z0-9]*"]).filter(
+		const found = tagsOf(text, ["[a-z][a-z0-9]*"]).filter(
 			({ name, tag }) => !(NATIVE as readonly string[]).includes(name) && CONTROL_ROLES.test(tag),
 		);
+		// What is kept on purpose, role by role, is taken out first; the rest is debt or refused.
+		const roles = [...found];
+		for (const one of rolesOnPurpose.filter((kept) => kept.file === file)) {
+			const ofRole = roles.filter(({ tag }) => CONTROL_ROLES.exec(tag)?.[1] === one.role);
+			if (ofRole.length < one.count) {
+				problems.push(
+					`${file}: ROLES_ON_PURPOSE lists ${one.count} with role "${one.role}", the file has ${ofRole.length}`,
+				);
+			}
+			for (const taken of ofRole.slice(0, one.count)) roles.splice(roles.indexOf(taken), 1);
+		}
 		const rolesAllowed = rolesToMove[file] ?? 0;
 		if (roles.length > rolesAllowed) {
 			problems.push(
@@ -353,6 +389,12 @@ export function controlProblems(
 	for (const one of onPurpose) {
 		if (one.reason.trim().length < 20)
 			problems.push(`${one.file}: an ON_PURPOSE line needs its reason`);
+	}
+	for (const one of rolesOnPurpose) {
+		if (one.reason.trim().length < 20)
+			problems.push(`${one.file}: a ROLES_ON_PURPOSE line needs its reason`);
+		if (!files.has(one.file))
+			problems.push(`${one.file}: listed in ROLES_ON_PURPOSE and gone; remove its line`);
 	}
 	for (const one of roundOnPurpose) {
 		if (one.reason.trim().length < 20)
