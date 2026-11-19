@@ -32,9 +32,15 @@ async function writeFirst(page: Page, subject: string, words: string): Promise<v
 }
 
 /** The first message is in Drafts with its subject and its words. */
-async function expectKept(page: Page, subject: string, words: string): Promise<void> {
-	// The second message stays as it is: nothing in it was written, so leaving it keeps nothing.
-	await compose(page).getByRole("button", { name: "Discard" }).click();
+async function expectKept(
+	page: Page,
+	subject: string,
+	words: string,
+	file?: string,
+): Promise<void> {
+	// A second message open stays as it is: nothing in it was written, so leaving it keeps nothing.
+	if ((await compose(page).count()) > 0)
+		await compose(page).getByRole("button", { name: "Discard" }).click();
 	await expect(compose(page)).toHaveCount(0);
 	await goToDrafts(page);
 	await expect(row(page, subject)).toHaveCount(1);
@@ -42,6 +48,8 @@ async function expectKept(page: Page, subject: string, words: string): Promise<v
 	await page.getByRole("button", { name: "Edit", exact: true }).first().click();
 	await expect(compose(page).getByLabel("Subject")).toHaveValue(subject);
 	await expect(compose(page).locator(".ProseMirror")).toContainText(words);
+	if (file)
+		await expect(compose(page).getByRole("list", { name: "Attached files" })).toContainText(file);
 	await compose(page).getByRole("button", { name: "Discard" }).click();
 }
 
@@ -201,5 +209,123 @@ test("when the message being written cannot be saved, it stays open and the seco
 	// The failed saves are logged (a 503, and the app's own note of a failed change); nothing else.
 	expect(app.watch.errors.filter((one) => !/503|"event":"ui\.mutation_failed"/.test(one))).toEqual(
 		[],
+	);
+});
+
+/** Makes another mailbox of the instance, as the owner, and returns its address. */
+async function anotherMailbox(page: Page, name: string): Promise<string> {
+	const email = `${name}-${Date.now()}@example.com`;
+	const origin = new URL(page.url()).origin;
+	const made = await page.request.post(`${origin}/api/v1/mailboxes`, {
+		data: { email, name },
+		headers: { origin },
+	});
+	expect(made.status(), "the other mailbox is made").toBe(201);
+	return email;
+}
+
+/** Leaves for the list of mailboxes, as the rail does, and opens one of them. */
+async function openMailbox(page: Page, email: string): Promise<void> {
+	await page.getByRole("link", { name: "All mailboxes" }).click();
+	await page.getByRole("link", { name: new RegExp(email.replace(/[.]/g, "\\.")) }).click();
+	await expect(page).toHaveURL(new RegExp(`/mailbox/${encodeURIComponent(email)}`));
+}
+
+test("a message being written is saved in its own mailbox when another opens, and nothing of it reaches the other", async ({
+	page,
+	app,
+}) => {
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	const other = await anotherMailbox(page, "second");
+	await page.getByRole("button", { name: "Compose" }).first().click();
+	await writeFirst(page, "Second: written in the first mailbox", "Words for the first mailbox.");
+	await openMailbox(page, other);
+
+	// In the other mailbox the window is closed, and its Drafts holds nothing.
+	await expect(compose(page)).toHaveCount(0);
+	await goToDrafts(page);
+	await expect(page.getByRole("heading", { name: "No drafts" })).toBeVisible();
+	await expect(row(page, "Second: written in the first mailbox")).toHaveCount(0);
+
+	// The first mailbox's Drafts holds the message, with every word.
+	await openMailbox(page, app.account.mailbox);
+	await expectKept(page, "Second: written in the first mailbox", "Words for the first mailbox.");
+});
+
+test("when the message cannot be saved as another mailbox opens, the person is taken back to it, open", async ({
+	page,
+	app,
+}) => {
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	const other = await anotherMailbox(page, "third");
+	await page.route(/\/api\/v1\/mailboxes\/[^/]+\/drafts(?:\/[^/]+)?$/, (route) =>
+		["POST", "PUT"].includes(route.request().method())
+			? route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"down"}' })
+			: route.fallback(),
+	);
+	await page.getByRole("button", { name: "Compose" }).first().click();
+	await writeFirst(
+		page,
+		"Second: a message that cannot move",
+		"Words that stay with their mailbox.",
+	);
+	await page.getByRole("link", { name: "All mailboxes" }).click();
+	await page.getByRole("link", { name: new RegExp(other.replace(/[.]/g, "\\.")) }).click();
+
+	// Back in the message's own mailbox, with the message open, every word, and why.
+	await expect(page).toHaveURL(
+		new RegExp(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`),
+	);
+	await expect(compose(page).getByText("down", { exact: true })).toBeVisible();
+	await expect(compose(page).getByLabel("Subject")).toHaveValue(
+		"Second: a message that cannot move",
+	);
+	await expect(compose(page).locator(".ProseMirror")).toContainText(
+		"Words that stay with their mailbox.",
+	);
+	expect(app.watch.errors.filter((one) => !/503|"event":"ui\.mutation_failed"/.test(one))).toEqual(
+		[],
+	);
+});
+
+test("a file still on its way keeps the message open until it has arrived, and the draft then has it", async ({
+	page,
+	app,
+}) => {
+	let release = () => {};
+	const held = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	await page.route(/\/drafts\/[^/]+\/attachments\/[^/]+$/, async (route) => {
+		if (route.request().method() !== "PUT") return route.fallback();
+		await held;
+		await route.continue().catch(() => {});
+	});
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await page.getByRole("button", { name: "Compose" }).first().click();
+	await writeFirst(page, "Second: a message with a file on its way", "Words and a file.");
+	await compose(page)
+		.getByLabel("Files to attach")
+		.setInputFiles([{ name: "plan.txt", mimeType: "text/plain", buffer: Buffer.from("the plan") }]);
+	const attached = compose(page).getByRole("list", { name: "Attached files" });
+	await expect(attached.getByRole("listitem")).toHaveCount(1);
+
+	// While the file travels, the next message does not begin, and the window says why.
+	await page.getByRole("button", { name: "Compose" }).first().click();
+	await expect(compose(page).getByText("Wait until the files are attached.")).toBeVisible();
+	await expect(compose(page).getByLabel("Subject")).toHaveValue(
+		"Second: a message with a file on its way",
+	);
+
+	// Once it has arrived, the next message begins and the first draft holds the file.
+	release();
+	await expect(attached.getByRole("listitem").filter({ hasText: "plan.txt" })).toContainText("8 B");
+	await page.getByRole("button", { name: "Compose" }).first().click();
+	await expect(compose(page).getByLabel("Subject")).toHaveValue("");
+	await expectKept(
+		page,
+		"Second: a message with a file on its way",
+		"Words and a file.",
+		"plan.txt",
 	);
 });

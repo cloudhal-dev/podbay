@@ -4,6 +4,7 @@
 // Modified by the Podbay contributors.
 
 import { useKumoToastManager } from "@cloudflare/kumo";
+import { useRouter } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Folders } from "shared/folders";
 import { MAX_RECIPIENTS } from "shared/sending-limits";
@@ -11,7 +12,7 @@ import { useDisplay } from "~/hooks/useDisplay";
 import { type DraftFile, type LeftBehind, useDraftFiles } from "~/hooks/useDraftFiles";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { type SendRoute, useSending } from "~/hooks/useSending";
-import { useUIStore } from "~/hooks/useUIStore";
+import { type ComposeOptions, useUIStore } from "~/hooks/useUIStore";
 import { quoteLanguage, t } from "~/i18n";
 import {
 	buildQuotedReplyBlock,
@@ -174,6 +175,7 @@ export type ComposeForm = ReturnType<typeof useComposeForm>;
 
 export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const toastManager = useKumoToastManager();
+	const router = useRouter();
 	const { composeOptions, closePanel, closeCompose } = useUIStore();
 	const { data: currentMailbox } = useMailbox(mailboxId);
 	const knownAddresses = useKnownAddresses(mailboxId, currentMailbox?.email);
@@ -243,18 +245,39 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			lastInitializedOptionsRef.current = composeOptions;
 			return;
 		}
+		/**
+		 * The message written stays: the one asked for does not begin. When the person went to
+		 * another mailbox, they are taken back to the message's own.
+		 */
+		const stay = async (written: ComposeOptions, box: string | undefined) => {
+			keeping.current = true;
+			if (box && box !== mailboxId) {
+				await router.navigate({
+					to: "/mailbox/$mailboxId/emails/$folder",
+					params: { mailboxId: box, folder: Folders.INBOX },
+				});
+			}
+			keeping.current = false;
+			useUIStore.setState({
+				composeOptions: written,
+				composePlacement: "window",
+				isComposing: true,
+			});
+		};
+		// A file still on its way would not reach the draft whole when another message begins: as
+		// Send does, the window waits for it and says so. Closing the window (Save and close, or
+		// another mailbox) does not wait: the file on its way still reaches the draft, as before.
+		if (previous && isComposing && draftFiles.uploading) {
+			setError(t("Wait until the files are attached."));
+			void stay(previous, writtenIn.current);
+			return;
+		}
 		if (previous && touched) {
 			keeping.current = true;
-			const sameMailbox = writtenIn.current === mailboxId;
 			void keepWritten().then((saved) => {
 				keeping.current = false;
-				if (!saved && sameMailbox) {
-					// The message written stays: the one asked for does not begin.
-					useUIStore.setState({
-						composeOptions: previous,
-						composePlacement: "window",
-						isComposing: true,
-					});
+				if (!saved) {
+					void stay(previous, writtenIn.current);
 					return;
 				}
 				setKept((count) => count + 1);
@@ -299,6 +322,15 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			void draftFiles.carry(original.id, original.attachments ?? []);
 		}
 	}, [composeOptions, currentMailbox?.email, sigBlock, mailboxId, kept]);
+
+	// A message belongs to the mailbox it is written in. The session lives above the mailbox's
+	// pages, so a message is kept while the person is on a page outside any mailbox (the list of
+	// mailboxes, the account); when another mailbox opens, the message is saved in its own and
+	// closed, as above, and never shown or sent from the other.
+	useEffect(() => {
+		if (!isComposing || keeping.current || !mailboxId || !writtenIn.current) return;
+		if (mailboxId !== writtenIn.current) closeCompose();
+	}, [isComposing, mailboxId, closeCompose]);
 
 	/**
 	 * Saves what is written as a draft. `quiet` is the save the window makes by itself while the
