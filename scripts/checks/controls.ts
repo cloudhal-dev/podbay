@@ -198,7 +198,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/AccessKeys.tsx": { input: 1, select: 2 },
 	"app/components/AgentPanel.tsx": { button: 1, textarea: 1 },
 	"app/components/AgentSidebar.tsx": { button: 2 },
-	"app/components/ComposeWindow.tsx": { button: 1 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
 	"app/components/InlineReply.tsx": { button: 2 },
 	"app/components/InvitePerson.tsx": { select: 1 },
