@@ -81,6 +81,13 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 			"The field of addresses in a line of the writing window: no box, no line, no corner, 13 px type, the addresses as chips before it and the line's hairline under it. Kumo 2.18.1's Input, Combobox and TagInput are boxes with a line and a corner, and a height, padding or type size by hand is refused, so the line would become a form's field.",
 	},
 	{
+		file: "app/components/ComposePanel.tsx",
+		element: "input",
+		count: 1,
+		reason:
+			"The subject in a line of the writing window, as the address field is: no box, no line, no corner, 13 px type, with the line's hairline under it. Kumo 2.18.1's Input is a box with a line and a corner, and a height, padding or type size by hand is refused.",
+	},
+	{
 		file: "app/components/Header.tsx",
 		element: "input",
 		count: 1,
@@ -172,7 +179,7 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/AccessKeys.tsx": { input: 1, select: 2 },
 	"app/components/AgentPanel.tsx": { button: 1, textarea: 1 },
 	"app/components/AgentSidebar.tsx": { button: 2 },
-	"app/components/ComposePanel.tsx": { button: 3, input: 2 },
+	"app/components/ComposePanel.tsx": { input: 1 },
 	"app/components/ComposeWindow.tsx": { button: 1 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
 	"app/components/InlineReply.tsx": { button: 2 },

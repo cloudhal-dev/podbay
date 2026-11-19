@@ -108,13 +108,16 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 					required
 				/>
 				{!form.showCcBcc && (
-					<button
-						type="button"
+					// Kumo's ghost button at the small size, 26 px, a larger target than the 15 px line of text
+					// it was; set back by its padding so its word ends where it ended.
+					<Button
+						variant="ghost"
+						size="sm"
 						onClick={() => form.setShowCcBcc(true)}
-						className="shrink-0 cursor-pointer border-0 bg-transparent p-0 text-sm text-kumo-subtle hover:text-kumo-default hover:underline"
+						className="-mr-2 shrink-0 text-kumo-subtle"
 					>
 						{t("Cc Bcc")}
-					</button>
+					</Button>
 				)}
 			</Line>
 			{form.showCcBcc && (
@@ -168,8 +171,9 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						<li key={left.id} className="flex flex-wrap items-center gap-x-2">
 							<span>{t(LEFT_BEHIND[left.reason], { name: left.name })}</span>
 							{left.reason === "risk" && (
-								<button
-									type="button"
+								<Button
+									variant="ghost"
+									size="xs"
 									onClick={async () => {
 										const sure = await confirm({
 											title: t("Forward this file?"),
@@ -182,10 +186,11 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 										});
 										if (sure) form.carryAnyway(left);
 									}}
-									className="cursor-pointer border-0 bg-transparent p-0 text-xs text-kumo-default underline"
+									// Underlined, the text action it was; its margins give back its padding and height.
+									className="-my-0.5 -ml-1.5 text-kumo-default underline"
 								>
 									{t("Add it anyway")}
-								</button>
+								</Button>
 							)}
 						</li>
 					))}
@@ -206,14 +211,17 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 										? formatBytes(file.size)
 										: t("Attaching {percent}%", { percent: Math.round(file.uploading * 100) })}
 								</span>
-								<button
-									type="button"
+								{/* Kumo's square button at the small size, 26 px, larger than the 16 px it was; its
+								    margins give back the 10 px it is larger, so the file's chip keeps its size. */}
+								<Button
+									variant="ghost"
+									shape="square"
+									size="sm"
 									onClick={() => form.removeFile(file)}
 									aria-label={t("Remove {name}", { name: file.name })}
-									className="shrink-0 cursor-pointer rounded border-0 bg-transparent p-0.5 text-kumo-subtle hover:bg-kumo-fill hover:text-kumo-default"
-								>
-									<XIcon size={12} />
-								</button>
+									className="-m-[5px] shrink-0 text-kumo-subtle"
+									icon={<XIcon size={12} />}
+								/>
 							</li>
 						))}
 					</ul>
