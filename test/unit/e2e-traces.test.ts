@@ -9,11 +9,14 @@
  * - the upload runs only when the run failed, with GitHub's own action pinned by commit, for at
  *   most seven days, and only `test-results/`, where Playwright writes its traces;
  * - the run's secrets (`.e2e/`) are outside that directory, and only the global setup, which runs
- *   in Node and not in a traced page, reads them.
+ *   in Node and not in a traced page, reads them;
+ * - the proxy's certificate and key, made for the run, are in `.e2e/` too, and only the proxy,
+ *   in Node, reads them.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { E2E_DIR, E2E_SECRETS } from "../../scripts/e2e-server.ts";
+import { PROXY_CERT, PROXY_KEY } from "../e2e/proxy-address.ts";
 
 const read = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
 const workflow = read(".github/workflows/checks.yml");
@@ -57,5 +60,16 @@ describe("the traces of a failed browser run", () => {
 			/secrets\.json|E2E_SECRETS|setupToken/.test(read(`test/e2e/${name}`)),
 		);
 		expect(readers).toEqual(["global-setup.ts"]);
+	});
+
+	it("never hold the proxy's key and certificate: they are in the run's directory, read by the proxy alone", () => {
+		for (const path of [PROXY_KEY, PROXY_CERT]) {
+			expect(path.startsWith(`${E2E_DIR}/`), path).toBe(true);
+			expect(path.startsWith("test-results"), path).toBe(false);
+		}
+		const readers = readdirSync(new URL("../e2e/", import.meta.url)).filter((name) =>
+			/proxy-key|proxy-cert|PROXY_KEY|PROXY_CERT/.test(read(`test/e2e/${name}`)),
+		);
+		expect(readers).toEqual(["proxy-address.ts", "proxy.ts"]);
 	});
 });

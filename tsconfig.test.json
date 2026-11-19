@@ -17,6 +17,7 @@
 		"app/hooks/useDisplay.ts",
 		"app/hooks/useUIStore.ts",
 		"app/hooks/useAnswerFollowsToWindow.ts",
+		"app/components/EmailIframe.tsx",
 		"app/services/api.ts",
 		"app/types/**/*.ts",
 		"workers/**/*",
@@ -40,6 +41,7 @@
 		"lib": ["ES2023", "DOM", "DOM.Iterable"],
 		"types": ["node", "vite/client", "@cloudflare/vitest-plugin/types"],
 		"target": "ES2023",
+		"jsx": "react-jsx",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"paths": {

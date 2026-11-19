@@ -35,7 +35,7 @@ pnpm install
 pnpm dev        # http://localhost:5173; then open /setup with the token from .dev.vars
 ```
 
-You need Node 24 or newer and pnpm 12 (`corepack enable`). To deliver a test message to the local server, see the commands in [`AGENTS.md`](AGENTS.md).
+You need Node 24 or newer and pnpm 12 (`corepack enable`); the browser tests also need Chrome and `openssl` (OpenSSL or the LibreSSL macOS has). To deliver a test message to the local server, see the commands in [`AGENTS.md`](AGENTS.md).
 
 ## Tests
 

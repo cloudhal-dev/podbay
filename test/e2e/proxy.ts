@@ -12,12 +12,108 @@
  * can start before a debugger sees them.
  *
  *   GET  /__contacts   the hosts contacted since the last reset
- *   POST /__reset      forget them
+ *   POST /__reset      forget them and every answer, and close every tunnel
+ *   POST /__answer     answer one host: `{ host, delayMs, contentType, body }` (body in base64)
+ *
+ * By default nothing is answered. A test that needs a picture to arrive late names its host,
+ * which must end in `.test` (a name that is never on the internet), and only that host's tunnels
+ * are opened and answered here, with the test's own bytes after the test's own delay. They are
+ * written down like every other contact, so "which hosts were contacted" stays true. The tunnel
+ * is TLS with a certificate made by `openssl` when this server starts (the browser tests need it
+ * on the machine), kept in `.e2e/` (ignored by git, never uploaded) and nowhere else; only a
+ * test that asks for it (`ignoreHTTPSErrors`) accepts it.
  */
+import { execFileSync } from "node:child_process";
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { PROXY_PORT } from "./proxy-address.ts";
+import { createServer as createTlsServer } from "node:https";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { PROXY_CERT, PROXY_KEY, PROXY_PORT } from "./proxy-address.ts";
 
 const contacts: string[] = [];
+
+interface Answer {
+	delayMs: number;
+	contentType: string;
+	body: Buffer;
+}
+
+/** The hosts a test asked to be answered, forgotten at every reset. */
+const answers = new Map<string, Answer>();
+
+/**
+ * The tunnels open to answered hosts, closed at every reset: a browser keeps a tunnel open for
+ * its next request, which would then reach a host without a CONNECT, past the record and past
+ * the reset.
+ */
+const tunnels = new Set<import("node:stream").Duplex>();
+
+/** A name that can never be on the internet: one or more labels, ending in `.test`. */
+const TEST_HOST = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+test$/;
+
+const root = (path: string) => fileURLToPath(new URL(`../../${path}`, import.meta.url));
+const keyPath = root(PROXY_KEY);
+const certPath = root(PROXY_CERT);
+// `.e2e/` is deleted by the app's server when it starts (scripts/e2e-server.ts). That server is
+// first in the configuration's `webServer`, and Playwright starts each one only after the one
+// before answers at its URL, so the app's server has cleared `.e2e/` before this line runs.
+mkdirSync(dirname(keyPath), { recursive: true, mode: 0o700 });
+// A certificate for this run only, signed by itself; nothing trusts it but a test that says so.
+// The files exist, readable by this user alone, before a byte of the key is written.
+for (const path of [keyPath, certPath]) writeFileSync(path, "", { mode: 0o600 });
+try {
+	execFileSync(
+		"openssl",
+		[
+			"req",
+			"-x509",
+			"-newkey",
+			"ec",
+			"-pkeyopt",
+			"ec_paramgen_curve:prime256v1",
+			"-nodes",
+			"-days",
+			"1",
+			"-subj",
+			"/CN=podbay-e2e-proxy",
+			"-keyout",
+			keyPath,
+			"-out",
+			certPath,
+		],
+		{ stdio: "ignore" },
+	);
+} catch {
+	throw new Error(
+		"e2e proxy: openssl (OpenSSL or LibreSSL) is needed to make the run's certificate and did not run; install it and run again.",
+	);
+}
+for (const path of [keyPath, certPath]) chmodSync(path, 0o600);
+
+const answering = createTlsServer(
+	{ key: readFileSync(keyPath), cert: readFileSync(certPath) },
+	(request, response) => {
+		const host = (request.headers.host ?? "").replace(/:\d+$/, "");
+		const answer = answers.get(host);
+		if (!answer) {
+			response.writeHead(502);
+			response.end();
+			return;
+		}
+		setTimeout(() => {
+			response.writeHead(200, { "content-type": answer.contentType, "cache-control": "no-store" });
+			response.end(answer.body);
+		}, answer.delayMs);
+	},
+);
+answering.on("tlsClientError", () => {});
+
+async function readBody(request: import("node:http").IncomingMessage): Promise<string> {
+	const parts: Buffer[] = [];
+	for await (const part of request) parts.push(part as Buffer);
+	return Buffer.concat(parts).toString("utf8");
+}
 
 const server = createServer((request, response) => {
 	const url = request.url ?? "";
@@ -28,13 +124,54 @@ const server = createServer((request, response) => {
 		response.end(JSON.stringify(contacts));
 		return;
 	}
-	if (url === "/__reset") {
+	// POST only, as `/__answer`: a GET is what a picture makes, and the content policies that keep
+	// a message from making one to this server are what the tests around it prove.
+	if (url === "/__reset" && request.method === "POST") {
 		contacts.length = 0;
+		answers.clear();
+		for (const tunnel of tunnels) tunnel.destroy();
+		tunnels.clear();
 		response.writeHead(204);
 		response.end();
 		return;
 	}
-	if (/^https?:\/\//i.test(url)) contacts.push(new URL(url).hostname);
+	if (url === "/__answer" && request.method === "POST") {
+		void readBody(request).then((text) => {
+			let asked: { host?: unknown; delayMs?: unknown; contentType?: unknown; body?: unknown };
+			try {
+				asked = JSON.parse(text);
+			} catch {
+				asked = {};
+			}
+			if (
+				typeof asked.host !== "string" ||
+				!TEST_HOST.test(asked.host) ||
+				typeof asked.delayMs !== "number" ||
+				typeof asked.contentType !== "string" ||
+				typeof asked.body !== "string"
+			) {
+				response.writeHead(400);
+				response.end();
+				return;
+			}
+			answers.set(asked.host, {
+				delayMs: asked.delayMs,
+				contentType: asked.contentType,
+				body: Buffer.from(asked.body, "base64"),
+			});
+			response.writeHead(204);
+			response.end();
+		});
+		return;
+	}
+	if (/^https?:\/\//i.test(url)) {
+		// A malformed address is refused like any other; it must not take the proxy down.
+		try {
+			contacts.push(new URL(url).hostname);
+		} catch {
+			contacts.push(url);
+		}
+	}
 	response.writeHead(502);
 	response.end();
 });
@@ -44,12 +181,24 @@ server.on("connect", (request, socket) => {
 	// The browser may drop the connection while it is being refused. That is its business: an
 	// error on one socket must not take the proxy, and with it every later test, down.
 	socket.on("error", () => {});
-	contacts.push((request.url ?? "").replace(/:\d+$/, ""));
-	socket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
+	const host = (request.url ?? "").replace(/:\d+$/, "");
+	contacts.push(host);
+	if (!answers.has(host)) {
+		socket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
+		return;
+	}
+	// A host the test named: the tunnel is opened, and this server is at its other end.
+	tunnels.add(socket);
+	socket.on("close", () => tunnels.delete(socket));
+	socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+	answering.emit("connection", socket);
 });
 
 // The same for a request that is cut off or malformed before it is one.
 server.on("clientError", (_error, socket) => socket.destroy());
 
 server.listen(PROXY_PORT, "127.0.0.1");
-process.on("SIGTERM", () => server.close());
+process.on("SIGTERM", () => {
+	server.close();
+	answering.close();
+});
