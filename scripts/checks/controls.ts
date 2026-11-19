@@ -109,6 +109,13 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 			"The top bar's search box: one wide field 48 px tall, fully round and filled, with no line, that turns to the page's colour with a ring when it has focus. Kumo 2.18.1's Input and InputGroup give a size alone (40 px at their largest) with Kumo's corner and line, and a height, a corner or padding by hand is refused, so that shape cannot be carried. Its two buttons are Kumo's.",
 	},
 	{
+		file: "app/components/EmailAttachmentList.tsx",
+		element: "button",
+		count: 2,
+		reason:
+			"An attached file under a message is a chip with its icon, its name and its size, 34 px. A plain file is a link that downloads it, which Kumo's Button is not; a picture, which opens a preview, and a file that can do harm, which asks first, are buttons drawn as the same chip, so the three read alike. Kumo's Button holds a label in one row of 26 or 36 px.",
+	},
+	{
 		file: "app/components/EmailPanel.tsx",
 		element: "button",
 		count: 1,
@@ -202,7 +209,6 @@ export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
  * the debt #82 and #83 pay. Lower a number when a control moves to Kumo; never raise one.
  */
 export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> = {
-	"app/components/EmailAttachmentList.tsx": { button: 2 },
 	"app/components/LabelDialog.tsx": { input: 1 },
 	"app/components/ScheduledList.tsx": { button: 1 },
 };
