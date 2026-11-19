@@ -123,9 +123,13 @@ function uploadDraftFile(
 	fileId: string,
 	file: File,
 	onProgress: (part: number) => void,
+	signal?: AbortSignal,
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const upload = new XMLHttpRequest();
+		// A file taken away stops travelling; the caller removes what was declared.
+		upload.onabort = () => reject(new DOMException("The upload was stopped.", "AbortError"));
+		signal?.addEventListener("abort", () => upload.abort(), { once: true });
 		upload.open("PUT", `/api/v1/mailboxes/${mailboxId}/drafts/${draftId}/attachments/${fileId}`);
 		upload.setRequestHeader("Content-Type", "application/octet-stream");
 		upload.upload.onprogress = (event) => {

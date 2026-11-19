@@ -192,6 +192,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const [error, setError] = useState<string | null>(null);
 	const [isSavingDraft, setIsSavingDraft] = useState(false);
 	const [isSending, setIsSending] = useState(false);
+	/** Set at the first press of Send, before any wait, so a second press does not send again. */
+	const sendingNow = useRef(false);
 	/** Whether the person wrote anything since the window opened or the draft was last saved. */
 	const [touched, setTouched] = useState(false);
 	/** The draft of this window: saving again saves over it, and sending makes it the sent message. */
@@ -373,7 +375,19 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		sendAt?: string,
 	) => {
 		e.preventDefault();
-		if (isSending) return;
+		if (isSending || sendingNow.current) return;
+		// Sending from the first press: the waits below can be long, and Send must not look idle.
+		sendingNow.current = true;
+		setIsSending(true);
+		try {
+			await sendOnce(onClose, archive, sendAt);
+		} finally {
+			sendingNow.current = false;
+			setIsSending(false);
+		}
+	};
+
+	const sendOnce = async (onClose: () => void, archive: boolean, sendAt?: string) => {
 		setError(null);
 		if (!currentMailbox || !mailboxId) {
 			setError(t("No mailbox selected."));
@@ -400,7 +414,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			return;
 		}
 		// A draft saved a moment ago must be known before the message goes: the message is sent
-		// from its draft, whose files are its files and whose row becomes the sent message.
+		// from its draft, whose files are its files and whose row becomes the sent message. A file
+		// taken away while it travelled must have left that draft too (#43).
 		await pendingSave.current;
 		const emailData = {
 			...(draftId.current ? { draft_id: draftId.current } : {}),
@@ -420,8 +435,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				: mode === "forward" && originalId
 					? { kind: "forward", emailId: originalId }
 					: { kind: "new" };
-		setIsSending(true);
 		try {
+			await draftFiles.settled();
 			await sending.send({
 				route,
 				email: emailData,
@@ -448,8 +463,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			const message = (err instanceof Error ? err.message : null) || t("Failed to send email.");
 			setError(message);
 			toastManager.add({ title: message, variant: "error" });
-		} finally {
-			setIsSending(false);
 		}
 	};
 

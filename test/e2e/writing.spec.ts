@@ -17,6 +17,242 @@ test.beforeEach(async ({ page, app }) => {
 	await page.setViewportSize({ width: 1280, height: 800 });
 });
 
+test("a file taken away while it travels stays away, though the draft is closed and opened again first", async ({
+	page,
+	app,
+}) => {
+	// The bytes of the second file are held on their way until the draft has been opened again.
+	let release = () => {};
+	const held = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	let puts = 0;
+	await page.route(/\/drafts\/[^/]+\/attachments\/[^/]+$/, async (route) => {
+		if (route.request().method() !== "PUT") return route.fallback();
+		puts += 1;
+		if (puts === 2) await held;
+		// An upload stopped by the page is no longer there to go on.
+		await route.continue().catch(() => {});
+	});
+
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await page.getByRole("button", { name: "Compose" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	await compose.getByLabel("To", { exact: true }).fill("someone@elsewhere.test");
+	await compose.getByLabel("Subject").fill("Behaviour: a file taken away on its way");
+	await compose.getByLabel("Files to attach").setInputFiles([
+		{ name: "report.txt", mimeType: "text/plain", buffer: Buffer.from("the report") },
+		{ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("some notes") },
+	]);
+	const attached = compose.getByRole("list", { name: "Attached files" });
+	await expect(attached.getByRole("listitem").filter({ hasText: "report.txt" })).toContainText(
+		"10 B",
+	);
+	// notes.txt is still on its way when it is taken away, and the window is closed at once. Its
+	// upload stops, and what was declared leaves the draft by a removal answered here.
+	const removedOut = page.waitForResponse(
+		(response) =>
+			response.request().method() === "DELETE" && /\/attachments\/[^/]+$/.test(response.url()),
+	);
+	await compose.getByRole("button", { name: "Remove notes.txt" }).click();
+	await expect(attached.getByRole("listitem")).toHaveCount(1);
+	await compose.getByRole("button", { name: "Save and close" }).click();
+	await expect(compose).toHaveCount(0);
+
+	// The draft is opened again before the held bytes arrive; then they arrive.
+	const drafts = page
+		.getByRole("navigation", { name: "Folders" })
+		.getByRole("link", { name: /Drafts/ });
+	await drafts.click();
+	await row(page, "Behaviour: a file taken away on its way").click();
+	await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+	await expect(attached.getByRole("listitem")).toHaveCount(1);
+	release();
+	expect((await removedOut).ok(), "the file left the draft").toBe(true);
+
+	// What arrived was removed from the draft: opened once more, it holds the one file.
+	await compose.getByRole("button", { name: "Save and close" }).click();
+	await expect(compose).toHaveCount(0);
+	await page.reload();
+	await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+	await expect(attached.getByRole("listitem")).toHaveCount(1);
+	await expect(attached).toContainText("report.txt");
+	await compose.getByRole("button", { name: "Save and close" }).click();
+});
+
+/** A gate a route waits at until the test opens it. */
+function gate() {
+	let open = () => {};
+	const opened = new Promise<void>((resolve) => {
+		open = resolve;
+	});
+	return { open, opened };
+}
+
+/** Opens the window with a recipient, a subject, some words and two files, both stored. */
+async function withTwoFiles(page: Page, subject: string) {
+	await page.getByRole("button", { name: "Compose" }).click();
+	const compose = page.getByRole("region", { name: "Compose" });
+	await compose.getByLabel("To", { exact: true }).fill("someone@elsewhere.test");
+	await compose.getByLabel("Subject").fill(subject);
+	await compose.locator(".ProseMirror").click();
+	await page.keyboard.type("Two files, then one.");
+	await compose.getByLabel("Files to attach").setInputFiles([
+		{ name: "report.txt", mimeType: "text/plain", buffer: Buffer.from("the report") },
+		{ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("some notes") },
+	]);
+	const attached = compose.getByRole("list", { name: "Attached files" });
+	await expect(attached.getByRole("listitem").filter({ hasText: "report.txt" })).toContainText(
+		"10 B",
+	);
+	return { compose, attached };
+}
+
+const ATTACHMENT = /\/drafts\/[^/]+\/attachments\/[^/]+$/;
+const SENDS = (request: { method(): string; url(): string }) =>
+	request.method() === "POST" && /\/api\/v1\/mailboxes\/[^/]+\/emails$/.test(request.url());
+
+test("a message waits for a file taken away to leave its draft, and goes without it", async ({
+	page,
+	app,
+}) => {
+	// notes.txt is stored, then taken away; its removal is held on its way, so the message is
+	// ready before the file has left the draft. (A file whose bytes never arrived is not part of a
+	// message: the Worker reads only stored files.)
+	const removal = gate();
+	await page.route(ATTACHMENT, async (route) => {
+		if (route.request().method() !== "DELETE") return route.fallback();
+		await removal.opened;
+		await route.continue();
+	});
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	const subject = `Behaviour: sent without the file taken away ${Date.now()}`;
+	const { compose, attached } = await withTwoFiles(page, subject);
+	await expect(attached.getByRole("listitem").filter({ hasText: "notes.txt" })).toContainText(
+		"10 B",
+	);
+	await compose.getByRole("button", { name: "Remove notes.txt" }).click();
+	// Send later, so nothing leaves: the message waits in Scheduled, where it can be read.
+	await compose.getByRole("button", { name: "Send later" }).click();
+	await page.getByRole("menuitem", { name: /Tomorrow morning/ }).click();
+	await page.waitForTimeout(500);
+	removal.open();
+	await expect(page.getByText(/^Send scheduled for /)).toBeVisible();
+
+	await page
+		.getByRole("navigation", { name: "Folders" })
+		.getByRole("link", { name: /Scheduled/ })
+		.click();
+	await page.getByRole("button", { name: new RegExp(subject) }).click();
+	await expect(page.getByText("report.txt")).toBeVisible();
+	await expect(page.getByText("notes.txt")).toHaveCount(0);
+});
+
+test("two presses of Send while it waits send the message once", async ({ page, app }) => {
+	const held = gate();
+	await page.route(ATTACHMENT, async (route) => {
+		if (route.request().method() !== "DELETE") return route.fallback();
+		await held.opened;
+		await route.continue();
+	});
+	let sends = 0;
+	page.on("request", (request) => {
+		if (SENDS(request)) sends += 1;
+	});
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	const { compose, attached } = await withTwoFiles(
+		page,
+		`Behaviour: one press counts ${Date.now()}`,
+	);
+	await expect(attached.getByRole("listitem").filter({ hasText: "notes.txt" })).toContainText(
+		"10 B",
+	);
+	await compose.getByRole("button", { name: "Remove notes.txt" }).click();
+	await compose.getByRole("button", { name: "Send", exact: true }).click();
+	// Send waits for the removal and says it is sending. A second press meanwhile, by the keys
+	// that send, must not send the message again.
+	await expect(compose.getByRole("button", { name: "Sending" })).toBeDisabled();
+	await page.keyboard.press("ControlOrMeta+Enter");
+	await page.waitForTimeout(500);
+	expect(sends, "nothing is sent while the file is leaving").toBe(0);
+	held.open();
+	await expect(compose).toHaveCount(0, SENT_WITHIN);
+	await page.waitForTimeout(500);
+	expect(sends, "one request to send").toBe(1);
+});
+
+test("a failed upload of a message left behind does not keep the next message from going", async ({
+	page,
+	app,
+}) => {
+	// report.txt's bytes are held, then refused; notes.txt is taken away before its turn.
+	const bytes = gate();
+	await page.route(ATTACHMENT, async (route) => {
+		if (route.request().method() !== "PUT") return route.fallback();
+		await bytes.opened;
+		await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+	});
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await page.getByRole("button", { name: "Compose" }).first().click();
+	let compose = page.getByRole("region", { name: "Compose" });
+	await compose.getByLabel("To", { exact: true }).fill("someone@elsewhere.test");
+	await compose.getByLabel("Subject").fill(`Behaviour: left behind ${Date.now()}`);
+	await compose.getByLabel("Files to attach").setInputFiles([
+		{ name: "report.txt", mimeType: "text/plain", buffer: Buffer.from("the report") },
+		{ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("some notes") },
+	]);
+	await compose.getByRole("button", { name: "Remove notes.txt" }).click();
+	// Another message begins, and only then does the first upload fail.
+	await compose.getByRole("button", { name: "Save and close" }).click();
+	await expect(compose).toHaveCount(0);
+	await page.getByRole("button", { name: "Compose" }).first().click();
+	compose = page.getByRole("region", { name: "Compose" });
+	bytes.open();
+	await page.waitForTimeout(500);
+
+	// The next message goes, and is not held by the removal of the one before.
+	await compose.getByLabel("To", { exact: true }).fill("someone@elsewhere.test");
+	await compose.getByLabel("Subject").fill(`Behaviour: the next message ${Date.now()}`);
+	await compose.locator(".ProseMirror").click();
+	await page.keyboard.type("This one goes.");
+	await compose.getByRole("button", { name: "Send", exact: true }).click();
+	await expect(compose).toHaveCount(0, SENT_WITHIN);
+});
+
+test("a file that could not be taken out stops the message, comes back, and says why", async ({
+	page,
+	app,
+}) => {
+	// The removal is answered by an error, after Send was pressed.
+	const held = gate();
+	await page.route(ATTACHMENT, async (route) => {
+		if (route.request().method() !== "DELETE") return route.fallback();
+		await held.opened;
+		await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+	});
+	let sends = 0;
+	page.on("request", (request) => {
+		if (SENDS(request)) sends += 1;
+	});
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	const { compose, attached } = await withTwoFiles(
+		page,
+		`Behaviour: a removal that fails ${Date.now()}`,
+	);
+	await expect(attached.getByRole("listitem").filter({ hasText: "notes.txt" })).toContainText(
+		"10 B",
+	);
+	await compose.getByRole("button", { name: "Remove notes.txt" }).click();
+	await compose.getByRole("button", { name: "Send", exact: true }).click();
+	held.open();
+	await expect(
+		compose.getByText(/notes\.txt could not be taken out of the message/).first(),
+	).toBeVisible();
+	await expect(attached.getByRole("listitem").filter({ hasText: "notes.txt" })).toHaveCount(1);
+	await expect(compose).toBeVisible();
+	expect(sends, "nothing was sent").toBe(0);
+});
+
 test("files are attached to a message, kept by its draft, held to what a message can carry, and sent with it", async ({
 	page,
 	app,

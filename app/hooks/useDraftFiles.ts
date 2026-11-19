@@ -27,6 +27,15 @@ export interface LeftBehind {
 	reason: DraftFileLeft;
 }
 
+/** A file on its way out of the draft. */
+interface Removal {
+	/** Its id in the draft, once it was declared. */
+	id: string | null;
+	/** `null` when it left the draft; its name when it could not be taken out. */
+	done: Promise<string | null>;
+	finish: (stayed: string | null) => void;
+}
+
 const stored = (file: DraftFileShown): DraftFile => ({
 	key: file.id,
 	id: file.id,
@@ -55,6 +64,49 @@ export function useDraftFiles(
 	const next = useRef(0);
 	/** Files the person took away again while their bytes were still on the way. */
 	const removed = useRef(new Set<string>());
+	/**
+	 * Removals still on their way, by key, kept across messages: a file taken away while it
+	 * travelled is removed when its upload stops, which can be after the window closed or opened
+	 * the draft again (#43). Each ends with `null` when the file left the draft, or with the
+	 * file's name when it could not be taken out and is still the draft's.
+	 */
+	const removals = useRef(new Map<string, Removal>());
+	/** The uploads on their way, by key, so a file taken away stops travelling at once. */
+	const travelling = useRef(new Map<string, AbortController>());
+
+	/** Marks a file as on its way out, until `finish` says whether it left. */
+	const leaving = (key: string, id: string | null) => {
+		let end: (stayed: string | null) => void = () => {};
+		const done = new Promise<string | null>((resolve) => {
+			end = resolve;
+		});
+		const removal: Removal = {
+			id,
+			done,
+			finish: (stayed) => {
+				removals.current.delete(key);
+				end(stayed);
+			},
+		};
+		removals.current.set(key, removal);
+		return removal;
+	};
+
+	/** Takes a declared file out of the draft; `true` when it is gone. */
+	const takeOut = (draftId: string, id: string) =>
+		mailboxId
+			? api.removeDraftFile(mailboxId, draftId, id).then(
+					() => true,
+					() => false,
+				)
+			: Promise.resolve(false);
+
+	/** A file that could not be taken out of the draft is shown again, with what went wrong. */
+	const stayed = (session: number, file: DraftFile) => {
+		if (session !== writing.current) return;
+		setFiles((now) => (now.some((one) => one.key === file.key) ? now : [...now, file]));
+		setError(t("{name} could not be taken out of the message. Try again.", { name: file.name }));
+	};
 
 	const patch = (key: string, change: Partial<DraftFile> | null) =>
 		setFiles((now) =>
@@ -68,9 +120,11 @@ export function useDraftFiles(
 		writing.current += 1;
 		removed.current = new Set();
 		setLeftBehind([]);
+		// A file on its way out of the draft is not shown again, though the draft still lists it.
+		const outgoing = new Set([...removals.current.values()].map((removal) => removal.id));
 		setFiles(
 			held
-				.filter((file) => file.disposition !== "inline")
+				.filter((file) => file.disposition !== "inline" && !outgoing.has(file.id))
 				.map((file) =>
 					stored({ id: file.id, filename: file.filename, type: file.mimetype, size: file.size }),
 				),
@@ -101,6 +155,8 @@ export function useDraftFiles(
 		}
 		setError(null);
 		const session = writing.current;
+		// This message's own list of files taken away: another message starting does not empty it.
+		const gone = removed.current;
 		const entries = list.map((file) => {
 			next.current += 1;
 			return { file, key: `new-${next.current}` };
@@ -117,42 +173,108 @@ export function useDraftFiles(
 			})),
 		]);
 		const draftId = await ensureDraft();
-		for (const { file, key } of entries) {
-			if (session !== writing.current) return;
-			// Taken away before it was sent: it is never declared.
-			if (removed.current.has(key)) continue;
-			try {
-				if (draftId === null) throw new Error("no draft");
-				const declared = await api.declareDraftFile(mailboxId, draftId, file);
-				patch(key, { id: declared.id, name: declared.filename });
-				await api.uploadDraftFile(mailboxId, draftId, declared.id, file, (part) => {
-					if (session === writing.current) patch(key, { uploading: part });
-				});
-				// Taken away while it travelled: what arrived is removed from the draft again.
-				if (removed.current.has(key)) {
-					await api.removeDraftFile(mailboxId, draftId, declared.id).catch(() => {});
+		// The first file of the batch not yet handled. Every way out of the loop ends, in the
+		// `finally`, the removals of the files after it: never declared, they have left already.
+		let unhandled = 0;
+		try {
+			for (const [at, { file, key }] of entries.entries()) {
+				// Another message began: what is left of this one is never declared.
+				if (session !== writing.current) return;
+				unhandled = at + 1;
+				// Taken away before it was sent: it is never declared.
+				if (gone.has(key)) {
+					removals.current.get(key)?.finish(null);
+					continue;
+				}
+				let declaredId: string | null = null;
+				try {
+					if (draftId === null) throw new Error("no draft");
+					const declared = await api.declareDraftFile(mailboxId, draftId, file);
+					declaredId = declared.id;
+					patch(key, { id: declared.id, name: declared.filename });
+					const removal = removals.current.get(key);
+					if (removal) removal.id = declared.id;
+					if (!gone.has(key)) {
+						const stop = new AbortController();
+						travelling.current.set(key, stop);
+						await api.uploadDraftFile(
+							mailboxId,
+							draftId,
+							declared.id,
+							file,
+							(part) => {
+								if (session === writing.current) patch(key, { uploading: part });
+							},
+							stop.signal,
+						);
+					}
+				} catch (caught) {
+					if (!gone.has(key)) {
+						travelling.current.delete(key);
+						if (session !== writing.current) return;
+						patch(key, null);
+						const said = caught instanceof Error && caught.message ? caught.message : null;
+						setError(said ?? t("{name} could not be attached.", { name: file.name }));
+						continue;
+					}
+				}
+				travelling.current.delete(key);
+				// Taken away while it travelled: what was declared leaves the draft again.
+				if (gone.has(key)) {
+					const left =
+						declaredId === null || draftId === null || (await takeOut(draftId, declaredId));
+					removals.current.get(key)?.finish(left ? null : file.name);
+					if (!left && declaredId !== null) {
+						stayed(session, {
+							key,
+							id: declaredId,
+							name: file.name,
+							size: file.size,
+							type: file.type,
+							uploading: null,
+						});
+					}
 					continue;
 				}
 				if (session === writing.current) patch(key, { uploading: null });
-			} catch (caught) {
-				if (session !== writing.current) return;
-				patch(key, null);
-				const said = caught instanceof Error && caught.message ? caught.message : null;
-				setError(said ?? t("{name} could not be attached.", { name: file.name }));
 			}
+		} finally {
+			for (const left of entries.slice(unhandled)) removals.current.get(left.key)?.finish(null);
 		}
 	};
 
 	const removeFile = async (file: DraftFile) => {
 		patch(file.key, null);
-		// A file whose bytes are still on the way is removed by the upload when it gets there.
+		// A file whose bytes are still on the way stops travelling, and leaves the draft after.
 		if (file.uploading !== null) {
 			removed.current.add(file.key);
+			leaving(file.key, file.id);
+			travelling.current.get(file.key)?.abort();
 			return;
 		}
 		if (!mailboxId || file.id === null) return;
+		const session = writing.current;
+		const removal = leaving(file.key, file.id);
 		const draftId = await ensureDraft();
-		if (draftId !== null) await api.removeDraftFile(mailboxId, draftId, file.id).catch(() => {});
+		const left = draftId !== null && (await takeOut(draftId, file.id));
+		removal.finish(left ? null : file.name);
+		if (!left) stayed(session, file);
+	};
+
+	/**
+	 * Waits until every file taken away has left the draft, as a message must before it goes. A
+	 * file that could not be taken out stops the message: it would go with it (#43).
+	 */
+	const settled = async () => {
+		const ends = await Promise.all([...removals.current.values()].map((removal) => removal.done));
+		const kept = ends.filter((name): name is string => name !== null);
+		if (kept.length > 0) {
+			throw new Error(
+				t("{name} could not be taken out of the message, so it was not sent. Try again.", {
+					name: kept.join(", "),
+				}),
+			);
+		}
 	};
 
 	/**
@@ -196,6 +318,7 @@ export function useDraftFiles(
 		leftBehind,
 		/** Whether bytes are still on their way: a message is not sent before they arrived. */
 		uploading: files.some((file) => file.uploading !== null),
+		settled,
 		reset,
 		addFiles,
 		removeFile,

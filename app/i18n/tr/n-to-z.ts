@@ -529,6 +529,10 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"{name} ({count} unread)": "{name} ({count} okunmamış)",
 	"{name} could not be attached.": "{name} eklenemedi.",
 	"{name} could not be carried over.": "{name} aktarılamadı.",
+	"{name} could not be taken out of the message. Try again.":
+		"{name} iletiden kaldırılamadı. Yeniden deneyin.",
+	"{name} could not be taken out of the message, so it was not sent. Try again.":
+		"{name} iletiden kaldırılamadı, bu yüzden ileti gönderilmedi. Yeniden deneyin.",
 	"{name} is a kind of file that can do harm when it is opened. Whoever gets your message gets it too.":
 		"{name}, açıldığında zarar verebilecek türde bir dosya. İletinizi alan herkes onu da alır.",
 	"{name} was not carried over: a message carries no more files.":
