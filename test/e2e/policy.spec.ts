@@ -66,29 +66,59 @@ test("no page of the app breaks its own content policy", async ({ page, app }) =
 test("the page's policy runs one inline script in a frame and no other", async ({ page, app }) => {
 	await app.signIn();
 	await page.goto("/");
-	const tryScript = (script: string) =>
-		page.evaluate(async (source) => {
-			const received: unknown[] = [];
-			const frame = document.createElement("iframe");
-			frame.setAttribute("sandbox", "allow-scripts");
-			const listen = (event: MessageEvent) => {
-				if (event.source === frame.contentWindow) received.push(event.data);
-			};
-			window.addEventListener("message", listen);
-			frame.srcdoc = `<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-bm9uY2Utbm9uY2Utbm9uY2U='"></head><body><p style="height:240px">x</p><script nonce="bm9uY2Utbm9uY2Utbm9uY2U=">${source}</scr${""}ipt></body></html>`;
-			document.body.appendChild(frame);
-			await new Promise((resolve) => setTimeout(resolve, 900));
-			window.removeEventListener("message", listen);
-			frame.remove();
-			return received;
-		}, script);
+	/**
+	 * Runs a script in a frame of its own and returns what the frame told the page, with how long
+	 * its first message took. `wait` is either "first": wait for the first message (up to a bound,
+	 * since the sizing script reports at the frame's first layout and keeps no time of its own); or
+	 * a number of milliseconds to wait in which nothing may come.
+	 */
+	const tryScript = (script: string, wait: "first" | number) =>
+		page.evaluate(
+			async ({ source, wait }) => {
+				const received: unknown[] = [];
+				let firstAfter = -1;
+				const started = performance.now();
+				const frame = document.createElement("iframe");
+				frame.setAttribute("sandbox", "allow-scripts");
+				// In view: a cross-origin frame the browser does not show may never be laid out, and
+				// then nothing in it reports, whether it may run or not; a wait for nothing would
+				// prove nothing.
+				frame.style.cssText = "position:fixed;top:0;left:0;width:300px;height:300px;z-index:9999";
+				const listen = (event: MessageEvent) => {
+					if (event.source !== frame.contentWindow) return;
+					if (firstAfter < 0) firstAfter = performance.now() - started;
+					received.push(event.data);
+				};
+				window.addEventListener("message", listen);
+				frame.srcdoc = `<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-bm9uY2Utbm9uY2Utbm9uY2U='"></head><body><p style="height:240px">x</p><script nonce="bm9uY2Utbm9uY2Utbm9uY2U=">${source}</scr${""}ipt></body></html>`;
+				document.body.appendChild(frame);
+				if (wait === "first") {
+					const deadline = started + 15_000;
+					while (received.length === 0 && performance.now() < deadline)
+						await new Promise((resolve) => setTimeout(resolve, 50));
+				} else {
+					await new Promise((resolve) => setTimeout(resolve, wait));
+				}
+				window.removeEventListener("message", listen);
+				frame.remove();
+				return { received, firstAfter };
+			},
+			{ source: script, wait },
+		);
 
-	const sizing = await tryScript(MAIL_FRAME_SCRIPT);
-	expect(sizing.length).toBeGreaterThan(0);
-	expect(sizing[0]).toEqual({ __emailIframeHeight: true, height: 240 });
+	// The allowed script reports, however long its first layout takes.
+	const sizing = await tryScript(MAIL_FRAME_SCRIPT, "first");
+	expect(sizing.received.length, "the sizing script reported").toBeGreaterThan(0);
+	expect(sizing.received[0]).toEqual({ __emailIframeHeight: true, height: 240 });
 
-	expect(await tryScript('parent.postMessage({ hostile: true }, "*");')).toEqual([]);
+	// A script the policy refuses would report no sooner: the wait for nothing is four times what
+	// the allowed one took here, and never under 1.5 s.
+	const nothingIn = Math.max(1500, Math.ceil(sizing.firstAfter * 4));
 	expect(
-		await tryScript(`${MAIL_FRAME_SCRIPT}parent.postMessage({ hostile: true }, "*");`),
+		(await tryScript('parent.postMessage({ hostile: true }, "*");', nothingIn)).received,
+	).toEqual([]);
+	expect(
+		(await tryScript(`${MAIL_FRAME_SCRIPT}parent.postMessage({ hostile: true }, "*");`, nothingIn))
+			.received,
 	).toEqual([]);
 });
