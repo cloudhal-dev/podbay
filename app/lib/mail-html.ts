@@ -10,8 +10,9 @@
  * 1. `sanitizeMailHtml` removes script, forms, frames, embedded objects and event handlers,
  *    takes remote resources out unless the reader asked for them, and takes out every resource
  *    address that is neither embedded data nor remote: a relative address would resolve against
- *    the app itself. It takes out every transition and animation, and every embedded picture of a
- *    kind the app does not show (SVG among them), so nothing in a message moves by itself. It also folds the quoted text at the end of a reply away behind one line.
+ *    the app itself. It takes out the ways a message is known to move by itself, which the sizing
+ *    script would take for a message at rest (see `stillStyle`). It also folds the quoted text at
+ *    the end of a reply away behind one line.
  * 2. `mailDocument` wraps the result in a document whose content policy allows no script except
  *    the one sizing script (by nonce), no network load unless remote content was allowed, no
  *    form submission and no `<base>`.
@@ -77,23 +78,47 @@ const SANITIZE_CONFIG = {
 	FORCE_BODY: true,
 };
 
+/** What an address parser drops wherever it stands in an address. */
+const DROPPED_IN_ADDRESS = /[\t\n\r]/g;
+
 /**
- * Whether every `data:` address in a text is a picture of a kind the app shows (`isShowableImage`:
- * never SVG). An SVG picture runs its own animations, and one that changes its own size does so
- * some time after the frame took its height, which the sizing script would take for a message at
- * rest (#110). The type is read as a browser reads it, up to the first `,` and the first `;`;
- * anything else in its place (no type, a type the app does not show, a spelling it cannot read)
- * is not a picture the app shows. Pictures are told apart by their type: a browser does not take
- * an SVG for a picture of another type.
+ * Whether a picture type may be embedded: a kind the app shows (`isShowableImage`: never SVG),
+ * or `image/jpg`, a common misspelling of JPEG that browsers draw as one.
+ */
+function isEmbeddablePicture(type: string): boolean {
+	const bare = type.split(";")[0]?.trim() ?? "";
+	return isShowableImage(bare) || bare === "image/jpg";
+}
+
+/**
+ * Whether every `data:` address in a text is a picture that may be embedded. An SVG picture runs
+ * its own animations, and one that changes its own size does so some time after the frame took
+ * its height, which the sizing script would take for a message at rest (#110). The text is read as
+ * an address parser reads it: tab, newline and carriage return dropped, letters lowered as ASCII
+ * (so that nothing moves), and the type cut up to the first `,` and the first `;` of that same
+ * text. Anything else in its place (no type, a type not in the list, a spelling this cannot read)
+ * is refused. Pictures are told apart by their type: a browser does not take an SVG for a picture
+ * of another type (`frame-size.spec.ts` holds that for Chrome).
  */
 function embedsOnlyPictures(text: string): boolean {
-	const lower = text.toLowerCase();
-	for (let at = lower.indexOf("data:"); at !== -1; at = lower.indexOf("data:", at + 5)) {
-		const rest = text.slice(at + 5);
+	const plain = text
+		.replace(DROPPED_IN_ADDRESS, "")
+		.replace(/[A-Z]+/g, (letters) => letters.toLowerCase());
+	for (let at = plain.indexOf("data:"); at !== -1; at = plain.indexOf("data:", at + 5)) {
+		const rest = plain.slice(at + 5);
 		const comma = rest.indexOf(",");
-		if (!isShowableImage(comma === -1 ? rest : rest.slice(0, comma))) return false;
+		if (!isEmbeddablePicture(comma === -1 ? rest : rest.slice(0, comma))) return false;
 	}
 	return true;
+}
+
+/**
+ * Whether a value is one the parser has not decided: it holds `var()`, `env()` or `attr()`, which
+ * are decided only where the value is used, or it is the empty answer a longhand gives when its
+ * shorthand holds one of them. Such a value is kept as written, and nothing in it can be checked.
+ */
+function isUndecided(value: string): boolean {
+	return value === "" || /\b(?:var|env|attr)\s*\(/i.test(value.replace(DROPPED_IN_ADDRESS, ""));
 }
 
 /** The addresses a resource attribute names: one, or several in a `srcset`. */
@@ -158,17 +183,26 @@ function foldQuote(node: Element): void {
 }
 
 /**
- * Takes out of an element's own style everything that would make the message move by itself:
- * every transition and animation, and every picture in a `data:` address that the app does not
- * show (an SVG runs its own animations). Nothing in a message needs to move by itself, and a
- * height that changes some time after the frame took it would look to the sizing script like a
- * message at rest (#110: `transition: height 0s .2s` on a height in `vh`, or an SVG whose height
- * goes up in steps). The declarations are read by the browser's own parser, the one the frame
- * uses, so what is taken out is what the frame would have applied. A value the parser leaves
- * undecoded is taken out too: a custom property (`--name`), which keeps its text as written and
- * is decoded only where `var()` uses it, and anything still holding an escape. An element without
- * a style object loses its style whole. A style the message writes elsewhere cannot reach the
- * frame: `<style>` is forbidden and the document's own sheet defines no keyframes.
+ * Takes out of an element's own style the ways a message is known to move by itself. A height that
+ * changes some time after the frame took it looks to the sizing script like a message at rest
+ * (#110), so these would hold the frame to its two hard stops alone (`FRAME_MAX_REPORTS` and
+ * `FRAME_MAX_HEIGHT`, which hold whatever a message does). The ways known, each with a test:
+ *
+ * - a transition or an animation, prefixed or not;
+ * - a picture in a `data:` address that may not be embedded (an SVG runs its own animations);
+ * - a value the parser has not decided (`isUndecided`): then the whole style goes, since what it
+ *   becomes is decided only where it is used, and a longhand of such a shorthand reads as "";
+ * - a custom property (`--name`), whose text is kept as written; and a value still holding an
+ *   escape. Chrome decodes escapes as it parses and the unit tests' parser leaves some, but both
+ *   write a tab or a newline inside a string back as one, so this also holds a tab in a scheme
+ *   that dropping tabs (`embedsOnlyPictures`) holds too.
+ *
+ * An element without a style object loses its style whole. `<marquee>` is kept by the sanitiser
+ * and moves its text sideways, which changes no height. The declarations are read by the parser of
+ * the document the sanitiser works in: the browser's own in the app, as the frame's, and jsdom's in
+ * the unit tests. A style the message writes elsewhere cannot reach the frame: `<style>` is
+ * forbidden and the document's own sheet defines no keyframes. This is a list, and a list of what
+ * CSS can do is never whole: what is not on it is held by the two stops.
  */
 function stillStyle(node: Element): void {
 	if (!node.hasAttribute("style")) return;
@@ -181,12 +215,15 @@ function stillStyle(node: Element): void {
 	for (let index = 0; index < style.length; index++) {
 		const name = style.item(index);
 		const value = style.getPropertyValue(name);
-		if (
-			MOTION_PROPERTY.test(name) ||
-			name.startsWith("--") ||
-			value.includes("\\") ||
-			!embedsOnlyPictures(value)
-		)
+		if (name.startsWith("--")) {
+			moving.push(name);
+			continue;
+		}
+		if (isUndecided(value)) {
+			node.removeAttribute("style");
+			return;
+		}
+		if (MOTION_PROPERTY.test(name) || value.includes("\\") || !embedsOnlyPictures(value))
 			moving.push(name);
 	}
 	for (const name of moving) style.removeProperty(name);
@@ -213,7 +250,11 @@ export function sanitizeMailHtml(
 			const value = node.getAttribute(attribute);
 			if (value === null) continue;
 			const kind = resourceKind(attribute, value);
-			if (kind === "neither" || !embedsOnlyPictures(value)) {
+			// Only an embedded address is a picture to check: a remote one may hold the letters.
+			const unembeddable = addressesOf(attribute, value).some(
+				(address) => EMBEDDED_URL.test(address) && !embedsOnlyPictures(address),
+			);
+			if (kind === "neither" || unembeddable) {
 				// Never loadable, whatever the reader allowed: not counted as something to allow.
 				node.removeAttribute(attribute);
 			} else if (kind === "remote" && !allowRemote) {

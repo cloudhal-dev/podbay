@@ -17,16 +17,18 @@ import { PROXY } from "./proxy-address.ts";
 const FRAME = 'iframe[title="Email content"]';
 
 /**
- * An SVG picture that grows by itself, in 31 steps of 0.4 s from 100 px to 1600 px, as a `data:`
- * address. A browser keeps a picture it has drawn, with its clock: one it drew before would stand
- * at its last height at once. So each run makes a picture of its own (`run`).
+ * An SVG picture that grows by itself, in 31 steps of 0.4 s from 100 px to 1600 px, in base64. A
+ * browser keeps a picture it has drawn, with its clock: one it drew before would stand at its last
+ * height at once. So each call makes a picture of its own (`run`), and a test makes its message
+ * when it runs, not when the file loads: a second run in the same worker gets a new picture too.
  */
-function steppingPicture(): string {
+function steppingSvg(): string {
 	const run = randomUUID();
 	const steps = Array.from({ length: 31 }, (_, step) => 100 + step * 50).join(";");
 	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="100"><title>${run}</title><animate attributeName="height" values="${steps}" dur="12.4s" calcMode="discrete" fill="freeze"/><rect width="40" height="100%" fill="#68c"/></svg>`;
-	return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+	return Buffer.from(svg).toString("base64");
 }
+const steppingPicture = () => `data:image/svg+xml;base64,${steppingSvg()}`;
 
 /**
  * Every height a mail frame told the page, in order, kept by the page's own window: which
@@ -59,7 +61,7 @@ const reports = async (page: Page) => {
 /**
  * Waits until the page has been told nothing new for a whole second, and returns what it was told.
  * A message that moved less often than once a second would look at rest here with a low count:
- * no such mover is known, now that nothing in a message moves by itself (app/lib/mail-html.ts).
+ * no such mover is known once the known ones are taken out (app/lib/mail-html.ts).
  */
 async function atRest(page: Page): Promise<number[]> {
 	let last = -1;
@@ -113,39 +115,58 @@ test("a message is shown to its last line: the frame is as tall as the whole doc
  * some time after the frame took its height, so that the script would see a message at rest each
  * time. Each must come to rest.
  */
-const FOLLOWERS: { name: string; html: string }[] = [
-	{ name: "twice the frame's height", html: '<div style="height:200vh">tall</div>' },
+const FOLLOWERS: { name: string; html: () => string }[] = [
+	{ name: "twice the frame's height", html: () => '<div style="height:200vh">tall</div>' },
 	{
 		name: "one pixel more than the frame",
-		html: '<div style="min-height:calc(100vh + 1px)">taller by one</div>',
+		html: () => '<div style="min-height:calc(100vh + 1px)">taller by one</div>',
 	},
 	{
 		name: "a percentage of a height in vh",
-		html: '<div style="height:100vh"><div style="height:200%">nested</div></div>',
+		html: () => '<div style="height:100vh"><div style="height:200%">nested</div></div>',
 	},
 	{
 		name: "a calc() of vh and %",
-		html: '<div style="height:100vh"><div style="height:calc(100% + 50vh)">mixed</div></div>',
+		html: () => '<div style="height:100vh"><div style="height:calc(100% + 50vh)">mixed</div></div>',
 	},
 	{
 		name: "a height that shrinks as the frame grows",
-		html: '<div style="height:calc(600px - 100vh)">swings</div>',
+		html: () => '<div style="height:calc(600px - 100vh)">swings</div>',
 	},
 	{
 		// A delayed transition would move the message only after the script looked: it would seem
 		// to stand still each time. The renderer takes it out of the message (app/lib/mail-html.ts).
 		name: "a delayed transition",
-		html: '<div style="height:calc(100vh + 1px);transition:height 0s .2s">later</div>',
+		html: () => '<div style="height:calc(100vh + 1px);transition:height 0s .2s">later</div>',
 	},
 	{
 		// The same by another door: a picture that moves by itself, a step after the frame took the
-		// height. The renderer lets no SVG picture in from a `data:` address (app/lib/mail-html.ts).
+		// height. The renderer takes such pictures out of `data:` addresses (app/lib/mail-html.ts).
 		name: "an SVG picture that grows in steps",
-		html: `<img src="${steppingPicture()}" alt="">`,
+		html: () => `<img src="${steppingPicture()}" alt="">`,
 	},
 	{
 		name: "the same picture through a style",
-		html: `<div style="content:url(${steppingPicture()})">picture</div>`,
+		html: () => `<div style="content:url(${steppingPicture()})">picture</div>`,
+	},
+	{
+		// A shorthand that uses var(): its longhands read as "", so there is nothing to search.
+		name: "the same picture in a shorthand with var()",
+		html: () =>
+			`<ul><li style="list-style:var(--x,inside url(data:image/svg+xml;base64,${steppingSvg()}))">item</li></ul>`,
+	},
+	{
+		// A value that uses var() is kept as written, tab and all; the address parser drops the tab.
+		name: "the same picture behind var(), with a tab in its scheme",
+		html: () =>
+			`<div style="content:var(--x,url('da&#9;ta:image/svg+xml;base64,${steppingSvg()}'))">picture</div>`,
+	},
+	{
+		// Letters that grow when lowered would move the cut of the type past `image/svg+xml;`. The
+		// picture comes second in the text and is the one for this screen (1x).
+		name: "the same picture behind letters that grow when lowered",
+		html: () =>
+			`<div style="content:image-set(&quot;data:image/png;${"İ".repeat(14)},x&quot; 2x, &quot;data:image/svg+xml;image/png;base64,${steppingSvg()}&quot; 1x)">picture</div>`,
 	},
 ];
 
@@ -160,7 +181,7 @@ for (const follower of FOLLOWERS) {
 			mime({
 				subject,
 				to: app.account.mailbox,
-				html: `<p>Above it.</p>${follower.html}<p>The last line of a hostile message.</p>`,
+				html: `<p>Above it.</p>${follower.html()}<p>The last line of a hostile message.</p>`,
 			}),
 		);
 		await app.signIn();
@@ -328,6 +349,33 @@ test.describe("pictures that arrive late", () => {
 		expect(viewport, "the frame stands at the last height it was told").toBe(told.at(-1));
 		expect(bottom, "the last line ends inside the frame").toBeLessThanOrEqual(viewport);
 	});
+
+	test("a remote picture whose address holds the letters data: is counted, offered and shown", async ({
+		page,
+		app,
+	}) => {
+		await answerLate(page, "pics.sender.test", 0, 50);
+		const subject = "Size: a remote picture with data: in its address";
+		await app.deliver(
+			mime({
+				subject,
+				to: app.account.mailbox,
+				html: '<p>Before.</p><img src="https://pics.sender.test/a.png?metadata:1" alt=""><p>After.</p>',
+			}),
+		);
+		await app.signIn();
+		await app.openMessage(subject);
+		await page.getByRole("button", { name: "Show images" }).click();
+		await expect
+			.poll(() =>
+				page
+					.frameLocator(FRAME)
+					.locator("img")
+					.evaluate((one: HTMLImageElement) => one.naturalHeight),
+			)
+			.toBe(50);
+		expect(await app.contacted()).toEqual(["pics.sender.test"]);
+	});
 });
 
 test.describe("a host the proxy answered", () => {
@@ -372,7 +420,7 @@ const SVG_BASE64 = Buffer.from(
 	'<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40"/></svg>',
 ).toString("base64");
 
-test("in the frame nothing moves by itself and no SVG picture is drawn, however the message spells it", async ({
+test("in the frame the known ways of moving are gone and no SVG picture is drawn, for each spelling tried", async ({
 	app,
 }) => {
 	const moving = [
@@ -396,6 +444,11 @@ test("in the frame nothing moves by itself and no SVG picture is drawn, however 
 		`--p:url(data:image/svg+xml;base64,${SVG_BASE64});background-image:var(--p)`,
 		`--p:url(d\\61ta:image/svg+xml;base64,${SVG_BASE64});background-image:var(--p)`,
 		`background-image:image-set("data:image/svg+xml;base64,${SVG_BASE64}" 1x)`,
+		`content:url('da&#9;ta:image/svg+xml;base64,${SVG_BASE64}')`,
+		`list-style:var(--x,inside url(data:image/svg+xml;base64,${SVG_BASE64}))`,
+		`content:var(--x,url('da&#9;ta:image/svg+xml;base64,${SVG_BASE64}'))`,
+		`content:image-set('data:image/png;${"İ".repeat(14)},x' 2x, 'data:image/svg+xml;image/png;base64,${SVG_BASE64}' 1x)`,
+		`content:env(x,url(data:image/svg+xml;base64,${SVG_BASE64}))`,
 	];
 	const pngBase64 = png(40, 30, [90, 120, 200]).toString("base64");
 	const subject = "Size: every spelling of a message that moves";

@@ -135,7 +135,7 @@ describe("sanitizeMailHtml and remote content", () => {
 	});
 });
 
-describe("nothing in a message moves by itself", () => {
+describe("the ways a message is known to move by itself are taken out of its styles", () => {
 	/** The properties left in the first `div`'s own style, as the DOM reads them. */
 	const declared = (html: string) => {
 		const style = parse(html).querySelector("div")?.style;
@@ -204,7 +204,7 @@ describe("nothing in a message moves by itself", () => {
 	});
 });
 
-describe("no picture of a kind the app does not show is embedded (an SVG moves by itself)", () => {
+describe("an embedded picture of a kind not in the list is taken out (an SVG moves by itself)", () => {
 	const SVG = "PHN2Zy8+"; // "<svg/>" in base64
 	const PNG = "iVBORw0KGgo=";
 
@@ -215,6 +215,8 @@ describe("no picture of a kind the app does not show is embedded (an SVG moves b
 		["an SVG without base64", "data:image/svg+xml,%3Csvg%2F%3E"],
 		["an SVG with a charset", "data:image/svg+xml;charset=utf-8,%3Csvg%2F%3E"],
 		["an SVG with spaces in its type", `data: image/svg+xml ;base64,${SVG}`],
+		["an SVG with a tab in its type", `data:image/svg&#9;+xml;base64,${SVG}`],
+		["an SVG with a tab in its scheme", `da&#9;ta:image/svg+xml;base64,${SVG}`],
 		["data with no type", "data:,hello"],
 		["a page", "data:text/html,%3Cp%3Ehi"],
 	])("%s is taken out of a picture's address", (_, address) => {
@@ -228,16 +230,36 @@ describe("no picture of a kind the app does not show is embedded (an SVG moves b
 		}
 	});
 
-	it("a srcset with a good picture and an SVG is taken out", () => {
-		const html = allowed(
-			`<img srcset="data:image/png;base64,${PNG} 1x, data:image/svg+xml;base64,${SVG} 2x" alt="">`,
-		).html;
-		expect(parse(html).querySelector("img")?.hasAttribute("srcset")).toBe(false);
+	it("a data: address in a srcset is taken out whatever its type: the split at its comma leaves it unloadable", () => {
+		// This holds without the picture check; it says what the split already does.
+		for (const srcset of [
+			`data:image/png;base64,${PNG} 1x, data:image/svg+xml;base64,${SVG} 2x`,
+			`data:image/png;base64,${PNG} 1x`,
+		]) {
+			const html = allowed(`<img srcset="${srcset}" alt="">`).html;
+			expect(parse(html).querySelector("img")?.hasAttribute("srcset"), srcset).toBe(false);
+		}
+	});
+
+	it("a remote address that holds the letters data: is a remote picture, counted and shown when allowed", () => {
+		const img = '<img src="https://pics.sender.test/a.png?metadata:1" alt="">';
+		const hidden = blocked(img);
+		expect(hidden.blockedRemote).toBe(1);
+		expect(parse(hidden.html).querySelector("img")?.hasAttribute("src")).toBe(false);
+		expect(parse(allowed(img).html).querySelector("img")?.getAttribute("src")).toBe(
+			"https://pics.sender.test/a.png?metadata:1",
+		);
+	});
+
+	it("a picture typed image/x-icon is taken out: it is not in the list", () => {
+		const img = parse(blocked('<img src="data:image/x-icon;base64,AAABAA==" alt="">').html);
+		expect(img.querySelector("img")?.hasAttribute("src")).toBe(false);
 	});
 
 	it.each([
 		["a PNG", `data:image/png;base64,${PNG}`],
 		["a GIF", "data:image/gif;base64,R0lGODlhAQABAAAAACw="],
+		["a JPEG typed image/jpg, a common misspelling", "data:image/jpg;base64,/9j/4AAQ"],
 	])("%s stays: it is a picture the app shows", (_, address) => {
 		const img = parse(blocked(`<img src="${address}" alt="">`).html).querySelector("img");
 		expect(img?.getAttribute("src")).toBe(address);
@@ -254,6 +276,31 @@ describe("no picture of a kind the app does not show is embedded (an SVG moves b
 		["a list marker", "list-style-image:url(data:image/svg+xml,x)"],
 		["an escaped address", "content:url(d\\61ta:image/svg+xml,x)"],
 		[
+			// The type is cut from the same text its place was found in: letters that grow when
+			// lowered cannot move the cut past `image/svg+xml;`.
+			"letters that grow when lowered",
+			`content:image-set('data:image/png;${"İ".repeat(14)},x' 2x, 'data:image/svg+xml;image/png;base64,${SVG}' 1x)`,
+		],
+		["a tab in the type", `content:url('data:image/svg&#9;+xml;base64,${SVG}')`],
+		// An address parser drops the tab, so this is a data: address in the frame.
+		["a tab in the scheme", `content:url('da&#9;ta:image/svg+xml;base64,${SVG}')`],
+		["a custom property", "--picture:url(data:image/svg+xml,x)"],
+	])("an SVG in a style (%s) is taken out, and the rest of the style stays", (_, style) => {
+		for (const sanitize of [blocked, allowed]) {
+			const html = sanitize(`<div style="color:red;${style}">x</div>`).html;
+			const div = parse(html).querySelector("div");
+			expect(html, style).not.toMatch(/svg|--picture\s*:/i);
+			expect(div?.style.getPropertyValue("color"), style).toBe("red");
+		}
+	});
+
+	it.each([
+		["a shorthand with var()", `list-style:var(--x,inside url(data:image/svg+xml;base64,${SVG}))`],
+		[
+			"var() with a tab in the scheme",
+			`content:var(--x,url('da&#9;ta:image/svg+xml;base64,${SVG}'))`,
+		],
+		[
 			"a custom property used by var()",
 			"--picture:url(data:image/svg+xml,x);content:var(--picture)",
 		],
@@ -262,12 +309,12 @@ describe("no picture of a kind the app does not show is embedded (an SVG moves b
 			"an escaped address in a custom property",
 			"--picture:url(d\\61ta:image/svg+xml,x);content:var(--picture)",
 		],
-	])("an SVG in a style (%s) is taken out, and the rest of the style stays", (_, style) => {
+		["env()", `content:env(x,url(data:image/svg+xml;base64,${SVG}))`],
+		["attr()", `content:attr(data-x,url(data:image/svg+xml;base64,${SVG}))`],
+	])("a style that holds a value the parser has not decided (%s) goes whole", (_, style) => {
 		for (const sanitize of [blocked, allowed]) {
 			const html = sanitize(`<div style="color:red;${style}">x</div>`).html;
-			const div = parse(html).querySelector("div");
-			expect(html, style).not.toMatch(/svg|--picture\s*:/i);
-			expect(div?.style.getPropertyValue("color"), style).toBe("red");
+			expect(parse(html).querySelector("div")?.hasAttribute("style"), style).toBe(false);
 		}
 	});
 
