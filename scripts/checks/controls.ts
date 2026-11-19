@@ -196,7 +196,6 @@ export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
  */
 export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> = {
 	"app/components/AgentPanel.tsx": { button: 1, textarea: 1 },
-	"app/components/AgentSidebar.tsx": { button: 2 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
 	"app/components/InlineReply.tsx": { button: 2 },
 	"app/components/LabelDialog.tsx": { input: 1 },

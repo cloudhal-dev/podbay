@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Loader } from "@cloudflare/kumo";
+import { Loader, Tabs } from "@cloudflare/kumo";
 import { PlugsIcon, RobotIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { errorFields, log } from "shared/log";
@@ -57,36 +57,42 @@ export default function AgentSidebar() {
 
 	return (
 		<div className="flex flex-col h-full">
-			{/* Tab bar */}
-			<div className="flex items-center border-b border-kumo-line shrink-0">
-				{enabled.agent && (
-					<button
-						type="button"
-						onClick={() => setActiveTab("agent")}
-						className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 bg-transparent cursor-pointer ${
-							activeTab === "agent"
-								? "border-kumo-brand text-kumo-default"
-								: "border-transparent text-kumo-subtle hover:text-kumo-default"
-						}`}
-					>
-						<RobotIcon size={14} weight={activeTab === "agent" ? "fill" : "regular"} />
-						{t("Agent")}
-					</button>
-				)}
-				{enabled.mcp && (
-					<button
-						type="button"
-						onClick={() => setActiveTab("mcp")}
-						className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 bg-transparent cursor-pointer ${
-							activeTab === "mcp"
-								? "border-kumo-brand text-kumo-default"
-								: "border-transparent text-kumo-subtle hover:text-kumo-default"
-						}`}
-					>
-						<PlugsIcon size={14} weight={activeTab === "mcp" ? "fill" : "regular"} />
-						MCP
-					</button>
-				)}
+			{/* Tab bar: Kumo's tabs, the underline kind, with the roles of a tab list; room above them
+			    keeps the bar the height it had, with the underline on its line. */}
+			<div className="shrink-0 border-b border-kumo-line px-2 pt-2">
+				<Tabs
+					variant="underline"
+					value={activeTab}
+					onValueChange={(next) => setActiveTab(next === "mcp" ? "mcp" : "agent")}
+					tabs={[
+						...(enabled.agent
+							? [
+									{
+										value: "agent",
+										label: (
+											<span className="flex items-center gap-1.5">
+												<RobotIcon size={14} weight={activeTab === "agent" ? "fill" : "regular"} />
+												{t("Agent")}
+											</span>
+										),
+									},
+								]
+							: []),
+						...(enabled.mcp
+							? [
+									{
+										value: "mcp",
+										label: (
+											<span className="flex items-center gap-1.5">
+												<PlugsIcon size={14} weight={activeTab === "mcp" ? "fill" : "regular"} />
+												MCP
+											</span>
+										),
+									},
+								]
+							: []),
+					]}
+				/>
 			</div>
 
 			{/* Tab content — keep agent mounted so chat isn't lost */}
