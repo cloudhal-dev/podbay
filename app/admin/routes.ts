@@ -3,6 +3,8 @@
 
 import { type AnyRoute, createRoute, redirect } from "@tanstack/react-router";
 import AdminLayout from "./AdminLayout";
+import MailboxesPage from "./MailboxesPage";
+import MailboxPage from "./MailboxPage";
 import PeoplePage from "./PeoplePage";
 
 /**
@@ -20,5 +22,15 @@ export function adminRoutes(root: AnyRoute) {
 		},
 	});
 	const people = createRoute({ getParentRoute: () => area, path: "people", component: PeoplePage });
-	return area.addChildren([index, people]);
+	const mailboxes = createRoute({
+		getParentRoute: () => area,
+		path: "mailboxes",
+		component: MailboxesPage,
+	});
+	const mailbox = createRoute({
+		getParentRoute: () => area,
+		path: "mailboxes/$mailboxId",
+		component: MailboxPage,
+	});
+	return area.addChildren([index, people, mailboxes, mailbox]);
 }

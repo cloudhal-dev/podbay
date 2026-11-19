@@ -4,11 +4,16 @@
 /**
  * Tier 6: the administration area (#127). Whoever may manage the instance finds it from their
  * mailboxes, with a rail of its parts and the way back to mail; People lists everyone and the
- * invitations, invites a person and withdraws an invitation. A person who only has a mailbox
- * sees no way in, and the area's addresses answer as not found.
+ * invitations, invites a person and withdraws an invitation; Mailboxes lists every mailbox, makes
+ * one, and has a page for each with its members, the record of their changes and deleting it. A
+ * person who only has a mailbox sees no way in, and the area's addresses answer as not found;
+ * the old members address keeps working for a mailbox's own owner.
  */
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures.ts";
+import { BASE, expect, makeMailbox, test } from "./fixtures.ts";
+
+/** The path of the page now, decoded, to compare as text. */
+const pathNow = (page: Page) => decodeURIComponent(new URL(page.url()).pathname);
 
 /** Invites a person from People and returns the link shown once. */
 async function invite(page: Page, email: string): Promise<string> {
@@ -28,10 +33,15 @@ test("an owner opens the administration area from their mailboxes, and People li
 	await expect(page.getByRole("heading", { name: "Mailboxes", exact: true })).toBeVisible();
 	// What moved is no longer on the page of a person's mailboxes.
 	await expect(page.getByRole("heading", { name: "People", exact: true })).toHaveCount(0);
+	await expect(page.getByRole("heading", { name: "All mailboxes" })).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "New Mailbox" })).toHaveCount(0);
 	await page.getByRole("link", { name: "Administration" }).click();
 
 	await expect(page).toHaveURL(/\/admin\/people$/);
 	await expect(page.getByRole("heading", { name: "Administration", level: 1 })).toBeVisible();
+	await expect(page).toHaveTitle("People - Administration - Podbay");
+	// The person's own account is in the area's bar, as it is in the mail screens'.
+	await expect(page.getByRole("button", { name: "Sign-in and security" })).toBeVisible();
 	const rail = page.getByRole("navigation", { name: "Administration" });
 	await expect(rail.getByRole("link", { name: "People" })).toHaveAttribute("aria-current", "page");
 
@@ -80,10 +90,69 @@ test("a person who only has a mailbox sees no way into the area, and its address
 	await expect(theirs.getByText(`Signed in as ${person.email}`)).toBeVisible();
 
 	await expect(theirs.getByRole("link", { name: "Administration" })).toHaveCount(0);
-	for (const address of ["/admin", "/admin/people"]) {
+	for (const address of ["/admin", "/admin/people", "/admin/mailboxes"]) {
 		await theirs.goto(address);
 		await expect(theirs.getByText("404 -- Page Not Found"), address).toBeVisible();
 		await expect(theirs.getByRole("table")).toHaveCount(0);
 	}
+
+	// An owner of a mailbox who does not manage the instance keeps its members at the old address.
+	const theirMailbox = await makeMailbox(page, `owned-${Date.now()}@example.com`, "Owned");
+	const added = await page.request.post(
+		`${BASE}/api/v1/mailboxes/${encodeURIComponent(theirMailbox)}/members`,
+		{ data: { email: person.email, role: "owner" }, headers: { origin: BASE } },
+	);
+	expect(added.ok(), "the member is made an owner of the mailbox").toBe(true);
+	await theirs.goto(`/members/${encodeURIComponent(theirMailbox)}`);
+	await expect(theirs.getByRole("heading", { name: "Members", level: 1 })).toBeVisible();
+	await expect(theirs.getByRole("heading", { name: "Who has access" })).toBeVisible();
+	await expect(theirs).toHaveURL(/\/members\//);
 	await context.close();
+});
+
+test("Mailboxes lists every mailbox, makes one, and has a page for each with its members and deleting it", async ({
+	page,
+	app,
+}) => {
+	await app.signIn();
+	await page.goto("/admin");
+	await page
+		.getByRole("navigation", { name: "Administration" })
+		.getByRole("link", { name: "Mailboxes" })
+		.click();
+	await expect(page).toHaveURL(/\/admin\/mailboxes$/);
+	await expect(page).toHaveTitle("Mailboxes - Administration - Podbay");
+	const list = page.getByRole("table", { name: "Mailboxes" });
+	await expect(list.getByRole("row").filter({ hasText: app.account.mailbox })).toContainText(
+		"You are a member",
+	);
+
+	// Making one.
+	const prefix = `made-${Date.now()}`;
+	const made = `${prefix}@example.com`;
+	await page.getByRole("button", { name: "New Mailbox" }).click();
+	const dialog = page.getByRole("dialog", { name: "Create a mailbox" });
+	await dialog.getByRole("textbox", { name: "Address prefix" }).fill(prefix);
+	await dialog.getByRole("textbox", { name: "Display Name (optional)" }).fill("Made here");
+	await dialog.getByRole("button", { name: "Create" }).click();
+	await expect(dialog).toBeHidden();
+	await list.getByRole("link", { name: made }).click();
+
+	// Its page: what it is, who its members are, the record, deleting it.
+	await expect.poll(() => pathNow(page)).toBe(`/admin/mailboxes/${made}`);
+	await expect(page).toHaveTitle(`${made} - Mailboxes - Administration - Podbay`);
+	await expect(page.getByRole("heading", { name: made })).toBeVisible();
+	await expect(page.getByText("Made here")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Who has access" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Record of changes" })).toBeVisible();
+	await page.getByRole("button", { name: "Delete mailbox" }).click();
+	const asking = page.getByRole("alertdialog", { name: "Delete this mailbox?" });
+	await asking.getByRole("button", { name: "Delete" }).click();
+	await expect(page).toHaveURL(/\/admin\/mailboxes$/);
+	await expect(list.getByRole("link", { name: made })).toHaveCount(0);
+
+	// The old members address takes a manager to the mailbox's page.
+	await page.goto(`/members/${encodeURIComponent(app.account.mailbox)}`);
+	await expect.poll(() => pathNow(page)).toBe(`/admin/mailboxes/${app.account.mailbox}`);
+	await expect(page.getByRole("heading", { name: "Who has access" })).toBeVisible();
 });

@@ -1,8 +1,15 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { ArrowLeftIcon, type Icon, UsersIcon } from "@phosphor-icons/react";
-import { Link, Outlet } from "@tanstack/react-router";
+import { Button, Tooltip } from "@cloudflare/kumo";
+import {
+	ArrowLeftIcon,
+	EnvelopeSimpleIcon,
+	type Icon,
+	ShieldCheckIcon,
+	UsersIcon,
+} from "@phosphor-icons/react";
+import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { m, t } from "~/i18n";
 import { useMe } from "~/lib/session";
 import NotFoundRoute from "~/routes/not-found";
@@ -13,6 +20,7 @@ import NotFoundRoute from "~/routes/not-found";
  */
 export const ADMIN_PARTS: readonly { to: string; label: string; icon: Icon }[] = [
 	{ to: "/admin/people", label: m("People"), icon: UsersIcon },
+	{ to: "/admin/mailboxes", label: m("Mailboxes"), icon: EnvelopeSimpleIcon },
 ];
 
 /** Whether a person may manage the instance. The Worker decides again on every request. */
@@ -25,6 +33,7 @@ export const managesInstance = (role: string | undefined) => role === "owner" ||
  */
 export default function AdminLayout() {
 	const { data: me, isPending } = useMe();
+	const navigate = useNavigate();
 	if (isPending) return null;
 	if (!managesInstance(me?.role)) return <NotFoundRoute />;
 	return (
@@ -37,7 +46,19 @@ export default function AdminLayout() {
 					<ArrowLeftIcon size={16} aria-hidden />
 					{t("Back to mail")}
 				</Link>
-				<h1 className="m-0 text-base font-semibold text-kumo-default">{t("Administration")}</h1>
+				<h1 className="m-0 flex-1 text-base font-semibold text-kumo-default">
+					{t("Administration")}
+				</h1>
+				{/* The person's own account, as the mail screens' bar has it. */}
+				<Tooltip content={t("Sign-in and security")} side="bottom" asChild>
+					<Button
+						variant="ghost"
+						shape="square"
+						icon={<ShieldCheckIcon size={20} />}
+						onClick={() => void navigate({ to: "/account/security" })}
+						aria-label={t("Sign-in and security")}
+					/>
+				</Tooltip>
 			</header>
 			<div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 md:flex-row md:px-6 md:py-8">
 				<nav aria-label={t("Administration")} className="md:w-52 md:shrink-0">

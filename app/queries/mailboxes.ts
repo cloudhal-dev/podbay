@@ -4,6 +4,7 @@
 // Modified by the Podbay contributors.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { sessionKeys } from "~/lib/session";
 import api from "~/services/api";
 import type { Mailbox } from "~/types";
 import { defined } from "./defined";
@@ -31,6 +32,9 @@ export function useCreateMailbox() {
 			api.createMailbox(email, name),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: queryKeys.mailboxes.all });
+			// The list of every mailbox, and the person's own (making one makes them its owner).
+			qc.invalidateQueries({ queryKey: queryKeys.registry });
+			qc.invalidateQueries({ queryKey: sessionKeys.me });
 		},
 	});
 }
@@ -57,6 +61,9 @@ export function useDeleteMailbox() {
 		mutationFn: (mailboxId: string) => api.deleteMailbox(mailboxId),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: queryKeys.mailboxes.all });
+			// The list of every mailbox, and the person's own (making one makes them its owner).
+			qc.invalidateQueries({ queryKey: queryKeys.registry });
+			qc.invalidateQueries({ queryKey: sessionKeys.me });
 		},
 	});
 }
