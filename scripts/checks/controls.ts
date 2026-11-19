@@ -74,6 +74,13 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 			"Kumo 2.18.1 has no field for a date and a time: its DatePicker is a calendar only. The browser's own field stands here alone, sized to Kumo's default, and every screen uses this wrapper.",
 	},
 	{
+		file: "app/components/AgentPanel.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"A suggestion the assistant offers before a conversation starts: a line of words the width of the panel, set at its left and free to run to a second line, which asks the assistant when pressed. Kumo's Button holds one line of a label, as wide as its words.",
+	},
+	{
 		file: "app/components/AddressField.tsx",
 		element: "input",
 		count: 1,
@@ -195,13 +202,10 @@ export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
  * the debt #82 and #83 pay. Lower a number when a control moves to Kumo; never raise one.
  */
 export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> = {
-	"app/components/AgentPanel.tsx": { button: 1, textarea: 1 },
-	"app/components/AgentSidebar.tsx": { button: 2 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
 	"app/components/InlineReply.tsx": { button: 2 },
 	"app/components/LabelDialog.tsx": { input: 1 },
 	"app/components/ScheduledList.tsx": { button: 1 },
-	"app/components/settings/AssistantSettings.tsx": { textarea: 1 },
 	"app/components/settings/SignatureSettings.tsx": { input: 1 },
 };
 
