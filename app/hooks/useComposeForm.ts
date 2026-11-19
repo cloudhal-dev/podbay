@@ -211,13 +211,59 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const isComposing = useUIStore((state) => state.isComposing);
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
 	const isDraftEdit = !!composeOptions.draftEmail;
+	/** The mailbox the message being written belongs to: it is saved there, wherever the page went. */
+	const writtenIn = useRef(mailboxId);
+	/**
+	 * Counts the messages this window began. A save that began for one message and ends after the
+	 * next began leaves the next alone: it does not give it the first one's draft.
+	 */
+	const generation = useRef(0);
+	/** The count of what the person did when what is written was last saved. */
+	const savedVersion = useRef(0);
+	/** Whether the message being written is being saved before the next one begins. */
+	const keeping = useRef(false);
+	/** Asks the window to look again at the message to begin, once the one written is kept. */
+	const [kept, setKept] = useState(0);
 
 	const sigBlock = useMemo(() => getSignatureBlock(currentMailbox?.settings), [currentMailbox]);
 
+	// One message is written at a time (#113). When another begins (Compose, its key, an answer, a
+	// forward, a draft opened, the window closed), what is written and not yet saved is saved as
+	// its draft first, as closing does, and the next one begins only then. If that save fails, the
+	// message being written stays open and says why; nothing is thrown away.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: a new message is the trigger; the files follow it
 	useEffect(() => {
-		if (lastInitializedOptionsRef.current === composeOptions) return;
+		if (keeping.current) return;
+		const previous = lastInitializedOptionsRef.current;
+		if (previous === composeOptions) return;
+		// The draft being written, opened again from a list: it stays as it is, with every word
+		// written since it was last saved.
+		const opened = composeOptions.draftEmail?.id;
+		if (previous && opened && opened === draftId.current && writtenIn.current === mailboxId) {
+			lastInitializedOptionsRef.current = composeOptions;
+			return;
+		}
+		if (previous && touched) {
+			keeping.current = true;
+			const sameMailbox = writtenIn.current === mailboxId;
+			void keepWritten().then((saved) => {
+				keeping.current = false;
+				if (!saved && sameMailbox) {
+					// The message written stays: the one asked for does not begin.
+					useUIStore.setState({
+						composeOptions: previous,
+						composePlacement: "window",
+						isComposing: true,
+					});
+					return;
+				}
+				setKept((count) => count + 1);
+			});
+			return;
+		}
 		lastInitializedOptionsRef.current = composeOptions;
+		generation.current += 1;
+		writtenIn.current = mailboxId;
 
 		const initialFields = buildInitialComposeFields(
 			composeOptions,
@@ -252,17 +298,21 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		if (composeOptions.mode === "forward" && original && !editing) {
 			void draftFiles.carry(original.id, original.attachments ?? []);
 		}
-	}, [composeOptions, currentMailbox?.email, sigBlock, mailboxId]);
+	}, [composeOptions, currentMailbox?.email, sigBlock, mailboxId, kept]);
 
 	/**
 	 * Saves what is written as a draft. `quiet` is the save the window makes by itself while the
 	 * person writes: it says nothing, and a failure is simply tried again after the next change.
 	 */
 	const saveDraft = async (quiet: boolean): Promise<boolean> => {
-		if (!mailboxId || isSending) return false;
+		// The message being written: its mailbox and what it answers, even while the next waits.
+		const box = writtenIn.current;
+		const writing = lastInitializedOptionsRef.current ?? composeOptions;
+		if (!box || isSending) return false;
 		// One save at a time: the next one must know the id the last one made.
 		await pendingSave.current;
 		const saving = version.current;
+		const forMessage = generation.current;
 		if (!quiet) {
 			setIsSavingDraft(true);
 			setError(null);
@@ -274,15 +324,11 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				bcc: bcc || undefined,
 				subject,
 				body,
-				in_reply_to:
-					composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to || undefined,
-				thread_id:
-					composeOptions.originalEmail?.thread_id ||
-					composeOptions.draftEmail?.thread_id ||
-					undefined,
+				in_reply_to: writing.originalEmail?.id || writing.draftEmail?.in_reply_to || undefined,
+				thread_id: writing.originalEmail?.thread_id || writing.draftEmail?.thread_id || undefined,
 			};
 			const save = (id: string | undefined) =>
-				saveDraftMutation.mutateAsync({ mailboxId, draft, id });
+				saveDraftMutation.mutateAsync({ mailboxId: box, draft, id });
 			// A draft that is gone (sent or discarded elsewhere) is written again as a new one.
 			const saved = await save(draftId.current ?? undefined).catch((caught) => {
 				if (draftId.current === null || !(caught instanceof ApiError) || caught.status !== 404) {
@@ -290,7 +336,10 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				}
 				return save(undefined);
 			});
+			// A save that ends after the next message began belongs to the one before.
+			if (generation.current !== forMessage) return true;
 			draftId.current = saved.id;
+			savedVersion.current = saving;
 			// Only what was there when the save began is saved.
 			if (version.current === saving) setTouched(false);
 			setSavedAt(Date.now());
@@ -314,6 +363,18 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		return save;
 	};
 	const handleSaveDraft = () => saveOnce(false);
+	/**
+	 * Saves what is written before the next message begins: after a save on its way, and only
+	 * when something was written since the last one. Says "Draft saved", as closing does.
+	 */
+	const keepWritten = async (): Promise<boolean> => {
+		await pendingSave.current;
+		if (savedVersion.current === version.current && draftId.current !== null) {
+			setTouched(false);
+			return true;
+		}
+		return saveOnce(false);
+	};
 	ensureDraft.current = async () => {
 		await pendingSave.current;
 		if (draftId.current === null) await saveOnce(true);
