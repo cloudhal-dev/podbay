@@ -6,7 +6,7 @@
 import { Button } from "@cloudflare/kumo";
 import DOMPurify from "dompurify";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MAIL_FRAME_SANDBOX } from "shared/mail-frame";
+import { type FrameReports, MAIL_FRAME_SANDBOX, nextFrameHeight } from "shared/mail-frame";
 import { t } from "~/i18n";
 import { freshNonce, mailDocument, type Purifier, sanitizeMailHtml } from "~/lib/mail-html";
 
@@ -35,6 +35,11 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 	const [sizedFor, setSizedFor] = useState<string | null>(null);
 	/** The document of the frame on the page now, for the height message to mark. */
 	const shown = useRef("");
+	/**
+	 * What the page has taken from the frame's document. The page holds the frame's limits itself
+	 * (`nextFrameHeight`): it follows a bounded number of reports, up to a bounded height.
+	 */
+	const reports = useRef<{ document: string } & FrameReports>({ document: "", counts: new Map() });
 	// Asked for per message: a new body starts with remote content hidden again.
 	const [allowedFor, setAllowedFor] = useState<string | null>(null);
 	const allowRemote = allowedFor === body;
@@ -44,14 +49,16 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 			if (!autoSize) return;
 			// Only accept messages from our own iframe
 			if (event.source !== iframeRef.current?.contentWindow) return;
-			if (
-				event.data &&
-				typeof event.data === "object" &&
-				event.data.__emailIframeHeight &&
-				typeof event.data.height === "number" &&
-				event.data.height > 0
-			) {
-				setHeight(event.data.height);
+			if (event.data && typeof event.data === "object" && event.data.__emailIframeHeight) {
+				if (reports.current.document !== shown.current)
+					reports.current = { document: shown.current, counts: new Map() };
+				const next = nextFrameHeight(
+					reports.current,
+					event.data.height,
+					iframeRef.current?.clientWidth ?? 0,
+				);
+				if (next === null) return;
+				setHeight(next);
 				// The message came from the frame on the page now: its document stands at its size.
 				setSizedFor(shown.current);
 			}

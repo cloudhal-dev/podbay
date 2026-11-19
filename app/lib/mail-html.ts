@@ -240,7 +240,9 @@ export function mailDocument(options: {
 }): string {
 	if (!NONCE.test(options.nonce)) throw new Error("mailDocument: the nonce is not base64 text");
 	const policy = mailContentPolicy(options);
-	const bodyStyle = options.autoSize ? "padding: 0; overflow: hidden;" : "padding: 24px;";
+	const bodyStyle = options.autoSize
+		? "padding: 0; overflow: hidden; display: flow-root;"
+		: "padding: 24px;";
 	const script = options.autoSize
 		? `<script nonce="${options.nonce}">${MAIL_FRAME_SCRIPT}</script>`
 		: "";

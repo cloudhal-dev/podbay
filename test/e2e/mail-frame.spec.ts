@@ -6,42 +6,9 @@
  * only when the reader asks, embedded images without a request, links that open outside the
  * app and tell the destination nothing.
  */
-import { deflateSync } from "node:zlib";
 import { MAIL_FRAME_SANDBOX } from "../../shared/mail-frame.ts";
 import { expect, mime, test } from "./fixtures.ts";
-
-/** A real PNG of one colour, large enough to see. */
-function png(width: number, height: number, rgb: [number, number, number]): Buffer {
-	const chunk = (type: string, data: Buffer) => {
-		const body = Buffer.concat([Buffer.from(type), data]);
-		const out = Buffer.alloc(body.length + 8);
-		out.writeUInt32BE(data.length, 0);
-		body.copy(out, 4);
-		out.writeUInt32BE(crc32(body), body.length + 4);
-		return out;
-	};
-	const header = Buffer.alloc(13);
-	header.writeUInt32BE(width, 0);
-	header.writeUInt32BE(height, 4);
-	header.set([8, 2, 0, 0, 0], 8);
-	const row = Buffer.concat([Buffer.from([0]), Buffer.from(Array(width).fill(rgb).flat())]);
-	const pixels = Buffer.concat(Array(height).fill(row));
-	return Buffer.concat([
-		Buffer.from("\x89PNG\r\n\x1a\n", "latin1"),
-		chunk("IHDR", header),
-		chunk("IDAT", deflateSync(pixels)),
-		chunk("IEND", Buffer.alloc(0)),
-	]);
-}
-
-function crc32(data: Buffer): number {
-	let crc = 0xffffffff;
-	for (const byte of data) {
-		crc ^= byte;
-		for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-	}
-	return (crc ^ 0xffffffff) >>> 0;
-}
+import { png } from "./png.ts";
 
 test("remote images stay out until the reader asks, and then only images load", async ({
 	page,
