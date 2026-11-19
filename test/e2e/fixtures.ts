@@ -238,6 +238,9 @@ export const test = base.extend<{ app: App }>({
 				await page.getByText(subject, { exact: false }).first().click();
 				const element = page.locator('iframe[title="Email content"]').first();
 				await expect(element).toBeVisible();
+				// A click into the frame before it said its height can be lost (#43): the message is
+				// open once the frame stands at its size.
+				await expect(element).toHaveAttribute("data-sized", "true");
 				// The frame element is replaced when the body changes (embedded images arriving), so
 				// the document is asked for until a live one answers.
 				let frame: Frame | null = null;
