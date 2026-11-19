@@ -34,6 +34,8 @@ test("a person sees where they are signed in, ends another browser, and changes 
 	// The owner invites the person; the link gives them an account and a first browser.
 	await signInWithPassword(page, app.account.email, app.account.password);
 	await expect(page.getByRole("heading", { name: "Mailboxes", exact: true })).toBeVisible();
+	// People are invited in the administration area (#127).
+	await page.goto("/admin/people");
 	await page.locator("#invite-email").fill(GRACE.email);
 	await page.getByRole("button", { name: "Create invitation" }).click();
 	const link = (await page.locator("code", { hasText: "/accept/" }).textContent()) ?? "";

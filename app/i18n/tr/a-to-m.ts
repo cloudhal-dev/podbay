@@ -31,10 +31,13 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"A recipient": "Bir alıcı",
 	"A recipient contains {value}": "Alıcılardan biri şunu içeriyor: {value}",
 	"A recipient is {value}": "Alıcılardan biri: {value}",
+	"A recovery link for {email}": "{email} için kurtarma bağlantısı",
 	"A recovery link works once and for a limited time. Ask the person who gave it to you for a new one.":
 		"Kurtarma bağlantısı bir kez ve sınırlı bir süre çalışır. Bağlantıyı size veren kişiden yenisini isteyin.",
 	"A second button on an answer: send it and file its conversation in one press.":
 		"Yanıtta ikinci bir düğme: tek basışta gönderir ve yazışmayı arşivler.",
+	Accepted: "Kabul edildi",
+	Administration: "Yönetim",
 	AI: "YZ",
 	"About the sender {address}": "Gönderen hakkında: {address}",
 	Access: "Erişim",
@@ -106,6 +109,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Authenticator app": "Kimlik doğrulama uygulaması",
 	"Automatic reply": "Otomatik yanıt",
 	"Back to list": "Listeye dön",
+	"Back to mail": "Postaya dön",
 	"Back to sign in": "Oturum açmaya dön",
 	"Back to the built-in prompt": "Yerleşik isteme dön",
 	"Back to the list": "Listeye dön",
@@ -242,6 +246,8 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Draft saved": "Taslak kaydedildi",
 	"Drafting email": "E-posta taslağı hazırlanıyor",
 	"Drafting reply": "Yanıt taslağı hazırlanıyor",
+	"Each invitation is a link that works once, until the date beside it.":
+		"Her davet, yanındaki tarihe kadar bir kez çalışan bir bağlantıdır.",
 	Edit: "Düzenle",
 	"Edit & send in composer": "Yazma penceresinde düzenle ve gönder",
 	"Edit filter": "Filtreyi düzenle",
@@ -272,6 +278,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Everything selected": "Her şey seçili",
 	"Everything this search finds is selected.": "Bu aramanın bulduğu her şey seçili.",
 	"Expand all": "Tümünü genişlet",
+	Expired: "Süresi doldu",
 	"Failed to connect to agent. Reload to retry.":
 		"Asistana bağlanılamadı. Yeniden denemek için sayfayı yenileyin.",
 	"Failed to create mailbox": "Posta kutusu oluşturulamadı",
@@ -346,7 +353,9 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Indent less": "Girintiyi azalt",
 	"Indent more": "Girintiyi artır",
 	Info: "Bilgi",
+	Invitations: "Davetler",
 	"Invite a person": "Kişi davet et",
+	Invited: "Davet edilen",
 	"It has an attachment": "Eki var",
 	"It is built in a way Podbay does not read.": "Podbay'in okumadığı bir biçimde kurulmuş.",
 	"It is kept exactly as it arrived, and you can see or save that.":

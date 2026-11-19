@@ -34,6 +34,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"No mailboxes yet": "Henüz posta kutusu yok",
 	"No message carries it. Nothing else changes.":
 		"Bu etiketi taşıyan ileti yok. Başka hiçbir şey değişmez.",
+	"No one has been invited yet.": "Henüz kimse davet edilmedi.",
 	"No results found": "Sonuç bulunamadı",
 	"No sent emails": "Gönderilmiş e-posta yok",
 	"No split": "Bölme yok",
@@ -82,6 +83,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	Passkeys: "Geçiş anahtarları",
 	Password: "Parola",
 	People: "Kişiler",
+	Person: "Kişi",
 	"Please fill in all fields": "Lütfen tüm alanları doldurun",
 	"Podbay could not read this message.": "Podbay bu iletiyi okuyamadı.",
 	"Podbay was stopped twice while reading it, and did not try again.":
@@ -222,6 +224,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	Starred: "Yıldızlı",
 	"Starred first": "Önce yıldızlılar",
 	Starts: "Başlangıç",
+	State: "Durum",
 	"Stop generating": "Üretmeyi durdur",
 	"Stop this key working?": "Bu anahtar çalışmaz olsun mu?",
 	Strikethrough: "Üstü çizili",
@@ -264,11 +267,16 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The first {shown} of {size}. Download the message to have all of it.":
 		"{size} boyutundaki iletinin ilk {shown} kadarı. Tamamı için iletiyi indirin.",
 	"The invitation could not be created.": "Davet oluşturulamadı.",
+	"The invitation could not be withdrawn": "Davet geri çekilemedi",
+	"The invitation is withdrawn": "Davet geri çekildi",
+	"The invitations could not be loaded.": "Davetler yüklenemedi.",
 	"The key could not be created.": "Anahtar oluşturulamadı.",
 	"The key could not be revoked.": "Anahtar iptal edilemedi.",
 	"The label could not be saved.": "Etiket kaydedilemedi.",
 	"The language of Podbay's own words. Mail stays in the language it was written in.":
 		"Podbay'in kendi metinlerinin dili. Postalar yazıldıkları dilde kalır.",
+	"The link sent to {email} stops working. You can invite them again.":
+		"{email} adresine gönderilen bağlantı artık çalışmaz. Bu kişiyi yeniden davet edebilirsiniz.",
 	"The list of people could not be loaded.": "Kişi listesi yüklenemedi.",
 	"The mailboxes could not be loaded.": "Posta kutuları yüklenemedi.",
 	"The mailboxes you can open, and the keys of the AI clients you connected.":
@@ -392,6 +400,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	Unstarred: "Yıldızsız",
 	Unsubscribe: "Abonelikten çık",
 	"Unsubscribe from this list?": "Bu listenin aboneliğinden çıkılsın mı?",
+	"until {date}": "{date} tarihine kadar",
 	"Updating status": "Durum güncelleniyor",
 	"Use a code from the app instead": "Bunun yerine uygulamadaki kodu kullan",
 	"Use a passkey": "Geçiş anahtarı kullan",
@@ -401,6 +410,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Usual colour": "Olağan renk",
 	"Valid for": "Geçerlilik süresi",
 	"Wait until the files are attached.": "Dosyaların eklenmesi bitene kadar bekleyin.",
+	Waiting: "Bekliyor",
 	"What a client can do": "Bir istemcinin yapabildikleri",
 	"What a list puts on top. Inside each group the newest is first.":
 		"Bir listenin en üste koyduğu şey. Her grubun içinde en yeni olan önce gelir.",
@@ -425,6 +435,10 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Who has access": "Kimlerin erişimi var",
 	"Who may read this mailbox and send as it.":
 		"Bu posta kutusunu kimlerin okuyabileceği ve onun adına gönderebileceği.",
+	Withdraw: "Geri çek",
+	"Withdraw the invitation of {email}": "{email} davetini geri çek",
+	"Withdraw the invitation?": "Davet geri çekilsin mi?",
+	Withdrawn: "Geri çekildi",
 	"Write a new message": "Yeni ileti yaz",
 	"Write the message before turning it on.": "Açmadan önce iletiyi yazın.",
 	"Write to this sender": "Bu gönderene yaz",

@@ -142,6 +142,26 @@ export function listPeople(): Promise<Person[]> {
 	return call("/api/v1/users");
 }
 
+/** An invitation as the people who manage the instance see it: never its link or token. */
+export interface Invitation {
+	id: string;
+	email: string;
+	role: "admin" | "member";
+	expiresAt: string;
+	createdAt: string;
+	state: "pending" | "accepted" | "revoked" | "expired";
+}
+
+/** The invitations of the instance, newest first. For owners and administrators. */
+export function listInvitations(): Promise<Invitation[]> {
+	return call("/api/v1/invitations");
+}
+
+/** Withdraws an invitation that waits: its link stops working. */
+export function withdrawInvitation(id: string): Promise<unknown> {
+	return call(`/api/v1/invitations/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
 export interface RecoveryLink {
 	email: string;
 	expiresAt: string;

@@ -20,6 +20,7 @@ import {
 } from "@tanstack/react-router";
 import { forwardRef, useEffect, useState } from "react";
 import { errorFields, log } from "shared/log";
+import { adminRoutes } from "~/admin/routes";
 import { ComposeSession } from "~/components/ComposeSession";
 import { ConfirmProvider } from "~/components/Confirm";
 import { FreshProofProvider } from "~/components/FreshProof";
@@ -293,6 +294,7 @@ const routeTree = rootRoute.addChildren([
 	securityRoute,
 	membersRoute,
 	mailboxRoute.addChildren([mailboxIndexRoute, emailListRoute, settingsRoute, searchRoute]),
+	adminRoutes(rootRoute),
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });

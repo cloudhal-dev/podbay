@@ -18,8 +18,6 @@ import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Folders } from "shared/folders";
 import { useFreshProof } from "~/components/FreshProof";
-import InvitePerson from "~/components/InvitePerson";
-import People from "~/components/People";
 import Registry from "~/components/Registry";
 import { plural, t } from "~/i18n";
 import { rich } from "~/i18n/rich";
@@ -182,6 +180,13 @@ export default function HomeRoute() {
 							<RouterLink to="/account/security" className="underline">
 								{t("Sign-in and security")}
 							</RouterLink>
+							{/* People and, next, the mailboxes of the instance are managed in an area of
+							    their own (#127). */}
+							{canManage && (
+								<RouterLink to="/admin" className="underline">
+									{t("Administration")}
+								</RouterLink>
+							)}
 							<Button
 								size="sm"
 								onClick={async () => {
@@ -279,8 +284,6 @@ export default function HomeRoute() {
 			{canManage && (
 				<div className="mx-auto max-w-2xl px-4 pb-16 md:px-6">
 					<Registry />
-					{me && <People me={me} />}
-					<InvitePerson canInviteAdmin={me?.role === "owner"} />
 				</div>
 			)}
 
