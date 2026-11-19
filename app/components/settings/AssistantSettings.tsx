@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Badge, Button, useKumoToastManager } from "@cloudflare/kumo";
+import { Badge, Button, InputArea, useKumoToastManager } from "@cloudflare/kumo";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { t } from "~/i18n";
@@ -62,14 +62,17 @@ export default function AssistantSettings({ mailbox }: { mailbox: Mailbox }) {
 					"The prompt is what the assistant is told before it reads any mail of this mailbox: how to write and what to mind. The assistant never sends; it saves drafts for a person to send.",
 				)}
 			</p>
-			<textarea
+			{/* Kumo's text area at the small size, in the recessed fill and the fixed-width letters it had;
+			    15 rows of Kumo's 16 px lines keep about the height the 12 rows of 19.5 px had. */}
+			<InputArea
 				aria-label={t("Prompt")}
+				size="sm"
 				value={prompt}
 				disabled={!isOwner}
 				onChange={(event) => setPrompt(event.target.value)}
 				placeholder={PROMPT_PLACEHOLDER}
-				rows={12}
-				className="w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 font-mono text-xs leading-relaxed text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring"
+				rows={15}
+				className="w-full resize-y bg-kumo-recessed font-mono"
 			/>
 			{isOwner ? (
 				<Button variant="primary" size="sm" loading={updateMailbox.isPending} onClick={save}>

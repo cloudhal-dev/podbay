@@ -206,7 +206,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/InlineReply.tsx": { button: 2 },
 	"app/components/LabelDialog.tsx": { input: 1 },
 	"app/components/ScheduledList.tsx": { button: 1 },
-	"app/components/settings/AssistantSettings.tsx": { textarea: 1 },
 	"app/components/settings/SignatureSettings.tsx": { input: 1 },
 };
 
