@@ -10,7 +10,9 @@ import { useId } from "react";
  * its DatePicker is a calendar with no time of day and no field to type in.
  *
  * The field is drawn once, here, at the height, corner and type of Kumo's default size (36 px,
- * 14 px), with Kumo's label above it, so it stands beside Kumo's fields as one of them. Its
+ * 14 px), with Kumo's label above it, so it stands beside Kumo's fields as one of them. The label
+ * stands where a Kumo select draws its own: a line of its own type above the field, 8 px apart, so
+ * a row of selects and date fields shares its labels' top as well as its fields'. Its
  * limit stays: the browser shows the date in the device's own form and language, not the app's.
  */
 export default function DateTimeField({
@@ -34,15 +36,17 @@ export default function DateTimeField({
 	const id = useId();
 	const { onChange, ...rest } = field;
 	return (
-		<div>
-			<Label htmlFor={id} className={labelClassName}>
-				{label}
-			</Label>
+		<div className="grid gap-2">
+			<div className={labelClassName ?? "text-base"}>
+				<Label htmlFor={id} className={labelClassName}>
+					{label}
+				</Label>
+			</div>
 			<input
 				{...rest}
 				id={id}
 				type={kind}
-				className="mt-1.5 h-9 w-full rounded-lg border border-kumo-line bg-kumo-control px-3 text-base text-kumo-default"
+				className="h-9 w-full rounded-lg border border-kumo-line bg-kumo-control px-3 text-base text-kumo-default"
 				onChange={(event) => onChange(event.target.value)}
 			/>
 		</div>
