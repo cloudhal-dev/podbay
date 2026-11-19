@@ -80,6 +80,41 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 			"The top bar's search box: one wide field 48 px tall, fully round and filled, with no line, that turns to the page's colour with a ring when it has focus. Kumo 2.18.1's Input and InputGroup give a size alone (40 px at their largest) with Kumo's corner and line, and a height, a corner or padding by hand is refused, so that shape cannot be carried. Its two buttons are Kumo's.",
 	},
 	{
+		file: "app/components/EmailPanel.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The line that stands for the middle of a long conversation, with how many messages it holds: a line of the conversation, drawn across its width as the folded messages are, which opens them. Kumo's Button is a control of fixed height, not a line of the thread.",
+	},
+	{
+		file: "app/components/email-panel/MessageHeader.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The sender's picture folds an open message: a round picture 40 px across, white on the brand colour for one's own message, which keeps its colour and takes a ring under the pointer. Kumo's Button sets its own text colour with an important mark and its own background under the pointer, so the picture's colours would be Kumo's.",
+	},
+	{
+		file: "app/components/email-panel/MessageHeader.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The sender's name opens what can be done with the sender: a line of text 13 px, level with the top of the picture, and the same line as one's own name, which is plain text. Kumo's Button is a box of 20, 26, 36 or 40 px with its own padding, not a line of text.",
+	},
+	{
+		file: "app/components/email-panel/MessageHeader.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The line of who a message went to shows its details: a line of text 12 px under the name, so the two lines stand beside the picture as a pair within its 40 px. Kumo's Button is a box of 20 px at its smallest, with its own padding.",
+	},
+	{
+		file: "app/components/email-panel/ThreadMessage.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"A folded message is one line of the conversation that opens it: the sender's picture, the name, the date and the start of the text across the width of the thread. Kumo's Button holds a label and an icon in one row.",
+	},
+	{
 		file: "app/components/MessageList.tsx",
 		element: "button",
 		count: 1,
@@ -108,6 +143,12 @@ export interface RoundOnPurpose {
  */
 export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
 	{
+		file: "app/components/EmailPanel.tsx",
+		count: 3,
+		reason:
+			"Reply, Reply all and Forward under the last message are round, as they were before Kumo: three answers with an icon and a word each. Kumo's Button is round only as a circle for an icon alone.",
+	},
+	{
 		file: "app/routes/search-results.tsx",
 		count: 1,
 		reason:
@@ -127,13 +168,10 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/ComposePanel.tsx": { button: 3, input: 2 },
 	"app/components/ComposeWindow.tsx": { button: 1 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
-	"app/components/EmailPanel.tsx": { button: 1 },
 	"app/components/InlineReply.tsx": { button: 2 },
 	"app/components/InvitePerson.tsx": { select: 1 },
 	"app/components/LabelDialog.tsx": { input: 1 },
 	"app/components/ScheduledList.tsx": { button: 1 },
-	"app/components/email-panel/MessageHeader.tsx": { button: 4 },
-	"app/components/email-panel/ThreadMessage.tsx": { button: 1 },
 	"app/components/settings/AssistantSettings.tsx": { textarea: 1 },
 	"app/components/settings/SignatureSettings.tsx": { input: 1 },
 	"app/routes/members.tsx": { select: 1 },
@@ -146,7 +184,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
  */
 export const SIZED_BY_HAND: Readonly<Record<string, number>> = {
 	"app/components/ComposePanel.tsx": 2,
-	"app/components/EmailPanel.tsx": 3,
 	"app/components/SendLater.tsx": 1,
 };
 

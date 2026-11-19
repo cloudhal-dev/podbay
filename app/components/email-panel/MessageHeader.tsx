@@ -141,7 +141,8 @@ export default function MessageHeader({
 			)}
 
 			<div className="min-w-0 flex-1">
-				<div className="flex items-center gap-2">
+				{/* The line wraps: where Unsubscribe would leave the name no room, it moves under the name. */}
+				<div className="flex flex-wrap items-center gap-x-2">
 					{actions && !isSelf && !isDraft ? (
 						// The sender's name opens what can be done with the sender, as a card would.
 						<DropdownMenu>
@@ -189,13 +190,17 @@ export default function MessageHeader({
 					)}
 					{isDraft && <Badge variant="outline">{t("Draft")}</Badge>}
 					{actions?.onUnsubscribe && (
-						<button
-							type="button"
+						// Kumo's ghost button at its extra small size, underlined as the text action it is; its
+						// margins give back the 4 px it is taller than the name's line, so the head keeps its size,
+						// and the 6 px of its padding, so its word stands 8 px after the name, or under the name.
+						<Button
+							variant="ghost"
+							size="xs"
 							onClick={actions.onUnsubscribe}
-							className="shrink-0 cursor-pointer border-0 bg-transparent p-0 text-xs text-kumo-subtle underline hover:text-kumo-default print:hidden"
+							className="-my-0.5 -ml-1.5 shrink-0 text-kumo-subtle underline print:hidden"
 						>
 							{t("Unsubscribe")}
-						</button>
+						</Button>
 					)}
 				</div>
 				<button
