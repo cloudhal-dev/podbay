@@ -546,6 +546,8 @@ test("each message has its own menu, and a conversation is read oldest first and
 	// opens all of it.
 	const frames = page.locator('iframe[title="Email content"]');
 	await expect(frames.last().contentFrame().getByText("second reply")).toBeVisible();
+	// The older message comes a request later: the menu is asked once both are there (#43).
+	await expect(page.getByText("2 messages in this conversation")).toBeVisible();
 	const more = page.getByRole("button", { name: "More", exact: true });
 	// Whether the older message opened by itself depends on whether it was still unread.
 	const expandAll = async () => {
