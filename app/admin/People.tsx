@@ -44,6 +44,12 @@ export default function People({ me }: { me: Me }) {
 		}
 	}
 
+	const role = (person: Person) => (
+		<Badge variant={person.role === "member" ? "outline" : "secondary"}>
+			{t(ROLE_LABEL[person.role])}
+		</Badge>
+	);
+
 	return (
 		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
 			<h2 className="text-base font-semibold text-kumo-default">{t("People")}</h2>
@@ -62,7 +68,8 @@ export default function People({ me }: { me: Me }) {
 						<Table.Header>
 							<Table.Row>
 								<Table.Head>{t("Person")}</Table.Head>
-								<Table.Head>{t("Role")}</Table.Head>
+								{/* On a narrow screen the role is under the address, not in a column. */}
+								<Table.Head className="hidden sm:table-cell">{t("Role")}</Table.Head>
 								<Table.Head className="w-0">
 									<span className="sr-only">{t("Actions")}</span>
 								</Table.Head>
@@ -74,12 +81,9 @@ export default function People({ me }: { me: Me }) {
 									<Table.Cell className="max-w-0">
 										<p className="truncate text-sm text-kumo-default">{person.name}</p>
 										<p className="truncate text-xs text-kumo-subtle">{person.email}</p>
+										<div className="mt-1 sm:hidden">{role(person)}</div>
 									</Table.Cell>
-									<Table.Cell>
-										<Badge variant={person.role === "member" ? "outline" : "secondary"}>
-											{t(ROLE_LABEL[person.role])}
-										</Badge>
-									</Table.Cell>
+									<Table.Cell className="hidden sm:table-cell">{role(person)}</Table.Cell>
 									<Table.Cell className="text-right">
 										{canRecover(me, person) && (
 											<Button

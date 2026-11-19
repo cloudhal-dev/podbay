@@ -63,6 +63,12 @@ export default function Invitations() {
 		}
 	}
 
+	const state = (invitation: Invitation) => (
+		<Badge variant={invitation.state === "pending" ? "secondary" : "outline"}>
+			{t(STATE_LABEL[invitation.state])}
+		</Badge>
+	);
+
 	return (
 		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
 			<h2 className="text-base font-semibold text-kumo-default">{t("Invitations")}</h2>
@@ -85,7 +91,8 @@ export default function Invitations() {
 						<Table.Header>
 							<Table.Row>
 								<Table.Head>{t("Invited")}</Table.Head>
-								<Table.Head>{t("State")}</Table.Head>
+								{/* On a narrow screen the state is under the address, not in a column. */}
+								<Table.Head className="hidden sm:table-cell">{t("State")}</Table.Head>
 								<Table.Head className="w-0">
 									<span className="sr-only">{t("Actions")}</span>
 								</Table.Head>
@@ -100,12 +107,9 @@ export default function Invitations() {
 											{t(ROLE_LABEL[invitation.role])} ·{" "}
 											{t("until {date}", { date: dateOf(invitation.expiresAt) })}
 										</p>
+										<div className="mt-1 sm:hidden">{state(invitation)}</div>
 									</Table.Cell>
-									<Table.Cell>
-										<Badge variant={invitation.state === "pending" ? "secondary" : "outline"}>
-											{t(STATE_LABEL[invitation.state])}
-										</Badge>
-									</Table.Cell>
+									<Table.Cell className="hidden sm:table-cell">{state(invitation)}</Table.Cell>
 									<Table.Cell className="text-right">
 										{invitation.state === "pending" && (
 											<Button
