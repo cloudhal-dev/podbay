@@ -7,7 +7,12 @@
  * down, and a Kumo control gets no size, height or corner by hand.
  */
 import { describe, expect, it } from "vitest";
-import { controlProblems, type OnPurpose, tagsOf } from "../../scripts/checks/controls.ts";
+import {
+	controlProblems,
+	type OnPurpose,
+	type RoundOnPurpose,
+	tagsOf,
+} from "../../scripts/checks/controls.ts";
 
 const FILE = "app/components/Thing.tsx";
 const problems = (
@@ -17,6 +22,7 @@ const problems = (
 		toMove?: Record<string, Record<string, number>>;
 		sized?: Record<string, number>;
 		roles?: Record<string, number>;
+		round?: RoundOnPurpose[];
 	} = {},
 	more: [string, string][] = [],
 ) =>
@@ -26,6 +32,7 @@ const problems = (
 		options.toMove ?? {},
 		options.sized ?? {},
 		options.roles ?? {},
+		options.round ?? [],
 	);
 
 describe("controls written by hand", () => {
@@ -80,7 +87,7 @@ describe("controls written by hand", () => {
 	});
 
 	it("refuses a listed file that is gone", () => {
-		const out = controlProblems(new Map(), [], { "app/gone.tsx": { input: 1 } }, {}, {});
+		const out = controlProblems(new Map(), [], { "app/gone.tsx": { input: 1 } }, {}, {}, []);
 		expect(out).toEqual(["app/gone.tsx: listed in TO_MOVE and gone; remove its line"]);
 	});
 });
@@ -133,6 +140,48 @@ describe("Kumo controls sized by hand", () => {
 			problems('<Button className="rounded-full">Go</Button>', { sized: { [FILE]: 1 } }),
 		).toEqual([]);
 		expect(problems("<Button>Go</Button>", { sized: { [FILE]: 1 } })).toHaveLength(1);
+	});
+});
+
+describe("Kumo controls made round on purpose", () => {
+	const listed = (count: number): RoundOnPurpose[] => [
+		{ file: FILE, count, reason: "Round as the screen was before Kumo, with its reason here." },
+	];
+	const pills =
+		'<Button className="rounded-full">Reply</Button><Button className="rounded-full" variant="outline">Forward</Button>';
+
+	it("lets a listed file keep exactly the round controls it lists", () => {
+		expect(problems(pills, { round: listed(2) })).toEqual([]);
+	});
+
+	it("refuses one more, and asks for the list to be lowered when one goes", () => {
+		expect(problems(pills, { round: listed(1) })).toHaveLength(2);
+		expect(problems(pills, { round: listed(3) })).toEqual([
+			`${FILE}: ROUND_ON_PURPOSE lists 3 round Kumo controls, the file has 2`,
+		]);
+	});
+
+	it.each([
+		["padding beside the corner", '<Button className="rounded-full px-5">Go</Button>'],
+		["another corner", '<Button className="rounded-lg">Go</Button>'],
+		["a corner under a breakpoint", '<Button className="md:rounded-full">Go</Button>'],
+		["the important mark", '<Button className="!rounded-full">Go</Button>'],
+		["a style attribute", '<Button className="rounded-full" style={{ height: 30 }}>Go</Button>'],
+	])("still refuses %s in a listed file", (_what, text) => {
+		expect(problems(text, { round: listed(1) })).toHaveLength(2);
+	});
+
+	it("needs a reason, and a file that is there", () => {
+		expect(
+			problems('<Button className="rounded-full">Go</Button>', {
+				round: [{ file: FILE, count: 1, reason: "round" }],
+			}),
+		).toEqual([`${FILE}: a ROUND_ON_PURPOSE line needs its reason`]);
+		expect(
+			problems("<Button>Go</Button>", {
+				round: [{ file: "app/gone.tsx", count: 1, reason: "Round as it was, with its reason." }],
+			}),
+		).toEqual(["app/gone.tsx: listed in ROUND_ON_PURPOSE and gone; remove its line"]);
 	});
 });
 

@@ -14,6 +14,10 @@
  *   rest), a corner (`rounded`), a type size (`text-xs` to `text-9xl`, `text-[…]`) or a line height
  *   (`leading-`) is refused, with or without the important mark (`!h-9`, `h-9!`), and so is a
  *   `style` attribute. Width and margins are layout and are the screen's.
+ *   One shape is let through where it is listed: a Kumo control made fully round with
+ *   `rounded-full` and nothing else written by hand, at a place of `ROUND_ON_PURPOSE` with its
+ *   reason. It keeps a shape a screen had before Kumo, which Kumo gives to a button with an icon
+ *   alone. The count of such controls in a listed file must be the number listed.
  * - **No control made of a role.** A plain element with the role of a control (`button`,
  *   `checkbox`, `radio`, `switch`, `combobox`, `listbox`, `textbox`, `slider`) is refused, except
  *   as a debt in `ROLES_TO_MOVE`.
@@ -91,6 +95,26 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 	},
 ];
 
+/** Kumo controls made fully round on purpose: one line of this list is one file, with its reason. */
+export interface RoundOnPurpose {
+	file: string;
+	count: number;
+	reason: string;
+}
+
+/**
+ * Kumo controls that keep a fully round shape a screen had before Kumo (`rounded-full` and no other
+ * class written by hand). Kumo's Button is round only with `shape="circle"`, for an icon alone.
+ */
+export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
+	{
+		file: "app/routes/search-results.tsx",
+		count: 1,
+		reason:
+			"The quick filters above a search's results are round chips, as they were before Kumo and as the folder's label in a result's line still is. Kumo's Button is round only as a circle for an icon alone.",
+	},
+];
+
 /**
  * What was written by hand when the check came in (main at b200fd7, 2026-11-19), file by file:
  * the debt #82 and #83 pay. Lower a number when a control moves to Kumo; never raise one.
@@ -113,7 +137,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/settings/AssistantSettings.tsx": { textarea: 1 },
 	"app/components/settings/SignatureSettings.tsx": { input: 1 },
 	"app/routes/members.tsx": { select: 1 },
-	"app/routes/search-results.tsx": { button: 1 },
 };
 
 /**
@@ -197,6 +220,7 @@ export function controlProblems(
 	toMove: Readonly<Record<string, Partial<Record<Native, number>>>> = TO_MOVE,
 	sizedByHand: Readonly<Record<string, number>> = SIZED_BY_HAND,
 	rolesToMove: Readonly<Record<string, number>> = ROLES_TO_MOVE,
+	roundOnPurpose: readonly RoundOnPurpose[] = ROUND_ON_PURPOSE,
 ): string[] {
 	const problems: string[] = [];
 	// A control is Kumo's, one of its dotted parts, or a wrapper of app/components/controls/.
@@ -227,13 +251,34 @@ export function controlProblems(
 			}
 		}
 		const sized: string[] = [];
+		const round: string[] = [];
+		const roundKept = roundOnPurpose
+			.filter((one) => one.file === file)
+			.reduce((sum, one) => sum + one.count, 0);
 		for (const { name, line, tag } of tagsOf(text, controls)) {
 			const hand = classesOf(tag)
 				.map((classes) => HAND_SIZE.exec(classes))
 				.find((one) => one !== null);
-			if (hand) sized.push(`${file}:${line}: <${name}> with "${hand[2]}…" written by hand`);
+			const handTokens = classesOf(tag)
+				.flatMap((classes) => classes.split(/\s+/))
+				.filter((token) => HAND_SIZE.test(token));
+			const roundAlone =
+				handTokens.length > 0 &&
+				handTokens.every((token) => token === "rounded-full") &&
+				!/\sstyle=\{/.test(tag);
+			if (roundAlone && roundKept > 0) round.push(`${file}:${line}: <${name}> made round by hand`);
+			else if (hand) sized.push(`${file}:${line}: <${name}> with "${hand[2]}…" written by hand`);
 			else if (/\sstyle=\{/.test(tag))
 				sized.push(`${file}:${line}: <${name}> with a style attribute`);
+		}
+		if (round.length > roundKept) {
+			problems.push(
+				...round.map((one) => `${one}; ROUND_ON_PURPOSE lists ${roundKept} in this file`),
+			);
+		} else if (round.length < roundKept) {
+			problems.push(
+				`${file}: ROUND_ON_PURPOSE lists ${roundKept} round Kumo controls, the file has ${round.length}`,
+			);
 		}
 		const allowed = sizedByHand[file] ?? 0;
 		if (sized.length > allowed) {
@@ -271,6 +316,12 @@ export function controlProblems(
 	for (const one of onPurpose) {
 		if (one.reason.trim().length < 20)
 			problems.push(`${one.file}: an ON_PURPOSE line needs its reason`);
+	}
+	for (const one of roundOnPurpose) {
+		if (one.reason.trim().length < 20)
+			problems.push(`${one.file}: a ROUND_ON_PURPOSE line needs its reason`);
+		if (!files.has(one.file))
+			problems.push(`${one.file}: listed in ROUND_ON_PURPOSE and gone; remove its line`);
 	}
 	return problems;
 }
