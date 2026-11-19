@@ -284,11 +284,34 @@ export function tagsOf(
 }
 
 /** The class names written as plain strings in a tag's `className`, or in a `cn(…)` inside it. */
+/** Where the tag's own className begins: outside every brace, so not inside a label given as JSX. */
+function ownClassName(tag: string): number {
+	let depth = 0;
+	for (let at = 0; at < tag.length; at += 1) {
+		const char = tag[at];
+		if (char === "{") depth += 1;
+		else if (char === "}") depth = Math.max(0, depth - 1);
+		else if (depth === 0 && /\s/.test(char ?? "") && tag.startsWith("className=", at + 1))
+			return at + 1;
+	}
+	return -1;
+}
+
 function classesOf(tag: string): string[] {
-	const attribute = /className=(?:"([^"]*)"|\{([\s\S]*)\})/.exec(tag);
-	if (attribute === null) return [];
-	if (attribute[1] !== undefined) return [attribute[1]];
-	return [...(attribute[2] ?? "").matchAll(/"([^"]*)"|'([^']*)'|`([^`$]*)`/g)].map(
+	const at = ownClassName(tag);
+	if (at < 0) return [];
+	const rest = tag.slice(at + "className=".length);
+	const quoted = /^"([^"]*)"/.exec(rest);
+	if (quoted) return [quoted[1] ?? ""];
+	if (!rest.startsWith("{")) return [];
+	// The braces of the value, matched, so what follows it (a label given as JSX) is not read.
+	let depth = 0;
+	let end = 0;
+	for (; end < rest.length; end += 1) {
+		if (rest[end] === "{") depth += 1;
+		else if (rest[end] === "}" && --depth === 0) break;
+	}
+	return [...rest.slice(1, end).matchAll(/"([^"]*)"|'([^']*)'|`([^`$]*)`/g)].map(
 		(m) => m[1] ?? m[2] ?? m[3] ?? "",
 	);
 }
