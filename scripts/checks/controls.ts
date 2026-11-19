@@ -151,6 +151,13 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 			"A folded message is one line of the conversation that opens it: the sender's picture, the name, the date and the start of the text across the width of the thread. Kumo's Button holds a label and an icon in one row.",
 	},
 	{
+		file: "app/components/LabelDialog.tsx",
+		element: "input",
+		count: 1,
+		reason:
+			"A label's colour is chosen by its swatch: a round dot of the colour itself, 24 px, ringed when it is chosen. Under each swatch is the browser's radio, hidden, so the colours are one group with its keys and each colour has its name. Kumo's Radio draws its own circle with words beside it, not a dot of a colour.",
+	},
+	{
 		file: "app/components/MessageList.tsx",
 		element: "button",
 		count: 1,
@@ -215,9 +222,7 @@ export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
  * What was written by hand when the check came in (main at b200fd7, 2026-11-19), file by file:
  * the debt #82 and #83 pay. Lower a number when a control moves to Kumo; never raise one.
  */
-export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> = {
-	"app/components/LabelDialog.tsx": { input: 1 },
-};
+export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> = {};
 
 /**
  * Kumo controls with a size, height or corner written by hand when the check came in, by file:
