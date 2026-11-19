@@ -62,7 +62,7 @@ try {
 			"ec",
 			"-pkeyopt",
 			"ec_paramgen_curve:prime256v1",
-			"-noenc",
+			"-nodes",
 			"-days",
 			"1",
 			"-subj",
@@ -76,7 +76,7 @@ try {
 	);
 } catch {
 	throw new Error(
-		"e2e proxy: openssl (3.0 or newer) is needed to make the run's certificate and did not run; install it and run again.",
+		"e2e proxy: openssl (OpenSSL or LibreSSL) is needed to make the run's certificate and did not run; install it and run again.",
 	);
 }
 for (const path of [keyPath, certPath]) chmodSync(path, 0o600);

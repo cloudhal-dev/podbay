@@ -135,12 +135,19 @@ for (const follower of FOLLOWERS) {
 		// so neither the number of reports nor the height is asserted exactly.
 		const told = await atRest(page);
 		const height = await frameHeight(page);
-		// The script stops after FRAME_MAX_FOLLOWS moves in a row; the page's own count and height
-		// hold even if it did not.
+		// The page's own count and height hold whatever the frame does.
 		expect(told.length, "the page was told a bounded number of times").toBeLessThanOrEqual(
 			FRAME_MAX_REPORTS,
 		);
 		expect(height, "the frame stands at a bounded height").toBeLessThanOrEqual(FRAME_MAX_HEIGHT);
+		// And the script stopped first, at the message's third move in a row: a first height and a
+		// few more, far below the other two stops (six doublings from 100 px are 6400 px).
+		expect(told.length, `stopped by the moves, not by the count: ${told.join(" ")}`).toBeLessThan(
+			20,
+		);
+		expect(height, `stopped by the moves, not by the height: ${told.join(" ")}`).toBeLessThan(
+			FRAME_MAX_HEIGHT,
+		);
 		expect(height, "the frame stands at the last height it was told").toBe(told.at(-1));
 		// What the frame does not show is not lost: the reader's wheel scrolls the message inside
 		// the frame to its last line. (A script can scroll a frame the reader cannot.)
@@ -273,24 +280,31 @@ test.describe("pictures that arrive late", () => {
 	});
 });
 
-test("with nothing asked of it, the proxy still refuses a host it answered before and writes it down", async ({
-	page,
-	app,
-}) => {
-	const subject = "Size: a picture nobody answers";
-	await app.deliver(
-		mime({
-			subject,
-			to: app.account.mailbox,
-			html: '<p>Before the picture.</p><img src="https://late.images.test/a.png" alt=""><p>After it.</p>',
-		}),
-	);
-	await app.signIn();
-	await app.openMessage(subject);
-	await page.getByRole("button", { name: "Show images" }).click();
-	await expect.poll(() => app.contacted()).toEqual(["late.images.test"]);
-	await page.waitForTimeout(1000);
-	const image = page.frameLocator(FRAME).locator("img");
-	expect(await image.evaluate((one: HTMLImageElement) => one.naturalHeight)).toBe(0);
-	expect(await app.contacted()).toEqual(["late.images.test"]);
+test.describe("a host answered before", () => {
+	// The same certificate as the test that was answered: a picture the proxy still answered would
+	// load here, so a picture at 0 px means the proxy refused it.
+	test.use({ ignoreHTTPSErrors: true });
+
+	test("with nothing asked of it, the proxy still refuses a host it answered before and writes it down", async ({
+		page,
+		app,
+	}) => {
+		const subject = "Size: a picture nobody answers";
+		await app.deliver(
+			mime({
+				subject,
+				to: app.account.mailbox,
+				html: '<p>Before the picture.</p><img src="https://late.images.test/a.png" alt=""><p>After it.</p>',
+			}),
+		);
+		await app.signIn();
+		await app.openMessage(subject);
+		await page.getByRole("button", { name: "Show images" }).click();
+		await expect.poll(() => app.contacted()).toEqual(["late.images.test"]);
+		// Longer than the late answer of the test before (1500 ms), had it been kept.
+		await page.waitForTimeout(2500);
+		const image = page.frameLocator(FRAME).locator("img");
+		expect(await image.evaluate((one: HTMLImageElement) => one.naturalHeight)).toBe(0);
+		expect(await app.contacted()).toEqual(["late.images.test"]);
+	});
 });
