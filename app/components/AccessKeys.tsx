@@ -1,8 +1,8 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Badge, Button, Checkbox, Input, Select } from "@cloudflare/kumo";
-import { type FormEvent, useId, useState } from "react";
+import { Badge, Button, Checkbox, cn, Input, labelVariants, Select } from "@cloudflare/kumo";
+import { type FormEvent, useState } from "react";
 import { dateLanguage, m, t } from "~/i18n";
 import { rich } from "~/i18n/rich";
 import { useAccessKeys, useCreateAccessKey, useRevokeAccessKey } from "~/queries/access-keys";
@@ -18,7 +18,6 @@ const LIFETIMES = [
 	{ days: 365, label: m("1 year") },
 	{ days: 0, label: m("No end date") },
 ];
-const LABEL_CLASS = "text-xs font-medium text-kumo-strong mb-1 block";
 
 function day(value: string): string {
 	return new Date(value).toLocaleDateString(dateLanguage(), { dateStyle: "medium" });
@@ -60,7 +59,6 @@ function CreateKey({ currentMailbox }: { currentMailbox: string | undefined }) {
 	const [chosen, setChosen] = useState<string[] | null>(null);
 	const [created, setCreated] = useState<CreatedAccessKey | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const ids = useId();
 
 	// Until the person chooses, the key covers the mailbox they are looking at and nothing else.
 	const selected = chosen ?? (currentMailbox ? [currentMailbox] : []);
@@ -107,7 +105,8 @@ function CreateKey({ currentMailbox }: { currentMailbox: string | undefined }) {
 				required
 			/>
 			<fieldset>
-				<legend className={LABEL_CLASS}>{t("Mailboxes")}</legend>
+				{/* Kumo's label, as Name above it and Access and Valid for below have. */}
+				<legend className={cn(labelVariants(), "mb-2")}>{t("Mailboxes")}</legend>
 				<div className="rounded-md border border-kumo-line divide-y divide-kumo-line">
 					{mailboxes.map((mailbox) => (
 						// The row keeps the 28 px it had: Kumo's box with its label is 24 px, 2 px either side, and
@@ -123,36 +122,25 @@ function CreateKey({ currentMailbox }: { currentMailbox: string | undefined }) {
 				</div>
 			</fieldset>
 			<div className="grid grid-cols-2 gap-2">
-				<div>
-					{/* The small label this form's lists and choices have, as before Kumo. */}
-					<span id={`${ids}-access`} className={LABEL_CLASS}>
-						{t("Access")}
-					</span>
-					<Select
-						aria-labelledby={`${ids}-access`}
-						size="sm"
-						className="w-full"
-						value={access}
-						onValueChange={(next) => setAccess(next === "write" ? "write" : "read")}
-						items={[
-							{ label: t("Read only"), value: "read" },
-							{ label: t("Read, organise, draft"), value: "write" },
-						]}
-					/>
-				</div>
-				<div>
-					<span id={`${ids}-lifetime`} className={LABEL_CLASS}>
-						{t("Valid for")}
-					</span>
-					<Select
-						aria-labelledby={`${ids}-lifetime`}
-						size="sm"
-						className="w-full"
-						value={lifetime}
-						onValueChange={(next) => setLifetime(Number(next))}
-						items={LIFETIMES.map((option) => ({ label: t(option.label), value: option.days }))}
-					/>
-				</div>
+				<Select
+					label={t("Access")}
+					size="sm"
+					className="w-full"
+					value={access}
+					onValueChange={(next) => setAccess(next === "write" ? "write" : "read")}
+					items={[
+						{ label: t("Read only"), value: "read" },
+						{ label: t("Read, organise, draft"), value: "write" },
+					]}
+				/>
+				<Select
+					label={t("Valid for")}
+					size="sm"
+					className="w-full"
+					value={lifetime}
+					onValueChange={(next) => setLifetime(Number(next))}
+					items={LIFETIMES.map((option) => ({ label: t(option.label), value: option.days }))}
+				/>
 			</div>
 			{access === "write" && readerOnly.length > 0 && (
 				<p className="text-xs text-kumo-subtle">
