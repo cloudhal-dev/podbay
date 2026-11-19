@@ -228,12 +228,14 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 				</div>
 			)}
 
+			{/* One row of one height: on a phone Send later shows its clock alone, the saved note gives
+			    way and is cut, and Delete keeps its place at the right end, before and after a save. */}
 			<div className="flex shrink-0 items-center gap-1 border-t border-kumo-line px-3 py-2.5">
 				<Tooltip content={t("Send (Ctrl or ⌘ with Enter)")} side="top" asChild>
 					<Button
 						type="submit"
 						variant="primary"
-						className="rounded-full px-5"
+						className="rounded-full"
 						loading={form.isSending}
 						disabled={form.isSavingDraft || form.isSending}
 					>
@@ -255,6 +257,7 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 				<SendLater
 					label={t("Send later")}
 					action={t("Schedule send")}
+					iconOnPhone
 					disabled={form.isSavingDraft || form.isSending}
 					onChoose={(sendAt) => {
 						// The same fields must be filled as for Send.
@@ -300,7 +303,9 @@ export default function ComposePanel({ form }: { form: ComposeForm }) {
 						aria-label={t("Save draft")}
 					/>
 				</Tooltip>
-				{form.isSaved && <span className="ml-1 text-xs text-kumo-subtle">{t("Saved")}</span>}
+				{form.isSaved && (
+					<span className="ml-1 min-w-0 truncate text-xs text-kumo-subtle">{t("Saved")}</span>
+				)}
 				<span className="ml-auto" />
 				<Tooltip content={t("Discard")} side="top" asChild>
 					<Button

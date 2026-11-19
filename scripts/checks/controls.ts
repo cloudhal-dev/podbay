@@ -88,6 +88,13 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 			"The subject in a line of the writing window, as the address field is: no box, no line, no corner, 13 px type, with the line's hairline under it. Kumo 2.18.1's Input is a box with a line and a corner, and a height, padding or type size by hand is refused.",
 	},
 	{
+		file: "app/components/ComposePanel.tsx",
+		element: "input",
+		count: 1,
+		reason:
+			"The browser's own file picker, hidden and out of the tab order: Attach files, Kumo's button, opens it. Kumo 2.18.1 has no control that picks files, and only the browser's file input can ask the device for them.",
+	},
+	{
 		file: "app/components/Header.tsx",
 		element: "input",
 		count: 1,
@@ -158,10 +165,22 @@ export interface RoundOnPurpose {
  */
 export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
 	{
+		file: "app/components/ComposePanel.tsx",
+		count: 2,
+		reason:
+			"Send, and Send and archive under an answer, are round in the writing window's bar, as they were before Kumo and as Send later beside them is. Kumo's Button is round only as a circle for an icon alone.",
+	},
+	{
 		file: "app/components/EmailPanel.tsx",
 		count: 3,
 		reason:
 			"Reply, Reply all and Forward under the last message are round, as they were before Kumo: three answers with an icon and a word each. Kumo's Button is round only as a circle for an icon alone.",
+	},
+	{
+		file: "app/components/SendLater.tsx",
+		count: 1,
+		reason:
+			"Send later is round, beside Send in the writing window's bar and under a waiting message, as it was before Kumo. Kumo's Button is round only as a circle for an icon alone.",
 	},
 	{
 		file: "app/routes/search-results.tsx",
@@ -179,7 +198,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/AccessKeys.tsx": { input: 1, select: 2 },
 	"app/components/AgentPanel.tsx": { button: 1, textarea: 1 },
 	"app/components/AgentSidebar.tsx": { button: 2 },
-	"app/components/ComposePanel.tsx": { input: 1 },
 	"app/components/ComposeWindow.tsx": { button: 1 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
 	"app/components/InlineReply.tsx": { button: 2 },
@@ -196,10 +214,7 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
  * pill-shaped text buttons, which Kumo's `shape` gives to icon buttons only. #82 and #83 decide
  * them. Lower a number when one goes; never raise one.
  */
-export const SIZED_BY_HAND: Readonly<Record<string, number>> = {
-	"app/components/ComposePanel.tsx": 2,
-	"app/components/SendLater.tsx": 1,
-};
+export const SIZED_BY_HAND: Readonly<Record<string, number>> = {};
 
 /** A plain element with the role of a control, kept on purpose: one line is one file and role. */
 export interface RoleOnPurpose {
