@@ -214,7 +214,9 @@ test("holding Shift selects every line between the last box used and this one", 
 	}
 	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
 	const box = (name: string) =>
-		page.getByLabel(new RegExp(`Select the conversation "Choices: range ${name}`));
+		page.getByRole("checkbox", {
+			name: new RegExp(`Select the conversation "Choices: range ${name}`),
+		});
 	await expect(box("four")).toBeVisible();
 
 	// Newest first: four, three, two, one.

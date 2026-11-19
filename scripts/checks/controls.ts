@@ -76,6 +76,13 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 			"The top bar's search box: one wide field 48 px tall, fully round and filled, with no line, that turns to the page's colour with a ring when it has focus. Kumo 2.18.1's Input and InputGroup give a size alone (40 px at their largest) with Kumo's corner and line, and a height, a corner or padding by hand is refused, so that shape cannot be carried. Its two buttons are Kumo's.",
 	},
 	{
+		file: "app/components/MessageList.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"A line of the list is the conversation itself: one button that holds who wrote, the subject, the start of the text, its labels and the date, laid out for the width of the list, so the line has one name and one action. Kumo's Button holds a label and an icon in one row of fixed height, not a line of that content.",
+	},
+	{
 		file: "app/routes/mailbox.tsx",
 		element: "button",
 		count: 1,
@@ -100,8 +107,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/InlineReply.tsx": { button: 2 },
 	"app/components/InvitePerson.tsx": { select: 1 },
 	"app/components/LabelDialog.tsx": { input: 1 },
-	"app/components/MessageList.tsx": { button: 2, input: 1 },
-	"app/components/MessageListToolbar.tsx": { input: 1 },
 	"app/components/ScheduledList.tsx": { button: 1 },
 	"app/components/email-panel/MessageHeader.tsx": { button: 4 },
 	"app/components/email-panel/ThreadMessage.tsx": { button: 1 },
