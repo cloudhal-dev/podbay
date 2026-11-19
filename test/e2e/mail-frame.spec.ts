@@ -104,7 +104,6 @@ test("a frame's mark is its own document's: a new document is unmarked until it 
 				for (const node of record.addedNodes) {
 					if (!(node instanceof HTMLIFrameElement) || old.has(node)) continue;
 					marks.push(`inserted ${node.getAttribute("data-sized")}`);
-					node.addEventListener("load", () => marks.push("loaded"));
 				}
 				const target = record.target;
 				if (
@@ -126,9 +125,11 @@ test("a frame's mark is its own document's: a new document is unmarked until it 
 	await page.getByRole("button", { name: "Show images" }).click();
 	await expect(page.locator('iframe[title="Email content"]')).toHaveAttribute("data-sized", "true");
 	const marks = await page.evaluate(() => (window as unknown as { __marks: string[] }).__marks);
+	// The new element comes unmarked and is marked later, by its own document. When that is, before
+	// or after the frame's load event, is not part of the rule: the sizing script reports as soon as
+	// it runs, and load waits for the document's pictures, which may be refused at once or late.
 	expect(marks[0], marks.join(", ")).toBe("inserted null");
-	expect(marks.indexOf("loaded"), marks.join(", ")).toBeGreaterThan(0);
-	expect(marks.indexOf("marked true"), marks.join(", ")).toBeGreaterThan(marks.indexOf("loaded"));
+	expect(marks.indexOf("marked true"), marks.join(", ")).toBeGreaterThan(0);
 });
 
 test("an image the message embeds is shown without any request", async ({ page, app }) => {
