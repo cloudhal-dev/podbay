@@ -112,6 +112,12 @@ const FOLLOWERS: { name: string; html: string }[] = [
 		name: "a height that shrinks as the frame grows",
 		html: '<div style="height:calc(600px - 100vh)">swings</div>',
 	},
+	{
+		// A delayed transition would move the message only after the script looked: it would seem
+		// to stand still each time. The renderer takes it out of the message (app/lib/mail-html.ts).
+		name: "a delayed transition",
+		html: '<div style="height:calc(100vh + 1px);transition:height 0s .2s">later</div>',
+	},
 ];
 
 for (const follower of FOLLOWERS) {
@@ -167,8 +173,23 @@ for (const follower of FOLLOWERS) {
 	});
 }
 
+/**
+ * Lets the requests to one host through to the proxy, whoever sees them first. The fixture answers
+ * every request to another origin that it can see with a pixel; the mail frame's requests have not
+ * reached it so far (0 of 23), but nothing says they never will. With this the picture is the
+ * proxy's either way, and the proxy still writes the host down at its CONNECT.
+ */
+const throughProxy = (page: Page, host: string) =>
+	page.context().route(`https://${host}/**`, (route) => route.continue());
+
 /** Asks the proxy to answer one `.test` host with a picture of the given height, late. */
-async function answerLate(host: string, delayMs: number, height: number): Promise<void> {
+async function answerLate(
+	page: Page,
+	host: string,
+	delayMs: number,
+	height: number,
+): Promise<void> {
+	await throughProxy(page, host);
 	const res = await fetch(`${PROXY}/__answer`, {
 		method: "POST",
 		body: JSON.stringify({
@@ -199,7 +220,7 @@ test.describe("pictures that arrive late", () => {
 		page,
 		app,
 	}) => {
-		await answerLate("late.images.test", 1500, 300);
+		await answerLate(page, "late.images.test", 1500, 300);
 		const subject = "Size: a late picture";
 		await app.deliver(
 			mime({
@@ -232,9 +253,9 @@ test.describe("pictures that arrive late", () => {
 		app,
 	}) => {
 		await countReports(page);
-		await answerLate("first.images.test", 600, 120);
-		await answerLate("second.images.test", 1200, 120);
-		await answerLate("third.images.test", 1800, 120);
+		await answerLate(page, "first.images.test", 600, 120);
+		await answerLate(page, "second.images.test", 1200, 120);
+		await answerLate(page, "third.images.test", 1800, 120);
 		const subject = "Size: three late pictures";
 		await app.deliver(
 			mime({
@@ -289,6 +310,8 @@ test.describe("a host answered before", () => {
 		page,
 		app,
 	}) => {
+		// The proxy, and not the fixture's pixel, decides what this picture is.
+		await throughProxy(page, "late.images.test");
 		const subject = "Size: a picture nobody answers";
 		await app.deliver(
 			mime({

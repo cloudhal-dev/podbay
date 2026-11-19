@@ -114,8 +114,11 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 				title={t("Email content")}
 				data-sized={autoSize && sizedFor === frameDocument ? "true" : undefined}
 				onLoad={() => {
-					// The sizing script's last report is at 400 ms after the document runs. The timer
-					// marks this frame's own document, and no other.
+					// The sizing script keeps no time: it reports when the body's size changes, first at
+					// the document's first layout, which comes before or just after load. A document
+					// that reports nothing (one with no height of its own) is marked half a second after
+					// load, a margin of many frames; a later report (a late picture) still moves the frame
+					// after the mark. The timer marks this frame's own document, and no other.
 					const loaded = frameDocument;
 					setTimeout(() => {
 						if (shown.current === loaded) setSizedFor(loaded);

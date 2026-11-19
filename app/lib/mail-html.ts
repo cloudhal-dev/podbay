@@ -10,7 +10,8 @@
  * 1. `sanitizeMailHtml` removes script, forms, frames, embedded objects and event handlers,
  *    takes remote resources out unless the reader asked for them, and takes out every resource
  *    address that is neither embedded data nor remote: a relative address would resolve against
- *    the app itself. It also folds the quoted text at the end of a reply away behind one line.
+ *    the app itself. It takes out every transition and animation, so nothing in a message moves by
+ *    itself. It also folds the quoted text at the end of a reply away behind one line.
  * 2. `mailDocument` wraps the result in a document whose content policy allows no script except
  *    the one sizing script (by nonce), no network load unless remote content was allowed, no
  *    form submission and no `<base>`.
@@ -44,6 +45,8 @@ const REMOTE_URL = /^\s*(?:https?:)?\/\//i;
 const EMBEDDED_URL = /^\s*data:/i;
 const CSS_REMOTE_URL = /url\(\s*['"]?\s*(?:https?:)?\/\//i;
 const RESOURCE_ATTRIBUTES = ["src", "srcset", "poster", "background"];
+/** A property that makes the message move by itself: a transition or an animation, prefixed or not. */
+const MOTION_PROPERTY = /^(?:-[a-z]+-)?(?:transition|animation)(?:-|$)/i;
 
 const SANITIZE_CONFIG = {
 	USE_PROFILES: { html: true },
@@ -135,6 +138,26 @@ function foldQuote(node: Element): void {
 }
 
 /**
+ * Takes every transition and animation out of an element's own style. Nothing in a message needs
+ * to move by itself, and a height that changes some time after the frame took it would look to
+ * the sizing script like a message at rest (#110: `transition: height 0s .2s` on a height in
+ * `vh`). The declarations are read by the browser's own parser, the one the frame uses, so what
+ * is taken out is what the frame would have applied. A style the message writes elsewhere cannot
+ * reach the frame: `<style>` is forbidden and the document's own sheet defines no keyframes.
+ */
+function stillStyle(node: Element): void {
+	const style = (node as Partial<ElementCSSInlineStyle>).style;
+	if (!node.hasAttribute("style") || style === undefined) return;
+	const moving: string[] = [];
+	for (let index = 0; index < style.length; index++) {
+		const name = style.item(index);
+		if (MOTION_PROPERTY.test(name)) moving.push(name);
+	}
+	for (const name of moving) style.removeProperty(name);
+	if (style.length === 0) node.removeAttribute("style");
+}
+
+/**
  * Sanitise a message body. With `allowRemote` false, every attribute that would load a remote
  * resource is removed and counted, so the reader can be told and can choose to load them.
  */
@@ -167,6 +190,7 @@ export function sanitizeMailHtml(
 			node.removeAttribute("style");
 			blockedRemote++;
 		}
+		stillStyle(node);
 		if (isTrailingQuote(node)) foldQuote(node);
 	});
 	try {

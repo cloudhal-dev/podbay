@@ -135,6 +135,52 @@ describe("sanitizeMailHtml and remote content", () => {
 	});
 });
 
+describe("nothing in a message moves by itself", () => {
+	/** The properties left in the first `div`'s own style, as the DOM reads them. */
+	const declared = (html: string) => {
+		const style = parse(html).querySelector("div")?.style;
+		const names: string[] = [];
+		for (let index = 0; index < (style?.length ?? 0); index++) names.push(style?.item(index) ?? "");
+		return names;
+	};
+
+	it.each([
+		["a delayed transition of a height", "height:calc(100vh + 1px);transition:height 0s .2s"],
+		["an important transition", "height:200vh;transition:height 1s 1s !important"],
+		[
+			"a transition written in longhands",
+			"height:50vh;transition-property:height;transition-delay:1s",
+		],
+		["a prefixed transition", "height:50vh;-webkit-transition:height 1s"],
+		["an animation", "height:50vh;animation:grow 1s infinite"],
+		["an animation in longhands", "height:50vh;animation-name:grow;animation-delay:2s"],
+		["a prefixed animation", "height:50vh;-webkit-animation:grow 1s"],
+	])("%s is taken out, and the rest of the style stays", (_, style) => {
+		for (const sanitize of [blocked, allowed]) {
+			const names = declared(sanitize(`<div style="${style}">x</div>`).html);
+			expect(names, style).toContain("height");
+			expect(
+				names.filter((name) => /transition|animation/i.test(name)),
+				style,
+			).toEqual([]);
+		}
+	});
+
+	it("a style that only moves is taken out whole", () => {
+		const div = parse(blocked('<div style="transition:height 1s">x</div>').html).querySelector(
+			"div",
+		);
+		expect(div?.hasAttribute("style")).toBe(false);
+	});
+
+	it("a style without motion is left as it was written", () => {
+		const html = blocked('<div style="color: red; height: 20px">x</div>').html;
+		expect(parse(html).querySelector("div")?.getAttribute("style")).toBe(
+			"color: red; height: 20px",
+		);
+	});
+});
+
 describe("links", () => {
 	it("open outside the frame and send no referrer or opener", () => {
 		const anchor = parse(
