@@ -27,6 +27,20 @@ export const BASE = "http://localhost:4174";
 export const SENT_WITHIN = { timeout: 30_000 } as const;
 
 /**
+ * Makes a mailbox of the instance as the person signed in on the page (the owner), with the
+ * page's own session, and returns its address; one made before is fine. A test never reads the
+ * session from its file to send it itself (#63): the browser holds it, as it holds a person's.
+ */
+export async function makeMailbox(page: Page, email: string, name: string): Promise<string> {
+	const made = await page.request.post(`${BASE}/api/v1/mailboxes`, {
+		data: { email, name },
+		headers: { origin: BASE },
+	});
+	expect([201, 409], `making the mailbox ${email}`).toContain(made.status());
+	return email;
+}
+
+/**
  * Chooses an option of one of Kumo's selects, as a person does: the trigger (role `combobox`)
  * opens a list (role `listbox`), and the option is pressed by its name. A native `<select>` and
  * `selectOption` are gone from the app (issue #82).

@@ -42,10 +42,12 @@ export default function MailboxDetails({ mailbox }: { mailbox: Mailbox }) {
 		}
 	}
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: filled when the mailbox arrives or changes
+	// Filled once for each mailbox (#124): the mailbox read again after a save, or changed in
+	// another tab, never writes over a name being typed.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: filled when another mailbox is shown, and only then
 	useEffect(() => {
 		setName(mailbox.settings?.fromName || mailbox.name || "");
-	}, [mailbox.id, mailbox.settings?.fromName]);
+	}, [mailbox.id]);
 
 	async function save(event: FormEvent) {
 		event.preventDefault();
