@@ -4,6 +4,7 @@
 import { Button } from "@cloudflare/kumo";
 import { ArrowSquareOutIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
+import { useAnswerFollowsToWindow } from "~/hooks/useAnswerFollowsToWindow";
 import { useUIStore } from "~/hooks/useUIStore";
 import { m, t } from "~/i18n";
 import ComposePanel from "./ComposePanel";
@@ -26,15 +27,10 @@ export default function InlineReply() {
 	const mode = useUIStore((state) => state.composeOptions.mode);
 	const card = useRef<HTMLElement>(null);
 
+	// The conversation left with the answer still open: it goes on in the window.
+	useAnswerFollowsToWindow();
 	useEffect(() => {
 		card.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-		return () => {
-			// The conversation was left with the answer still open: it goes on in the window.
-			const { isComposing, composePlacement } = useUIStore.getState();
-			if (isComposing && composePlacement === "inline") {
-				useUIStore.setState({ composePlacement: "window" });
-			}
-		};
 	}, []);
 
 	return (
