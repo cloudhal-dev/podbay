@@ -177,11 +177,13 @@ export default function HomeRoute() {
 						)}
 					</div>
 					{me && (
-						<p className="text-sm text-kumo-subtle mt-1">
-							{t("Signed in as {email}.", { email: me.user.email })}{" "}
-							<button
-								type="button"
-								className="underline cursor-pointer bg-transparent border-0 p-0 text-kumo-subtle"
+						<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-kumo-subtle">
+							<span>{t("Signed in as {email}.", { email: me.user.email })}</span>
+							<RouterLink to="/account/security" className="underline">
+								{t("Sign-in and security")}
+							</RouterLink>
+							<Button
+								size="sm"
 								onClick={async () => {
 									await signOut();
 									queryClient.clear();
@@ -189,12 +191,8 @@ export default function HomeRoute() {
 								}}
 							>
 								{t("Sign out")}
-							</button>
-							{" · "}
-							<RouterLink to="/account/security" className="underline">
-								{t("Sign-in and security")}
-							</RouterLink>
-						</p>
+							</Button>
+						</div>
 					)}
 					{domains.length > 0 && (
 						<p className="text-sm text-kumo-subtle mt-1">{domains.join(", ")}</p>
