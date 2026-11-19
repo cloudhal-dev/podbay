@@ -18,7 +18,7 @@ import {
 	useNavigate,
 	useRouter,
 } from "@tanstack/react-router";
-import { forwardRef, useEffect } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { errorFields, log } from "shared/log";
 import { ComposeSession } from "~/components/ComposeSession";
 import { ConfirmProvider } from "~/components/Confirm";
@@ -121,17 +121,22 @@ function SessionGate() {
 function RootLayout() {
 	// The words are read when a screen is drawn, so a change of language draws everything again.
 	useDisplay((state) => state.language);
+	// Where the notes are drawn (#122). Kumo's viewport has a layer of its own (`z-1`), so in the
+	// page's own it would be under the writing window (`z-40`), where the notes open on a wide
+	// screen. Drawn in this container, one layer above the window, a note is read whatever is open.
+	const [notes, setNotes] = useState<HTMLElement | null>(null);
 	return (
 		<QueryClientProvider client={queryClient}>
 			<LinkProvider component={KumoLink}>
 				<TooltipProvider>
-					<Toasty>
+					<Toasty container={notes ?? undefined}>
 						<FreshProofProvider key={currentLanguage()}>
 							<ConfirmProvider>
 								<SessionGate />
 							</ConfirmProvider>
 						</FreshProofProvider>
 					</Toasty>
+					<div ref={setNotes} className="relative z-50" />
 				</TooltipProvider>
 			</LinkProvider>
 		</QueryClientProvider>
