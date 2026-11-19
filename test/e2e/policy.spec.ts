@@ -81,8 +81,8 @@ test("the page's policy runs one inline script in a frame and no other", async (
 				const frame = document.createElement("iframe");
 				frame.setAttribute("sandbox", "allow-scripts");
 				// In view: a cross-origin frame the browser does not show may never be laid out, and
-				// then nothing in it reports, whether it may run or not; a wait for nothing would
-				// prove nothing.
+				// then nothing in it that waits for a layout reports, whether it may run or not (a
+				// script that posts at once still posts); a wait for nothing would prove nothing.
 				frame.style.cssText = "position:fixed;top:0;left:0;width:300px;height:300px;z-index:9999";
 				const listen = (event: MessageEvent) => {
 					if (event.source !== frame.contentWindow) return;
