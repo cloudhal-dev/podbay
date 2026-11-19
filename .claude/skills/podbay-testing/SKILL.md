@@ -40,6 +40,7 @@ Put a test in the lowest tier that can prove the rule. A rule about access is pr
 ## 4. Things that will surprise you
 
 - **Sign-in is limited per client address** (ten a minute). At tier 3 give each test its own `Browser`; at tier 6 use `app.signIn()`, and sign in through the page only in a test about signing in.
+- **A session is fresh for ten minutes**, and a route that needs fresh proof refuses an older one. The run's shared session is made again once it is five minutes old (`test/e2e/session.ts`), so `app.signIn()` gives a session fresh through any test, however long the run; `test/unit/e2e-session.test.ts` holds the arithmetic, and a test that needs longer than `LONGEST_TEST_SECONDS` fails there first.
 - **The session is cached in a cookie for a minute.** A route marked fresh reads the database; other routes may still see the cached copy.
 - **The mail frame runs in a process of its own in Chrome.** Requests from inside it can be invisible to the browser's request events, so "nothing left" is asked of the proxy (`app.contacted()`), never of `page.on("request")`.
 - **The frame element is replaced when its document changes.** Use locators (`page.frameLocator(...)`), which follow it; a handle goes stale.

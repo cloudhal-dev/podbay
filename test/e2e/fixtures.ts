@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { test as base, expect, type Frame, type Locator, type Page } from "@playwright/test";
 import type { Account } from "./global-setup.ts";
 import { PROXY } from "./proxy-address.ts";
+import { freshShared } from "./session.ts";
 
 export { expect };
 export const BASE = "http://localhost:4174";
@@ -201,9 +202,8 @@ export const test = base.extend<{ app: App }>({
 			account,
 			watch,
 			async signIn() {
-				const { cookie } = JSON.parse(readFileSync(root(".e2e/session.json"), "utf8")) as {
-					cookie: string;
-				};
+				// The run's one session, made again when it is too old to stay fresh through this test.
+				const { cookie } = await freshShared(root(".e2e/session.json"), BASE, account);
 				await context.addCookies(
 					cookie.split("; ").map((pair) => {
 						const at = pair.indexOf("=");
