@@ -1,12 +1,14 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Badge, Button, Loader, Table, useKumoToastManager } from "@cloudflare/kumo";
+import { Badge, Banner, Button, Empty, Loader, Table, useKumoToastManager } from "@cloudflare/kumo";
+import { EnvelopeOpenIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useConfirm } from "~/components/Confirm";
 import { dateLanguage, m, t } from "~/i18n";
 import { type Invitation, listInvitations, withdrawInvitation } from "~/lib/session";
+import Card from "./Card";
 
 /** The query of the instance's invitations; inviting a person reads it again. */
 export const INVITATIONS = ["invitations"] as const;
@@ -70,23 +72,24 @@ export default function Invitations() {
 	);
 
 	return (
-		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
-			<h2 className="text-base font-semibold text-kumo-default">{t("Invitations")}</h2>
-			<p className="mt-1 text-sm text-kumo-subtle">
-				{t("Each invitation is a link that works once, until the date beside it.")}
-			</p>
+		<Card
+			title={t("Invitations")}
+			description={t("Each invitation is a link that works once, until the date beside it.")}
+		>
 			{isPending ? (
 				<div className="flex justify-center py-6">
 					<Loader />
 				</div>
 			) : isError ? (
-				<p role="alert" className="mt-3 text-sm text-kumo-danger">
-					{t("The invitations could not be loaded.")}
-				</p>
+				<Banner variant="error" text={t("The invitations could not be loaded.")} />
 			) : invitations.length === 0 ? (
-				<p className="mt-3 text-sm text-kumo-subtle">{t("No one has been invited yet.")}</p>
+				<Empty
+					size="sm"
+					icon={<EnvelopeOpenIcon size={32} />}
+					title={t("No one has been invited yet.")}
+				/>
 			) : (
-				<div className="mt-4 overflow-hidden rounded-lg border border-kumo-line">
+				<div className="overflow-hidden rounded-lg border border-kumo-line">
 					<Table aria-label={t("Invitations")}>
 						<Table.Header>
 							<Table.Row>
@@ -131,6 +134,6 @@ export default function Invitations() {
 					</Table>
 				</div>
 			)}
-		</section>
+		</Card>
 	);
 }

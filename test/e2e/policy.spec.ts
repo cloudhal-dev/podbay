@@ -41,8 +41,10 @@ test("no page of the app breaks its own content policy", async ({ page, app }) =
 		// The administration area (#127); a manager's old members address leads to the mailbox's page.
 		["/admin/people", "People"],
 		["/admin/mailboxes", "Mailboxes"],
-		[`/admin/mailboxes/${mailbox}`, "Who has access"],
-		[`/members/${mailbox}`, "Who has access"],
+		[`/admin/mailboxes/${mailbox}`, "Details"],
+		[`/admin/mailboxes/${mailbox}?tab=members`, "Who has access"],
+		[`/admin/mailboxes/${mailbox}?tab=history`, "Record of changes"],
+		[`/members/${mailbox}`, "Details"],
 		["/account/security", "Sign-in and security"],
 	];
 	for (const [path, heading] of pages) {

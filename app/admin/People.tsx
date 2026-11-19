@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Badge, Button, Table } from "@cloudflare/kumo";
+import { Badge, Banner, Button, Table } from "@cloudflare/kumo";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import CopyButton from "~/components/CopyButton";
@@ -9,6 +9,7 @@ import { useFreshProof } from "~/components/FreshProof";
 import { dateLanguage, m, t } from "~/i18n";
 import { issueRecovery, listPeople, type Me, type Person, type RecoveryLink } from "~/lib/session";
 import { ApiError } from "~/services/api";
+import Card from "./Card";
 
 const ROLE_LABEL = { owner: m("Owner"), admin: m("Administrator"), member: m("Member") } as const;
 
@@ -51,19 +52,16 @@ export default function People({ me }: { me: Me }) {
 	);
 
 	return (
-		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
-			<h2 className="text-base font-semibold text-kumo-default">{t("People")}</h2>
-			<p className="text-sm text-kumo-subtle mt-1">
-				{t(
-					"Everyone with an account here. A recovery link lets a person who cannot sign in choose a new password; make one only when you are sure who is asking.",
-				)}
-			</p>
+		<Card
+			title={t("Accounts")}
+			description={t(
+				"Everyone with an account here. A recovery link lets a person who cannot sign in choose a new password; make one only when you are sure who is asking.",
+			)}
+		>
 			{isError ? (
-				<p role="alert" className="text-sm text-kumo-danger mt-3">
-					{t("The list of people could not be loaded.")}
-				</p>
+				<Banner variant="error" text={t("The list of people could not be loaded.")} />
 			) : (
-				<div className="mt-4 overflow-hidden rounded-lg border border-kumo-line">
+				<div className="overflow-hidden rounded-lg border border-kumo-line">
 					<Table aria-label={t("People")}>
 						<Table.Header>
 							<Table.Row>
@@ -128,6 +126,6 @@ export default function People({ me }: { me: Me }) {
 					</div>
 				</div>
 			)}
-		</section>
+		</Card>
 	);
 }

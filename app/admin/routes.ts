@@ -4,7 +4,7 @@
 import { type AnyRoute, createRoute, redirect } from "@tanstack/react-router";
 import AdminLayout from "./AdminLayout";
 import MailboxesPage from "./MailboxesPage";
-import MailboxPage from "./MailboxPage";
+import MailboxPage, { MAILBOX_TABS, type MailboxTab } from "./MailboxPage";
 import PeoplePage from "./PeoplePage";
 
 /**
@@ -31,6 +31,10 @@ export function adminRoutes(root: AnyRoute) {
 		getParentRoute: () => area,
 		path: "mailboxes/$mailboxId",
 		component: MailboxPage,
+		// The part of the mailbox shown, in the address so it can be linked to.
+		validateSearch: (search: Record<string, unknown>): { tab?: MailboxTab } => ({
+			tab: MAILBOX_TABS.includes(search.tab as MailboxTab) ? (search.tab as MailboxTab) : undefined,
+		}),
 	});
 	return area.addChildren([index, people, mailboxes, mailbox]);
 }

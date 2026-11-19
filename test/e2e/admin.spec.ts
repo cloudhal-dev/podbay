@@ -38,7 +38,7 @@ test("an owner opens the administration area from their mailboxes, and People li
 	await page.getByRole("link", { name: "Administration" }).click();
 
 	await expect(page).toHaveURL(/\/admin\/people$/);
-	await expect(page.getByRole("heading", { name: "Administration", level: 1 })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "People", level: 1 })).toBeVisible();
 	await expect(page).toHaveTitle("People - Administration - Podbay");
 	// The person's own account is in the area's bar, as it is in the mail screens'.
 	await expect(page.getByRole("button", { name: "Sign-in and security" })).toBeVisible();
@@ -141,10 +141,17 @@ test("Mailboxes lists every mailbox, makes one, and has a page for each with its
 	// Its page: what it is, who its members are, the record, deleting it.
 	await expect.poll(() => pathNow(page)).toBe(`/admin/mailboxes/${made}`);
 	await expect(page).toHaveTitle(`${made} - Mailboxes - Administration - Podbay`);
-	await expect(page.getByRole("heading", { name: made })).toBeVisible();
-	await expect(page.getByText("Made here")).toBeVisible();
+	await expect(page.getByRole("heading", { name: made, level: 1 })).toBeVisible();
+	await expect(page.getByText("Made here").first()).toBeVisible();
+	// Its parts are tabs, each with an address of its own.
+	await page.getByRole("tab", { name: "Members" }).click();
 	await expect(page.getByRole("heading", { name: "Who has access" })).toBeVisible();
+	await expect.poll(() => new URL(page.url()).searchParams.get("tab")).toBe("members");
+	await page.getByRole("tab", { name: "History" }).click();
 	await expect(page.getByRole("heading", { name: "Record of changes" })).toBeVisible();
+	await page.reload();
+	await expect(page.getByRole("heading", { name: "Record of changes" })).toBeVisible();
+	await page.getByRole("tab", { name: "Details" }).click();
 	await page.getByRole("button", { name: "Delete mailbox" }).click();
 	const asking = page.getByRole("alertdialog", { name: "Delete this mailbox?" });
 	await asking.getByRole("button", { name: "Delete" }).click();
@@ -154,5 +161,5 @@ test("Mailboxes lists every mailbox, makes one, and has a page for each with its
 	// The old members address takes a manager to the mailbox's page.
 	await page.goto(`/members/${encodeURIComponent(app.account.mailbox)}`);
 	await expect.poll(() => pathNow(page)).toBe(`/admin/mailboxes/${app.account.mailbox}`);
-	await expect(page.getByRole("heading", { name: "Who has access" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Details" })).toBeVisible();
 });

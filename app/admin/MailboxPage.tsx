@@ -1,10 +1,9 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Button, LayerDialog, Loader, useKumoToastManager } from "@cloudflare/kumo";
-import { ArrowLeftIcon } from "@phosphor-icons/react";
+import { Banner, Button, LayerDialog, Loader, Tabs, useKumoToastManager } from "@cloudflare/kumo";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { Folders } from "shared/folders";
 import { useFreshProof } from "~/components/FreshProof";
@@ -14,7 +13,9 @@ import { useFolders } from "~/queries/folders";
 import { queryKeys } from "~/queries/keys";
 import { useDeleteMailbox } from "~/queries/mailboxes";
 import api from "~/services/api";
+import Card from "./Card";
 import MailboxMembers from "./MailboxMembers";
+import PageHead from "./PageHead";
 import { useAdminTitle } from "./useAdminTitle";
 
 /**
@@ -22,8 +23,14 @@ import { useAdminTitle } from "./useAdminTitle";
  * changes, and deleting it. Deleting is its owners' (the Worker's `mailbox.manage`): a manager
  * who is not an owner of it is told so, and does not see the button.
  */
+/** The parts of a mailbox's page, each a tab. */
+export const MAILBOX_TABS = ["details", "members", "history"] as const;
+export type MailboxTab = (typeof MAILBOX_TABS)[number];
+
 export default function MailboxPage() {
 	const { mailboxId = "" } = useParams({ strict: false });
+	const { tab = "details" } = useSearch({ strict: false }) as { tab?: MailboxTab };
+	const navigate = useNavigate();
 	useAdminTitle(mailboxId, t("Mailboxes"));
 	const { data: registry = [], isPending } = useQuery({
 		queryKey: queryKeys.registry,
@@ -32,29 +39,50 @@ export default function MailboxPage() {
 	const mailbox = registry.find((one) => one.address === mailboxId);
 
 	return (
-		<div className="space-y-5">
-			<div>
-				<Link
-					to="/admin/mailboxes"
-					className="inline-flex items-center gap-1 text-sm text-kumo-subtle underline"
-				>
-					<ArrowLeftIcon size={14} aria-hidden /> {t("Mailboxes")}
-				</Link>
-				<h2 className="mt-2 break-all text-xl font-semibold text-kumo-default">{mailboxId}</h2>
-			</div>
+		<>
+			<PageHead
+				crumbs={[{ label: t("Mailboxes"), to: "/admin/mailboxes" }, { label: mailboxId }]}
+				title={mailboxId}
+				description={mailbox?.name}
+				tabs={
+					mailbox && (
+						<Tabs
+							variant="underline"
+							value={tab}
+							onValueChange={(next) =>
+								void navigate({
+									to: "/admin/mailboxes/$mailboxId",
+									params: { mailboxId },
+									search: { tab: next === "details" ? undefined : (next as MailboxTab) },
+									replace: true,
+								})
+							}
+							tabs={[
+								{ value: "details", label: t("Details") },
+								{ value: "members", label: t("Members") },
+								{ value: "history", label: t("History") },
+							]}
+						/>
+					)
+				}
+			/>
 			{isPending ? (
 				<div className="flex justify-center py-6">
 					<Loader />
 				</div>
 			) : !mailbox ? (
-				<p role="alert" className="text-sm text-kumo-danger">
-					{t("This mailbox does not exist, or you may not see its members.")}
-				</p>
+				<Banner
+					variant="error"
+					text={t("This mailbox does not exist, or you may not see its members.")}
+				/>
+			) : tab === "members" ? (
+				<MailboxMembers mailboxId={mailboxId} part="members" />
+			) : tab === "history" ? (
+				<MailboxMembers mailboxId={mailboxId} part="history" />
 			) : (
-				<>
-					<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
-						<h3 className="text-base font-semibold text-kumo-default">{t("Details")}</h3>
-						<dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
+				<div className="space-y-6">
+					<Card title={t("Details")}>
+						<dl className="m-0 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
 							<dt className="text-kumo-subtle">{t("Name")}</dt>
 							<dd className="m-0 text-kumo-default">{mailbox.name}</dd>
 							<dt className="text-kumo-subtle">{t("Members")}</dt>
@@ -66,12 +94,11 @@ export default function MailboxPage() {
 								{mailbox.owners.join(", ") || t("nobody")}
 							</dd>
 						</dl>
-					</section>
-					<MailboxMembers mailboxId={mailboxId} />
+					</Card>
 					<DeleteMailbox mailboxId={mailboxId} isOwner={mailbox.role === "owner"} />
-				</>
+				</div>
 			)}
-		</div>
+		</>
 	);
 }
 
@@ -98,11 +125,10 @@ function DeleteMailbox({ mailboxId, isOwner }: { mailboxId: string; isOwner: boo
 	}
 
 	return (
-		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
-			<h3 className="text-base font-semibold text-kumo-default">{t("Delete this mailbox")}</h3>
+		<Card title={t("Delete this mailbox")}>
 			{isOwner ? (
 				<>
-					<p className="mt-1 text-sm text-kumo-subtle">
+					<p className="m-0 text-sm text-kumo-subtle">
 						{t("The mailbox and every message in it are deleted. This cannot be undone.")}
 					</p>
 					<Button className="mt-3" variant="destructive" onClick={() => setAsking(true)}>
@@ -110,7 +136,7 @@ function DeleteMailbox({ mailboxId, isOwner }: { mailboxId: string; isOwner: boo
 					</Button>
 				</>
 			) : (
-				<p className="mt-1 text-sm text-kumo-subtle">
+				<p className="m-0 text-sm text-kumo-subtle">
 					{t("Only an owner of this mailbox can delete it.")}
 				</p>
 			)}
@@ -144,6 +170,6 @@ function DeleteMailbox({ mailboxId, isOwner }: { mailboxId: string; isOwner: boo
 					</LayerDialog.Actions>
 				</LayerDialog.Content>
 			</LayerDialog.Alert>
-		</section>
+		</Card>
 	);
 }

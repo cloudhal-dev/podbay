@@ -3,7 +3,9 @@
 
 import {
 	Badge,
+	Banner,
 	Button,
+	Empty,
 	Input,
 	LayerDialog,
 	Loader,
@@ -12,7 +14,7 @@ import {
 	Text,
 	useKumoToastManager,
 } from "@cloudflare/kumo";
-import { PlusIcon } from "@phosphor-icons/react";
+import { PlusIcon, TrayIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useState } from "react";
@@ -20,6 +22,8 @@ import { plural, t } from "~/i18n";
 import { queryKeys } from "~/queries/keys";
 import { useCreateMailbox } from "~/queries/mailboxes";
 import api from "~/services/api";
+import Card from "./Card";
+import PageHead from "./PageHead";
 import { useAdminTitle } from "./useAdminTitle";
 
 /**
@@ -47,83 +51,86 @@ export default function MailboxesPage() {
 	const [creating, setCreating] = useState(false);
 
 	return (
-		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
-			<div className="flex flex-wrap items-start justify-between gap-3">
-				<div className="min-w-0">
-					<h2 className="text-base font-semibold text-kumo-default">{t("Mailboxes")}</h2>
-					<p className="mt-1 text-sm text-kumo-subtle">
-						{t(
-							"You manage who the members of every mailbox are. You read only the mailboxes you are a member of.",
-						)}
-					</p>
-				</div>
-				{!configured && (
-					<Button variant="primary" icon={<PlusIcon size={16} />} onClick={() => setCreating(true)}>
-						{t("New Mailbox")}
-					</Button>
+		<>
+			<PageHead
+				crumbs={[{ label: t("Mailboxes") }]}
+				title={t("Mailboxes")}
+				description={t(
+					"You manage who the members of every mailbox are. You read only the mailboxes you are a member of.",
 				)}
-			</div>
-			{isPending ? (
-				<div className="flex justify-center py-6">
-					<Loader />
-				</div>
-			) : isError ? (
-				<p role="alert" className="mt-3 text-sm text-kumo-danger">
-					{t("The mailboxes could not be loaded.")}
-				</p>
-			) : mailboxes.length === 0 ? (
-				<p className="mt-3 text-sm text-kumo-subtle">{t("There are no mailboxes yet.")}</p>
-			) : (
-				<div className="mt-4 overflow-hidden rounded-lg border border-kumo-line">
-					<Table aria-label={t("Mailboxes")}>
-						<Table.Header>
-							<Table.Row>
-								<Table.Head>{t("Mailbox")}</Table.Head>
-								{/* On a narrow screen who owns it is under the address, not in a column. */}
-								<Table.Head className="hidden md:table-cell">{t("Owners")}</Table.Head>
-								<Table.Head className="hidden sm:table-cell">{t("You")}</Table.Head>
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
-							{mailboxes.map((mailbox) => {
-								const owners = mailbox.owners.join(", ") || t("nobody");
-								const yours = (
-									<Badge variant={mailbox.role === null ? "outline" : "secondary"}>
-										{mailbox.role === null ? t("Not a member") : t("You are a member")}
-									</Badge>
-								);
-								return (
-									<Table.Row key={mailbox.address}>
-										<Table.Cell className="max-w-0">
-											<Link
-												to="/admin/mailboxes/$mailboxId"
-												params={{ mailboxId: mailbox.address }}
-												className="block truncate text-sm text-kumo-default underline"
-											>
-												{mailbox.address}
-											</Link>
-											<p className="truncate text-xs text-kumo-subtle">
-												{mailbox.name} ·{" "}
-												{plural(mailbox.members, "{count} member", "{count} members")}
-											</p>
-											<p className="truncate text-xs text-kumo-subtle md:hidden">
-												{t("owned by {owners}", { owners })}
-											</p>
-											<div className="mt-1 sm:hidden">{yours}</div>
-										</Table.Cell>
-										<Table.Cell className="hidden max-w-0 md:table-cell">
-											<p className="truncate text-sm text-kumo-strong">{owners}</p>
-										</Table.Cell>
-										<Table.Cell className="hidden sm:table-cell">{yours}</Table.Cell>
-									</Table.Row>
-								);
-							})}
-						</Table.Body>
-					</Table>
-				</div>
-			)}
+				actions={
+					!configured && (
+						<Button
+							variant="primary"
+							icon={<PlusIcon size={16} />}
+							onClick={() => setCreating(true)}
+						>
+							{t("New Mailbox")}
+						</Button>
+					)
+				}
+			/>
+			<Card title={t("All mailboxes")}>
+				{isPending ? (
+					<div className="flex justify-center py-6">
+						<Loader />
+					</div>
+				) : isError ? (
+					<Banner variant="error" text={t("The mailboxes could not be loaded.")} />
+				) : mailboxes.length === 0 ? (
+					<Empty size="sm" icon={<TrayIcon size={32} />} title={t("There are no mailboxes yet.")} />
+				) : (
+					<div className="overflow-hidden rounded-lg border border-kumo-line">
+						<Table aria-label={t("Mailboxes")}>
+							<Table.Header>
+								<Table.Row>
+									<Table.Head>{t("Mailbox")}</Table.Head>
+									{/* On a narrow screen who owns it is under the address, not in a column. */}
+									<Table.Head className="hidden md:table-cell">{t("Owners")}</Table.Head>
+									<Table.Head className="hidden sm:table-cell">{t("You")}</Table.Head>
+								</Table.Row>
+							</Table.Header>
+							<Table.Body>
+								{mailboxes.map((mailbox) => {
+									const owners = mailbox.owners.join(", ") || t("nobody");
+									const yours = (
+										<Badge variant={mailbox.role === null ? "outline" : "secondary"}>
+											{mailbox.role === null ? t("Not a member") : t("You are a member")}
+										</Badge>
+									);
+									return (
+										<Table.Row key={mailbox.address}>
+											<Table.Cell className="max-w-0">
+												<Link
+													to="/admin/mailboxes/$mailboxId"
+													params={{ mailboxId: mailbox.address }}
+													className="block truncate text-sm text-kumo-default underline"
+												>
+													{mailbox.address}
+												</Link>
+												<p className="truncate text-xs text-kumo-subtle">
+													{mailbox.name} ·{" "}
+													{plural(mailbox.members, "{count} member", "{count} members")}
+												</p>
+												<p className="truncate text-xs text-kumo-subtle md:hidden">
+													{t("owned by {owners}", { owners })}
+												</p>
+												<div className="mt-1 sm:hidden">{yours}</div>
+											</Table.Cell>
+											<Table.Cell className="hidden max-w-0 md:table-cell">
+												<p className="truncate text-sm text-kumo-strong">{owners}</p>
+											</Table.Cell>
+											<Table.Cell className="hidden sm:table-cell">{yours}</Table.Cell>
+										</Table.Row>
+									);
+								})}
+							</Table.Body>
+						</Table>
+					</div>
+				)}
+			</Card>
 			<CreateMailbox open={creating} onOpenChange={setCreating} domains={config?.domains ?? []} />
-		</section>
+		</>
 	);
 }
 

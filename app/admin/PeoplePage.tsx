@@ -5,6 +5,7 @@ import { t } from "~/i18n";
 import { useMe } from "~/lib/session";
 import Invitations from "./Invitations";
 import InvitePerson from "./InvitePerson";
+import PageHead from "./PageHead";
 import People from "./People";
 import { useAdminTitle } from "./useAdminTitle";
 
@@ -14,10 +15,17 @@ export default function PeoplePage() {
 	const { data: me } = useMe();
 	if (!me) return null;
 	return (
-		<div className="space-y-6">
-			<People me={me} />
-			<Invitations />
-			<InvitePerson canInviteAdmin={me.role === "owner"} />
-		</div>
+		<>
+			<PageHead
+				crumbs={[{ label: t("People") }]}
+				title={t("People")}
+				description={t("Everyone with an account on this instance, and the people invited to it.")}
+			/>
+			<div className="space-y-6">
+				<People me={me} />
+				<Invitations />
+				<InvitePerson canInviteAdmin={me.role === "owner"} />
+			</div>
+		</>
 	);
 }

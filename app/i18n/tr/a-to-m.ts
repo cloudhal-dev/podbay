@@ -37,6 +37,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"A second button on an answer: send it and file its conversation in one press.":
 		"Yanıtta ikinci bir düğme: tek basışta gönderir ve yazışmayı arşivler.",
 	Accepted: "Kabul edildi",
+	Accounts: "Hesaplar",
 	Administration: "Yönetim",
 	AI: "YZ",
 	"About the sender {address}": "Gönderen hakkında: {address}",
@@ -227,6 +228,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Deleting: {count} messages so far": "Siliniyor: şimdiye kadar {count} ileti",
 	Density: "Yoğunluk",
 	Details: "Ayrıntılar",
+	Directory: "Dizin",
 	Discard: "Sil",
 	"Discard this draft?": "Bu taslak silinsin mi?",
 	"Discarding draft": "Taslak siliniyor",
@@ -274,6 +276,8 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Everyone at {domain}": "{domain} alan adındaki herkes",
 	"Everyone with an account here. A recovery link lets a person who cannot sign in choose a new password; make one only when you are sure who is asking.":
 		"Burada hesabı olan herkes. Kurtarma bağlantısı, oturum açamayan bir kişinin yeni parola seçmesini sağlar; yalnızca kimin istediğinden emin olduğunuzda oluşturun.",
+	"Everyone with an account on this instance, and the people invited to it.":
+		"Bu kurulumda hesabı olan herkes ve buraya davet edilen kişiler.",
 	"Everything in {place} is selected.": "{place} içindeki her şey seçili.",
 	"Everything on this page is selected.": "Bu sayfadaki her şey seçili.",
 	"Everything selected": "Her şey seçili",
@@ -333,6 +337,7 @@ export const trAtoM: Readonly<Record<string, string>> = {
 	"Hide details": "Ayrıntıları gizle",
 	"Hide it": "Gizle",
 	Highlight: "Vurgu",
+	History: "Geçmiş",
 	"Horizontal rule": "Yatay çizgi",
 	"How a recipient is compared": "Alıcının nasıl karşılaştırılacağı",
 	"How many lines a list shows before it pages.":
