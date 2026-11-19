@@ -18,12 +18,13 @@ import {
 	useNavigate,
 	useRouter,
 } from "@tanstack/react-router";
-import { forwardRef, useEffect } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { errorFields, log } from "shared/log";
 import { ComposeSession } from "~/components/ComposeSession";
 import { ConfirmProvider } from "~/components/Confirm";
 import { FreshProofProvider } from "~/components/FreshProof";
 import { useChoicesSync, useDisplay } from "~/hooks/useDisplay";
+import { useUIStore } from "~/hooks/useUIStore";
 import { currentLanguage, t } from "~/i18n";
 import { useMe } from "~/lib/session";
 import AcceptRoute from "~/routes/accept";
@@ -121,17 +122,32 @@ function SessionGate() {
 function RootLayout() {
 	// The words are read when a screen is drawn, so a change of language draws everything again.
 	useDisplay((state) => state.language);
+	// Where the notes are drawn (#122). Kumo's viewport has a layer of its own (`z-1`), so in the
+	// page's own it would be under the writing window (`z-40`), where the notes open on a wide
+	// screen. Drawn in this container, one layer above the window, a note is read whatever is open.
+	// Kumo's viewport is fixed to the bottom right; a transform makes this container the box it is
+	// fixed in, so while the window is open the container ends above the window's bottom row and
+	// a note rests above Send and the rest, at every width. The container lets the pointer through;
+	// a note takes it, so it can still be pressed and swiped away.
+	const [notes, setNotes] = useState<HTMLElement | null>(null);
+	const windowOpen = useUIStore(
+		(state) => state.isComposing && state.composePlacement === "window",
+	);
 	return (
 		<QueryClientProvider client={queryClient}>
 			<LinkProvider component={KumoLink}>
 				<TooltipProvider>
-					<Toasty>
+					<Toasty container={notes ?? undefined}>
 						<FreshProofProvider key={currentLanguage()}>
 							<ConfirmProvider>
 								<SessionGate />
 							</ConfirmProvider>
 						</FreshProofProvider>
 					</Toasty>
+					<div
+						ref={setNotes}
+						className={`pointer-events-none fixed inset-x-0 top-0 z-50 [transform:translateZ(0)] [&_*]:pointer-events-auto ${windowOpen ? "bottom-16" : "bottom-0"}`}
+					/>
 				</TooltipProvider>
 			</LinkProvider>
 		</QueryClientProvider>
