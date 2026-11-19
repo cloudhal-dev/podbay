@@ -58,8 +58,16 @@ export interface OnPurpose {
 	reason: string;
 }
 
-/** Native controls that stay, each with why. Empty when the check came in; #82 fills it. */
-export const ON_PURPOSE: readonly OnPurpose[] = [];
+/** Native controls that stay, each with why. #82 decides each one. */
+export const ON_PURPOSE: readonly OnPurpose[] = [
+	{
+		file: "app/components/controls/DateTimeField.tsx",
+		element: "input",
+		count: 1,
+		reason:
+			"Kumo 2.18.1 has no field for a date and a time: its DatePicker is a calendar only. The browser's own field stands here alone, sized to Kumo's default, and every screen uses this wrapper.",
+	},
+];
 
 /**
  * What was written by hand when the check came in (main at b200fd7, 2026-11-19), file by file:
@@ -81,16 +89,10 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/MessageList.tsx": { button: 2, input: 1 },
 	"app/components/MessageListToolbar.tsx": { input: 1 },
 	"app/components/ScheduledList.tsx": { button: 1 },
-	"app/components/SearchOptions.tsx": { input: 4, select: 2 },
-	"app/components/SendLater.tsx": { input: 1 },
 	"app/components/SignInSteps.tsx": { button: 1 },
 	"app/components/email-panel/MessageHeader.tsx": { button: 4 },
 	"app/components/email-panel/ThreadMessage.tsx": { button: 1 },
-	"app/components/rules/FilterDialog.tsx": { input: 4, select: 2 },
 	"app/components/settings/AssistantSettings.tsx": { textarea: 1 },
-	"app/components/settings/AutoReplySettings.tsx": { input: 3, textarea: 1 },
-	"app/components/settings/GeneralSettings.tsx": { select: 1 },
-	"app/components/settings/Row.tsx": { input: 1 },
 	"app/components/settings/SignatureSettings.tsx": { input: 1 },
 	"app/routes/home.tsx": { button: 1 },
 	"app/routes/mailbox.tsx": { button: 1 },

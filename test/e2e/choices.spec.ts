@@ -11,7 +11,10 @@ import { expect, mime, SENT_WITHIN, test } from "./fixtures.ts";
 const row = (page: Page, subject: string) =>
 	page.getByRole("button", { name: new RegExp(subject) });
 const choose = (page: Page, group: string, option: string) =>
-	page.getByRole("radiogroup", { name: group }).getByLabel(option).check();
+	page
+		.getByRole("radiogroup", { name: group })
+		.getByRole("radio", { name: option, exact: true })
+		.check();
 
 test.beforeEach(async ({ page, app }) => {
 	await app.signIn();

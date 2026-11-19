@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Button } from "@cloudflare/kumo";
+import { Button, Select } from "@cloudflare/kumo";
 import { useEffect, useRef, useState } from "react";
 import { UNDO_SECONDS, type UndoSeconds } from "shared/sending";
 import { PAGE_SIZES, type PageSize, useDisplay } from "~/hooks/useDisplay";
@@ -35,7 +35,9 @@ export default function GeneralSettings() {
 	useEffect(() => {
 		if (!languageJustChosen) return;
 		languageJustChosen = false;
-		languageChoice.current?.querySelector<HTMLInputElement>("input:checked")?.focus();
+		languageChoice.current
+			?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')
+			?.focus();
 	}, []);
 
 	/** Turning notifications on asks the browser first; a no leaves them off and says why. */
@@ -60,22 +62,13 @@ export default function GeneralSettings() {
 				name={t("Conversations on a page")}
 				about={t("How many lines a list shows before it pages.")}
 			>
-				<label className="flex items-center gap-2">
-					<span className="sr-only">{t("Conversations on a page")}</span>
-					<select
-						className="h-9 rounded-lg border border-kumo-line bg-kumo-control px-3 text-sm text-kumo-default"
-						value={choices.pageSize}
-						onChange={(event) =>
-							choices.choose({ pageSize: Number(event.target.value) as PageSize })
-						}
-					>
-						{PAGE_SIZES.map((size) => (
-							<option key={size} value={size}>
-								{size}
-							</option>
-						))}
-					</select>
-				</label>
+				<Select
+					aria-label={t("Conversations on a page")}
+					className="w-24"
+					value={choices.pageSize}
+					onValueChange={(size) => choices.choose({ pageSize: size as PageSize })}
+					items={PAGE_SIZES.map((size) => ({ label: String(size), value: size }))}
+				/>
 			</Row>
 
 			<Row
@@ -261,12 +254,7 @@ export default function GeneralSettings() {
 					]}
 					onChange={(value) => choices.choose({ shortcuts: value === "on" })}
 				/>
-				<Button
-					variant="secondary"
-					size="sm"
-					className="mt-3"
-					onClick={() => setShortcutHelpOpen(true)}
-				>
+				<Button variant="secondary" className="mt-3" onClick={() => setShortcutHelpOpen(true)}>
 					{t("Show the shortcuts")}
 				</Button>
 			</Row>

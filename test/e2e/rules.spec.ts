@@ -19,7 +19,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
-import { BASE, expect, test } from "./fixtures.ts";
+import { BASE, choose, expect, test } from "./fixtures.ts";
 
 const MAILBOX = "rules@example.com";
 const box = encodeURIComponent(MAILBOX);
@@ -115,8 +115,8 @@ test("a filter made in the settings files mail that arrives from then on, and is
 	await expect(dialog.getByRole("button", { name: "Create filter" })).toBeDisabled();
 	await dialog.getByLabel("The subject contains").fill(word.toUpperCase());
 	await expect(dialog.getByText("Say at least one thing the filter does.")).toBeVisible();
-	await dialog.getByLabel("Where it goes").selectOption({ label: "Skip the Inbox" });
-	await dialog.getByLabel("Star it").check();
+	await choose(dialog.getByRole("combobox", { name: "Where it goes" }), "Skip the Inbox");
+	await dialog.getByRole("checkbox", { name: "Star it" }).check();
 	await dialog.getByRole("button", { name: "Create filter" }).click();
 	await expect(dialog).toBeHidden();
 
@@ -219,9 +219,11 @@ test("“Filter messages like this” starts a new filter with the sender of the
 	await page.getByRole("menuitem", { name: "Filter messages like this" }).click();
 	const dialog = page.getByRole("dialog", { name: "New filter" });
 	await expect(dialog.getByLabel("The sender", { exact: true })).toHaveValue(sender);
-	await expect(dialog.getByLabel("How the sender is compared")).toHaveValue("is");
-	await dialog.getByLabel("Mark as read").check();
-	await dialog.getByLabel("Where it goes").selectOption({ label: "Move to Trash" });
+	await expect(dialog.getByRole("combobox", { name: "How the sender is compared" })).toHaveText(
+		"is exactly",
+	);
+	await dialog.getByRole("checkbox", { name: "Mark as read" }).check();
+	await choose(dialog.getByRole("combobox", { name: "Where it goes" }), "Move to Trash");
 	await dialog.getByRole("button", { name: "Create filter" }).click();
 	await expect(dialog).toBeHidden();
 
@@ -247,7 +249,7 @@ test("the automatic reply is turned on in the settings, answers a person once, a
 	const subject = unique("Away");
 	const asker = `asker-${subject.toLowerCase()}@sender.test`;
 	await page.goto(settings("auto-reply"));
-	const on = page.getByLabel("Answer mail that arrives");
+	const on = page.getByRole("checkbox", { name: "Answer mail that arrives" });
 	await expect(on).not.toBeChecked();
 	await on.check();
 	// One that is on must say something: the button waits for the message.
@@ -353,7 +355,7 @@ test("a reply saved elsewhere with HTML is saved from the settings as the words 
 	).toBeHidden();
 
 	// Turned off again, so the other tests of the mailbox are not answered.
-	await page.getByLabel("Answer mail that arrives").uncheck();
+	await page.getByRole("checkbox", { name: "Answer mail that arrives" }).uncheck();
 	await page.getByRole("button", { name: "Save automatic reply" }).click();
 	await expect(page.getByText("The automatic reply is off")).toBeVisible();
 	expect(await app.contacted(), "hosts the browser tried to reach").toEqual([]);

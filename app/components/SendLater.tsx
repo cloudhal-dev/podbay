@@ -5,11 +5,9 @@ import { Button, DropdownMenu, LayerDialog } from "@cloudflare/kumo";
 import { CalendarBlankIcon, ClockIcon } from "@phosphor-icons/react";
 import { type FormEvent, useState } from "react";
 import { SENDING } from "shared/sending";
+import DateTimeField from "~/components/controls/DateTimeField";
 import { t } from "~/i18n";
 import { fieldValue, laterChoices, timeRefusal, timeWords } from "~/lib/sending-words";
-
-const NATIVE_FIELD =
-	"h-9 w-full rounded-lg border border-kumo-line bg-kumo-control px-3 text-sm text-kumo-default";
 
 /**
  * "Send later" (ADR-0016, decision 12): a few times of the app's own and a date and time, in
@@ -108,24 +106,14 @@ export default function SendLater({
 							onInput={(event) => event.stopPropagation()}
 						>
 							<form id="send-later" onSubmit={choose} className="space-y-3">
-								<div>
-									<label
-										htmlFor="send-later-time"
-										className="mb-1.5 block text-sm font-medium text-kumo-default"
-									>
-										{t("Date and time")}
-									</label>
-									<input
-										id="send-later-time"
-										type="datetime-local"
-										className={NATIVE_FIELD}
-										value={picked}
-										min={fieldValue(now)}
-										max={fieldValue(new Date(now.getTime() + SENDING.farthestMs))}
-										onChange={(event) => setPicked(event.target.value)}
-										required
-									/>
-								</div>
+								<DateTimeField
+									label={t("Date and time")}
+									value={picked}
+									min={fieldValue(now)}
+									max={fieldValue(new Date(now.getTime() + SENDING.farthestMs))}
+									onChange={setPicked}
+									required
+								/>
 								{refusal === null && picked !== "" ? (
 									<p className="m-0 text-sm text-kumo-default">
 										{t("The message will be sent {time}.", { time: timeWords(time) })}

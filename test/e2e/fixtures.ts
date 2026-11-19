@@ -12,7 +12,7 @@
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { test as base, expect, type Frame, type Page } from "@playwright/test";
+import { test as base, expect, type Frame, type Locator, type Page } from "@playwright/test";
 import type { Account } from "./global-setup.ts";
 import { PROXY } from "./proxy-address.ts";
 
@@ -24,6 +24,21 @@ export const BASE = "http://localhost:4174";
  * app says "sent" when the mailbox does, not at the press.
  */
 export const SENT_WITHIN = { timeout: 30_000 } as const;
+
+/**
+ * Chooses an option of one of Kumo's selects, as a person does: the trigger (role `combobox`)
+ * opens a list (role `listbox`), and the option is pressed by its name. A native `<select>` and
+ * `selectOption` are gone from the app (issue #82).
+ */
+export async function choose(select: Locator, option: string): Promise<void> {
+	await select.click();
+	await select
+		.page()
+		.getByRole("listbox")
+		.getByRole("option", { name: option, exact: true })
+		.click();
+	await expect(select).toHaveText(option);
+}
 const root = (path: string) => fileURLToPath(new URL(`../../${path}`, import.meta.url));
 
 /**
