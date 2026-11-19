@@ -57,6 +57,7 @@ The mail screens follow what a person expects from a first-class web mail client
 | Starred is a search (`is:starred`), not a folder | The rail links to the search screen |
 | **Scheduled** is a place of its own in the rail, under Drafts (ADR-0016): mail that was sent and has not left yet, with how many wait beside it. Its list is not the list of the other places: what waits is shown soonest first, one line for each message with who it goes to and its time, and nothing is ticked, dragged, starred, moved or labelled there, because nothing changes a waiting message but its own deeds. **Drafts** says beside its count how many messages came back unsent, and such a line is marked "Not sent" | `Sidebar.tsx` (`waiting` and `notSent` of `GET …/folders`), `ScheduledList.tsx`, `routes/email-list.tsx`, `MessageList.tsx` |
 | Every screen has a heading, shown or not | `<h1 className="sr-only">` in `MessageList.tsx` |
+| **A note can be read whatever is open** (#122): Kumo's notes are drawn in a container of the app's own, one layer above the writing window, so a note shown while the window is open is above it. On a phone, where the window fills the screen, a note covers its bottom row for the few seconds it is shown, and can be swiped away | `Toasty`'s `container` in `app/router.tsx`; `test/e2e/notes.spec.ts` |
 
 ### The list
 
