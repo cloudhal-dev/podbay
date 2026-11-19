@@ -105,6 +105,8 @@ describe("Kumo controls sized by hand", () => {
 		["the important mark after", '<Button className="h-9!">Go</Button>'],
 		["a style attribute", '<Input label="Name" style={{ height: 36 }} />'],
 		["a dotted part of Kumo's", '<Select.Trigger className="h-9" />'],
+		["an input group", '<InputGroup size="lg" className="h-12" />'],
+		["a part of an input group", '<InputGroup.Addon align="end" className="pr-1" />'],
 	])("refuses %s", (_what, text) => {
 		expect(problems(text)).toHaveLength(1);
 	});

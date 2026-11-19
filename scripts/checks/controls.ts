@@ -35,6 +35,7 @@ const KUMO_CONTROLS = [
 	"Button",
 	"Input",
 	"InputArea",
+	"InputGroup",
 	"Select",
 	"Checkbox",
 	"Radio",
@@ -67,6 +68,20 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 		reason:
 			"Kumo 2.18.1 has no field for a date and a time: its DatePicker is a calendar only. The browser's own field stands here alone, sized to Kumo's default, and every screen uses this wrapper.",
 	},
+	{
+		file: "app/components/Header.tsx",
+		element: "input",
+		count: 1,
+		reason:
+			"The top bar's search box: one wide field 48 px tall, fully round and filled, with no line, that turns to the page's colour with a ring when it has focus. Kumo 2.18.1's Input and InputGroup give a size alone (40 px at their largest) with Kumo's corner and line, and a height, a corner or padding by hand is refused, so that shape cannot be carried. Its two buttons are Kumo's.",
+	},
+	{
+		file: "app/routes/mailbox.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The shade behind the rail when it slides over the list on a phone: the whole screen around the rail, which closes it when pressed. It is not a control a person moves to: it is out of the tab order, Escape and the rail's own button close the rail too, and Kumo's Button cannot be a surface the size of the screen.",
+	},
 ];
 
 /**
@@ -82,7 +97,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/ComposeWindow.tsx": { button: 1 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
 	"app/components/EmailPanel.tsx": { button: 1 },
-	"app/components/Header.tsx": { button: 2, input: 1 },
 	"app/components/InlineReply.tsx": { button: 2 },
 	"app/components/InvitePerson.tsx": { select: 1 },
 	"app/components/LabelDialog.tsx": { input: 1 },
@@ -93,7 +107,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/email-panel/ThreadMessage.tsx": { button: 1 },
 	"app/components/settings/AssistantSettings.tsx": { textarea: 1 },
 	"app/components/settings/SignatureSettings.tsx": { input: 1 },
-	"app/routes/mailbox.tsx": { button: 1 },
 	"app/routes/members.tsx": { select: 1 },
 	"app/routes/search-results.tsx": { button: 1 },
 };
