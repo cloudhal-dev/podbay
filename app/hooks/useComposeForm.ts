@@ -4,6 +4,7 @@
 // Modified by the Podbay contributors.
 
 import { useKumoToastManager } from "@cloudflare/kumo";
+import { useRouter } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Folders } from "shared/folders";
 import { MAX_RECIPIENTS } from "shared/sending-limits";
@@ -11,7 +12,7 @@ import { useDisplay } from "~/hooks/useDisplay";
 import { type DraftFile, type LeftBehind, useDraftFiles } from "~/hooks/useDraftFiles";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";
 import { type SendRoute, useSending } from "~/hooks/useSending";
-import { useUIStore } from "~/hooks/useUIStore";
+import { type ComposeOptions, useUIStore } from "~/hooks/useUIStore";
 import { quoteLanguage, t } from "~/i18n";
 import {
 	buildQuotedReplyBlock,
@@ -174,6 +175,7 @@ export type ComposeForm = ReturnType<typeof useComposeForm>;
 
 export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const toastManager = useKumoToastManager();
+	const router = useRouter();
 	const { composeOptions, closePanel, closeCompose } = useUIStore();
 	const { data: currentMailbox } = useMailbox(mailboxId);
 	const knownAddresses = useKnownAddresses(mailboxId, currentMailbox?.email);
@@ -211,13 +213,83 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const isComposing = useUIStore((state) => state.isComposing);
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
 	const isDraftEdit = !!composeOptions.draftEmail;
+	/** The mailbox the message being written belongs to: it is saved there, wherever the page went. */
+	const writtenIn = useRef(mailboxId);
+	/** The same, for drawing: the message is shown only on its own mailbox's pages. */
+	const [ownMailbox, setOwnMailbox] = useState(mailboxId);
+	/**
+	 * Counts the messages this window began. A save that began for one message and ends after the
+	 * next began leaves the next alone: it does not give it the first one's draft.
+	 */
+	const generation = useRef(0);
+	/** The count of what the person did when what is written was last saved. */
+	const savedVersion = useRef(0);
+	/** Whether the message being written is being saved before the next one begins. */
+	const keeping = useRef(false);
+	/** Asks the window to look again at the message to begin, once the one written is kept. */
+	const [kept, setKept] = useState(0);
 
 	const sigBlock = useMemo(() => getSignatureBlock(currentMailbox?.settings), [currentMailbox]);
 
+	// One message is written at a time (#113). When another begins (Compose, its key, an answer, a
+	// forward, a draft opened, the window closed), what is written and not yet saved is saved as
+	// its draft first, as closing does, and the next one begins only then. If that save fails, the
+	// message being written stays open and says why; nothing is thrown away.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: a new message is the trigger; the files follow it
 	useEffect(() => {
-		if (lastInitializedOptionsRef.current === composeOptions) return;
+		if (keeping.current) return;
+		const previous = lastInitializedOptionsRef.current;
+		if (previous === composeOptions) return;
+		// The draft being written, opened again from a list: it stays as it is, with every word
+		// written since it was last saved.
+		const opened = composeOptions.draftEmail?.id;
+		if (previous && opened && opened === draftId.current && writtenIn.current === mailboxId) {
+			lastInitializedOptionsRef.current = composeOptions;
+			return;
+		}
+		/**
+		 * The message written stays: the one asked for does not begin. When the person went to
+		 * another mailbox, they are taken back to the message's own.
+		 */
+		const stay = async (written: ComposeOptions, box: string | undefined) => {
+			keeping.current = true;
+			if (box && box !== mailboxId) {
+				await router.navigate({
+					to: "/mailbox/$mailboxId/emails/$folder",
+					params: { mailboxId: box, folder: Folders.INBOX },
+				});
+			}
+			keeping.current = false;
+			useUIStore.setState({
+				composeOptions: written,
+				composePlacement: "window",
+				isComposing: true,
+			});
+		};
+		// A file still on its way would not reach the draft whole when another message begins: as
+		// Send does, the window waits for it and says so. Closing the window (Save and close, or
+		// another mailbox) does not wait: the file on its way still reaches the draft, as before.
+		if (previous && isComposing && draftFiles.uploading) {
+			setError(t("Wait until the files are attached."));
+			void stay(previous, writtenIn.current);
+			return;
+		}
+		if (previous && touched) {
+			keeping.current = true;
+			void keepWritten().then((saved) => {
+				keeping.current = false;
+				if (!saved) {
+					void stay(previous, writtenIn.current);
+					return;
+				}
+				setKept((count) => count + 1);
+			});
+			return;
+		}
 		lastInitializedOptionsRef.current = composeOptions;
+		generation.current += 1;
+		writtenIn.current = mailboxId;
+		setOwnMailbox(mailboxId);
 
 		const initialFields = buildInitialComposeFields(
 			composeOptions,
@@ -252,17 +324,30 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		if (composeOptions.mode === "forward" && original && !editing) {
 			void draftFiles.carry(original.id, original.attachments ?? []);
 		}
-	}, [composeOptions, currentMailbox?.email, sigBlock, mailboxId]);
+	}, [composeOptions, currentMailbox?.email, sigBlock, mailboxId, kept]);
+
+	// A message belongs to the mailbox it is written in. The session lives above the mailbox's
+	// pages, so a message is kept while the person is on a page outside any mailbox (the list of
+	// mailboxes, the account); when another mailbox opens, the message is saved in its own and
+	// closed, as above, and never shown or sent from the other.
+	useEffect(() => {
+		if (!isComposing || keeping.current || !mailboxId || !writtenIn.current) return;
+		if (mailboxId !== writtenIn.current) closeCompose();
+	}, [isComposing, mailboxId, closeCompose]);
 
 	/**
 	 * Saves what is written as a draft. `quiet` is the save the window makes by itself while the
 	 * person writes: it says nothing, and a failure is simply tried again after the next change.
 	 */
 	const saveDraft = async (quiet: boolean): Promise<boolean> => {
-		if (!mailboxId || isSending) return false;
+		// The message being written: its mailbox and what it answers, even while the next waits.
+		const box = writtenIn.current;
+		const writing = lastInitializedOptionsRef.current ?? composeOptions;
+		if (!box || isSending) return false;
 		// One save at a time: the next one must know the id the last one made.
 		await pendingSave.current;
 		const saving = version.current;
+		const forMessage = generation.current;
 		if (!quiet) {
 			setIsSavingDraft(true);
 			setError(null);
@@ -274,15 +359,11 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				bcc: bcc || undefined,
 				subject,
 				body,
-				in_reply_to:
-					composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to || undefined,
-				thread_id:
-					composeOptions.originalEmail?.thread_id ||
-					composeOptions.draftEmail?.thread_id ||
-					undefined,
+				in_reply_to: writing.originalEmail?.id || writing.draftEmail?.in_reply_to || undefined,
+				thread_id: writing.originalEmail?.thread_id || writing.draftEmail?.thread_id || undefined,
 			};
 			const save = (id: string | undefined) =>
-				saveDraftMutation.mutateAsync({ mailboxId, draft, id });
+				saveDraftMutation.mutateAsync({ mailboxId: box, draft, id });
 			// A draft that is gone (sent or discarded elsewhere) is written again as a new one.
 			const saved = await save(draftId.current ?? undefined).catch((caught) => {
 				if (draftId.current === null || !(caught instanceof ApiError) || caught.status !== 404) {
@@ -290,7 +371,10 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				}
 				return save(undefined);
 			});
+			// A save that ends after the next message began belongs to the one before.
+			if (generation.current !== forMessage) return true;
 			draftId.current = saved.id;
+			savedVersion.current = saving;
 			// Only what was there when the save began is saved.
 			if (version.current === saving) setTouched(false);
 			setSavedAt(Date.now());
@@ -314,6 +398,18 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		return save;
 	};
 	const handleSaveDraft = () => saveOnce(false);
+	/**
+	 * Saves what is written before the next message begins: after a save on its way, and only
+	 * when something was written since the last one. Says "Draft saved", as closing does.
+	 */
+	const keepWritten = async (): Promise<boolean> => {
+		await pendingSave.current;
+		if (savedVersion.current === version.current && draftId.current !== null) {
+			setTouched(false);
+			return true;
+		}
+		return saveOnce(false);
+	};
 	ensureDraft.current = async () => {
 		await pendingSave.current;
 		if (draftId.current === null) await saveOnce(true);
@@ -348,8 +444,10 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		// A save on its way would bring the draft back: it is waited for, then the draft goes.
 		const waited = pendingSave.current;
 		void Promise.resolve(waited).then(() => {
-			if (mailboxId && draftId.current) {
-				deleteEmailMutation.mutate({ mailboxId, id: draftId.current });
+			// The message's own mailbox, whatever page is shown when the save ends.
+			const box = writtenIn.current;
+			if (box && draftId.current) {
+				deleteEmailMutation.mutate({ mailboxId: box, id: draftId.current });
 			}
 		});
 		setTouched(false);
@@ -393,6 +491,9 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			setError(t("No mailbox selected."));
 			return;
 		}
+		// A message is sent only from the mailbox it was written in. The window is not drawn on
+		// another's pages, so this does not happen; if it did, nothing would leave.
+		if (writtenIn.current !== mailboxId) return;
 		const toRecipients = splitEmailList(to);
 		if (toRecipients.length === 0) {
 			setError(t("Add at least one recipient."));
@@ -508,6 +609,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				? (composeOptions.draftEmail.submission.error ?? "")
 				: undefined,
 		mode: composeOptions.mode,
+		/** Whether the page shows the mailbox the message is written in: only there is it drawn. */
+		belongsHere: ownMailbox === mailboxId && writtenIn.current === mailboxId,
 		isDraftEdit,
 		closeCompose,
 		closePanel,

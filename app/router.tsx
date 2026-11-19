@@ -20,6 +20,7 @@ import {
 } from "@tanstack/react-router";
 import { forwardRef, useEffect } from "react";
 import { errorFields, log } from "shared/log";
+import { ComposeSession } from "~/components/ComposeSession";
 import { ConfirmProvider } from "~/components/Confirm";
 import { FreshProofProvider } from "~/components/FreshProof";
 import { useChoicesSync, useDisplay } from "~/hooks/useDisplay";
@@ -108,7 +109,13 @@ function SessionGate() {
 
 	if (signedOutPage) return <Outlet />;
 	if (isPending || me === null || me === undefined) return null;
-	return <Outlet />;
+	// The message being written lives beside the signed-in pages, not inside one mailbox's: going
+	// to the list of mailboxes or the account keeps it (#113). It goes when the person signs out.
+	return (
+		<ComposeSession>
+			<Outlet />
+		</ComposeSession>
+	);
 }
 
 function RootLayout() {

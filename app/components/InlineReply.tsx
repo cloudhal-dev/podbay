@@ -23,6 +23,11 @@ const TITLES = {
  * that was written is lost.
  */
 export default function InlineReply() {
+	// A message is drawn only on its own mailbox's pages (#113).
+	return useCompose().belongsHere ? <OpenInlineReply /> : null;
+}
+
+function OpenInlineReply() {
 	const form = useCompose();
 	const mode = useUIStore((state) => state.composeOptions.mode);
 	const card = useRef<HTMLElement>(null);
