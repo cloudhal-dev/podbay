@@ -8,7 +8,7 @@
  * saved itself (2.5 s after the last key).
  */
 import type { Page } from "@playwright/test";
-import { expect, mime, test } from "./fixtures.ts";
+import { expect, makeMailbox, mime, test } from "./fixtures.ts";
 
 // Names are matched as text they contain, never as a pattern made from them.
 const row = (page: Page, subject: string) => page.getByRole("button", { name: subject });
@@ -215,17 +215,9 @@ test("when the message being written cannot be saved, it stays open and the seco
 	);
 });
 
-/** Makes another mailbox of the instance, as the owner, and returns its address. */
-async function anotherMailbox(page: Page, name: string): Promise<string> {
-	const email = `${name}-${Date.now()}@example.com`;
-	const origin = new URL(page.url()).origin;
-	const made = await page.request.post(`${origin}/api/v1/mailboxes`, {
-		data: { email, name },
-		headers: { origin },
-	});
-	expect(made.status(), "the other mailbox is made").toBe(201);
-	return email;
-}
+/** Another mailbox of the instance, of this run alone. */
+const anotherMailbox = (page: Page, name: string) =>
+	makeMailbox(page, `${name}-${Date.now()}@example.com`, name);
 
 /** Leaves for the list of mailboxes, as the rail does, and opens one of them. */
 async function openMailbox(page: Page, email: string): Promise<void> {
