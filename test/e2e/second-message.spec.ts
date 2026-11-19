@@ -243,7 +243,10 @@ test("a message being written is saved in its own mailbox when another opens, an
 	await page.getByRole("button", { name: "Compose" }).first().click();
 	await writeFirst(page, "Second: written in the first mailbox", "Words for the first mailbox.");
 	// Watched from inside the page, every change of its document: is the message ever drawn while
-	// the other mailbox's page is shown, if only for a frame?
+	// the other mailbox's page is shown, if only for a frame? This holds the outcome, not the
+	// check that draws a message only in its own mailbox (`belongsHere`): with that check taken
+	// out the window is not drawn there either, because the message is closed before the other
+	// mailbox's page draws. The check is a second hold, and no test shows it is the one.
 	await page.evaluate(
 		(path) => {
 			const seen = { drawn: false };
