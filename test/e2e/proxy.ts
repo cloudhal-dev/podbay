@@ -48,6 +48,9 @@ const TEST_HOST = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+test$/;
 const root = (path: string) => fileURLToPath(new URL(`../../${path}`, import.meta.url));
 const keyPath = root(PROXY_KEY);
 const certPath = root(PROXY_CERT);
+// `.e2e/` is deleted by the app's server when it starts (scripts/e2e-server.ts). That server is
+// first in the configuration's `webServer`, and Playwright starts each one only after the one
+// before answers at its URL, so the app's server has cleared `.e2e/` before this line runs.
 mkdirSync(dirname(keyPath), { recursive: true, mode: 0o700 });
 // A certificate for this run only, signed by itself; nothing trusts it but a test that says so.
 // The files exist, readable by this user alone, before a byte of the key is written.
@@ -114,7 +117,9 @@ const server = createServer((request, response) => {
 		response.end(JSON.stringify(contacts));
 		return;
 	}
-	if (url === "/__reset") {
+	// POST only, as `/__answer`: a GET is what a picture makes, and the content policies that keep
+	// a message from making one to this server are what the tests around it prove.
+	if (url === "/__reset" && request.method === "POST") {
 		contacts.length = 0;
 		answers.clear();
 		response.writeHead(204);

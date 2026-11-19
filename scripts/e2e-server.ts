@@ -42,6 +42,9 @@ function restore(): void {
 }
 
 function prepare(): void {
+	// The proxy keeps its key and certificate in this directory too (test/e2e/proxy.ts). It is
+	// second in the configuration's `webServer` and starts only once this server answers, so what
+	// is deleted here is the last run's.
 	rmSync(E2E_DIR, { recursive: true, force: true });
 	mkdirSync(E2E_STATE, { recursive: true });
 	if (!process.env.PODBAY_E2E_SKIP_BUILD) {

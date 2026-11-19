@@ -52,23 +52,30 @@ describe("the page and a frame that reports without end", () => {
 		expect(height(), "the page stands still past its count").toBe(100 + FRAME_MAX_REPORTS);
 	});
 
-	it("never stands taller than its own highest, whatever number comes", async () => {
-		for (const reported of [
-			FRAME_MAX_HEIGHT + 1,
-			1e9,
-			Number.MAX_VALUE,
-			Number.POSITIVE_INFINITY,
-			Number.NaN,
-			-1,
-			0,
-			"99999",
-			null,
-		]) {
+	/** Shows a new message, so the next report comes from a fresh frame with a fresh count. */
+	const freshFrame = async (body: string) => {
+		await act(async () => root.render(createElement(EmailIframe, { body, autoSize: true })));
+	};
+
+	it.each([FRAME_MAX_HEIGHT + 1, 1e9, Number.MAX_VALUE])(
+		"a fresh frame that reports %s stands at its own highest and no taller",
+		async (reported) => {
+			await freshFrame(`<p>A message that says it is ${reported} tall.</p>`);
 			await report({ __emailIframeHeight: true, height: reported });
-			expect(height(), String(reported)).toBeLessThanOrEqual(FRAME_MAX_HEIGHT);
-			expect(Number.isFinite(height()), String(reported)).toBe(true);
-		}
-	});
+			expect(height()).toBe(FRAME_MAX_HEIGHT);
+		},
+	);
+
+	it.each([Number.POSITIVE_INFINITY, Number.NaN, -1, 0, "99999", null])(
+		"a fresh frame that reports %s is not followed: its height stays as it was",
+		async (reported) => {
+			await freshFrame(`<p>A message that says it is ${String(reported)} tall.</p>`);
+			const before = height();
+			expect(Number.isFinite(before)).toBe(true);
+			await report({ __emailIframeHeight: true, height: reported });
+			expect(height()).toBe(before);
+		},
+	);
 
 	it("takes nothing from a window that is not its own frame", async () => {
 		const before = height();
