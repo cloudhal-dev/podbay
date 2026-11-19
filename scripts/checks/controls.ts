@@ -195,7 +195,6 @@ export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
  * the debt #82 and #83 pay. Lower a number when a control moves to Kumo; never raise one.
  */
 export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> = {
-	"app/components/AccessKeys.tsx": { input: 1, select: 2 },
 	"app/components/AgentPanel.tsx": { button: 1, textarea: 1 },
 	"app/components/AgentSidebar.tsx": { button: 2 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
