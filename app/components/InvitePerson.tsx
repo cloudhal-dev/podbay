@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Button, Input } from "@cloudflare/kumo";
+import { Button, Input, Select } from "@cloudflare/kumo";
 import { type FormEvent, useState } from "react";
 import { t } from "~/i18n";
 import { type CreatedInvitation, invite } from "~/lib/session";
@@ -60,21 +60,16 @@ export default function InvitePerson({ canInviteAdmin }: { canInviteAdmin: boole
 				</div>
 				{canInviteAdmin && (
 					<div>
-						<label
-							htmlFor="invite-role"
-							className="text-sm font-medium text-kumo-default mb-1.5 block"
-						>
-							{t("Role")}
-						</label>
-						<select
-							id="invite-role"
+						<Select
+							label={t("Role")}
+							size="sm"
 							value={role}
-							onChange={(e) => setRole(e.target.value === "admin" ? "admin" : "member")}
-							className="h-8 rounded-md border border-kumo-line bg-kumo-base px-2 text-sm text-kumo-default"
-						>
-							<option value="member">{t("Member")}</option>
-							<option value="admin">{t("Administrator")}</option>
-						</select>
+							onValueChange={(next) => setRole(next === "admin" ? "admin" : "member")}
+							items={[
+								{ label: t("Member"), value: "member" },
+								{ label: t("Administrator"), value: "admin" },
+							]}
+						/>
 					</div>
 				)}
 				<Button type="submit" variant="secondary" size="sm" loading={busy}>

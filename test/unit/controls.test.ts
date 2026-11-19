@@ -130,6 +130,21 @@ describe("Kumo controls sized by hand", () => {
 		expect(problems('<DateField className="w-full" />', {}, [wrapper])).toEqual([]);
 	});
 
+	it("reads the control's own class, not one inside a label it is given", () => {
+		expect(
+			problems('<Checkbox label={<span className="truncate text-xs">a@b.test</span>} checked />'),
+		).toEqual([]);
+		expect(
+			problems('<Checkbox label={<span className="text-xs">a</span>} className="h-9" />'),
+		).toHaveLength(1);
+		expect(
+			problems('<Checkbox className={cn("h-9")} label={<span className="text-xs">a</span>} />'),
+		).toHaveLength(1);
+		expect(
+			problems('<Checkbox className={cn("w-full")} label={<span className="text-xs">a</span>} />'),
+		).toEqual([]);
+	});
+
 	it("leaves width, margins and the screen's layout alone", () => {
 		expect(
 			problems(

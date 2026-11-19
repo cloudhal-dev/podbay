@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Badge, Button, Input } from "@cloudflare/kumo";
+import { Badge, Button, Input, Select } from "@cloudflare/kumo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
@@ -23,42 +23,34 @@ const ROLES: { value: MailboxRole; label: string; means: string }[] = [
 	},
 ];
 const ROLE_LABEL = { owner: m("Owner"), sender: m("Sender"), reader: m("Reader") } as const;
-const SELECT_CLASS =
-	"h-8 rounded-md border border-kumo-line bg-kumo-base px-2 text-sm text-kumo-default";
-
 const day = (value: string) =>
 	new Date(value).toLocaleString(dateLanguage(), { dateStyle: "medium", timeStyle: "short" });
 const toRole = (value: string): MailboxRole =>
 	value === "owner" || value === "sender" ? value : "reader";
 
 function RoleSelect({
-	id,
 	label,
+	shown = false,
 	value,
 	disabled,
 	onChange,
 }: {
-	id: string;
 	label: string;
+	/** The label stands above the select; otherwise it names the select for assistive technology. */
+	shown?: boolean;
 	value: MailboxRole;
 	disabled?: boolean;
 	onChange: (role: MailboxRole) => void;
 }) {
 	return (
-		<select
-			id={id}
-			aria-label={label}
+		<Select
+			{...(shown ? { label } : { "aria-label": label })}
+			size="sm"
 			value={value}
 			disabled={disabled}
-			onChange={(e) => onChange(toRole(e.target.value))}
-			className={SELECT_CLASS}
-		>
-			{ROLES.map((role) => (
-				<option key={role.value} value={role.value}>
-					{t(role.label)}
-				</option>
-			))}
-		</select>
+			onValueChange={(next) => onChange(toRole(String(next)))}
+			items={ROLES.map((role) => ({ label: t(role.label), value: role.value }))}
+		/>
 	);
 }
 
@@ -205,7 +197,6 @@ export default function MembersRoute() {
 										{canManage ? (
 											<>
 												<RoleSelect
-													id={`role-${member.userId}`}
 													label={t("Role of {name}", { name: member.email })}
 													value={member.role}
 													disabled={busy !== null}
@@ -272,18 +263,7 @@ export default function MembersRoute() {
 										/>
 									</div>
 									<div>
-										<label
-											htmlFor="member-role"
-											className="text-sm font-medium text-kumo-default mb-1.5 block"
-										>
-											{t("Role")}
-										</label>
-										<RoleSelect
-											id="member-role"
-											label={t("Role")}
-											value={role}
-											onChange={setRole}
-										/>
+										<RoleSelect label={t("Role")} shown value={role} onChange={setRole} />
 									</div>
 									<Button type="submit" variant="secondary" size="sm" loading={busy === "add"}>
 										{t("Add")}
