@@ -12,7 +12,7 @@
  * can start before a debugger sees them.
  *
  *   GET  /__contacts   the hosts contacted since the last reset
- *   POST /__reset      forget them, and every answer
+ *   POST /__reset      forget them and every answer, and close every tunnel
  *   POST /__answer     answer one host: `{ host, delayMs, contentType, body }` (body in base64)
  *
  * By default nothing is answered. A test that needs a picture to arrive late names its host,
@@ -41,6 +41,13 @@ interface Answer {
 
 /** The hosts a test asked to be answered, forgotten at every reset. */
 const answers = new Map<string, Answer>();
+
+/**
+ * The tunnels open to answered hosts, closed at every reset: a browser keeps a tunnel open for
+ * its next request, which would then reach a host without a CONNECT, past the record and past
+ * the reset.
+ */
+const tunnels = new Set<import("node:stream").Duplex>();
 
 /** A name that can never be on the internet: one or more labels, ending in `.test`. */
 const TEST_HOST = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+test$/;
@@ -122,6 +129,8 @@ const server = createServer((request, response) => {
 	if (url === "/__reset" && request.method === "POST") {
 		contacts.length = 0;
 		answers.clear();
+		for (const tunnel of tunnels) tunnel.destroy();
+		tunnels.clear();
 		response.writeHead(204);
 		response.end();
 		return;
@@ -155,7 +164,14 @@ const server = createServer((request, response) => {
 		});
 		return;
 	}
-	if (/^https?:\/\//i.test(url)) contacts.push(new URL(url).hostname);
+	if (/^https?:\/\//i.test(url)) {
+		// A malformed address is refused like any other; it must not take the proxy down.
+		try {
+			contacts.push(new URL(url).hostname);
+		} catch {
+			contacts.push(url);
+		}
+	}
 	response.writeHead(502);
 	response.end();
 });
@@ -172,6 +188,8 @@ server.on("connect", (request, socket) => {
 		return;
 	}
 	// A host the test named: the tunnel is opened, and this server is at its other end.
+	tunnels.add(socket);
+	socket.on("close", () => tunnels.delete(socket));
 	socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
 	answering.emit("connection", socket);
 });

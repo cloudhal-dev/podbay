@@ -179,6 +179,106 @@ describe("nothing in a message moves by itself", () => {
 			"color: red; height: 20px",
 		);
 	});
+
+	it("an element the parser gives no style object loses its style whole", () => {
+		// No element of the html profile is such an element; a purifier that hands the hook one
+		// stands in for the day one is.
+		const odd: Purifier = {
+			hook: undefined as ((node: Element) => void) | undefined,
+			addHook(_, hook) {
+				this.hook = hook;
+			},
+			removeHook() {
+				this.hook = undefined;
+			},
+			sanitize() {
+				const node = dom.window.document.createElementNS("urn:podbay:test", "odd");
+				node.setAttribute("style", "transition:height 1s");
+				this.hook?.(node);
+				return node.outerHTML;
+			},
+		} as Purifier & { hook?: (node: Element) => void };
+		expect(sanitizeMailHtml("<p>x</p>", { allowRemote: false, purify: odd }).html).not.toContain(
+			"style",
+		);
+	});
+});
+
+describe("no picture of a kind the app does not show is embedded (an SVG moves by itself)", () => {
+	const SVG = "PHN2Zy8+"; // "<svg/>" in base64
+	const PNG = "iVBORw0KGgo=";
+
+	it.each([
+		["an SVG", `data:image/svg+xml;base64,${SVG}`],
+		["an SVG with its type in capitals", `DATA:IMAGE/SVG+XML;base64,${SVG}`],
+		["an SVG after spaces", `   data:image/svg+xml;base64,${SVG}`],
+		["an SVG without base64", "data:image/svg+xml,%3Csvg%2F%3E"],
+		["an SVG with a charset", "data:image/svg+xml;charset=utf-8,%3Csvg%2F%3E"],
+		["an SVG with spaces in its type", `data: image/svg+xml ;base64,${SVG}`],
+		["data with no type", "data:,hello"],
+		["a page", "data:text/html,%3Cp%3Ehi"],
+	])("%s is taken out of a picture's address", (_, address) => {
+		for (const sanitize of [blocked, allowed]) {
+			const img = parse(sanitize(`<img src="${address}" alt="">`).html).querySelector("img");
+			expect(img?.hasAttribute("src"), address).toBe(false);
+			const table = parse(
+				sanitize(`<table background="${address}"><tr><td>x</td></tr></table>`).html,
+			);
+			expect(table.querySelector("table")?.hasAttribute("background"), address).toBe(false);
+		}
+	});
+
+	it("a srcset with a good picture and an SVG is taken out", () => {
+		const html = allowed(
+			`<img srcset="data:image/png;base64,${PNG} 1x, data:image/svg+xml;base64,${SVG} 2x" alt="">`,
+		).html;
+		expect(parse(html).querySelector("img")?.hasAttribute("srcset")).toBe(false);
+	});
+
+	it.each([
+		["a PNG", `data:image/png;base64,${PNG}`],
+		["a GIF", "data:image/gif;base64,R0lGODlhAQABAAAAACw="],
+	])("%s stays: it is a picture the app shows", (_, address) => {
+		const img = parse(blocked(`<img src="${address}" alt="">`).html).querySelector("img");
+		expect(img?.getAttribute("src")).toBe(address);
+	});
+
+	it.each([
+		["content, unquoted", `content:url(data:image/svg+xml;base64,${SVG})`],
+		["content, in double quotes", `content:url(&quot;data:image/svg+xml;base64,${SVG}&quot;)`],
+		[
+			"a background in capitals, in single quotes",
+			`background:url('DATA:IMAGE/SVG+XML;base64,${SVG}') no-repeat`,
+		],
+		["a background image with spaces", `background-image:url( data:image/svg+xml,x )`],
+		["a list marker", "list-style-image:url(data:image/svg+xml,x)"],
+		["an escaped address", "content:url(d\\61ta:image/svg+xml,x)"],
+		[
+			"a custom property used by var()",
+			"--picture:url(data:image/svg+xml,x);content:var(--picture)",
+		],
+		[
+			// A custom property keeps its text as written: only the var() that uses it decodes it.
+			"an escaped address in a custom property",
+			"--picture:url(d\\61ta:image/svg+xml,x);content:var(--picture)",
+		],
+	])("an SVG in a style (%s) is taken out, and the rest of the style stays", (_, style) => {
+		for (const sanitize of [blocked, allowed]) {
+			const html = sanitize(`<div style="color:red;${style}">x</div>`).html;
+			const div = parse(html).querySelector("div");
+			expect(html, style).not.toMatch(/svg|--picture\s*:/i);
+			expect(div?.style.getPropertyValue("color"), style).toBe("red");
+		}
+	});
+
+	it("a PNG in a style stays", () => {
+		const html = blocked(
+			`<div style="background-image:url(data:image/png;base64,${PNG})">x</div>`,
+		).html;
+		expect(parse(html).querySelector("div")?.style.getPropertyValue("background-image")).toContain(
+			"data:image/png",
+		);
+	});
 });
 
 describe("links", () => {

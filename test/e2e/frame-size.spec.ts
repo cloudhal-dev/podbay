@@ -7,6 +7,7 @@
  * with it every height in it: a height that follows the frame's own height must not make the
  * frame grow without end, and the page is told a small, known number of times.
  */
+import { randomUUID } from "node:crypto";
 import type { Frame, Page } from "@playwright/test";
 import { FRAME_MAX_HEIGHT, FRAME_MAX_REPORTS } from "../../shared/mail-frame.ts";
 import { expect, mime, test } from "./fixtures.ts";
@@ -14,6 +15,18 @@ import { png } from "./png.ts";
 import { PROXY } from "./proxy-address.ts";
 
 const FRAME = 'iframe[title="Email content"]';
+
+/**
+ * An SVG picture that grows by itself, in 31 steps of 0.4 s from 100 px to 1600 px, as a `data:`
+ * address. A browser keeps a picture it has drawn, with its clock: one it drew before would stand
+ * at its last height at once. So each run makes a picture of its own (`run`).
+ */
+function steppingPicture(): string {
+	const run = randomUUID();
+	const steps = Array.from({ length: 31 }, (_, step) => 100 + step * 50).join(";");
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="100"><title>${run}</title><animate attributeName="height" values="${steps}" dur="12.4s" calcMode="discrete" fill="freeze"/><rect width="40" height="100%" fill="#68c"/></svg>`;
+	return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
 
 /**
  * Every height a mail frame told the page, in order, kept by the page's own window: which
@@ -43,7 +56,11 @@ const reports = async (page: Page) => {
 	return told.filter((one) => one.document === newest).map((one) => one.height);
 };
 
-/** Waits until the page has been told nothing new for a whole second, and returns what it was told. */
+/**
+ * Waits until the page has been told nothing new for a whole second, and returns what it was told.
+ * A message that moved less often than once a second would look at rest here with a low count:
+ * no such mover is known, now that nothing in a message moves by itself (app/lib/mail-html.ts).
+ */
 async function atRest(page: Page): Promise<number[]> {
 	let last = -1;
 	let still = 0;
@@ -92,7 +109,9 @@ test("a message is shown to its last line: the frame is as tall as the whole doc
 
 /**
  * Heights a stranger can write that follow the frame's own height: each report makes the frame
- * taller, and a taller frame makes the message taller again. Each must come to rest.
+ * taller, and a taller frame makes the message taller again. And heights that move by themselves,
+ * some time after the frame took its height, so that the script would see a message at rest each
+ * time. Each must come to rest.
  */
 const FOLLOWERS: { name: string; html: string }[] = [
 	{ name: "twice the frame's height", html: '<div style="height:200vh">tall</div>' },
@@ -118,10 +137,20 @@ const FOLLOWERS: { name: string; html: string }[] = [
 		name: "a delayed transition",
 		html: '<div style="height:calc(100vh + 1px);transition:height 0s .2s">later</div>',
 	},
+	{
+		// The same by another door: a picture that moves by itself, a step after the frame took the
+		// height. The renderer lets no SVG picture in from a `data:` address (app/lib/mail-html.ts).
+		name: "an SVG picture that grows in steps",
+		html: `<img src="${steppingPicture()}" alt="">`,
+	},
+	{
+		name: "the same picture through a style",
+		html: `<div style="content:url(${steppingPicture()})">picture</div>`,
+	},
 ];
 
 for (const follower of FOLLOWERS) {
-	test(`a message whose height follows the frame (${follower.name}) comes to rest, and the page stops being told`, async ({
+	test(`a message whose height follows the frame or moves by itself (${follower.name}) comes to rest, and the page stops being told`, async ({
 		page,
 		app,
 	}) => {
@@ -301,33 +330,119 @@ test.describe("pictures that arrive late", () => {
 	});
 });
 
-test.describe("a host answered before", () => {
-	// The same certificate as the test that was answered: a picture the proxy still answered would
-	// load here, so a picture at 0 px means the proxy refused it.
+test.describe("a host the proxy answered", () => {
+	// The run's certificate is accepted, so a picture the proxy answered loads: a picture that does
+	// not load was refused by the proxy.
 	test.use({ ignoreHTTPSErrors: true });
 
-	test("with nothing asked of it, the proxy still refuses a host it answered before and writes it down", async ({
-		page,
-		app,
-	}) => {
-		// The proxy, and not the fixture's pixel, decides what this picture is.
-		await throughProxy(page, "late.images.test");
-		const subject = "Size: a picture nobody answers";
-		await app.deliver(
-			mime({
-				subject,
-				to: app.account.mailbox,
-				html: '<p>Before the picture.</p><img src="https://late.images.test/a.png" alt=""><p>After it.</p>',
-			}),
-		);
+	test("is refused once the proxy is reset, and is written down again", async ({ page, app }) => {
+		await answerLate(page, "late.images.test", 0, 300);
+		const shown = page.frameLocator(FRAME).locator("img");
+		const open = async (subject: string, path: string) => {
+			await app.deliver(
+				mime({
+					subject,
+					to: app.account.mailbox,
+					html: `<p>Before the picture.</p><img src="https://late.images.test/${path}" alt=""><p>After it.</p>`,
+				}),
+			);
+			await app.openMessage(subject);
+			await page.getByRole("button", { name: "Show images" }).click();
+		};
 		await app.signIn();
-		await app.openMessage(subject);
-		await page.getByRole("button", { name: "Show images" }).click();
-		await expect.poll(() => app.contacted()).toEqual(["late.images.test"]);
-		// Longer than the late answer of the test before (1500 ms), had it been kept.
-		await page.waitForTimeout(2500);
-		const image = page.frameLocator(FRAME).locator("img");
-		expect(await image.evaluate((one: HTMLImageElement) => one.naturalHeight)).toBe(0);
+		await open("Size: a picture the proxy answers", "a.png");
+		await expect.poll(() => shown.evaluate((one: HTMLImageElement) => one.naturalHeight)).toBe(300);
+
+		// The reset forgets the answer and closes the tunnel the browser kept open.
+		expect((await fetch(`${PROXY}/__reset`, { method: "POST" })).status).toBe(204);
+		expect(await app.contacted()).toEqual([]);
+		await open("Size: the same host after the reset", "b.png");
+		// The picture has finished, and has nothing: the proxy refused it.
+		await expect
+			.poll(() =>
+				shown.evaluate((one: HTMLImageElement) => (one.complete ? one.naturalHeight : -1)),
+			)
+			.toBe(0);
 		expect(await app.contacted()).toEqual(["late.images.test"]);
 	});
+});
+
+/** An SVG picture, as base64, for the spellings below. */
+const SVG_BASE64 = Buffer.from(
+	'<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40"/></svg>',
+).toString("base64");
+
+test("in the frame nothing moves by itself and no SVG picture is drawn, however the message spells it", async ({
+	app,
+}) => {
+	const moving = [
+		"transition:height 1s 1s",
+		"-webkit-transition:height 1s 1s",
+		"transition-property:height;transition-duration:1s;transition-delay:1s",
+		"transition:height 1s 1s !important",
+		"--t:height 1s 1s;transition:var(--t)",
+		"--d:1s;transition:height var(--d) var(--d)",
+		"animation:grow 1s 1s infinite",
+		"-webkit-animation:grow 1s 1s infinite",
+		"animation-name:grow;animation-duration:1s;animation-delay:1s",
+		"--a:grow 1s infinite;animation:var(--a)",
+	];
+	const pictured = [
+		`content:url(data:image/svg+xml;base64,${SVG_BASE64})`,
+		`background:url('DATA:IMAGE/SVG+XML;base64,${SVG_BASE64}') no-repeat`,
+		`background-image:url( data:image/svg+xml;base64,${SVG_BASE64} )`,
+		`list-style-image:url(data:image/svg+xml;base64,${SVG_BASE64})`,
+		`content:url(d\\61ta:image/svg+xml;base64,${SVG_BASE64})`,
+		`--p:url(data:image/svg+xml;base64,${SVG_BASE64});background-image:var(--p)`,
+		`--p:url(d\\61ta:image/svg+xml;base64,${SVG_BASE64});background-image:var(--p)`,
+		`background-image:image-set("data:image/svg+xml;base64,${SVG_BASE64}" 1x)`,
+	];
+	const pngBase64 = png(40, 30, [90, 120, 200]).toString("base64");
+	const subject = "Size: every spelling of a message that moves";
+	await app.deliver(
+		mime({
+			subject,
+			to: app.account.mailbox,
+			html: [
+				...moving.map((style) => `<div class="moving" style="height:20px;${style}">m</div>`),
+				...pictured.map((style) => `<div class="pictured" style="height:20px;${style}">p</div>`),
+				`<img class="svg" src="data:image/svg+xml;base64,${SVG_BASE64}" alt="">`,
+				`<img class="svg" src="   DATA:Image/SVG+xml;base64,${SVG_BASE64}" alt="">`,
+				`<img class="svg-as-png" src="data:image/png;base64,${SVG_BASE64}" alt="">`,
+				`<img class="png" src="data:image/png;base64,${pngBase64}" alt="">`,
+				"<p>The last line.</p>",
+			].join(""),
+		}),
+	);
+	await app.signIn();
+	const frame = await app.openMessage(subject);
+	const seen = await frame.evaluate(() => {
+		const all = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)];
+		return {
+			moving: all(".moving").map((one) => {
+				const style = getComputedStyle(one);
+				return [style.transitionDuration, style.transitionDelay, style.animationName].join(" ");
+			}),
+			pictured: all(".pictured").map((one) => {
+				const style = getComputedStyle(one);
+				return [style.content, style.backgroundImage, style.listStyleImage].join(" ");
+			}),
+			svg: all("img.svg").map((one) => one.getAttribute("src")),
+			svgAsPng: all("img.svg-as-png").map((one) => {
+				const image = one as HTMLImageElement;
+				return image.complete ? image.naturalWidth : -1;
+			}),
+			png: all("img.png").map((one) => (one as HTMLImageElement).naturalWidth),
+		};
+	});
+	expect(seen.moving).toEqual(moving.map(() => "0s 0s none"));
+	expect(seen.pictured).toHaveLength(pictured.length);
+	for (const [index, computed] of seen.pictured.entries())
+		expect(computed, pictured[index]).not.toMatch(/svg|url\(/i);
+	expect(seen.svg, "an SVG loses its address").toEqual([null, null]);
+	// Pictures are told apart by their type: an SVG that says it is a PNG is drawn as nothing.
+	expect(seen.svgAsPng).toEqual([0]);
+	// And a picture the app shows is drawn: the check above would see one.
+	expect(seen.png).toEqual([40]);
+	expect(app.watch.errors).toEqual([]);
 });

@@ -10,8 +10,8 @@
  * 1. `sanitizeMailHtml` removes script, forms, frames, embedded objects and event handlers,
  *    takes remote resources out unless the reader asked for them, and takes out every resource
  *    address that is neither embedded data nor remote: a relative address would resolve against
- *    the app itself. It takes out every transition and animation, so nothing in a message moves by
- *    itself. It also folds the quoted text at the end of a reply away behind one line.
+ *    the app itself. It takes out every transition and animation, and every embedded picture of a
+ *    kind the app does not show (SVG among them), so nothing in a message moves by itself. It also folds the quoted text at the end of a reply away behind one line.
  * 2. `mailDocument` wraps the result in a document whose content policy allows no script except
  *    the one sizing script (by nonce), no network load unless remote content was allowed, no
  *    form submission and no `<base>`.
@@ -24,6 +24,7 @@
  * Nothing else in the app may inject HTML from a message.
  */
 
+import { isShowableImage } from "shared/attachment-risk";
 import { MAIL_FRAME_SCRIPT } from "shared/mail-frame";
 import { m, t } from "../i18n";
 
@@ -75,6 +76,25 @@ const SANITIZE_CONFIG = {
 	ADD_ATTR: ["target"],
 	FORCE_BODY: true,
 };
+
+/**
+ * Whether every `data:` address in a text is a picture of a kind the app shows (`isShowableImage`:
+ * never SVG). An SVG picture runs its own animations, and one that changes its own size does so
+ * some time after the frame took its height, which the sizing script would take for a message at
+ * rest (#110). The type is read as a browser reads it, up to the first `,` and the first `;`;
+ * anything else in its place (no type, a type the app does not show, a spelling it cannot read)
+ * is not a picture the app shows. Pictures are told apart by their type: a browser does not take
+ * an SVG for a picture of another type.
+ */
+function embedsOnlyPictures(text: string): boolean {
+	const lower = text.toLowerCase();
+	for (let at = lower.indexOf("data:"); at !== -1; at = lower.indexOf("data:", at + 5)) {
+		const rest = text.slice(at + 5);
+		const comma = rest.indexOf(",");
+		if (!isShowableImage(comma === -1 ? rest : rest.slice(0, comma))) return false;
+	}
+	return true;
+}
 
 /** The addresses a resource attribute names: one, or several in a `srcset`. */
 function addressesOf(attribute: string, value: string): string[] {
@@ -138,20 +158,36 @@ function foldQuote(node: Element): void {
 }
 
 /**
- * Takes every transition and animation out of an element's own style. Nothing in a message needs
- * to move by itself, and a height that changes some time after the frame took it would look to
- * the sizing script like a message at rest (#110: `transition: height 0s .2s` on a height in
- * `vh`). The declarations are read by the browser's own parser, the one the frame uses, so what
- * is taken out is what the frame would have applied. A style the message writes elsewhere cannot
- * reach the frame: `<style>` is forbidden and the document's own sheet defines no keyframes.
+ * Takes out of an element's own style everything that would make the message move by itself:
+ * every transition and animation, and every picture in a `data:` address that the app does not
+ * show (an SVG runs its own animations). Nothing in a message needs to move by itself, and a
+ * height that changes some time after the frame took it would look to the sizing script like a
+ * message at rest (#110: `transition: height 0s .2s` on a height in `vh`, or an SVG whose height
+ * goes up in steps). The declarations are read by the browser's own parser, the one the frame
+ * uses, so what is taken out is what the frame would have applied. A value the parser leaves
+ * undecoded is taken out too: a custom property (`--name`), which keeps its text as written and
+ * is decoded only where `var()` uses it, and anything still holding an escape. An element without
+ * a style object loses its style whole. A style the message writes elsewhere cannot reach the
+ * frame: `<style>` is forbidden and the document's own sheet defines no keyframes.
  */
 function stillStyle(node: Element): void {
+	if (!node.hasAttribute("style")) return;
 	const style = (node as Partial<ElementCSSInlineStyle>).style;
-	if (!node.hasAttribute("style") || style === undefined) return;
+	if (style === undefined) {
+		node.removeAttribute("style");
+		return;
+	}
 	const moving: string[] = [];
 	for (let index = 0; index < style.length; index++) {
 		const name = style.item(index);
-		if (MOTION_PROPERTY.test(name)) moving.push(name);
+		const value = style.getPropertyValue(name);
+		if (
+			MOTION_PROPERTY.test(name) ||
+			name.startsWith("--") ||
+			value.includes("\\") ||
+			!embedsOnlyPictures(value)
+		)
+			moving.push(name);
 	}
 	for (const name of moving) style.removeProperty(name);
 	if (style.length === 0) node.removeAttribute("style");
@@ -177,7 +213,7 @@ export function sanitizeMailHtml(
 			const value = node.getAttribute(attribute);
 			if (value === null) continue;
 			const kind = resourceKind(attribute, value);
-			if (kind === "neither") {
+			if (kind === "neither" || !embedsOnlyPictures(value)) {
 				// Never loadable, whatever the reader allowed: not counted as something to allow.
 				node.removeAttribute(attribute);
 			} else if (kind === "remote" && !allowRemote) {
