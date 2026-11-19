@@ -79,6 +79,58 @@ test("remote images stay out until the reader asks, and then only images load", 
 	expect(app.watch.referers.filter((r) => r !== "")).toEqual([]);
 });
 
+test("a frame's mark is its own document's: a new document is unmarked until it stands at its size", async ({
+	page,
+	app,
+}) => {
+	const subject = "Frame: the mark of a document";
+	await app.deliver(
+		mime({
+			subject,
+			to: app.account.mailbox,
+			html: '<p>Newsletter</p><img src="https://one.images.test/a.png">',
+		}),
+	);
+	await app.signIn();
+	// The first document is marked: openMessage waits for that.
+	await app.openMessage(subject);
+	// What happens to every frame element put on the page from now on, in order.
+	await page.evaluate(() => {
+		const marks: string[] = [];
+		(window as unknown as { __marks: string[] }).__marks = marks;
+		const old = new Set(document.querySelectorAll("iframe"));
+		new MutationObserver((records) => {
+			for (const record of records) {
+				for (const node of record.addedNodes) {
+					if (!(node instanceof HTMLIFrameElement) || old.has(node)) continue;
+					marks.push(`inserted ${node.getAttribute("data-sized")}`);
+					node.addEventListener("load", () => marks.push("loaded"));
+				}
+				const target = record.target;
+				if (
+					record.type === "attributes" &&
+					target instanceof HTMLIFrameElement &&
+					!old.has(target)
+				) {
+					marks.push(`marked ${target.getAttribute("data-sized")}`);
+				}
+			}
+		}).observe(document.body, {
+			subtree: true,
+			childList: true,
+			attributes: true,
+			attributeFilter: ["data-sized"],
+		});
+	});
+	// Showing the images is a new document, in a new frame element.
+	await page.getByRole("button", { name: "Show images" }).click();
+	await expect(page.locator('iframe[title="Email content"]')).toHaveAttribute("data-sized", "true");
+	const marks = await page.evaluate(() => (window as unknown as { __marks: string[] }).__marks);
+	expect(marks[0], marks.join(", ")).toBe("inserted null");
+	expect(marks.indexOf("loaded"), marks.join(", ")).toBeGreaterThan(0);
+	expect(marks.indexOf("marked true"), marks.join(", ")).toBeGreaterThan(marks.indexOf("loaded"));
+});
+
 test("an image the message embeds is shown without any request", async ({ page, app }) => {
 	const subject = "Frame: embedded image";
 	await app.deliver(
@@ -127,16 +179,11 @@ test("a link opens outside the app, in a window that knows nothing of it", async
 		MAIL_FRAME_SANDBOX,
 	);
 
-	// The frame grows to the message's height just after it loads, and a click made while it
-	// moves can miss the link. A click that opened nothing is made again.
+	// One click follows a link: the message is open once its frame stands at its size (#43).
 	const follow = async (id: string) => {
-		for (let attempt = 1; ; attempt++) {
-			const opened = context.waitForEvent("page", { timeout: 5_000 }).catch(() => null);
-			await frame.locator(`#${id}`).click();
-			const popup = await opened;
-			if (popup !== null) return popup;
-			if (attempt === 3) throw new Error(`the link #${id} opened no window`);
-		}
+		const opened = context.waitForEvent("page");
+		await frame.locator(`#${id}`).click();
+		return opened;
 	};
 
 	for (const id of ["plain", "top"]) {
@@ -174,12 +221,9 @@ test("quoted text at the end of a reply is folded, and opens without leaving the
 	// now is: nothing is cut off and nothing scrolls inside it.
 	const element = page.locator('iframe[title="Email content"]');
 	const before = (await element.boundingBox())?.height ?? 0;
-	// A click made while the frame is still growing to the message's height can miss; one that
-	// opened nothing is made again, and one that opened it is not.
-	await expect(async () => {
-		if (!(await quoted.isVisible())) await frame.getByText("Show quoted text").click();
-		await expect(quoted).toBeVisible({ timeout: 1_000 });
-	}).toPass({ timeout: 15_000 });
+	// One click opens it: the message is open once its frame stands at its size (#43).
+	await frame.getByText("Show quoted text").click();
+	await expect(quoted).toBeVisible();
 	await expect
 		.poll(async () => (await element.boundingBox())?.height ?? 0)
 		.toBeGreaterThan(before + 100);

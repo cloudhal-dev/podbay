@@ -27,6 +27,14 @@ interface EmailIframeProps {
 export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [height, setHeight] = useState(autoSize ? 100 : 0);
+	/**
+	 * The document whose frame stands at its size (#43): it said its height, or it loaded and said
+	 * nothing in the time the sizing script takes, as a message with no height of its own does. It
+	 * is kept for that document only, as `allowedFor` is for a body: a new document is unmarked.
+	 */
+	const [sizedFor, setSizedFor] = useState<string | null>(null);
+	/** The document of the frame on the page now, for the height message to mark. */
+	const shown = useRef("");
 	// Asked for per message: a new body starts with remote content hidden again.
 	const [allowedFor, setAllowedFor] = useState<string | null>(null);
 	const allowRemote = allowedFor === body;
@@ -44,6 +52,8 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 				event.data.height > 0
 			) {
 				setHeight(event.data.height);
+				// The message came from the frame on the page now: its document stands at its size.
+				setSizedFor(shown.current);
 			}
 		},
 		[autoSize],
@@ -75,6 +85,8 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 		[body, autoSize, allowRemote, sanitized],
 	);
 
+	shown.current = frameDocument;
+
 	return (
 		<>
 			{sanitized.blockedRemote > 0 && (
@@ -93,6 +105,15 @@ export default function EmailIframe({ body, autoSize }: EmailIframeProps) {
 				style={autoSize ? { height: `${height}px` } : { height: "100%" }}
 				sandbox={MAIL_FRAME_SANDBOX}
 				title={t("Email content")}
+				data-sized={autoSize && sizedFor === frameDocument ? "true" : undefined}
+				onLoad={() => {
+					// The sizing script's last report is at 400 ms after the document runs. The timer
+					// marks this frame's own document, and no other.
+					const loaded = frameDocument;
+					setTimeout(() => {
+						if (shown.current === loaded) setSizedFor(loaded);
+					}, 500);
+				}}
 			/>
 		</>
 	);
