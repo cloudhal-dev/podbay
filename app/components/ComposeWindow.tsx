@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { Button } from "@cloudflare/kumo";
 import {
 	ArrowsInSimpleIcon,
 	ArrowsOutSimpleIcon,
@@ -42,16 +43,18 @@ function TitleButton({
 	children: ReactNode;
 	className?: string;
 }) {
+	// Kumo's square button at its default size, 36 px in the 40 px bar, a larger target than the
+	// 28 px it was; under the pointer it takes the fill it had, as the bar is Kumo's tint already.
 	return (
-		<button
-			type="button"
+		<Button
+			variant="ghost"
+			shape="square"
 			onClick={onClick}
 			aria-label={label}
 			title={label}
-			className={`cursor-pointer rounded border-0 bg-transparent p-1.5 text-kumo-strong hover:bg-kumo-fill ${className}`}
-		>
-			{children}
-		</button>
+			className={`text-kumo-strong hover:bg-kumo-fill ${className}`}
+			icon={children}
+		/>
 	);
 }
 
@@ -93,7 +96,7 @@ function OpenComposeWindow() {
 						<TitleButton
 							label={t("Minimise the compose window")}
 							onClick={() => setSize("minimised")}
-							className="hidden md:block"
+							className="hidden md:flex"
 						>
 							<MinusIcon size={16} />
 						</TitleButton>
@@ -104,7 +107,7 @@ function OpenComposeWindow() {
 									: t("Make the compose window larger")
 							}
 							onClick={() => setSize(size === "large" ? "normal" : "large")}
-							className="hidden md:block"
+							className="hidden md:flex"
 						>
 							{size === "large" ? (
 								<ArrowsInSimpleIcon size={16} />

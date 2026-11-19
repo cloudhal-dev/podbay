@@ -1,8 +1,17 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { Button } from "@cloudflare/kumo";
 import { XIcon } from "@phosphor-icons/react";
-import { type KeyboardEvent, type Ref, useEffect, useId, useRef, useState } from "react";
+import {
+	type KeyboardEvent,
+	type MouseEvent,
+	type Ref,
+	useEffect,
+	useId,
+	useRef,
+	useState,
+} from "react";
 import type { KnownSource } from "~/hooks/useKnownAddresses";
 import { t } from "~/i18n";
 import {
@@ -173,8 +182,12 @@ export default function AddressField({
 					}`}
 				>
 					<span className="truncate">{address}</span>
-					<button
-						type="button"
+					{/* Kumo's round button at the small size, 26 px, a larger target than the 14 px it was;
+					    its margins give back the 12 px it is larger, so the chip keeps its size. */}
+					<Button
+						variant="ghost"
+						shape="circle"
+						size="sm"
 						onClick={() =>
 							onChange(
 								joinTyped(
@@ -184,10 +197,9 @@ export default function AddressField({
 							)
 						}
 						aria-label={t("Remove {name}", { name: address })}
-						className="shrink-0 cursor-pointer rounded-full border-0 bg-transparent p-0.5 text-kumo-subtle hover:bg-kumo-fill hover:text-kumo-default"
-					>
-						<XIcon size={10} />
-					</button>
+						className="-m-1.5 shrink-0 text-kumo-subtle"
+						icon={<XIcon size={10} />}
+					/>
 				</span>
 			))}
 			<input
@@ -245,20 +257,21 @@ export default function AddressField({
 								<span className={one.name !== null ? "text-kumo-subtle" : ""}>{one.address}</span>
 							</span>
 							{one.id !== null && (
-								<button
-									type="button"
+								<Button
+									variant="ghost"
+									shape="circle"
+									size="sm"
 									tabIndex={-1}
 									title={t("Forget this address (Shift+Delete)")}
 									aria-label={t("Forget {address}", { address: one.address })}
-									onMouseDown={(event) => {
+									onMouseDown={(event: MouseEvent) => {
 										event.preventDefault();
 										event.stopPropagation();
 										void forget(one);
 									}}
-									className="shrink-0 cursor-pointer rounded-full border-0 bg-transparent p-1 text-kumo-subtle hover:bg-kumo-fill hover:text-kumo-default"
-								>
-									<XIcon size={12} />
-								</button>
+									className="-my-1 shrink-0 text-kumo-subtle"
+									icon={<XIcon size={12} />}
+								/>
 							)}
 						</div>
 					))}

@@ -22,6 +22,7 @@ export default function SendLater({
 	onChoose,
 	disabled,
 	variant = "secondary",
+	iconOnPhone = false,
 }: {
 	/** What the button and the dialog are called: "Send later", or "Change the time". */
 	label: string;
@@ -30,6 +31,8 @@ export default function SendLater({
 	onChoose: (sendAt: string) => void;
 	disabled?: boolean;
 	variant?: "secondary" | "outline" | "ghost";
+	/** Below 640 px the button shows its clock alone, keeping its name, so a row of actions fits. */
+	iconOnPhone?: boolean;
 }) {
 	const [picking, setPicking] = useState(false);
 	const [picked, setPicked] = useState("");
@@ -64,8 +67,9 @@ export default function SendLater({
 							className="rounded-full"
 							icon={<ClockIcon size={16} />}
 							disabled={disabled}
+							aria-label={iconOnPhone ? label : undefined}
 						>
-							{label}
+							{iconOnPhone ? <span className="hidden sm:inline">{label}</span> : label}
 						</Button>
 					}
 				/>

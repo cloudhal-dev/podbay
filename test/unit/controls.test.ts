@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
 	controlProblems,
 	type OnPurpose,
+	type RoleOnPurpose,
 	type RoundOnPurpose,
 	tagsOf,
 } from "../../scripts/checks/controls.ts";
@@ -23,6 +24,7 @@ const problems = (
 		sized?: Record<string, number>;
 		roles?: Record<string, number>;
 		round?: RoundOnPurpose[];
+		rolesKept?: RoleOnPurpose[];
 	} = {},
 	more: [string, string][] = [],
 ) =>
@@ -33,6 +35,7 @@ const problems = (
 		options.sized ?? {},
 		options.roles ?? {},
 		options.round ?? [],
+		options.rolesKept ?? [],
 	);
 
 describe("controls written by hand", () => {
@@ -87,7 +90,7 @@ describe("controls written by hand", () => {
 	});
 
 	it("refuses a listed file that is gone", () => {
-		const out = controlProblems(new Map(), [], { "app/gone.tsx": { input: 1 } }, {}, {}, []);
+		const out = controlProblems(new Map(), [], { "app/gone.tsx": { input: 1 } }, {}, {}, [], []);
 		expect(out).toEqual(["app/gone.tsx: listed in TO_MOVE and gone; remove its line"]);
 	});
 });
@@ -182,6 +185,35 @@ describe("Kumo controls made round on purpose", () => {
 				round: [{ file: "app/gone.tsx", count: 1, reason: "Round as it was, with its reason." }],
 			}),
 		).toEqual(["app/gone.tsx: listed in ROUND_ON_PURPOSE and gone; remove its line"]);
+	});
+});
+
+describe("roles kept on purpose", () => {
+	const kept = (
+		role: string,
+		count: number,
+		reason = "The field's own list, with its reason here.",
+	): RoleOnPurpose[] => [{ file: FILE, role, count, reason }];
+	const list = '<div role="listbox" aria-label="Addresses"><div role="option">a</div></div>';
+
+	it("lets a listed file keep exactly that role, that many times", () => {
+		expect(problems(list, { rolesKept: kept("listbox", 1) })).toEqual([]);
+	});
+
+	it("refuses one more of the role, and another role", () => {
+		expect(problems(list + list, { rolesKept: kept("listbox", 1) })).toHaveLength(1);
+		expect(problems('<div role="button">x</div>', { rolesKept: kept("listbox", 1) })).toHaveLength(
+			2,
+		);
+	});
+
+	it("asks for the list to be lowered when one goes, and needs a reason and a file", () => {
+		expect(problems("<div />", { rolesKept: kept("listbox", 1) })).toEqual([
+			`${FILE}: ROLES_ON_PURPOSE lists 1 with role "listbox", the file has 0`,
+		]);
+		expect(problems(list, { rolesKept: kept("listbox", 1, "list") })).toEqual([
+			`${FILE}: a ROLES_ON_PURPOSE line needs its reason`,
+		]);
 	});
 });
 
