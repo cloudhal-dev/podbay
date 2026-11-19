@@ -65,8 +65,10 @@ function TitleButton({
  */
 export default function ComposeWindow() {
 	const { isComposing, composePlacement } = useUIStore();
-	// An answer being written under its conversation is shown there, not here.
-	if (!isComposing || composePlacement === "inline") return null;
+	const form = useCompose();
+	// An answer being written under its conversation is shown there, not here; and a message is
+	// drawn only on its own mailbox's pages (#113).
+	if (!isComposing || composePlacement === "inline" || !form.belongsHere) return null;
 	return <OpenComposeWindow />;
 }
 

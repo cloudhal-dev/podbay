@@ -215,6 +215,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const isDraftEdit = !!composeOptions.draftEmail;
 	/** The mailbox the message being written belongs to: it is saved there, wherever the page went. */
 	const writtenIn = useRef(mailboxId);
+	/** The same, for drawing: the message is shown only on its own mailbox's pages. */
+	const [ownMailbox, setOwnMailbox] = useState(mailboxId);
 	/**
 	 * Counts the messages this window began. A save that began for one message and ends after the
 	 * next began leaves the next alone: it does not give it the first one's draft.
@@ -287,6 +289,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		lastInitializedOptionsRef.current = composeOptions;
 		generation.current += 1;
 		writtenIn.current = mailboxId;
+		setOwnMailbox(mailboxId);
 
 		const initialFields = buildInitialComposeFields(
 			composeOptions,
@@ -441,8 +444,10 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		// A save on its way would bring the draft back: it is waited for, then the draft goes.
 		const waited = pendingSave.current;
 		void Promise.resolve(waited).then(() => {
-			if (mailboxId && draftId.current) {
-				deleteEmailMutation.mutate({ mailboxId, id: draftId.current });
+			// The message's own mailbox, whatever page is shown when the save ends.
+			const box = writtenIn.current;
+			if (box && draftId.current) {
+				deleteEmailMutation.mutate({ mailboxId: box, id: draftId.current });
 			}
 		});
 		setTouched(false);
@@ -486,6 +491,9 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			setError(t("No mailbox selected."));
 			return;
 		}
+		// A message is sent only from the mailbox it was written in. The window is not drawn on
+		// another's pages, so this does not happen; if it did, nothing would leave.
+		if (writtenIn.current !== mailboxId) return;
 		const toRecipients = splitEmailList(to);
 		if (toRecipients.length === 0) {
 			setError(t("Add at least one recipient."));
@@ -601,6 +609,8 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 				? (composeOptions.draftEmail.submission.error ?? "")
 				: undefined,
 		mode: composeOptions.mode,
+		/** Whether the page shows the mailbox the message is written in: only there is it drawn. */
+		belongsHere: ownMailbox === mailboxId && writtenIn.current === mailboxId,
 		isDraftEdit,
 		closeCompose,
 		closePanel,

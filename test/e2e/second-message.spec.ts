@@ -10,8 +10,11 @@
 import type { Page } from "@playwright/test";
 import { expect, mime, test } from "./fixtures.ts";
 
-const row = (page: Page, subject: string) =>
-	page.getByRole("button", { name: new RegExp(subject) });
+// Names are matched as text they contain, never as a pattern made from them.
+const row = (page: Page, subject: string) => page.getByRole("button", { name: subject });
+
+/** The path of the page now, to compare with a mailbox's own. */
+const pathNow = (page: Page) => new URL(page.url()).pathname;
 
 const compose = (page: Page) => page.getByRole("region", { name: "Compose" });
 
@@ -227,8 +230,8 @@ async function anotherMailbox(page: Page, name: string): Promise<string> {
 /** Leaves for the list of mailboxes, as the rail does, and opens one of them. */
 async function openMailbox(page: Page, email: string): Promise<void> {
 	await page.getByRole("link", { name: "All mailboxes" }).click();
-	await page.getByRole("link", { name: new RegExp(email.replace(/[.]/g, "\\.")) }).click();
-	await expect(page).toHaveURL(new RegExp(`/mailbox/${encodeURIComponent(email)}`));
+	await page.getByRole("link", { name: email }).click();
+	await expect.poll(() => pathNow(page)).toContain(`/mailbox/${encodeURIComponent(email)}`);
 }
 
 test("a message being written is saved in its own mailbox when another opens, and nothing of it reaches the other", async ({
@@ -239,10 +242,39 @@ test("a message being written is saved in its own mailbox when another opens, an
 	const other = await anotherMailbox(page, "second");
 	await page.getByRole("button", { name: "Compose" }).first().click();
 	await writeFirst(page, "Second: written in the first mailbox", "Words for the first mailbox.");
+	// Watched from inside the page, every change of its document: is the message ever drawn while
+	// the other mailbox's page is shown, if only for a frame?
+	await page.evaluate(
+		(path) => {
+			const seen = { drawn: false };
+			(window as unknown as { __elsewhere: typeof seen }).__elsewhere = seen;
+			// What each change added, not the document as it stands when the observer runs: a window
+			// drawn and taken away in one task is gone by then.
+			const look = (changes: MutationRecord[]) => {
+				if (!location.pathname.startsWith(path)) return;
+				for (const change of changes)
+					for (const node of change.addedNodes)
+						if (
+							node instanceof Element &&
+							(node.matches('section[aria-label="Compose"]') ||
+								node.querySelector('section[aria-label="Compose"]'))
+						)
+							seen.drawn = true;
+			};
+			new MutationObserver(look).observe(document.body, { childList: true, subtree: true });
+		},
+		`/mailbox/${encodeURIComponent(other)}`,
+	);
 	await openMailbox(page, other);
 
-	// In the other mailbox the window is closed, and its Drafts holds nothing.
+	// In the other mailbox the window is closed, was never drawn, and its Drafts holds nothing.
 	await expect(compose(page)).toHaveCount(0);
+	expect(
+		await page.evaluate(
+			() => (window as unknown as { __elsewhere: { drawn: boolean } }).__elsewhere.drawn,
+		),
+		"the message was drawn on the other mailbox's page",
+	).toBe(false);
 	await goToDrafts(page);
 	await expect(page.getByRole("heading", { name: "No drafts" })).toBeVisible();
 	await expect(row(page, "Second: written in the first mailbox")).toHaveCount(0);
@@ -250,6 +282,25 @@ test("a message being written is saved in its own mailbox when another opens, an
 	// The first mailbox's Drafts holds the message, with every word.
 	await openMailbox(page, app.account.mailbox);
 	await expectKept(page, "Second: written in the first mailbox", "Words for the first mailbox.");
+
+	// And the other mailbox's Drafts still holds nothing of it.
+	await openMailbox(page, other);
+	await goToDrafts(page);
+	await expect(page.getByRole("heading", { name: "No drafts" })).toBeVisible();
+	await expect(compose(page)).toHaveCount(0);
+});
+
+test("a message being written is still open, with every word, after the list of mailboxes and back", async ({
+	page,
+	app,
+}) => {
+	await page.goto(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
+	await page.getByRole("button", { name: "Compose" }).first().click();
+	await writeFirst(page, "Second: there and back", "Words that go nowhere.");
+	await openMailbox(page, app.account.mailbox);
+	await expect(compose(page).getByLabel("Subject")).toHaveValue("Second: there and back");
+	await expect(compose(page).locator(".ProseMirror")).toContainText("Words that go nowhere.");
+	await compose(page).getByRole("button", { name: "Discard" }).click();
 });
 
 test("when the message cannot be saved as another mailbox opens, the person is taken back to it, open", async ({
@@ -270,12 +321,12 @@ test("when the message cannot be saved as another mailbox opens, the person is t
 		"Words that stay with their mailbox.",
 	);
 	await page.getByRole("link", { name: "All mailboxes" }).click();
-	await page.getByRole("link", { name: new RegExp(other.replace(/[.]/g, "\\.")) }).click();
+	await page.getByRole("link", { name: other }).click();
 
 	// Back in the message's own mailbox, with the message open, every word, and why.
-	await expect(page).toHaveURL(
-		new RegExp(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`),
-	);
+	await expect
+		.poll(() => pathNow(page))
+		.toBe(`/mailbox/${encodeURIComponent(app.account.mailbox)}/emails/inbox`);
 	await expect(compose(page).getByText("down", { exact: true })).toBeVisible();
 	await expect(compose(page).getByLabel("Subject")).toHaveValue(
 		"Second: a message that cannot move",
