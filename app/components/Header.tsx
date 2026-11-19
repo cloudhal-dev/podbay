@@ -119,24 +119,26 @@ export default function Header() {
 					className="h-12 w-full rounded-full border border-transparent bg-kumo-fill pl-12 pr-20 text-sm text-kumo-default placeholder:text-kumo-subtle focus:border-kumo-line focus:bg-kumo-base focus:outline-none focus:ring-1 focus:ring-kumo-ring [&::-webkit-search-cancel-button]:hidden"
 				/>
 				{searchQuery && (
-					<button
-						type="button"
-						onClick={clearSearch}
-						className="absolute right-11 rounded-full p-1 bg-transparent border-0 text-kumo-subtle hover:bg-kumo-tint hover:text-kumo-default cursor-pointer"
+					<Button
+						variant="ghost"
+						shape="circle"
+						size="sm"
+						className="absolute right-11 text-kumo-subtle"
+						icon={<XIcon size={16} />}
 						aria-label={t("Clear search")}
-					>
-						<XIcon size={16} />
-					</button>
+						onClick={clearSearch}
+					/>
 				)}
-				<button
-					type="button"
-					onClick={() => setOptionsOpen(true)}
-					className="absolute right-3 rounded-full p-1.5 bg-transparent border-0 text-kumo-subtle hover:bg-kumo-tint hover:text-kumo-default cursor-pointer"
+				<Button
+					variant="ghost"
+					shape="circle"
+					size="sm"
+					className="absolute right-3 text-kumo-subtle"
+					icon={<SlidersIcon size={16} />}
 					aria-label={t("Search options")}
 					title={t("Search options")}
-				>
-					<SlidersIcon size={16} />
-				</button>
+					onClick={() => setOptionsOpen(true)}
+				/>
 				<SearchOptions
 					open={optionsOpen}
 					onOpenChange={setOptionsOpen}

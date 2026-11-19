@@ -13,7 +13,7 @@ import { choose, expect, mime, test } from "./fixtures.ts";
 const row = (page: Page, subject: string) =>
 	page.getByRole("button", { name: new RegExp(subject) });
 const select = (page: Page, subject: string) =>
-	page.getByLabel(new RegExp(`Select the conversation "${subject}`));
+	page.getByRole("checkbox", { name: new RegExp(`Select the conversation "${subject}`) });
 /** The note of a deed, which names what was done and carries its Undo. */
 const note = (page: Page, words: string) => page.getByRole("dialog", { name: words });
 /** Takes a deed back from its note; the note then leaves. */
@@ -104,7 +104,7 @@ test("everything in a place or a search is chosen from a line, asked with its co
 	await expect(
 		page.getByRole("button", { name: "Select everything this search finds" }),
 	).toHaveCount(0);
-	await page.getByLabel("Select all conversations on this page").check();
+	await page.getByRole("checkbox", { name: "Select all conversations on this page" }).check();
 	await expect(page.getByText("Everything on this page is selected.")).toBeVisible();
 	await page.getByRole("button", { name: "Select everything this search finds" }).click();
 	await expect(page.getByText("Everything this search finds is selected.")).toBeVisible();
@@ -129,7 +129,7 @@ test("everything in a place or a search is chosen from a line, asked with its co
 		(await page.getByText(/1–10 of \d+/).textContent())?.match(/of (\d+)/)?.[1] ?? 0,
 	);
 	expect(total).toBeGreaterThanOrEqual(many);
-	await page.getByLabel("Select all conversations on this page").check();
+	await page.getByRole("checkbox", { name: "Select all conversations on this page" }).check();
 	await page.getByRole("button", { name: "Select everything in Spam" }).click();
 	await expect(page.getByText("Everything in Spam is selected.")).toBeVisible();
 	await page.getByRole("button", { name: "Not spam" }).first().click();

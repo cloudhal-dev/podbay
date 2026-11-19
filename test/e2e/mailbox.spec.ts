@@ -12,7 +12,7 @@ import { choose, expect, mime, test } from "./fixtures.ts";
 const row = (page: Page, subject: string) =>
 	page.getByRole("button", { name: new RegExp(subject) });
 const select = (page: Page, subject: string) =>
-	page.getByLabel(new RegExp(`Select the conversation "${subject}`));
+	page.getByRole("checkbox", { name: new RegExp(`Select the conversation "${subject}`) });
 /** One of Kumo's radios in a group of the settings, by the group's name and its own. */
 const radio = (page: Page, group: string, name: string) =>
 	page.getByRole("radiogroup", { name: group }).getByRole("radio", { name, exact: true });

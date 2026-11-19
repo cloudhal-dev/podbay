@@ -3,6 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { Button } from "@cloudflare/kumo";
 import { MagnifyingGlassIcon, StarIcon } from "@phosphor-icons/react";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -92,9 +93,16 @@ export default function SearchResultsRoute() {
 					{QUICK_FILTERS.map(([operator, label]) => {
 						const on = hasOperator(urlQuery, operator);
 						return (
-							<button
+							<Button
 								key={operator}
-								type="button"
+								size="sm"
+								variant="outline"
+								// As before Kumo: a chosen filter has a tint and a line of the brand colour.
+								className={
+									on
+										? "rounded-full bg-kumo-brand/10 font-semibold text-kumo-default ring-kumo-brand"
+										: "rounded-full text-kumo-strong"
+								}
 								aria-pressed={on}
 								onClick={() => {
 									if (!mailboxId) return;
@@ -104,14 +112,9 @@ export default function SearchResultsRoute() {
 										search: { q: toggleOperator(urlQuery, operator) },
 									});
 								}}
-								className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${
-									on
-										? "border-kumo-brand bg-kumo-brand/10 font-semibold text-kumo-default"
-										: "border-kumo-line bg-transparent text-kumo-strong hover:bg-kumo-tint"
-								}`}
 							>
 								{t(label)}
-							</button>
+							</Button>
 						);
 					})}
 				</div>

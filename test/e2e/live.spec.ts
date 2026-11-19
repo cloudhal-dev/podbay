@@ -18,7 +18,7 @@ import { BASE, expect, mime, test } from "./fixtures.ts";
 const row = (page: Page, subject: string) =>
 	page.getByRole("button", { name: new RegExp(subject) });
 const select = (page: Page, subject: string) =>
-	page.getByLabel(new RegExp(`Select the conversation "${subject}`));
+	page.getByRole("checkbox", { name: new RegExp(`Select the conversation "${subject}`) });
 
 const SHAPE =
 	/^\{"v":1,"type":"state","state":\{"delivery":"\d+","mail":"\d+","labels":"\d+","settings":"\d+"\}\}$/;

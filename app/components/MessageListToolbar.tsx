@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Button, DropdownMenu } from "@cloudflare/kumo";
+import { Button, Checkbox, DropdownMenu } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
 	ArrowsClockwiseIcon,
@@ -15,7 +15,6 @@ import {
 	TrayIcon,
 	WarningOctagonIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useRef } from "react";
 import { Folders } from "shared/folders";
 import type { ConversationActions } from "~/hooks/useConversationActions";
 import { t } from "~/i18n";
@@ -63,11 +62,7 @@ export default function MessageListToolbar({
 	isRefreshing,
 	onRefresh,
 }: MessageListToolbarProps) {
-	const selectAll = useRef<HTMLInputElement>(null);
 	const allSelected = emails.length > 0 && chosen.length === emails.length;
-	useEffect(() => {
-		if (selectAll.current) selectAll.current.indeterminate = chosen.length > 0 && !allSelected;
-	}, [chosen.length, allSelected]);
 
 	const pick = (keep: (email: Email) => boolean) => onSelect(emails.filter(keep).map((e) => e.id));
 	const anyUnread = chosen.some(isUnread);
@@ -76,14 +71,14 @@ export default function MessageListToolbar({
 
 	return (
 		<div className="flex h-12 shrink-0 items-center gap-1 border-b border-kumo-line px-3">
-			<input
-				ref={selectAll}
-				type="checkbox"
+			<Checkbox
 				aria-label={t("Select all conversations on this page")}
-				className="ml-1.5 h-4 w-4 cursor-pointer"
+				// Kumo's box takes clicks 12 px around it; this keeps them off the menu's button beside it.
+				className="ml-1.5 mr-2"
 				checked={allSelected}
+				indeterminate={chosen.length > 0 && !allSelected}
 				disabled={emails.length === 0}
-				onChange={() => pick(() => !allSelected)}
+				onCheckedChange={() => pick(() => !allSelected)}
 			/>
 			<DropdownMenu>
 				<DropdownMenu.Trigger

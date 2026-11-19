@@ -14,6 +14,10 @@
  *   rest), a corner (`rounded`), a type size (`text-xs` to `text-9xl`, `text-[…]`) or a line height
  *   (`leading-`) is refused, with or without the important mark (`!h-9`, `h-9!`), and so is a
  *   `style` attribute. Width and margins are layout and are the screen's.
+ *   One shape is let through where it is listed: a Kumo control made fully round with
+ *   `rounded-full` and nothing else written by hand, at a place of `ROUND_ON_PURPOSE` with its
+ *   reason. It keeps a shape a screen had before Kumo, which Kumo gives to a button with an icon
+ *   alone. The count of such controls in a listed file must be the number listed.
  * - **No control made of a role.** A plain element with the role of a control (`button`,
  *   `checkbox`, `radio`, `switch`, `combobox`, `listbox`, `textbox`, `slider`) is refused, except
  *   as a debt in `ROLES_TO_MOVE`.
@@ -35,6 +39,7 @@ const KUMO_CONTROLS = [
 	"Button",
 	"Input",
 	"InputArea",
+	"InputGroup",
 	"Select",
 	"Checkbox",
 	"Radio",
@@ -67,6 +72,88 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 		reason:
 			"Kumo 2.18.1 has no field for a date and a time: its DatePicker is a calendar only. The browser's own field stands here alone, sized to Kumo's default, and every screen uses this wrapper.",
 	},
+	{
+		file: "app/components/Header.tsx",
+		element: "input",
+		count: 1,
+		reason:
+			"The top bar's search box: one wide field 48 px tall, fully round and filled, with no line, that turns to the page's colour with a ring when it has focus. Kumo 2.18.1's Input and InputGroup give a size alone (40 px at their largest) with Kumo's corner and line, and a height, a corner or padding by hand is refused, so that shape cannot be carried. Its two buttons are Kumo's.",
+	},
+	{
+		file: "app/components/EmailPanel.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The line that stands for the middle of a long conversation, with how many messages it holds: a line of the conversation, drawn across its width as the folded messages are, which opens them. Kumo's Button is a control of fixed height, not a line of the thread.",
+	},
+	{
+		file: "app/components/email-panel/MessageHeader.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The sender's picture folds an open message: a round picture 40 px across, white on the brand colour for one's own message, which keeps its colour and takes a ring under the pointer. Kumo's Button sets its own text colour with an important mark and its own background under the pointer, so the picture's colours would be Kumo's.",
+	},
+	{
+		file: "app/components/email-panel/MessageHeader.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The sender's name opens what can be done with the sender: a line of text 13 px, level with the top of the picture, and the same line as one's own name, which is plain text. Kumo's Button is a box of 20, 26, 36 or 40 px with its own padding, not a line of text.",
+	},
+	{
+		file: "app/components/email-panel/MessageHeader.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The line of who a message went to shows its details: a line of text 12 px under the name, so the two lines stand beside the picture as a pair within its 40 px. Kumo's Button is a box of 20 px at its smallest, with its own padding.",
+	},
+	{
+		file: "app/components/email-panel/ThreadMessage.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"A folded message is one line of the conversation that opens it: the sender's picture, the name, the date and the start of the text across the width of the thread. Kumo's Button holds a label and an icon in one row.",
+	},
+	{
+		file: "app/components/MessageList.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"A line of the list is the conversation itself: one button that holds who wrote, the subject, the start of the text, its labels and the date, laid out for the width of the list, so the line has one name and one action. Kumo's Button holds a label and an icon in one row of fixed height, not a line of that content.",
+	},
+	{
+		file: "app/routes/mailbox.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"The shade behind the rail when it slides over the list on a phone: the whole screen around the rail, which closes it when pressed. It is not a control a person moves to: it is out of the tab order, Escape and the rail's own button close the rail too, and Kumo's Button cannot be a surface the size of the screen.",
+	},
+];
+
+/** Kumo controls made fully round on purpose: one line of this list is one file, with its reason. */
+export interface RoundOnPurpose {
+	file: string;
+	count: number;
+	reason: string;
+}
+
+/**
+ * Kumo controls that keep a fully round shape a screen had before Kumo (`rounded-full` and no other
+ * class written by hand). Kumo's Button is round only with `shape="circle"`, for an icon alone.
+ */
+export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
+	{
+		file: "app/components/EmailPanel.tsx",
+		count: 3,
+		reason:
+			"Reply, Reply all and Forward under the last message are round, as they were before Kumo: three answers with an icon and a word each. Kumo's Button is round only as a circle for an icon alone.",
+	},
+	{
+		file: "app/routes/search-results.tsx",
+		count: 1,
+		reason:
+			"The quick filters above a search's results are round chips, as they were before Kumo and as the folder's label in a result's line still is. Kumo's Button is round only as a circle for an icon alone.",
+	},
 ];
 
 /**
@@ -81,23 +168,13 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
 	"app/components/ComposePanel.tsx": { button: 3, input: 2 },
 	"app/components/ComposeWindow.tsx": { button: 1 },
 	"app/components/EmailAttachmentList.tsx": { button: 2 },
-	"app/components/EmailPanel.tsx": { button: 1 },
-	"app/components/Header.tsx": { button: 2, input: 1 },
 	"app/components/InlineReply.tsx": { button: 2 },
 	"app/components/InvitePerson.tsx": { select: 1 },
 	"app/components/LabelDialog.tsx": { input: 1 },
-	"app/components/MessageList.tsx": { button: 2, input: 1 },
-	"app/components/MessageListToolbar.tsx": { input: 1 },
 	"app/components/ScheduledList.tsx": { button: 1 },
-	"app/components/SignInSteps.tsx": { button: 1 },
-	"app/components/email-panel/MessageHeader.tsx": { button: 4 },
-	"app/components/email-panel/ThreadMessage.tsx": { button: 1 },
 	"app/components/settings/AssistantSettings.tsx": { textarea: 1 },
 	"app/components/settings/SignatureSettings.tsx": { input: 1 },
-	"app/routes/home.tsx": { button: 1 },
-	"app/routes/mailbox.tsx": { button: 1 },
 	"app/routes/members.tsx": { select: 1 },
-	"app/routes/search-results.tsx": { button: 1 },
 };
 
 /**
@@ -107,7 +184,6 @@ export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> 
  */
 export const SIZED_BY_HAND: Readonly<Record<string, number>> = {
 	"app/components/ComposePanel.tsx": 2,
-	"app/components/EmailPanel.tsx": 3,
 	"app/components/SendLater.tsx": 1,
 };
 
@@ -181,6 +257,7 @@ export function controlProblems(
 	toMove: Readonly<Record<string, Partial<Record<Native, number>>>> = TO_MOVE,
 	sizedByHand: Readonly<Record<string, number>> = SIZED_BY_HAND,
 	rolesToMove: Readonly<Record<string, number>> = ROLES_TO_MOVE,
+	roundOnPurpose: readonly RoundOnPurpose[] = ROUND_ON_PURPOSE,
 ): string[] {
 	const problems: string[] = [];
 	// A control is Kumo's, one of its dotted parts, or a wrapper of app/components/controls/.
@@ -211,13 +288,34 @@ export function controlProblems(
 			}
 		}
 		const sized: string[] = [];
+		const round: string[] = [];
+		const roundKept = roundOnPurpose
+			.filter((one) => one.file === file)
+			.reduce((sum, one) => sum + one.count, 0);
 		for (const { name, line, tag } of tagsOf(text, controls)) {
 			const hand = classesOf(tag)
 				.map((classes) => HAND_SIZE.exec(classes))
 				.find((one) => one !== null);
-			if (hand) sized.push(`${file}:${line}: <${name}> with "${hand[2]}…" written by hand`);
+			const handTokens = classesOf(tag)
+				.flatMap((classes) => classes.split(/\s+/))
+				.filter((token) => HAND_SIZE.test(token));
+			const roundAlone =
+				handTokens.length > 0 &&
+				handTokens.every((token) => token === "rounded-full") &&
+				!/\sstyle=\{/.test(tag);
+			if (roundAlone && roundKept > 0) round.push(`${file}:${line}: <${name}> made round by hand`);
+			else if (hand) sized.push(`${file}:${line}: <${name}> with "${hand[2]}…" written by hand`);
 			else if (/\sstyle=\{/.test(tag))
 				sized.push(`${file}:${line}: <${name}> with a style attribute`);
+		}
+		if (round.length > roundKept) {
+			problems.push(
+				...round.map((one) => `${one}; ROUND_ON_PURPOSE lists ${roundKept} in this file`),
+			);
+		} else if (round.length < roundKept) {
+			problems.push(
+				`${file}: ROUND_ON_PURPOSE lists ${roundKept} round Kumo controls, the file has ${round.length}`,
+			);
 		}
 		const allowed = sizedByHand[file] ?? 0;
 		if (sized.length > allowed) {
@@ -255,6 +353,12 @@ export function controlProblems(
 	for (const one of onPurpose) {
 		if (one.reason.trim().length < 20)
 			problems.push(`${one.file}: an ON_PURPOSE line needs its reason`);
+	}
+	for (const one of roundOnPurpose) {
+		if (one.reason.trim().length < 20)
+			problems.push(`${one.file}: a ROUND_ON_PURPOSE line needs its reason`);
+		if (!files.has(one.file))
+			problems.push(`${one.file}: listed in ROUND_ON_PURPOSE and gone; remove its line`);
 	}
 	return problems;
 }

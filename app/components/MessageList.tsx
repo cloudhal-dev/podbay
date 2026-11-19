@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Badge, Tooltip } from "@cloudflare/kumo";
+import { Badge, Button, Checkbox, Tooltip } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
 	ArrowBendUpLeftIcon,
@@ -328,6 +328,14 @@ export default function MessageList({
 									event.dataTransfer.effectAllowed = "move";
 								}}
 								onDragEnd={() => useUIStore.setState({ dragged: [] })}
+								// Whether Shift is held for the box this click or key ticks: Kumo's box takes no click
+								// handler of its own, so the line reads it on the way down.
+								onClickCapture={(event) => {
+									withShift.current = event.shiftKey;
+								}}
+								onKeyDownCapture={(event) => {
+									withShift.current = event.shiftKey;
+								}}
 								onContextMenu={(event) => {
 									event.preventDefault();
 									setMenu({ email, at: { x: event.clientX, y: event.clientY } });
@@ -336,35 +344,26 @@ export default function MessageList({
 									index === cursor ? "border-l-kumo-brand" : "border-l-transparent"
 								} ${tone}`}
 							>
-								<input
-									type="checkbox"
+								<Checkbox
 									aria-label={t('Select the conversation "{subject}"', {
 										subject: email.subject || t("(no subject)"),
 									})}
-									className="mx-1 h-4 w-4 shrink-0 cursor-pointer"
+									className="mx-1 shrink-0"
 									checked={isSelected}
-									onClick={(event) => {
-										withShift.current = event.shiftKey;
-									}}
-									onChange={() => toggle(email.id)}
+									onCheckedChange={() => toggle(email.id)}
 								/>
-								<button
-									type="button"
+								<Button
+									variant="ghost"
+									shape="square"
+									size="sm"
 									aria-label={email.starred ? t("Unstar") : t("Star")}
 									aria-pressed={email.starred}
-									className="shrink-0 rounded bg-transparent border-0 p-0.5 cursor-pointer"
+									className={`shrink-0 ${
+										email.starred ? "text-kumo-warning" : "text-kumo-subtle hover:text-kumo-warning"
+									}`}
+									icon={<StarIcon size={16} weight={email.starred ? "fill" : "regular"} />}
 									onClick={() => actions.star(email)}
-								>
-									<StarIcon
-										size={16}
-										weight={email.starred ? "fill" : "regular"}
-										className={
-											email.starred
-												? "text-kumo-warning"
-												: "text-kumo-subtle hover:text-kumo-warning"
-										}
-									/>
-								</button>
+								/>
 
 								{/* The conversation itself: one button, so the row has one name and one action */}
 								<button
