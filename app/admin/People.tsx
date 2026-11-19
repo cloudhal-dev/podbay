@@ -1,14 +1,14 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Badge, Button } from "@cloudflare/kumo";
+import { Badge, Button, Table } from "@cloudflare/kumo";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import CopyButton from "~/components/CopyButton";
+import { useFreshProof } from "~/components/FreshProof";
 import { dateLanguage, m, t } from "~/i18n";
 import { issueRecovery, listPeople, type Me, type Person, type RecoveryLink } from "~/lib/session";
 import { ApiError } from "~/services/api";
-import CopyButton from "./CopyButton";
-import { useFreshProof } from "./FreshProof";
 
 const ROLE_LABEL = { owner: m("Owner"), admin: m("Administrator"), member: m("Member") } as const;
 
@@ -44,8 +44,14 @@ export default function People({ me }: { me: Me }) {
 		}
 	}
 
+	const role = (person: Person) => (
+		<Badge variant={person.role === "member" ? "outline" : "secondary"}>
+			{t(ROLE_LABEL[person.role])}
+		</Badge>
+	);
+
 	return (
-		<section className="mt-8 rounded-xl border border-kumo-line bg-kumo-base p-5">
+		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
 			<h2 className="text-base font-semibold text-kumo-default">{t("People")}</h2>
 			<p className="text-sm text-kumo-subtle mt-1">
 				{t(
@@ -57,29 +63,45 @@ export default function People({ me }: { me: Me }) {
 					{t("The list of people could not be loaded.")}
 				</p>
 			) : (
-				<ul className="mt-4 rounded-lg border border-kumo-line divide-y divide-kumo-line">
-					{people.map((person) => (
-						<li key={person.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
-							<div className="min-w-0 flex-1">
-								<p className="truncate text-sm text-kumo-default">{person.name}</p>
-								<p className="truncate text-xs text-kumo-subtle">{person.email}</p>
-							</div>
-							<Badge variant={person.role === "member" ? "outline" : "secondary"}>
-								{t(ROLE_LABEL[person.role])}
-							</Badge>
-							{canRecover(me, person) && (
-								<Button
-									variant="ghost"
-									size="sm"
-									loading={busy === person.id}
-									onClick={() => recover(person)}
-								>
-									{t("Recovery link")}
-								</Button>
-							)}
-						</li>
-					))}
-				</ul>
+				<div className="mt-4 overflow-hidden rounded-lg border border-kumo-line">
+					<Table aria-label={t("People")}>
+						<Table.Header>
+							<Table.Row>
+								<Table.Head>{t("Person")}</Table.Head>
+								{/* On a narrow screen the role is under the address, not in a column. */}
+								<Table.Head className="hidden sm:table-cell">{t("Role")}</Table.Head>
+								<Table.Head className="w-0">
+									<span className="sr-only">{t("Actions")}</span>
+								</Table.Head>
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{people.map((person) => (
+								<Table.Row key={person.id}>
+									<Table.Cell className="max-w-0">
+										<p className="truncate text-sm text-kumo-default">{person.name}</p>
+										<p className="truncate text-xs text-kumo-subtle">{person.email}</p>
+										<div className="mt-1 sm:hidden">{role(person)}</div>
+									</Table.Cell>
+									<Table.Cell className="hidden sm:table-cell">{role(person)}</Table.Cell>
+									<Table.Cell className="text-right">
+										{canRecover(me, person) && (
+											<Button
+												variant="ghost"
+												size="sm"
+												loading={busy === person.id}
+												onClick={() => recover(person)}
+												aria-label={t("A recovery link for {email}", { email: person.email })}
+											>
+												{t("Recovery link")}
+											</Button>
+										)}
+									</Table.Cell>
+								</Table.Row>
+							))}
+						</Table.Body>
+					</Table>
+				</div>
 			)}
 			{error && (
 				<p role="alert" className="text-sm text-kumo-danger mt-3">

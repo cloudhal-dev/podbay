@@ -56,6 +56,8 @@ test("a person is invited, adds an authenticator app and a passkey, and is asked
 		await test.step("the owner invites a person and gets a link to pass on", async () => {
 			await signInWithPassword(page, app.account.email, app.account.password);
 			await expect(page.getByRole("heading", { name: "Mailboxes", exact: true })).toBeVisible();
+			// People are invited in the administration area (#127).
+			await page.goto("/admin/people");
 			await page.locator("#invite-email").fill(ADA.email);
 			await page.getByRole("button", { name: "Create invitation" }).click();
 			const link = (await page.locator("code", { hasText: "/accept/" }).textContent()) ?? "";

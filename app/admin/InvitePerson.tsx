@@ -2,11 +2,13 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Button, Input, Select } from "@cloudflare/kumo";
+import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
+import { useFreshProof } from "~/components/FreshProof";
 import { t } from "~/i18n";
 import { type CreatedInvitation, invite } from "~/lib/session";
 import { ApiError } from "~/services/api";
-import { useFreshProof } from "./FreshProof";
+import { INVITATIONS } from "./Invitations";
 
 /**
  * Invite a person. The result is a link to pass on by any channel: Podbay does not have to be
@@ -19,6 +21,7 @@ export default function InvitePerson({ canInviteAdmin }: { canInviteAdmin: boole
 	const [error, setError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 	const withFreshProof = useFreshProof();
+	const queryClient = useQueryClient();
 
 	async function submit(event: FormEvent) {
 		event.preventDefault();
@@ -27,6 +30,8 @@ export default function InvitePerson({ canInviteAdmin }: { canInviteAdmin: boole
 		setCreated(null);
 		try {
 			setCreated(await withFreshProof(() => invite(email.trim(), role)));
+			// The list of invitations shows the new one waiting.
+			void queryClient.invalidateQueries({ queryKey: INVITATIONS });
 			setEmail("");
 		} catch (caught) {
 			setError(
@@ -38,7 +43,7 @@ export default function InvitePerson({ canInviteAdmin }: { canInviteAdmin: boole
 	}
 
 	return (
-		<section className="mt-8 rounded-xl border border-kumo-line bg-kumo-base p-5">
+		<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
 			<h2 className="text-base font-semibold text-kumo-default">{t("Invite a person")}</h2>
 			<p className="text-sm text-kumo-subtle mt-1">
 				{t(
