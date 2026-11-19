@@ -2,7 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Button, Checkbox, Input, InputArea, useKumoToastManager } from "@cloudflare/kumo";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AUTO_REPLY } from "shared/rules";
 import DateTimeField from "~/components/controls/DateTimeField";
 import { useFreshProof } from "~/components/FreshProof";
@@ -43,9 +43,13 @@ export default function AutoReplySettings({
 	const [text, setText] = useState("");
 	const [error, setError] = useState<string | null>(null);
 
-	// Filled when the reply arrives, and again when it is saved.
+	// Filled once, when the stored reply arrives (#124). Until then nothing can be typed, so it
+	// writes over nothing; after that, a read again (after a save) never writes over what is
+	// typed. A reply saved elsewhere shows when the page is opened again.
+	const filled = useRef(false);
 	useEffect(() => {
-		if (!data) return;
+		if (!data || filled.current) return;
+		filled.current = true;
 		setEnabled(data.isEnabled);
 		setFrom(shown(data.fromDate));
 		setUntil(shown(data.toDate));
@@ -101,10 +105,12 @@ export default function AutoReplySettings({
 					)}
 				</p>
 			)}
-			<fieldset disabled={!canChange} className="m-0 border-0 p-0">
+			<fieldset disabled={!canChange || !data} className="m-0 border-0 p-0">
 				<Row name={t("Automatic reply")} about={t("Whether the mailbox answers by itself.")}>
 					<Checkbox
 						label={t("Answer mail that arrives")}
+						// Kumo's checkbox is not a native control: the fieldset does not reach it.
+						disabled={!canChange || !data}
 						checked={enabled}
 						onCheckedChange={(checked) => setEnabled(checked === true)}
 					/>
