@@ -158,6 +158,13 @@ export const ON_PURPOSE: readonly OnPurpose[] = [
 			"A line of the list is the conversation itself: one button that holds who wrote, the subject, the start of the text, its labels and the date, laid out for the width of the list, so the line has one name and one action. Kumo's Button holds a label and an icon in one row of fixed height, not a line of that content.",
 	},
 	{
+		file: "app/components/ScheduledList.tsx",
+		element: "button",
+		count: 1,
+		reason:
+			"A line of Scheduled is the waiting message itself, as a line of the list is: one button that holds who it goes to, the subject, the start of the text and its time, laid out for the width of the list, and opens it. Kumo's Button holds a label and an icon in one row of fixed height.",
+	},
+	{
 		file: "app/routes/mailbox.tsx",
 		element: "button",
 		count: 1,
@@ -210,7 +217,6 @@ export const ROUND_ON_PURPOSE: readonly RoundOnPurpose[] = [
  */
 export const TO_MOVE: Readonly<Record<string, Partial<Record<Native, number>>>> = {
 	"app/components/LabelDialog.tsx": { input: 1 },
-	"app/components/ScheduledList.tsx": { button: 1 },
 };
 
 /**
