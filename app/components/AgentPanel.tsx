@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Badge, Button, Loader, Tooltip } from "@cloudflare/kumo";
+import { Badge, Button, InputArea, Loader, Tooltip } from "@cloudflare/kumo";
 import {
 	ArrowBendUpLeftIcon,
 	ArrowUpIcon,
@@ -446,24 +446,21 @@ function AgentChatConnected({
 					</div>
 				) : (
 					<div className="flex items-end gap-1.5">
-						<textarea
+						{/* Kumo's text area at the small size: 12 px words as before, growing to five lines. */}
+						<InputArea
 							ref={inputRef}
 							id="agent-chat-input"
 							name="agent-chat-input"
+							size="sm"
+							autoResize
+							minRows={1}
+							maxRows={5}
 							value={inputValue}
 							onChange={(e) => setInputValue(e.target.value)}
 							onKeyDown={handleKeyDown}
 							placeholder={t("Ask your email agent...")}
-							rows={1}
 							aria-label={t("Chat message input")}
-							className="flex-1 resize-none rounded-lg border border-kumo-line bg-kumo-control px-3 py-2 text-xs text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring min-h-[36px] max-h-[100px]"
-							style={{ height: "auto", overflow: "hidden" }}
-							onInput={(e) => {
-								const t = e.target as HTMLTextAreaElement;
-								t.style.height = "auto";
-								t.style.height = `${Math.min(t.scrollHeight, 100)}px`;
-								t.style.overflow = t.scrollHeight > 100 ? "auto" : "hidden";
-							}}
+							className="flex-1"
 						/>
 						<Button
 							variant="primary"
