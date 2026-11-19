@@ -116,9 +116,12 @@ export default function SignInSteps({
 				>
 					{t("Continue")}
 				</Button>
-				<button
+				<Button
 					type="button"
-					className="text-sm underline cursor-pointer bg-transparent border-0 p-0 text-kumo-subtle"
+					variant="ghost"
+					size="xs"
+					// Grey and underlined, the text action it was; set back by its padding to the form's edge.
+					className="-ml-1.5 text-kumo-subtle underline"
 					onClick={() => {
 						setRecovery(!recovery);
 						setCode("");
@@ -126,7 +129,7 @@ export default function SignInSteps({
 					}}
 				>
 					{recovery ? t("Use a code from the app instead") : t("Use a recovery code instead")}
-				</button>
+				</Button>
 			</form>
 		);
 	}
