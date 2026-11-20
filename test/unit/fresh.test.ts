@@ -4,9 +4,9 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
+import { NOT_FRESH_CODE } from "@podbay/contract/fresh-proof";
 import { betterAuth } from "better-auth";
 import { describe, expect, it } from "vitest";
-import { NOT_FRESH_CODE } from "../../shared/fresh-proof.ts";
 import {
 	FRESH_AUTH_PATHS,
 	FRESH_SECONDS,

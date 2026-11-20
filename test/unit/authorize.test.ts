@@ -8,7 +8,7 @@ import {
 	MAILBOX_ROLES,
 } from "../../workers/auth/authorize.ts";
 import { pathParam } from "../../workers/auth/middleware.ts";
-import { ROUTE_TABLE, rightFor } from "../../workers/auth/route-table.ts";
+import { ROUTE_TABLE, type RouteRight, rightFor } from "../../workers/auth/route-table.ts";
 
 const actor = (instanceRole: Actor["instanceRole"], mailboxRole: Actor["mailboxRole"]): Actor => ({
 	userId: "u1",
@@ -92,6 +92,108 @@ describe("authorize", () => {
 });
 
 describe("route table", () => {
+	/**
+	 * Every route with its right and its flags, written out. A change to who may call a route is
+	 * a change to this list, made on purpose; moving the code that holds the table or the rights
+	 * leaves it as it is.
+	 */
+	it("keeps every route with its right and its flags", () => {
+		const written = ROUTE_TABLE.map((r) =>
+			[
+				r.method,
+				r.path,
+				r.right,
+				...(["fresh", "upgrade", "sensitive"] as const).filter((f) => r[f]),
+			].join(" "),
+		);
+		expect(written).toEqual([
+			"ALL /api/auth/* public",
+			"GET /api/health public",
+			"GET /api/setup/status public",
+			"POST /api/setup/owner public",
+			"GET /api/invitations/:token public",
+			"POST /api/invitations/:token/accept public",
+			"GET /api/recovery/:token public",
+			"POST /api/recovery/:token public",
+			"POST /api/setup/recovery public",
+			"GET /api/v1/me session",
+			"GET /api/v1/me/choices session",
+			"PUT /api/v1/me/choices session",
+			"GET /api/v1/config session",
+			"GET /api/v1/mailboxes session",
+			"POST /api/v1/mailboxes instance.manage",
+			"GET /api/v1/registry/mailboxes instance.manage",
+			"GET /api/v1/keys session",
+			"POST /api/v1/keys session fresh",
+			"DELETE /api/v1/keys/:keyId session",
+			"GET /api/v1/users instance.manage",
+			"POST /api/v1/users/:userId/recovery instance.manage fresh",
+			"GET /api/v1/invitations instance.manage",
+			"POST /api/v1/invitations instance.manage fresh",
+			"DELETE /api/v1/invitations/:invitationId instance.manage",
+			"GET /api/v1/mailboxes/:mailboxId mailbox.read",
+			"PUT /api/v1/mailboxes/:mailboxId mailbox.manage sensitive",
+			"DELETE /api/v1/mailboxes/:mailboxId mailbox.manage fresh",
+			"GET /api/v1/mailboxes/:mailboxId/live mailbox.read upgrade",
+			"GET /api/v1/mailboxes/:mailboxId/members mailbox.members.read",
+			"GET /api/v1/mailboxes/:mailboxId/members/history mailbox.members.manage",
+			"POST /api/v1/mailboxes/:mailboxId/members mailbox.members.manage fresh",
+			"PUT /api/v1/mailboxes/:mailboxId/members/:userId mailbox.members.manage fresh",
+			"DELETE /api/v1/mailboxes/:mailboxId/members/:userId mailbox.members.manage fresh",
+			"GET /api/v1/mailboxes/:mailboxId/emails mailbox.read",
+			"POST /api/v1/mailboxes/:mailboxId/emails mailbox.send",
+			"POST /api/v1/mailboxes/:mailboxId/drafts mailbox.write",
+			"PUT /api/v1/mailboxes/:mailboxId/drafts/:draftId mailbox.write",
+			"POST /api/v1/mailboxes/:mailboxId/drafts/:draftId/attachments mailbox.write",
+			"POST /api/v1/mailboxes/:mailboxId/drafts/:draftId/attachments/copy mailbox.write",
+			"PUT /api/v1/mailboxes/:mailboxId/drafts/:draftId/attachments/:attachmentId mailbox.write",
+			"DELETE /api/v1/mailboxes/:mailboxId/drafts/:draftId/attachments/:attachmentId mailbox.write",
+			"GET /api/v1/mailboxes/:mailboxId/emails/:id mailbox.read",
+			"PUT /api/v1/mailboxes/:mailboxId/emails/:id mailbox.write",
+			"DELETE /api/v1/mailboxes/:mailboxId/emails/:id mailbox.write",
+			"POST /api/v1/mailboxes/:mailboxId/emails/:id/move mailbox.write",
+			"POST /api/v1/mailboxes/:mailboxId/emails/:id/reply mailbox.send",
+			"POST /api/v1/mailboxes/:mailboxId/emails/:id/forward mailbox.send",
+			"POST /api/v1/mailboxes/:mailboxId/emails/:id/unsend mailbox.send",
+			"POST /api/v1/mailboxes/:mailboxId/emails/:id/reschedule mailbox.send",
+			"GET /api/v1/mailboxes/:mailboxId/emails/:emailId/attachments/:attachmentId mailbox.read",
+			"POST /api/v1/mailboxes/:mailboxId/emails/:emailId/attachments/:attachmentId/download mailbox.read",
+			"GET /api/v1/mailboxes/:mailboxId/emails/:id/original mailbox.read",
+			"POST /api/v1/mailboxes/:mailboxId/emails/:id/original/download mailbox.read",
+			"GET /api/v1/mailboxes/:mailboxId/threads/:threadId mailbox.read",
+			"POST /api/v1/mailboxes/:mailboxId/threads/:threadId/read mailbox.write",
+			"GET /api/v1/mailboxes/:mailboxId/folders mailbox.read",
+			"POST /api/v1/mailboxes/:mailboxId/folders/:folderId/empty mailbox.write",
+			"POST /api/v1/mailboxes/:mailboxId/bulk mailbox.write",
+			"POST /api/v1/mailboxes/:mailboxId/bulk/:deedId/run mailbox.write",
+			"POST /api/v1/mailboxes/:mailboxId/bulk/:deedId/undo mailbox.write",
+			"GET /api/v1/mailboxes/:mailboxId/labels mailbox.read",
+			"POST /api/v1/mailboxes/:mailboxId/labels mailbox.write",
+			"PUT /api/v1/mailboxes/:mailboxId/labels/:labelId mailbox.write",
+			"DELETE /api/v1/mailboxes/:mailboxId/labels/:labelId mailbox.write",
+			"PUT /api/v1/mailboxes/:mailboxId/emails/:emailId/labels mailbox.write",
+			"GET /api/v1/mailboxes/:mailboxId/search mailbox.read",
+			"GET /api/v1/mailboxes/:mailboxId/known-addresses mailbox.write",
+			"DELETE /api/v1/mailboxes/:mailboxId/known-addresses/:knownId mailbox.write",
+			"DELETE /api/v1/mailboxes/:mailboxId/known-addresses mailbox.manage",
+			"GET /api/v1/mailboxes/:mailboxId/rules mailbox.read",
+			"PUT /api/v1/mailboxes/:mailboxId/rules mailbox.manage",
+			"POST /api/v1/mailboxes/:mailboxId/blocked-senders mailbox.manage",
+			"DELETE /api/v1/mailboxes/:mailboxId/blocked-senders mailbox.manage",
+			"GET /api/v1/mailboxes/:mailboxId/auto-reply mailbox.read",
+			"PUT /api/v1/mailboxes/:mailboxId/auto-reply mailbox.manage fresh",
+		]);
+	});
+
+	it("knows no action that is not written down", () => {
+		// @ts-expect-error: an action that is not in the list is not an action.
+		const unknown: Action = "mailbox.everything";
+		expect(ACTIONS).not.toContain(unknown);
+		// @ts-expect-error: nor is a right a route can name.
+		const right: RouteRight = "instance.everything";
+		expect(["public", ...ACTIONS]).not.toContain(right);
+	});
+
 	it("has no duplicate entry", () => {
 		const keys = ROUTE_TABLE.map((r) => `${r.method} ${r.path}`);
 		expect(new Set(keys).size).toBe(keys.length);

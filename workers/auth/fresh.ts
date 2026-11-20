@@ -13,7 +13,7 @@
  * This module has no Cloudflare import: the Better Auth configuration loads it in Node too.
  */
 
-import { NOT_FRESH_CODE } from "../../shared/fresh-proof.ts";
+import { NOT_FRESH_CODE } from "@podbay/contract/fresh-proof";
 
 export { NOT_FRESH_CODE };
 
