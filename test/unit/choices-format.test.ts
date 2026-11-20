@@ -136,4 +136,23 @@ describe("the strict schema", () => {
 	it("refuses exactly these, whole", () => {
 		for (const body of refuses) expect(parseChange(body), JSON.stringify(body)).toBeNull();
 	});
+
+	it("refuses a body whose own keys name what every object has, as it arrives as text", () => {
+		// JSON.parse makes "__proto__" an own key, not the object's prototype.
+		for (const text of [
+			'{"__proto__":{"pageSize":10}}',
+			'{"__proto__":null}',
+			'{"constructor":1}',
+			'{"constructor":{"prototype":{}}}',
+			'{"toString":"x"}',
+		]) {
+			const body: unknown = JSON.parse(text);
+			expect(Object.keys(body as object).length, text).toBe(1);
+			expect(parseChange(body), text).toBeNull();
+		}
+	});
+
+	it("takes a key given twice in the text with its last value, as JSON.parse reads it", () => {
+		expect(parseChange(JSON.parse('{"pageSize":10,"pageSize":50}'))).toEqual({ pageSize: 50 });
+	});
 });
