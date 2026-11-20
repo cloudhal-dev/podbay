@@ -2,10 +2,11 @@
 	"name": "@podbay/contract",
 	"version": "0.0.0",
 	"private": true,
-	"description": "What every module's API has in common: the code of an answer that asks for fresh proof, and the roles and rights that belong to no module (ADR-0018, decision 2)",
+	"description": "What every module's API has in common: the code of an answer that asks for fresh proof, the roles and rights that belong to no module, and the form of a person's choices with the two that belong to no module (ADR-0018, decision 2)",
 	"license": "Apache-2.0",
 	"type": "module",
 	"exports": {
+		"./choices": "./choices.ts",
 		"./fresh-proof": "./fresh-proof.ts",
 		"./rights": "./rights.ts"
 	}

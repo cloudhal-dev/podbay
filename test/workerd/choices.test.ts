@@ -292,6 +292,18 @@ describe("a change is merged", () => {
 	});
 });
 
+describe("what is kept", () => {
+	it("is byte for byte the same document for a person who set every choice", async () => {
+		ids.every = await seedUser("every@example.com", "member");
+		browsers.every = new Browser();
+		expect((await as("every").signIn("every@example.com")).status).toBe(200);
+		const change =
+			'{"pageSize":50,"order":"unread","defaultReply":"reply-all","afterFiling":"newer","shortcuts":false,"appearance":"dark","language":"tr","conversationView":false,"snippets":false,"hoverActions":false,"sendAndArchive":true,"undoSeconds":30}';
+		expect((await put("every", change)).status).toBe(200);
+		expect((await row("every"))?.choices).toBe(`{"v":1,${change.slice(1)}`);
+	});
+});
+
 describe("reading is lenient", () => {
 	it("keeps a stored key it does not know and does not give it on", async () => {
 		await store("member", `{"v":1,"pageSize":50,"laterChoice":"wide","snippets":"sometimes"}`);
