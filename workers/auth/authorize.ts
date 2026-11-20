@@ -14,17 +14,16 @@
  * themselves one: a sensitive change, recorded, and shown to the mailbox's owners afterwards.
  */
 
-export const INSTANCE_ROLES = ["owner", "admin", "member"] as const;
-export type InstanceRole = (typeof INSTANCE_ROLES)[number];
+import { INSTANCE_ACTIONS, INSTANCE_ROLES, type InstanceRole } from "@podbay/contract/rights";
+
+export { INSTANCE_ROLES, type InstanceRole };
 
 export const MAILBOX_ROLES = ["owner", "sender", "reader"] as const;
 export type MailboxRole = (typeof MAILBOX_ROLES)[number];
 
 export const ACTIONS = [
-	/** Any signed-in person: their own account, the instance configuration, their mailbox list. */
-	"session",
-	/** Create a mailbox, and manage accounts, invitations and recovery links. */
-	"instance.manage",
+	// The two that belong to no module: "session" and "instance.manage".
+	...INSTANCE_ACTIONS,
 	/** Read messages, threads, folders, attachments and search. */
 	"mailbox.read",
 	/** Change the state of mail: flags, folders, drafts, moving and deleting messages. */

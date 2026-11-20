@@ -33,6 +33,7 @@ paths:
   - "shared/rules-schema.ts"
   - "workers/lib/rule-facts.ts"
   - "packages/platform/log.ts"
+  - "packages/contract/**"
   - "packages/*/package.json"
   - "migrations/**"
   - ".github/**"

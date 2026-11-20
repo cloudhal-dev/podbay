@@ -7,9 +7,9 @@
  * cannot read, and `useMe` asks the Worker who is signed in.
  */
 import { passkeyClient } from "@better-auth/passkey/client";
+import { NOT_FRESH_CODE } from "@podbay/contract/fresh-proof";
 import { createAuthClient } from "better-auth/client";
 import { twoFactorClient } from "better-auth/client/plugins";
-import { NOT_FRESH_CODE } from "shared/fresh-proof";
 import { ApiError } from "~/services/api";
 
 export const authClient = createAuthClient({
