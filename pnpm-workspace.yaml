@@ -1,6 +1,7 @@
 packages:
   - "."
   - "packages/*"
+  - "modules/*"
 
 # V6 (docs/engineering-rules.md): a version must be three days old before it is installed.
 minimumReleaseAge: 4320

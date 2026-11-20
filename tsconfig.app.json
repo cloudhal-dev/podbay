@@ -4,6 +4,7 @@
 		"workers/**/*",
 		"shared/**/*",
 		"packages/**/*",
+		"modules/**/*",
 		"worker-configuration.d.ts"
 	],
 	"compilerOptions": {

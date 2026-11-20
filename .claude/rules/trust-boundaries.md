@@ -35,6 +35,7 @@ paths:
   - "packages/platform/log.ts"
   - "packages/contract/**"
   - "packages/*/package.json"
+  - "modules/*/package.json"
   - "migrations/**"
   - ".github/**"
   - ".claude/settings.json"

@@ -1,0 +1,13 @@
+{
+	"name": "@podbay/mail",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Mail, the first module (ADR-0018, decision 2): its Worker side, its app side and the code both run. Each side is reached by its entry",
+	"license": "Apache-2.0",
+	"type": "module",
+	"exports": {
+		"./worker": "./worker/index.ts",
+		"./app": "./app/index.ts",
+		"./shared": "./shared/index.ts"
+	}
+}

@@ -42,6 +42,7 @@
 		"@phosphor-icons/react": "catalog:",
 		"@podbay/contract": "workspace:*",
 		"@podbay/i18n": "workspace:*",
+		"@podbay/mail": "workspace:*",
 		"@podbay/platform": "workspace:*",
 		"@tanstack/react-query": "catalog:",
 		"@tanstack/react-router": "catalog:",

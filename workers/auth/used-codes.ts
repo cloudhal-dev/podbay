@@ -16,7 +16,7 @@
  * one refused for another reason (a locked account) waits for the next step. Nothing of the
  * code is stored: the key is an HMAC under the instance secret.
  *
- * This module has no Cloudflare import (see workers/auth/options.ts).
+ * This module imports nothing of Cloudflare's; workers/auth/options.ts does.
  */
 import { APIError, type createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 
