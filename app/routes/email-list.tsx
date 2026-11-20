@@ -14,10 +14,10 @@ import {
 	TrashIcon,
 	TrayIcon,
 } from "@phosphor-icons/react";
+import { Folders } from "@podbay/mail/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Folders } from "shared/folders";
 import EmptyPlace from "~/components/EmptyPlace";
 import MailView from "~/components/MailView";
 import MessageList from "~/components/MessageList";

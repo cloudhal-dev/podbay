@@ -25,9 +25,8 @@
  * Nothing else in the app may inject HTML from a message.
  */
 
-import { isShowableImage } from "shared/attachment-risk";
-import { MAIL_FRAME_SCRIPT } from "shared/mail-frame";
-import { m, t } from "../i18n";
+import { isShowableImage, MAIL_FRAME_SCRIPT } from "@podbay/mail/shared";
+import { m, t } from "../i18n/index";
 
 /** The part of DOMPurify this module uses. Tests pass an instance bound to their own DOM. */
 export interface Purifier {

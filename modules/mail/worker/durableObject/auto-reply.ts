@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { mailboxAddressFor } from "../../shared/inbound";
 /**
  * The automatic reply of a mailbox (ADR-0008, decisions 8 to 10): mail that leaves because
  * mail from a stranger arrived, with nobody at the screen.
@@ -36,7 +37,6 @@ import {
 } from "../../shared/rules";
 import { SENDING } from "../../shared/sending";
 import { textToHtml } from "../lib/email-helpers";
-import { mailboxAddressFor } from "../lib/inbound";
 import { headerList } from "../lib/outgoing-message";
 import { capFull } from "./sending";
 import { take, waitingCount } from "./submissions";

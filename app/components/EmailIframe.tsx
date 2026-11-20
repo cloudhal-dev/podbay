@@ -4,9 +4,9 @@
 // Modified by the Podbay contributors.
 
 import { Button } from "@cloudflare/kumo";
+import { type FrameReports, MAIL_FRAME_SANDBOX, nextFrameHeight } from "@podbay/mail/shared";
 import DOMPurify from "dompurify";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type FrameReports, MAIL_FRAME_SANDBOX, nextFrameHeight } from "shared/mail-frame";
 import { t } from "~/i18n";
 import { freshNonce, mailDocument, type Purifier, sanitizeMailHtml } from "~/lib/mail-html";
 

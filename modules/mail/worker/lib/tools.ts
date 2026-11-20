@@ -17,7 +17,7 @@
 
 import { Folders } from "../../shared/folders";
 import { isLabelId } from "../../shared/labels";
-import type { Env } from "../types";
+import type { MailEnv as Env } from "../env";
 import { verifyDraft } from "./ai";
 import {
 	buildQuotedReplyBlock,

@@ -10,7 +10,7 @@ import {
 	type LiveKind,
 	type LiveState,
 	readLiveMessage,
-} from "../../shared/live.ts";
+} from "../../modules/mail/shared/live.ts";
 import type { Browser } from "./helpers.ts";
 import { ORIGIN, testEnv } from "./helpers.ts";
 

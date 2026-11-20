@@ -4,8 +4,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { autoTriggerLine, buildAutoDraftPrompt } from "../../workers/agent/auto-draft.ts";
-import { FIXED_RULES, withFixedRules } from "../../workers/agent/prompt.ts";
+import {
+	autoTriggerLine,
+	buildAutoDraftPrompt,
+} from "../../modules/mail/worker/agent/auto-draft.ts";
+import { FIXED_RULES, withFixedRules } from "../../modules/mail/worker/agent/prompt.ts";
 
 const EVENT = {
 	mailboxId: "team@example.com",
@@ -32,7 +35,10 @@ describe("withFixedRules", () => {
 	it("is applied to the default prompt and to a mailbox's own prompt", () => {
 		// The agent class needs the Workers runtime, so its source is read, not run: every
 		// `return` of getSystemPrompt goes through withFixedRules.
-		const source = readFileSync(join(import.meta.dirname, "../../workers/agent/index.ts"), "utf8");
+		const source = readFileSync(
+			join(import.meta.dirname, "../../modules/mail/worker/agent/index.ts"),
+			"utf8",
+		);
 		const start = source.indexOf("async function getSystemPrompt(");
 		const body = source.slice(start, source.indexOf("\n}\n", start));
 		const returns = body.split("\n").filter((line) => /\breturn\b/.test(line));

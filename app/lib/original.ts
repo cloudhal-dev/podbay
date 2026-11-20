@@ -5,7 +5,7 @@
  * The original of a received message in the app (ADR-0015, decisions 14 to 16): how much of
  * it is shown, and saving the whole of it. How it is drawn is in `./original-text.ts`.
  */
-import { ORIGINAL_SHOWN_BYTES, type OriginalAnswer, originalFileName } from "shared/original";
+import { ORIGINAL_SHOWN_BYTES, type OriginalAnswer, originalFileName } from "@podbay/mail/shared";
 import { t } from "~/i18n";
 import { saveBlob } from "~/lib/attachments";
 import { formatBytes } from "~/lib/utils";

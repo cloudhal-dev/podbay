@@ -1,9 +1,9 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { type KnownAddress, typedForCompletion } from "@podbay/mail/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { type KnownAddress, typedForCompletion } from "shared/known-addresses";
 import { addressesOf, type Exchanged } from "~/lib/address-suggestions";
 import api from "~/services/api";
 

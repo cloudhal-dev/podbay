@@ -27,18 +27,18 @@ import { errorFields, log } from "@podbay/platform/log";
  * in the bucket that no row of the mailbox names.
  */
 import PostalMime, { type Email } from "postal-mime";
+import { mailboxExists } from "../../../workers/auth/store";
+import { type InboundEnvelope, routeInbound } from "../shared/inbound";
 import { MAX_ORIGINAL_BYTES, type Unparsed } from "../shared/original";
-import { mailboxExists } from "./auth/store";
-import type { MailboxDO } from "./durableObject";
 import { fileKey } from "./durableObject/drafts";
+import type { MailboxDO } from "./durableObject/index";
 import { type Arrival, type Filed, MAX_ROW_BYTES, rowWeight } from "./durableObject/originals";
+import type { MailEnv as Env } from "./env";
 import { features } from "./lib/features";
 import { storageFilename } from "./lib/filenames";
-import { type InboundEnvelope, routeInbound } from "./lib/inbound";
 import { mailboxQueries } from "./lib/mailbox-rpc";
 import { newRawKey, platformStatement } from "./lib/original";
 import { factsOfParsed } from "./lib/rule-facts";
-import type { Env } from "./types";
 
 type Stub = DurableObjectStub<MailboxDO>;
 

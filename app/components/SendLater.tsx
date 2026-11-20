@@ -3,8 +3,8 @@
 
 import { Button, DropdownMenu, LayerDialog } from "@cloudflare/kumo";
 import { CalendarBlankIcon, ClockIcon } from "@phosphor-icons/react";
+import { SENDING } from "@podbay/mail/shared";
 import { type FormEvent, useState } from "react";
-import { SENDING } from "shared/sending";
 import DateTimeField from "~/components/controls/DateTimeField";
 import { t } from "~/i18n";
 import { fieldValue, laterChoices, timeRefusal, timeWords } from "~/lib/sending-words";

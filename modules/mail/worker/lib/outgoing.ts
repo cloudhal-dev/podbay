@@ -18,9 +18,9 @@
  */
 import type { Context } from "hono";
 import type { z } from "zod";
+import type { ApiContext } from "../../../../workers/auth/middleware";
 import { Folders } from "../../shared/folders";
 import { SEND_CODES, type SendAnswer, whenToLeave } from "../../shared/sending";
-import type { ApiContext } from "../auth/middleware";
 import { type FileRow, fileKey } from "../durableObject/drafts";
 import { CAP_WORDS } from "../durableObject/sending";
 import { SenderValidationError, textToHtml, validateSender } from "./email-helpers";

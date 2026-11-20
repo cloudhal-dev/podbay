@@ -9,8 +9,8 @@
  * the others; the request carries it, and the Worker never reads it from here).
  */
 import type { ChoiceTable } from "@podbay/contract/choices";
-import { LIST_ORDERS, type ListOrder } from "./list-order";
-import { DEFAULT_UNDO_SECONDS, UNDO_SECONDS, type UndoSeconds } from "./sending";
+import { LIST_ORDERS, type ListOrder } from "./list-order.ts";
+import { DEFAULT_UNDO_SECONDS, UNDO_SECONDS, type UndoSeconds } from "./sending.ts";
 
 export const DENSITIES = ["default", "comfortable", "compact"] as const;
 export type Density = (typeof DENSITIES)[number];

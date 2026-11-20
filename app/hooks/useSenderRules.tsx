@@ -2,8 +2,8 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { useKumoToastManager } from "@cloudflare/kumo";
+import { isAddress, type RuleConditions } from "@podbay/mail/shared";
 import { type ReactNode, useState } from "react";
-import { isAddress, type RuleConditions } from "shared/rules";
 import { useConfirm } from "~/components/Confirm";
 import FilterDialog from "~/components/rules/FilterDialog";
 import { t } from "~/i18n";

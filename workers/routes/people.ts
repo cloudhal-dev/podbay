@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { closeLiveOf } from "@podbay/mail/worker";
 import { errorFields, log } from "@podbay/platform/log";
 /**
  * Invitations, the people on the instance, and the members of a mailbox.
@@ -31,7 +32,6 @@ import {
 } from "../auth/people";
 import { personByEmail } from "../auth/recovery";
 import { listAllMailboxes } from "../auth/store";
-import { closeLiveOf } from "./live";
 
 const InviteBody = z.object({
 	email: z.string().trim().toLowerCase().email().max(254),

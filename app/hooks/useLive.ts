@@ -1,9 +1,9 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import type { LiveKind } from "@podbay/mail/shared";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useSyncExternalStore } from "react";
-import type { LiveKind } from "shared/live";
 import {
 	holdLive,
 	isLiveConnected,

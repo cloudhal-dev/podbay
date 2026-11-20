@@ -5,7 +5,7 @@
  * A filter in words (ADR-0008): each condition and each action of a rule is one whole
  * message, so a language can order it as its grammar wants. Pure: no React and no request.
  */
-import type { RuleActions, RuleConditions } from "shared/rules";
+import type { RuleActions, RuleConditions } from "@podbay/mail/shared";
 import { t } from "~/i18n";
 
 /** What a filter looks for, one line for each condition. */

@@ -18,8 +18,8 @@ import {
 	TrayIcon,
 	WarningOctagonIcon,
 } from "@phosphor-icons/react";
+import { Folders } from "@podbay/mail/shared";
 import { useMemo } from "react";
-import { Folders } from "shared/folders";
 import type { ConversationActions } from "~/hooks/useConversationActions";
 import { t } from "~/i18n";
 import { labelDot } from "~/lib/labels";

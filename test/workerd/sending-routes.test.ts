@@ -17,7 +17,10 @@
  */
 import { env } from "cloudflare:test";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { applyMigrations, mailboxMigrations } from "../../workers/durableObject/migrations.ts";
+import {
+	applyMigrations,
+	mailboxMigrations,
+} from "../../modules/mail/worker/durableObject/migrations.ts";
 import {
 	Browser,
 	createMailbox,

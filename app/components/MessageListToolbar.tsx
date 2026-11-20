@@ -15,7 +15,7 @@ import {
 	TrayIcon,
 	WarningOctagonIcon,
 } from "@phosphor-icons/react";
-import { Folders } from "shared/folders";
+import { Folders } from "@podbay/mail/shared";
 import type { ConversationActions } from "~/hooks/useConversationActions";
 import { t } from "~/i18n";
 import type { Email } from "~/types";

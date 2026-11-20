@@ -11,10 +11,10 @@ import {
 	TrashIcon,
 } from "@phosphor-icons/react";
 import { formatListDate } from "@podbay/i18n/dates";
+import type { BulkFilter } from "@podbay/mail/shared";
+import { Folders } from "@podbay/mail/shared";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import type { BulkFilter } from "shared/bulk";
-import { Folders } from "shared/folders";
 import {
 	type ConversationActions,
 	type EverythingDeed,

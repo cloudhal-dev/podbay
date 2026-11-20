@@ -23,9 +23,12 @@ import {
 	waitOnExecutionContext,
 } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { KNOWN_LIMITS } from "../../shared/known-addresses.ts";
+import { KNOWN_LIMITS } from "../../modules/mail/shared/known-addresses.ts";
+import {
+	applyMigrations,
+	mailboxMigrations,
+} from "../../modules/mail/worker/durableObject/migrations.ts";
 import worker from "../../workers/app.ts";
-import { applyMigrations, mailboxMigrations } from "../../workers/durableObject/migrations.ts";
 import {
 	Browser,
 	createMailbox,

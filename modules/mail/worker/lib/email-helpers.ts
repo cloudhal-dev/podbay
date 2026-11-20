@@ -12,8 +12,8 @@ import { oneLineTextOf } from "../../shared/html-text";
  * Includes: DO stub helpers, sender validation, message-ID generation,
  * threading, HTML utilities, and tool-logic (getFullEmail / getFullThread).
  */
-import type { MailboxDO } from "../durableObject";
-import type { Env } from "../types";
+import type { MailboxDO } from "../durableObject/index";
+import type { MailEnv as Env } from "../env";
 import type { EmailFull } from "./schemas";
 
 // ── DO Stub ────────────────────────────────────────────────────────

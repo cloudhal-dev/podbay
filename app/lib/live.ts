@@ -29,7 +29,7 @@ import {
 	type LiveState,
 	movedKinds,
 	readLiveMessage,
-} from "shared/live";
+} from "@podbay/mail/shared";
 
 /** How the app waits and evens out. Its own choices; the object's limits are in `shared/live`. */
 export const LIVE_TIMING = {

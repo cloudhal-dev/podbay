@@ -9,7 +9,7 @@
  */
 import { env, runInDurableObject } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { EMPTY_BATCH } from "../../workers/durableObject/emptying.ts";
+import { EMPTY_BATCH } from "../../modules/mail/worker/durableObject/emptying.ts";
 import {
 	Browser,
 	createMailbox,

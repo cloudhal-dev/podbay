@@ -16,6 +16,7 @@ import { log } from "@podbay/platform/log";
  */
 import { Hono } from "hono";
 import { z } from "zod";
+import type { ApiContext } from "../../../../workers/auth/middleware";
 import {
 	AUTHENTICATION_SHOWN,
 	NO_ORIGINAL_CODE,
@@ -23,7 +24,6 @@ import {
 	ORIGINAL_SHOWN_BYTES,
 	originalFileName,
 } from "../../shared/original";
-import type { ApiContext } from "../auth/middleware";
 import { originalAnswer } from "../lib/original";
 
 const M = "/api/v1/mailboxes/:mailboxId";

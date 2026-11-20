@@ -2,8 +2,8 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Button, useKumoToastManager } from "@cloudflare/kumo";
+import { Folders } from "@podbay/mail/shared";
 import { useState } from "react";
-import { Folders } from "shared/folders";
 import { useConfirm } from "~/components/Confirm";
 import { useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";

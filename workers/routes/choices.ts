@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { bodyWithin } from "@podbay/mail/worker";
 /**
  * The signed-in person's own choices (ADR-0012): `GET` and `PUT /api/v1/me/choices`.
  *
@@ -15,7 +16,6 @@ import { MAX_CHOICES_BYTES } from "../../shared/choices";
 import { parseChange } from "../../shared/choices-schema";
 import { choicesOf, mergeChoices } from "../auth/choices";
 import type { ApiContext } from "../auth/middleware";
-import { bodyWithin } from "../lib/body";
 
 const TOO_LARGE = { error: "The request is too large.", code: "TOO_LARGE" } as const;
 const INVALID = { error: "Invalid request.", code: "INVALID" } as const;

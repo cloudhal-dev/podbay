@@ -15,6 +15,7 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
+import type { ApiContext } from "../../../../workers/auth/middleware";
 import { attachmentRisk } from "../../shared/attachment-risk";
 import { Folders } from "../../shared/folders";
 import {
@@ -22,7 +23,6 @@ import {
 	MAX_FILE_TYPE_CHARS,
 	MAX_FILENAME_BYTES,
 } from "../../shared/sending-limits";
-import type { ApiContext } from "../auth/middleware";
 import { type Declared, type FileRow, fileKey } from "../durableObject/drafts";
 import { storageFilename } from "../lib/filenames";
 

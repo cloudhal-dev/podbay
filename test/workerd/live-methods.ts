@@ -4,7 +4,7 @@
  * changed a row is about. `live-signal.test.ts` holds these lists against the object: a method
  * that is in none of them fails it, so a list changes on purpose and never to match.
  */
-import type { LiveKind } from "../../shared/live.ts";
+import type { LiveKind } from "../../modules/mail/shared/live.ts";
 
 /** The methods that only read. Each is called below and must change no row. */
 export const READS = [

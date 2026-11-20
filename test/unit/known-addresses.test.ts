@@ -16,8 +16,8 @@ import {
 	KNOWN_LIMITS,
 	typedForCompletion,
 	typedLength,
-} from "../../shared/known-addresses.ts";
-import { MCP_TOOLS } from "../../shared/mcp-tools.ts";
+} from "../../modules/mail/shared/known-addresses.ts";
+import { MCP_TOOLS } from "../../modules/mail/shared/mcp-tools.ts";
 
 const KNOWN = ["ada@sender.test", "grace@navy.test", "adam@example.com", "bob@sender.test"];
 
@@ -216,10 +216,12 @@ describe("who learns and who asks (ADR-0012, decisions 14 and 19)", () => {
 
 	it("gives the assistant and MCP no way to the known addresses", () => {
 		const tools = [
-			...readdirSync("workers/agent").map((name) => `workers/agent/${name}`),
-			"workers/mcp/server.ts",
-			"workers/lib/tools.ts",
-			"shared/mcp-tools.ts",
+			...readdirSync("modules/mail/worker/agent").map(
+				(name) => `modules/mail/worker/agent/${name}`,
+			),
+			"modules/mail/worker/mcp/server.ts",
+			"modules/mail/worker/lib/tools.ts",
+			"modules/mail/shared/mcp-tools.ts",
 		];
 		for (const file of tools) expect(source(file), file).not.toMatch(KNOWN);
 		expect(
@@ -232,8 +234,8 @@ describe("who learns and who asks (ADR-0012, decisions 14 and 19)", () => {
 	it("learns in one place only: where a message has left", () => {
 		// Nothing on the way of incoming mail names the table or the step.
 		for (const file of [
-			"workers/arrival.ts",
-			"workers/durableObject/originals.ts",
+			"modules/mail/worker/arrival.ts",
+			"modules/mail/worker/durableObject/originals.ts",
 			"workers/app.ts",
 		]) {
 			expect(source(file), file).not.toMatch(KNOWN);
@@ -241,20 +243,28 @@ describe("who learns and who asks (ADR-0012, decisions 14 and 19)", () => {
 		// Since ADR-0016 a message reaches Sent when it has left, so that is where the mailbox
 		// learns whom it wrote to: once, in the function that lets mail leave, and nowhere a
 		// message is merely stored or taken to be sent.
-		const leaving = source("workers/durableObject/leaving.ts");
+		const leaving = source("modules/mail/worker/durableObject/leaving.ts");
 		expect(leaving.match(/known\.learn\(/g)).toHaveLength(1);
 		const before = leaving.slice(0, leaving.indexOf("known.learn("));
 		expect(before).toContain("markSent(storage, id, outcome.serviceId");
-		const calls = readdirSync("workers", { recursive: true, encoding: "utf8" })
+		const calls = ["workers", "modules/mail/worker"]
+			.flatMap((root) =>
+				readdirSync(root, { recursive: true, encoding: "utf8" }).map((name) => `${root}/${name}`),
+			)
 			.filter((name) => name.endsWith(".ts"))
-			.map((name) => `workers/${name}`)
 			.filter((file) => /\bknown\.learn\(|\blearn\(sql/.test(source(file)));
 		expect(calls.sort()).toEqual(
-			["workers/durableObject/known.ts", "workers/durableObject/leaving.ts"].sort(),
+			[
+				"modules/mail/worker/durableObject/known.ts",
+				"modules/mail/worker/durableObject/leaving.ts",
+			].sort(),
 		);
-		const object = source("workers/durableObject/index.ts");
+		const object = source("modules/mail/worker/durableObject/index.ts");
 		expect(object).not.toMatch(/learn\(/);
-		for (const file of ["workers/durableObject/submissions.ts", "workers/lib/outgoing.ts"]) {
+		for (const file of [
+			"modules/mail/worker/durableObject/submissions.ts",
+			"modules/mail/worker/lib/outgoing.ts",
+		]) {
 			expect(source(file), file).not.toMatch(KNOWN);
 		}
 	});

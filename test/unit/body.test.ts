@@ -6,7 +6,7 @@
  * being read to its end (the rules routes and a person's choices; ADR-0008).
  */
 import { describe, expect, it } from "vitest";
-import { bodyWithin } from "../../workers/lib/body.ts";
+import { bodyWithin } from "../../modules/mail/worker/lib/body.ts";
 
 const KIB = 1024;
 

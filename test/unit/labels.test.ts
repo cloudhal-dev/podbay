@@ -7,7 +7,7 @@ import {
 	labelColor,
 	labelKey,
 	newLabelId,
-} from "../../shared/labels.ts";
+} from "../../modules/mail/shared/labels.ts";
 
 describe("label names", () => {
 	it("stores a name trimmed, with single spaces and tidy parts", () => {

@@ -7,7 +7,7 @@ import {
 	attachmentRisk,
 	isShowableImage,
 	servedContentType,
-} from "../../shared/attachment-risk.ts";
+} from "../../modules/mail/shared/attachment-risk.ts";
 
 const kind = (filename: string, mimetype = "application/octet-stream") =>
 	attachmentRisk({ filename, mimetype })?.kind ?? null;

@@ -4,10 +4,9 @@
 // Modified by the Podbay contributors.
 
 import { useKumoToastManager } from "@cloudflare/kumo";
+import { Folders, MAX_RECIPIENTS } from "@podbay/mail/shared";
 import { useRouter } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Folders } from "shared/folders";
-import { MAX_RECIPIENTS } from "shared/sending-limits";
 import { useDisplay } from "~/hooks/useDisplay";
 import { type DraftFile, type LeftBehind, useDraftFiles } from "~/hooks/useDraftFiles";
 import { useKnownAddresses } from "~/hooks/useKnownAddresses";

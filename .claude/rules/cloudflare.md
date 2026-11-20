@@ -3,7 +3,7 @@ paths:
   - "wrangler.jsonc"
   - "docs/cloudflare/**"
   - "vite.config.ts"
-  - "workers/lib/models.ts"
+  - "modules/mail/worker/lib/models.ts"
   - "workers/types.ts"
 ---
 

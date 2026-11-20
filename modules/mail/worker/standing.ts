@@ -6,8 +6,8 @@
  * rules hold at the time of leaving, not of pressing: the mailbox is asked for again, and so
  * is the right of the person who sent it, by the same `authorize` every route is decided by.
  */
-import { type Action, authorize } from "./authorize";
-import { instanceRoleOf, mailboxAccess, mailboxExists } from "./store";
+import { type Action, authorize } from "../../../workers/auth/authorize";
+import { instanceRoleOf, mailboxAccess, mailboxExists } from "../../../workers/auth/store";
 
 export type Standing =
 	/** The mailbox is not in the index: it is going or gone, and nothing leaves. */

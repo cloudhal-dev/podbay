@@ -50,7 +50,7 @@ Seed the reconnaissance with these; do not let them stand in for it.
 | Give the audit | From |
 |---|---|
 | The boundaries and their invariants | `podbay-security`, sections 1 and 2 |
-| Every way into the Worker, with the right it needs | `workers/auth/route-table.ts`; the MCP tools in `shared/mcp-tools.ts`; the handlers in `workers/app.ts` |
+| Every way into the Worker, with the right it needs | `workers/auth/route-table.ts`; the MCP tools in `modules/mail/shared/mcp-tools.ts`; the handlers in `workers/app.ts` |
 | The controls that are claimed, and the test said to prove each | [`docs/status.md`](../../../docs/status.md), section 1 |
 | What is knowingly open | `docs/status.md`, sections 2 and 3 |
 | The outcomes that are critical here | The four at the top of `podbay-security` |

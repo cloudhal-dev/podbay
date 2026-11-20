@@ -5,13 +5,13 @@
 
 import { type Context, Hono } from "hono";
 import { z } from "zod";
+import type { ApiContext } from "../../../workers/auth/middleware";
 import {
 	attachmentRisk,
 	NEEDS_ACKNOWLEDGEMENT_CODE,
 	servedContentType,
 } from "../shared/attachment-risk";
 import { isLabelId } from "../shared/labels";
-import { type ApiContext, guard } from "./auth/middleware";
 import { fileKey } from "./durableObject/drafts";
 import { features } from "./lib/features";
 import { headerFilename } from "./lib/filenames";
@@ -19,9 +19,7 @@ import { parseListOrder, type SearchFilterOptions } from "./lib/list-options";
 import { mailboxQueries } from "./lib/mailbox-rpc";
 import { deleteMessage } from "./lib/messages";
 import { sendRequest, takeMessage, WAITS } from "./lib/outgoing";
-import { account } from "./routes/account";
 import { bulk } from "./routes/bulk";
-import { choices } from "./routes/choices";
 import { drafts } from "./routes/drafts";
 import { keys } from "./routes/keys";
 import { knownAddresses } from "./routes/known-addresses";
@@ -29,9 +27,7 @@ import { labels } from "./routes/labels";
 import { live } from "./routes/live";
 import { mailboxes } from "./routes/mailboxes";
 import { original } from "./routes/original";
-import { people } from "./routes/people";
 import { places } from "./routes/places";
-import { recovery } from "./routes/recovery";
 import { handleForwardEmail, handleReplyEmail } from "./routes/reply-forward";
 import { rules } from "./routes/rules";
 import { sending } from "./routes/sending";
@@ -68,15 +64,9 @@ function boolQuery(c: AppContext, key: string): boolean | undefined {
 
 const app = new Hono<ApiContext>();
 
-// Every API route goes through the guard: it must be in the route table, a request that changes
-// state must come from the app's own origin, and unless the route is public there must be a
-// session with the right the table names. Nothing below checks access again.
-app.use("/api/*", guard);
-
-app.route("/", account);
-app.route("/", choices);
+// Mail's routes. The shell mounts them behind its guard (workers/index.ts), which decides access
+// for every one of them; nothing here checks access again.
 app.route("/", mailboxes);
-app.route("/", people);
 app.route("/", keys);
 app.route("/", drafts);
 app.route("/", labels);
@@ -87,7 +77,6 @@ app.route("/", knownAddresses);
 app.route("/", live);
 app.route("/", sending);
 app.route("/", rules);
-app.route("/", recovery);
 
 // -- Config ---------------------------------------------------------
 

@@ -9,7 +9,7 @@
  */
 import { randomUUID } from "node:crypto";
 import type { Frame, Page } from "@playwright/test";
-import { FRAME_MAX_HEIGHT, FRAME_MAX_REPORTS } from "../../shared/mail-frame.ts";
+import { FRAME_MAX_HEIGHT, FRAME_MAX_REPORTS } from "../../modules/mail/shared/mail-frame.ts";
 import { expect, mime, test } from "./fixtures.ts";
 import { png } from "./png.ts";
 import { PROXY } from "./proxy-address.ts";

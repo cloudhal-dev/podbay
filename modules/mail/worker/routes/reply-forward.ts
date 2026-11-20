@@ -4,7 +4,7 @@
 // Modified by the Podbay contributors.
 
 import type { Context } from "hono";
-import type { ApiContext } from "../auth/middleware";
+import type { ApiContext } from "../../../../workers/auth/middleware";
 import { buildReferencesChain, resolveOriginalEmail } from "../lib/email-helpers";
 import { sendRequest, takeMessage } from "../lib/outgoing";
 import type { EmailFull } from "../lib/schemas";

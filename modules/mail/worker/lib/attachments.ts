@@ -7,7 +7,7 @@
  * Shared attachment storage logic.
  * Eliminates the triplicated atob → Uint8Array → R2.put pattern.
  */
-import type { Env } from "../types";
+import type { MailEnv as Env } from "../env";
 import { storageFilename } from "./filenames";
 
 export interface StoredAttachment {

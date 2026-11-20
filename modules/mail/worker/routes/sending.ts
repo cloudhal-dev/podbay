@@ -19,8 +19,8 @@
  * Neither route calls the sending service, and no tool of the assistant or MCP reaches them.
  */
 import { Hono } from "hono";
+import type { ApiContext } from "../../../../workers/auth/middleware";
 import { SEND_CODES, whenToLeave } from "../../shared/sending";
-import type { ApiContext } from "../auth/middleware";
 import { RescheduleRequestSchema } from "../lib/schemas";
 
 const M = "/api/v1/mailboxes/:mailboxId";

@@ -32,7 +32,7 @@ import {
 	liveMessage,
 	movedKinds,
 	readLiveMessage,
-} from "../../shared/live.ts";
+} from "../../modules/mail/shared/live.ts";
 import { PAGE_CONTENT_POLICY } from "../../shared/security-headers.ts";
 
 const state = (delivery = 0, mail = 0, labels = 0, settings = 0): LiveState => ({

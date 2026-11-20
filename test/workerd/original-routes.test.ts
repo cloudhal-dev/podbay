@@ -15,9 +15,9 @@
  */
 import { SELF } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { AUTHENTICATION_SHOWN, ORIGINAL_SHOWN_BYTES } from "../../shared/original.ts";
+import { AUTHENTICATION_SHOWN, ORIGINAL_SHOWN_BYTES } from "../../modules/mail/shared/original.ts";
+import { AUTH_RESULTS_MAX } from "../../modules/mail/worker/lib/original.ts";
 import { API_CONTENT_POLICY, API_HEADERS } from "../../shared/security-headers.ts";
-import { AUTH_RESULTS_MAX } from "../../workers/lib/original.ts";
 import { json, ORIGIN } from "./helpers.ts";
 import {
 	as,

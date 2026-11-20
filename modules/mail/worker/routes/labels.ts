@@ -11,8 +11,8 @@ import type { Context } from "hono";
  */
 import { Hono } from "hono";
 import { z } from "zod";
+import type { ApiContext } from "../../../../workers/auth/middleware";
 import { cleanLabelName, isLabelId, labelColor } from "../../shared/labels";
-import type { ApiContext } from "../auth/middleware";
 import { WAITS } from "../lib/outgoing";
 
 const M = "/api/v1/mailboxes/:mailboxId";

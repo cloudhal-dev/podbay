@@ -5,9 +5,9 @@
 
 import { Button, useKumoToastManager } from "@cloudflare/kumo";
 import { ArrowBendUpLeftIcon, ArrowBendUpRightIcon, ChatCircleIcon } from "@phosphor-icons/react";
+import { Folders } from "@podbay/mail/shared";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Folders } from "shared/folders";
 import { useConfirm } from "~/components/Confirm";
 import EmailPanelDialogs from "~/components/email-panel/EmailPanelDialogs";
 import EmailPanelHeader from "~/components/email-panel/EmailPanelHeader";

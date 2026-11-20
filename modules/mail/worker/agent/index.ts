@@ -15,9 +15,9 @@ import {
 	type UIMessage,
 } from "ai";
 import { z } from "zod";
-import { mailboxSettings } from "../auth/store";
+import { mailboxSettings } from "../../../../workers/auth/store";
+import type { AgentEnv as Env } from "../env";
 import { MODELS } from "../lib/models";
-import type { Env } from "../types";
 import { autoTriggerLine, type NewEmailEvent, runAutoDraft } from "./auto-draft";
 import { withFixedRules } from "./prompt";
 import { createAgentTools } from "./tools";

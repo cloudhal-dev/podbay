@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import type { Env } from "../types";
+import type { MailEnv as Env } from "../env";
 
 /** What the mailbox answers for a message that waits to leave: it is not deleted (ADR-0016). */
 type Waits = "scheduled";

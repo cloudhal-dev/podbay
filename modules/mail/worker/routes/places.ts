@@ -8,7 +8,7 @@
  */
 import { Hono } from "hono";
 import { z } from "zod";
-import type { ApiContext } from "../auth/middleware";
+import type { ApiContext } from "../../../../workers/auth/middleware";
 import { EMPTIABLE } from "../durableObject/emptying";
 import { deleteObjects } from "../lib/messages";
 

@@ -3,22 +3,19 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { features, handleMcp, MCP_ROUTE, receiveEmail } from "@podbay/mail/worker";
 import { errorFields, log } from "@podbay/platform/log";
 import { routeAgentRequest } from "agents";
 import { Hono } from "hono";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { API_CACHE_CONTROL, API_HEADERS } from "../shared/security-headers";
-import { receiveEmail } from "./arrival";
 import { callerForToken, touchKey } from "./auth/keys";
 import { mailboxDecision, sameOrigin } from "./auth/middleware";
 import { app as apiApp } from "./index";
-import { features } from "./lib/features";
 import { secret } from "./lib/secrets";
-import { handleMcp, MCP_ROUTE } from "./mcp/server";
 import type { Env } from "./types";
 
-export { EmailAgent } from "./agent";
-export { MailboxDO } from "./durableObject";
+export { EmailAgent, MailboxDO } from "@podbay/mail/worker";
 
 function getAccessUrls(teamDomain: string) {
 	const certsPath = "/cdn-cgi/access/certs";

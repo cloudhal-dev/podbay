@@ -4,16 +4,16 @@
 /** The mailbox registry: list, create, read, change settings, delete. The index is D1. */
 import { Hono } from "hono";
 import { z } from "zod";
-import { NOT_FRESH } from "../auth/fresh";
-import type { ApiContext } from "../auth/middleware";
+import { NOT_FRESH } from "../../../../workers/auth/fresh";
+import type { ApiContext } from "../../../../workers/auth/middleware";
 import {
 	createMailbox,
 	deleteMailbox,
 	type MailboxRow,
 	mailboxesOf,
 	updateMailboxSettings,
-} from "../auth/store";
-import { mailboxAddressFor } from "../lib/inbound";
+} from "../../../../workers/auth/store";
+import { mailboxAddressFor } from "../../shared/inbound";
 import { deleteObjects } from "../lib/messages";
 import { settingsSaved } from "./live";
 

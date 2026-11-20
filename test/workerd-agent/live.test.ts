@@ -12,9 +12,9 @@
  */
 import { env, SELF } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { LIVE_KINDS, LIVE_LIMITS, type LiveKind } from "../../shared/live.ts";
-import { AGENT_TOOL_NAMES, createAgentTools } from "../../workers/agent/tools.ts";
-import { MCP_TOOL_NAMES } from "../../workers/mcp/server.ts";
+import { LIVE_KINDS, LIVE_LIMITS, type LiveKind } from "../../modules/mail/shared/live.ts";
+import { AGENT_TOOL_NAMES, createAgentTools } from "../../modules/mail/worker/agent/tools.ts";
+import { MCP_TOOL_NAMES } from "../../modules/mail/worker/mcp/server.ts";
 import type { Env } from "../../workers/types.ts";
 import { Browser, createMailbox, migrate, ORIGIN, setupOwner } from "../workerd/helpers.ts";
 import {

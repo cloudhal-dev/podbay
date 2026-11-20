@@ -2,7 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { useKumoToastManager } from "@cloudflare/kumo";
-import { SEND_CODES, SENDING, type SendAnswer } from "shared/sending";
+import { SEND_CODES, SENDING, type SendAnswer } from "@podbay/mail/shared";
 import { useDisplay } from "~/hooks/useDisplay";
 import { type ComposeOptions, useUIStore } from "~/hooks/useUIStore";
 import { t } from "~/i18n";

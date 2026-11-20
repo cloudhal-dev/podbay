@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { features } from "../../workers/lib/features.ts";
+import { features } from "../../modules/mail/worker/lib/features.ts";
 
 describe("features", () => {
 	it("is all off by default", () => {

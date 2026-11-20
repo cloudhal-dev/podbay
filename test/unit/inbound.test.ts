@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mailboxAddressFor, routeInbound } from "../../workers/lib/inbound.ts";
+import { mailboxAddressFor, routeInbound } from "../../modules/mail/shared/inbound.ts";
 
 describe("mailboxAddressFor", () => {
 	it("lower-cases and trims", () => {

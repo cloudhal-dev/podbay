@@ -17,9 +17,12 @@ import {
 	waitOnExecutionContext,
 } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { LABEL_LIMITS } from "../../shared/labels.ts";
+import { LABEL_LIMITS } from "../../modules/mail/shared/labels.ts";
+import {
+	applyMigrations,
+	mailboxMigrations,
+} from "../../modules/mail/worker/durableObject/migrations.ts";
 import worker from "../../workers/app.ts";
-import { applyMigrations, mailboxMigrations } from "../../workers/durableObject/migrations.ts";
 import {
 	Browser,
 	createMailbox,

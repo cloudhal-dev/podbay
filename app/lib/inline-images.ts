@@ -5,7 +5,7 @@
  * The images a message embeds (`cid:` references). Pure functions: which attachments count, and
  * putting them into the body. Loading them is in `attachments.ts`.
  */
-import { isShowableImage } from "shared/attachment-risk";
+import { isShowableImage } from "@podbay/mail/shared";
 
 /** What these functions need to know about an attachment. */
 export interface EmbeddedPart {

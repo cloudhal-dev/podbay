@@ -7,7 +7,7 @@ import {
 	labelsOf,
 	namesSomething,
 	newDeedId,
-} from "../../shared/bulk.ts";
+} from "../../modules/mail/shared/bulk.ts";
 
 const LABEL = "lbl_000000000000000000000001";
 const ok = (value: unknown) => BulkRequestSchema.safeParse(value).success;

@@ -6,9 +6,9 @@
  * choices that belong to no module come from the contract, and a key is given once.
  */
 import { describe, expect, it } from "vitest";
+import { MAIL_CHOICES } from "../../modules/mail/shared/mail-choices.ts";
 import { joinTables, PERSON_CHOICES } from "../../packages/contract/choices.ts";
 import { CHOICES, DEVICE_KEYS, TRAVELLING } from "../../shared/choices.ts";
-import { MAIL_CHOICES } from "../../shared/mail-choices.ts";
 
 const yesOrNo = { values: [true, false], initial: true, kept: "person" } as const;
 

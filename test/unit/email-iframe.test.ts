@@ -12,7 +12,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import EmailIframe from "~/components/EmailIframe";
-import { FRAME_MAX_HEIGHT, FRAME_MAX_REPORTS } from "../../shared/mail-frame.ts";
+import { FRAME_MAX_HEIGHT, FRAME_MAX_REPORTS } from "../../modules/mail/shared/mail-frame.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

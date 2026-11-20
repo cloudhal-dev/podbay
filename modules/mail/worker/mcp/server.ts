@@ -17,14 +17,20 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
 import { z } from "zod";
 import {
+	type KeyCaller,
+	type KeyNeed,
+	keyAllows,
+	keyMailboxes,
+} from "../../../../workers/auth/keys";
+import {
 	FOLDER_TOOL_DESCRIPTION,
 	Folders,
 	MOVE_FOLDER_TOOL_DESCRIPTION,
 } from "../../shared/folders";
+import { mailboxAddressFor } from "../../shared/inbound";
 import { MCP_TOOLS, type McpToolName } from "../../shared/mcp-tools";
 import { withoutSend } from "../agent/tools";
-import { type KeyCaller, type KeyNeed, keyAllows, keyMailboxes } from "../auth/keys";
-import { mailboxAddressFor } from "../lib/inbound";
+import type { MailEnv as Env } from "../env";
 import {
 	toolDraftEmail,
 	toolDraftReply,
@@ -38,7 +44,6 @@ import {
 	toolSearchEmails,
 	toolUpdateDraft,
 } from "../lib/tools";
-import type { Env } from "../types";
 
 export const MCP_ROUTE = "/mcp";
 export const MCP_TOOL_NAMES: readonly McpToolName[] = MCP_TOOLS.map((tool) => tool.name);

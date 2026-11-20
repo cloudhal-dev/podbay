@@ -26,11 +26,11 @@
  */
 import { errorFields, log } from "@podbay/platform/log";
 import { type Outcome, outcomeOfRefusal, SENDING } from "../../shared/sending";
-import { AUTO_REPLY_RIGHT, type Standing, standingOf } from "../auth/standing";
 import { type SendEmailParams, sendEmail } from "../email-sender";
+import type { MailEnv as Env } from "../env";
 import { SenderValidationError, validateSender } from "../lib/email-helpers";
 import { fits, fromStored, isAutomatic, type StoredMessage } from "../lib/outgoing-message";
-import type { Env } from "../types";
+import { AUTO_REPLY_RIGHT, type Standing, standingOf } from "../standing";
 import * as autoReply from "./auto-reply";
 import { type FileRow, fileKey, storedFiles } from "./drafts";
 import * as known from "./known";

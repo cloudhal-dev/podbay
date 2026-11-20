@@ -18,6 +18,7 @@ import { log } from "@podbay/platform/log";
 import { type Tool, tool } from "ai";
 import { z } from "zod";
 import { FOLDER_TOOL_DESCRIPTION, Folders } from "../../shared/folders";
+import type { MailEnv as Env } from "../env";
 import {
 	toolDiscardDraft,
 	toolDraftEmail,
@@ -31,7 +32,6 @@ import {
 	toolMoveEmail,
 	toolSearchEmails,
 } from "../lib/tools";
-import type { Env } from "../types";
 
 /** What a draft tool tells the model after it saved a draft. */
 export const DRAFT_SAVED_MESSAGE =

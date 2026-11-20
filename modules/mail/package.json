@@ -9,5 +9,15 @@
 		"./worker": "./worker/index.ts",
 		"./app": "./app/index.ts",
 		"./shared": "./shared/index.ts"
+	},
+	"dependencies": {
+		"@cloudflare/ai-chat": "catalog:",
+		"@modelcontextprotocol/server": "catalog:",
+		"agents": "catalog:",
+		"ai": "catalog:",
+		"drizzle-orm": "catalog:",
+		"hono": "catalog:",
+		"postal-mime": "catalog:",
+		"zod": "catalog:"
 	}
 }

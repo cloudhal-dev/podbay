@@ -20,7 +20,7 @@ A fact is anything Cloudflare decides and Podbay depends on:
 	"pageUpdated": "2026-10-30",
 	"verifiedAt": "2026-11-17",
 	"evidence": "Configure a `send_email` binding in your Wrangler configuration file to enable email sending:",
-	"code": ["wrangler.jsonc", "workers/email-sender.ts"],
+	"code": ["wrangler.jsonc", "modules/mail/worker/email-sender.ts"],
 	"note": "Optional. Where the page is narrower than the code assumes, or disagrees with it."
 }
 ```

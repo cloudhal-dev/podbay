@@ -2,10 +2,10 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { useKumoToastManager } from "@cloudflare/kumo";
-import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 // Types only: the schema of the request stays in the Worker's bundle (shared/bulk.ts).
-import type { BulkChange, BulkFilter, BulkMove, BulkUnit } from "shared/bulk";
-import { Folders } from "shared/folders";
+import type { BulkChange, BulkFilter, BulkMove, BulkUnit } from "@podbay/mail/shared";
+import { Folders } from "@podbay/mail/shared";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useConfirm } from "~/components/Confirm";
 import { useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";

@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getSnippetText, htmlToPlainText, stripHtml } from "../../app/lib/utils.ts";
-import { htmlToText } from "../../shared/html-text.ts";
-import { buildQuotedReplyBlock, stripHtmlToText } from "../../workers/lib/email-helpers.ts";
+import { htmlToText } from "../../modules/mail/shared/html-text.ts";
+import {
+	buildQuotedReplyBlock,
+	stripHtmlToText,
+} from "../../modules/mail/worker/lib/email-helpers.ts";
 
 describe("htmlToText", () => {
 	it("keeps the text and drops the tags", () => {

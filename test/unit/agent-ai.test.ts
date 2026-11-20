@@ -8,8 +8,8 @@ import {
 	isPromptInjection,
 	MIN_SCAN_CHARS,
 	verifyDraft,
-} from "../../workers/lib/ai.ts";
-import { MODELS } from "../../workers/lib/models.ts";
+} from "../../modules/mail/worker/lib/ai.ts";
+import { MODELS } from "../../modules/mail/worker/lib/models.ts";
 import { FakeAi, messageOf } from "../helpers/fake-ai.ts";
 
 const BODY = "<p>Hello, could you send me the invoice for March? Thanks, Dana</p>";

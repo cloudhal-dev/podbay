@@ -1,7 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { MAIL_FRAME_SCRIPT } from "../../shared/mail-frame.ts";
+import { MAIL_FRAME_SCRIPT } from "../../modules/mail/shared/mail-frame.ts";
 /**
  * Tier 6: the response headers and the content policies, in a real browser (rules S4, S11).
  */

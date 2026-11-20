@@ -3,7 +3,7 @@ import {
 	headerFilename,
 	STORAGE_NAME_BYTES,
 	storageFilename,
-} from "../../workers/lib/filenames.ts";
+} from "../../modules/mail/worker/lib/filenames.ts";
 
 describe("storageFilename", () => {
 	it("keeps an ordinary name", () => {

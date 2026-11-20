@@ -5,8 +5,8 @@
 
 import { LayerDialog } from "@cloudflare/kumo";
 import { FileIcon, ImageIcon, PaperclipIcon, WarningIcon } from "@phosphor-icons/react";
+import { type AttachmentRisk, attachmentRisk, isShowableImage } from "@podbay/mail/shared";
 import { useState } from "react";
-import { type AttachmentRisk, attachmentRisk, isShowableImage } from "shared/attachment-risk";
 import { plural, t } from "~/i18n";
 import { attachmentUrl, downloadAcknowledged } from "~/lib/attachments";
 import { inlineImages } from "~/lib/inline-images";

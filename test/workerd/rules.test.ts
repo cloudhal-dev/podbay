@@ -15,9 +15,12 @@
  */
 import { env } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { RULE_LIMITS, type RulesAnswer } from "../../shared/rules.ts";
+import { RULE_LIMITS, type RulesAnswer } from "../../modules/mail/shared/rules.ts";
+import {
+	applyMigrations,
+	mailboxMigrations,
+} from "../../modules/mail/worker/durableObject/migrations.ts";
 import { ROUTE_TABLE } from "../../workers/auth/route-table.ts";
-import { applyMigrations, mailboxMigrations } from "../../workers/durableObject/migrations.ts";
 import { json, mime } from "./helpers.ts";
 import {
 	as,

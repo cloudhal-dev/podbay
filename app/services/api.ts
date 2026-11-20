@@ -4,17 +4,21 @@
 // Modified by the Podbay contributors.
 
 import type {
+	AutoReply,
+	AutoReplyAnswer,
+	BlockedSender,
 	BulkChange,
 	BulkCountAnswer,
 	BulkFilter,
 	BulkStepAnswer,
 	BulkUndoAnswer,
 	BulkUnit,
-} from "shared/bulk";
-import type { KnownAddressesAnswer } from "shared/known-addresses";
-import type { OriginalAnswer } from "shared/original";
-import type { AutoReply, AutoReplyAnswer, BlockedSender, Rule, RulesAnswer } from "shared/rules";
-import type { SendAnswer } from "shared/sending";
+	KnownAddressesAnswer,
+	OriginalAnswer,
+	Rule,
+	RulesAnswer,
+	SendAnswer,
+} from "@podbay/mail/shared";
 import { t } from "~/i18n";
 import type {
 	AccessKey,

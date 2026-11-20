@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { LIST_ORDERS } from "../../shared/list-order.ts";
+import { LIST_ORDERS } from "../../modules/mail/shared/list-order.ts";
 import {
 	conversationOrderSql,
 	messageOrderSql,
 	parseListOrder,
-} from "../../workers/lib/list-options.ts";
+} from "../../modules/mail/worker/lib/list-options.ts";
 
 describe("the order of a list (ADR-0014)", () => {
 	it.each([...LIST_ORDERS])("takes %s", (order) => {

@@ -2,10 +2,10 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Banner, Button, LayerDialog, Loader, Tabs, useKumoToastManager } from "@cloudflare/kumo";
+import { Folders } from "@podbay/mail/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-import { Folders } from "shared/folders";
 import { useFreshProof } from "~/components/FreshProof";
 import { plural, t } from "~/i18n";
 import { rich } from "~/i18n/rich";

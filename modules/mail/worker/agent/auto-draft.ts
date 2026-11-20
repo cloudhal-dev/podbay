@@ -15,10 +15,10 @@
 import { errorFields, log } from "@podbay/platform/log";
 import { generateText, type LanguageModel, stepCountIs } from "ai";
 import { Folders } from "../../shared/folders";
+import type { MailEnv as Env } from "../env";
 import { isPromptInjectionText, verifyDraft } from "../lib/ai";
 import { getMailboxStub, stripHtmlToText, textToHtml } from "../lib/email-helpers";
 import type { EmailFull, EmailMetadata } from "../lib/schemas";
-import type { Env } from "../types";
 import { asData, DATA_CLOSE, DATA_OPEN } from "./prompt";
 import { createAgentTools, DRAFT_TOOL_NAMES, isSavedDraft } from "./tools";
 

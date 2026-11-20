@@ -286,7 +286,9 @@ describe("the browser's copy and the account's document", () => {
 describe("where the schema is loaded", () => {
 	it("keeps the schema library out of the app: the app never loads the strict half", () => {
 		expect(readFileSync("shared/choices.ts", "utf8")).not.toMatch(/from "zod"/);
-		expect(readFileSync("shared/known-addresses.ts", "utf8")).not.toMatch(/from "zod"/);
+		expect(readFileSync("modules/mail/shared/known-addresses.ts", "utf8")).not.toMatch(
+			/from "zod"/,
+		);
 		for (const file of sources("app")) {
 			expect(readFileSync(file, "utf8"), file).not.toContain("choices-schema");
 		}

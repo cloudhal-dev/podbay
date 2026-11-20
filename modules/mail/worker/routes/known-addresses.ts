@@ -15,14 +15,14 @@
  * calls any of this.
  */
 import { Hono } from "hono";
+import type { ApiContext } from "../../../../workers/auth/middleware";
+import { writeAudit } from "../../../../workers/auth/store";
 import {
 	isKnownId,
 	KNOWN_LIMITS,
 	type KnownAddressesAnswer,
 	typedForCompletion,
 } from "../../shared/known-addresses";
-import type { ApiContext } from "../auth/middleware";
-import { writeAudit } from "../auth/store";
 
 const M = "/api/v1/mailboxes/:mailboxId";
 

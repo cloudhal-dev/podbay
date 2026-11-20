@@ -4,10 +4,10 @@
 /** A person's own keys for programs: list, create (the token is shown once), revoke. */
 import { Hono } from "hono";
 import { z } from "zod";
-import { createKey, KEY_ACCESS, listKeys, revokeKey } from "../auth/keys";
-import type { ApiContext } from "../auth/middleware";
-import { mailboxesOf } from "../auth/store";
-import { mailboxAddressFor } from "../lib/inbound";
+import { createKey, KEY_ACCESS, listKeys, revokeKey } from "../../../../workers/auth/keys";
+import type { ApiContext } from "../../../../workers/auth/middleware";
+import { mailboxesOf } from "../../../../workers/auth/store";
+import { mailboxAddressFor } from "../../shared/inbound";
 
 const CreateBody = z.object({
 	name: z.string().trim().min(1).max(80),

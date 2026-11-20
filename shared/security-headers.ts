@@ -11,7 +11,7 @@
  * - everything the Worker answers itself (the API, attachments, the MCP endpoint):
  *   `API_HEADERS`. None of it is a page, so its policy allows nothing at all.
  */
-import { MAIL_FRAME_SCRIPT_HASH } from "./mail-frame.ts";
+import { MAIL_FRAME_SCRIPT_HASH } from "@podbay/mail/shared";
 
 /**
  * The content policy of the app's pages.

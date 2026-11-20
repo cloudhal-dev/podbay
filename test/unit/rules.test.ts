@@ -21,9 +21,9 @@ import {
 	newRuleId,
 	RULE_LIMITS,
 	shownRule,
-} from "../../shared/rules.ts";
-import { parseRules, parseSender } from "../../shared/rules-schema.ts";
-import { factsOfParsed } from "../../workers/lib/rule-facts.ts";
+} from "../../modules/mail/shared/rules.ts";
+import { parseRules, parseSender } from "../../modules/mail/shared/rules-schema.ts";
+import { factsOfParsed } from "../../modules/mail/worker/lib/rule-facts.ts";
 
 const facts = (over: Partial<MessageFacts> = {}): MessageFacts =>
 	factsOf({

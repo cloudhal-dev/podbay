@@ -14,10 +14,10 @@ import { errorFields, log } from "@podbay/platform/log";
  * request travels on, and the object keeps neither a session nor a role.
  */
 import { Hono } from "hono";
-import type { ApiContext } from "../auth/middleware";
-import type { MailboxDO } from "../durableObject";
+import type { ApiContext } from "../../../../workers/auth/middleware";
+import type { MailboxDO } from "../durableObject/index";
 import { liveRequest } from "../durableObject/live";
-import type { Env } from "../types";
+import type { MailEnv as Env } from "../env";
 
 export const live = new Hono<ApiContext>();
 

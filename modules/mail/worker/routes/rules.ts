@@ -21,12 +21,12 @@
  * rules does not know. No tool of the assistant or of MCP calls any of this.
  */
 import { Hono } from "hono";
+import type { ApiContext } from "../../../../workers/auth/middleware";
+import { writeAudit } from "../../../../workers/auth/store";
 import { type AutoReplyAnswer, RULE_CODES, RULE_LIMITS } from "../../shared/rules";
 import { parseAutoReply, parseRules, parseSender } from "../../shared/rules-schema";
-import type { ApiContext } from "../auth/middleware";
-import { AUTO_REPLY_RIGHT, standingOf } from "../auth/standing";
-import { writeAudit } from "../auth/store";
 import { bodyWithin } from "../lib/body";
+import { AUTO_REPLY_RIGHT, standingOf } from "../standing";
 
 const M = "/api/v1/mailboxes/:mailboxId";
 
