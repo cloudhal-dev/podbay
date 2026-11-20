@@ -6,7 +6,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import SignInSteps from "~/components/SignInSteps";
 import { t } from "~/i18n";
 import { rich } from "~/i18n/rich";
-import { useSetupStatus } from "~/lib/session";
+import { sessionChanged, useSetupStatus } from "~/lib/session";
 
 export default function SignInRoute() {
 	const navigate = useNavigate();
@@ -33,7 +33,7 @@ export default function SignInRoute() {
 				)}
 				<SignInSteps
 					onDone={async () => {
-						await queryClient.invalidateQueries();
+						await sessionChanged(queryClient);
 						await navigate({ to: "/" });
 					}}
 				/>

@@ -204,3 +204,43 @@ test("a person is invited, adds an authenticator app and a passkey, and is asked
 
 	await context.close();
 });
+
+/**
+ * #140: a browser that has just opened the sign-in page asks who it is, and that question can
+ * still be on its way when the person signs in. Its answer is "nobody", for the session before.
+ * Here the answer to the first question is held until the sign-in has been answered, then let
+ * go: the person must be signed in all the same, and asked again after the sign-in.
+ */
+test("a sign-in is not undone by the answer to a 'who am I' asked before it", async ({
+	page,
+	app,
+}) => {
+	let release = () => {};
+	const held = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	let asked = 0;
+	await page.route(/\/api\/v1\/me$/, async (route) => {
+		asked += 1;
+		if (asked > 1) return route.continue();
+		// The server answers the first question now, before the sign-in ("nobody"); the page
+		// gets that answer only after the sign-in has been answered.
+		const before = await route.fetch();
+		await held;
+		await route.fulfill({ response: before });
+	});
+	await page.goto("/sign-in");
+	await expect.poll(() => asked, "the page asked who it is").toBeGreaterThan(0);
+	await page.getByLabel("Email").fill(app.account.email);
+	await page.getByLabel("Password").fill(app.account.password);
+	const signedIn = page.waitForResponse(
+		(res) => res.url().includes("/api/auth/sign-in/email") && res.status() === 200,
+	);
+	await page.getByRole("button", { name: "Sign in" }).click();
+	await signedIn;
+	// The first question, sent before the sign-in, is answered only now.
+	release();
+	await expect(page.getByText(`Signed in as ${app.account.email}`)).toBeVisible();
+	expect(asked, "who am I was asked again after the sign-in").toBeGreaterThan(1);
+	await page.unroute(/\/api\/v1\/me$/);
+});
