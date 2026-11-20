@@ -15,15 +15,15 @@
  */
 import { env, SELF } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { MCP_TOOLS } from "../../shared/mcp-tools.ts";
+import { MCP_TOOLS } from "../../modules/mail/shared/mcp-tools.ts";
 import {
 	AGENT_TOOL_NAMES,
 	AgentSendRefused,
 	RULE_METHODS,
 	withoutSend,
-} from "../../workers/agent/tools.ts";
-import { getMailboxStub } from "../../workers/lib/email-helpers.ts";
-import { MCP_TOOL_NAMES } from "../../workers/mcp/server.ts";
+} from "../../modules/mail/worker/agent/tools.ts";
+import { getMailboxStub } from "../../modules/mail/worker/lib/email-helpers.ts";
+import { MCP_TOOL_NAMES } from "../../modules/mail/worker/mcp/server.ts";
 import type { Env } from "../../workers/types.ts";
 import { Browser, createMailbox, json, migrate, ORIGIN, setupOwner } from "../workerd/helpers.ts";
 import { type FakeSender, fakeSender, inMailbox, letLeave } from "../workerd/sending-helpers.ts";

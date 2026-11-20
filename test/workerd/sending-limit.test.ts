@@ -9,7 +9,7 @@
  */
 import { runInDurableObject } from "cloudflare:test";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { sendRefusal } from "../../workers/durableObject/sending.ts";
+import { sendRefusal } from "../../modules/mail/worker/durableObject/sending.ts";
 import { Browser, createMailbox, migrate, setupOwner, testEnv } from "./helpers.ts";
 
 const MAILBOX = "limits@example.com";

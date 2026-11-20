@@ -21,7 +21,7 @@ import {
 	PERSON_CHOICES,
 	type PersonChoices,
 } from "@podbay/contract/choices";
-import { MAIL_CHOICES, type MailChoices } from "./mail-choices";
+import { MAIL_CHOICES, type MailChoices } from "@podbay/mail/shared";
 
 export {
 	APPEARANCES,
@@ -42,7 +42,7 @@ export {
 	type PageSize,
 	READING_PANES,
 	type ReadingPane,
-} from "./mail-choices";
+} from "@podbay/mail/shared";
 
 export type Choices = MailChoices & PersonChoices;
 export type ChoiceKey = keyof Choices;

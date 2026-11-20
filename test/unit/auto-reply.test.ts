@@ -12,8 +12,8 @@ import {
 	type ReplyQuestion,
 	replyOwed,
 	replySender,
-} from "../../shared/rules.ts";
-import { parseAutoReply } from "../../shared/rules-schema.ts";
+} from "../../modules/mail/shared/rules.ts";
+import { parseAutoReply } from "../../modules/mail/shared/rules-schema.ts";
 
 const REPLY: AutoReply = {
 	isEnabled: true,

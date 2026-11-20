@@ -3,22 +3,19 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { features, handleMcp, MCP_ROUTE, receiveEmail } from "@podbay/mail/worker";
 import { errorFields, log } from "@podbay/platform/log";
 import { routeAgentRequest } from "agents";
 import { Hono } from "hono";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { API_CACHE_CONTROL, API_HEADERS } from "../shared/security-headers";
-import { receiveEmail } from "./arrival";
 import { callerForToken, touchKey } from "./auth/keys";
 import { mailboxDecision, sameOrigin } from "./auth/middleware";
 import { app as apiApp } from "./index";
-import { features } from "./lib/features";
 import { secret } from "./lib/secrets";
-import { handleMcp, MCP_ROUTE } from "./mcp/server";
 import type { Env } from "./types";
 
-export { EmailAgent } from "./agent";
-export { MailboxDO } from "./durableObject";
+export { EmailAgent, MailboxDO } from "@podbay/mail/worker";
 
 function getAccessUrls(teamDomain: string) {
 	const certsPath = "/cdn-cgi/access/certs";
@@ -92,7 +89,7 @@ app.use("*", async (c, next) => {
 
 // The MCP endpoint. Off unless MCP_ENABLED is "true". A request is authenticated by its own key
 // (`Authorization: Bearer pbk_…`), never by a browser session, and every tool call checks the
-// mailbox against that key and its owner's membership (workers/mcp/server.ts).
+// mailbox against that key and its owner's membership (modules/mail/worker/mcp/server.ts).
 app.all(MCP_ROUTE, async (c) => {
 	if (!features(c.env).mcp) return c.json({ error: "Not found" }, 404);
 	const header = c.req.header("authorization") ?? "";
@@ -152,7 +149,7 @@ export default {
 			await receiveEmail(event, env, ctx);
 		} catch (e) {
 			log.error("inbound.failed", errorFields(e));
-			// Thrown only before the original is stored (workers/arrival.ts): Podbay has not
+			// Thrown only before the original is stored (modules/mail/worker/arrival.ts): Podbay has not
 			// taken the message, and the sending server must not be told that it has.
 			throw e;
 		}

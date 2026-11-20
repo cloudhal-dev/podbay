@@ -8,8 +8,8 @@
  * module turns it into pieces of plain text and marks, and the one component that draws them
  * puts each into a text node. Nothing here makes markup, a link or an address to load.
  */
-import type { Authentication } from "shared/original";
-import { t } from "../i18n";
+import type { Authentication } from "@podbay/mail/shared";
+import { t } from "../i18n/index";
 
 /** A run of the original as it is drawn: plain text, or a mark that stands for characters. */
 export type OriginalPiece =

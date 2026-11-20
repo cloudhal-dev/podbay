@@ -1,8 +1,8 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import type { AutoReply, AutoReplyAnswer, Rule, RulesAnswer } from "@podbay/mail/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AutoReply, AutoReplyAnswer, Rule, RulesAnswer } from "shared/rules";
 import api from "~/services/api";
 import { queryKeys } from "./keys";
 

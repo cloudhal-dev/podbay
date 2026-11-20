@@ -14,7 +14,7 @@ import {
 	MAIL_FRAME_SANDBOX,
 	MAIL_FRAME_SCRIPT,
 	MAIL_FRAME_SCRIPT_HASH,
-} from "../../shared/mail-frame.ts";
+} from "../../modules/mail/shared/mail-frame.ts";
 import {
 	API_CONTENT_POLICY,
 	PAGE_CONTENT_POLICY_DIRECTIVES as PAGE,

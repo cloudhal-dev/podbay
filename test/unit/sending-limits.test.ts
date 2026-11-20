@@ -4,8 +4,8 @@ import {
 	MAX_MESSAGE_BYTES,
 	MAX_RECIPIENTS,
 	messageBytes,
-} from "../../shared/sending-limits.ts";
-import { SendEmailRequestSchema } from "../../workers/lib/schemas.ts";
+} from "../../modules/mail/shared/sending-limits.ts";
+import { SendEmailRequestSchema } from "../../modules/mail/worker/lib/schemas.ts";
 
 const message = (extra: Record<string, unknown> = {}) => ({
 	to: "someone@elsewhere.test",

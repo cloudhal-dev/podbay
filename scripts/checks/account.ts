@@ -6,7 +6,8 @@
 import { existsSync } from "node:fs";
 import { type Check, read, repoFiles } from "./lib.ts";
 
-const SHIPPED = /^(workers|app|shared)\/.*\.(ts|tsx)$|^wrangler[^/]*\.(jsonc|json|toml)$/;
+const SHIPPED =
+	/^(workers|app|shared|packages|modules)\/.*\.(ts|tsx)$|^wrangler[^/]*\.(jsonc|json|toml)$/;
 const API_HOST = /\bapi\.cloudflare\.com\b/i;
 const CREDENTIAL_NAME =
 	/\b(?:CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CF_API_TOKEN|CF_API_KEY|CF_TOKEN)\b/;

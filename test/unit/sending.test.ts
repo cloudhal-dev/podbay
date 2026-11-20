@@ -20,8 +20,7 @@ import {
 	reasonWords,
 	timeRefusal,
 } from "../../app/lib/sending-words.ts";
-import { LEAVING, senderProblems } from "../../scripts/checks/sender.ts";
-import { plainTextOf } from "../../shared/html-text.ts";
+import { plainTextOf } from "../../modules/mail/shared/html-text.ts";
 import {
 	DEFAULT_UNDO_SECONDS,
 	NOT_NOW_CODES,
@@ -33,10 +32,23 @@ import {
 	SUBMISSION_STATES,
 	UNDO_SECONDS,
 	whenToLeave,
-} from "../../shared/sending.ts";
-import { MAX_ATTACHMENTS, MAX_MESSAGE_BYTES, MAX_RECIPIENTS } from "../../shared/sending-limits.ts";
-import { fits, fromOf, fromStored, headerList } from "../../workers/lib/outgoing-message.ts";
-import { RescheduleRequestSchema, SendEmailRequestSchema } from "../../workers/lib/schemas.ts";
+} from "../../modules/mail/shared/sending.ts";
+import {
+	MAX_ATTACHMENTS,
+	MAX_MESSAGE_BYTES,
+	MAX_RECIPIENTS,
+} from "../../modules/mail/shared/sending-limits.ts";
+import {
+	fits,
+	fromOf,
+	fromStored,
+	headerList,
+} from "../../modules/mail/worker/lib/outgoing-message.ts";
+import {
+	RescheduleRequestSchema,
+	SendEmailRequestSchema,
+} from "../../modules/mail/worker/lib/schemas.ts";
+import { LEAVING, senderProblems } from "../../scripts/checks/sender.ts";
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -462,20 +474,20 @@ describe("the static check: mail leaves by one function", () => {
 	it("passes for the code as it is", () => {
 		expect(senderProblems(LEAVING, leaving)).toEqual([]);
 		for (const file of [
-			"workers/lib/outgoing.ts",
-			"workers/routes/sending.ts",
-			"workers/durableObject/index.ts",
-			"workers/durableObject/submissions.ts",
-			"workers/durableObject/alarm.ts",
-			"workers/email-sender.ts",
-			"workers/agent/tools.ts",
+			"modules/mail/worker/lib/outgoing.ts",
+			"modules/mail/worker/routes/sending.ts",
+			"modules/mail/worker/durableObject/index.ts",
+			"modules/mail/worker/durableObject/submissions.ts",
+			"modules/mail/worker/durableObject/alarm.ts",
+			"modules/mail/worker/email-sender.ts",
+			"modules/mail/worker/agent/tools.ts",
 		]) {
 			expect(senderProblems(file, readFileSync(file, "utf8")), file).toEqual([]);
 		}
 	});
 
 	it("refuses a second reader of the send binding, a second caller of the adapter or of the handover", () => {
-		const elsewhere = "workers/lib/outgoing.ts";
+		const elsewhere = "modules/mail/worker/lib/outgoing.ts";
 		expect(senderProblems(elsewhere, "await c.env.EMAIL.send(message);")).toHaveLength(1);
 		expect(senderProblems(elsewhere, "await sendEmail(binding, message);")).toHaveLength(1);
 		expect(
@@ -500,8 +512,8 @@ describe("the static check: mail leaves by one function", () => {
 		expect(senderProblems("test/unit/x.test.ts", "await env.EMAIL.send(message);")).toEqual([]);
 		expect(senderProblems("app/x.ts", "await sendEmail(a, b);")).toEqual([]);
 		// The tools' environment names the binding to shadow it, and reads none.
-		expect(senderProblems("workers/agent/tools.ts", "EMAIL: { value: REFUSING_SENDER }")).toEqual(
-			[],
-		);
+		expect(
+			senderProblems("modules/mail/worker/agent/tools.ts", "EMAIL: { value: REFUSING_SENDER }"),
+		).toEqual([]);
 	});
 });

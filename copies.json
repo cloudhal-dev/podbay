@@ -269,7 +269,7 @@
 					"status": "modified"
 				},
 				{
-					"path": "shared/folders.ts",
+					"path": "modules/mail/shared/folders.ts",
 					"upstream": "shared/folders.ts",
 					"status": "modified"
 				},
@@ -294,7 +294,7 @@
 					"status": "modified"
 				},
 				{
-					"path": "workers/agent/index.ts",
+					"path": "modules/mail/worker/agent/index.ts",
 					"upstream": "workers/agent/index.ts",
 					"status": "modified"
 				},
@@ -304,42 +304,42 @@
 					"status": "modified"
 				},
 				{
-					"path": "workers/db/schema.ts",
+					"path": "modules/mail/worker/db/schema.ts",
 					"upstream": "workers/db/schema.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/durableObject/index.ts",
+					"path": "modules/mail/worker/durableObject/index.ts",
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/durableObject/migrations.ts",
+					"path": "modules/mail/worker/durableObject/migrations.ts",
 					"upstream": "workers/durableObject/migrations.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/email-sender.ts",
+					"path": "modules/mail/worker/email-sender.ts",
 					"upstream": "workers/email-sender.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/index.ts",
+					"path": "modules/mail/worker/router.ts",
 					"upstream": "workers/index.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/lib/ai.ts",
+					"path": "modules/mail/worker/lib/ai.ts",
 					"upstream": "workers/lib/ai.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/lib/attachments.ts",
+					"path": "modules/mail/worker/lib/attachments.ts",
 					"upstream": "workers/lib/attachments.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/lib/email-helpers.ts",
+					"path": "modules/mail/worker/lib/email-helpers.ts",
 					"upstream": "workers/lib/email-helpers.ts",
 					"status": "modified"
 				},
@@ -349,12 +349,12 @@
 					"status": "removed"
 				},
 				{
-					"path": "workers/lib/schemas.ts",
+					"path": "modules/mail/worker/lib/schemas.ts",
 					"upstream": "workers/lib/schemas.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/lib/tools.ts",
+					"path": "modules/mail/worker/lib/tools.ts",
 					"upstream": "workers/lib/tools.ts",
 					"status": "modified"
 				},
@@ -364,7 +364,7 @@
 					"status": "removed"
 				},
 				{
-					"path": "workers/routes/reply-forward.ts",
+					"path": "modules/mail/worker/routes/reply-forward.ts",
 					"upstream": "workers/routes/reply-forward.ts",
 					"status": "modified"
 				},
@@ -379,40 +379,40 @@
 					"status": "modified"
 				},
 				{
-					"path": "workers/agent/tools.ts",
+					"path": "modules/mail/worker/agent/tools.ts",
 					"upstream": "workers/agent/index.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/agent/auto-draft.ts",
+					"path": "modules/mail/worker/agent/auto-draft.ts",
 					"upstream": "workers/agent/index.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/durableObject/shapes.ts",
+					"path": "modules/mail/worker/durableObject/shapes.ts",
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified"
 				},
 				{
-					"path": "workers/arrival.ts",
+					"path": "modules/mail/worker/arrival.ts",
 					"upstream": "workers/index.ts",
 					"status": "modified",
 					"note": "Holds the inbound handler moved out of index.ts: the seed's reading of the message's fields, its threading lookups and the call that wakes the assistant, inside Podbay's own order of arrival (ADR-0015)."
 				},
 				{
-					"path": "workers/durableObject/threads.ts",
+					"path": "modules/mail/worker/durableObject/threads.ts",
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified",
 					"note": "Holds the subject matching moved out of index.ts, beside Podbay's own matching by Message-ID."
 				},
 				{
-					"path": "workers/durableObject/search.ts",
+					"path": "modules/mail/worker/durableObject/search.ts",
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified",
 					"note": "Holds the search conditions, the search list and its count, moved out of index.ts; a search that names no place leaves out Spam and Trash."
 				},
 				{
-					"path": "workers/durableObject/conversations.ts",
+					"path": "modules/mail/worker/durableObject/conversations.ts",
 					"upstream": "workers/durableObject/index.ts",
 					"status": "modified",
 					"note": "Holds the list of a place by conversation and its count, moved out of index.ts unchanged when ADR-0016 was built, so that the mailbox object's file stays under its size."

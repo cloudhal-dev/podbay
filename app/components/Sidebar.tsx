@@ -16,9 +16,9 @@ import {
 	TrayIcon,
 	WarningOctagonIcon,
 } from "@phosphor-icons/react";
+import { Folders } from "@podbay/mail/shared";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Folders } from "shared/folders";
 import { useConversationActions } from "~/hooks/useConversationActions";
 import { useDropTarget } from "~/hooks/useDropTarget";
 import { useUIStore } from "~/hooks/useUIStore";

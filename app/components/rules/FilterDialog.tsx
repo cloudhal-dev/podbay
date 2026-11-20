@@ -2,7 +2,6 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Checkbox, Input, Label, LayerDialog, Select } from "@cloudflare/kumo";
-import { type FormEvent, useEffect, useId, useState } from "react";
 import {
 	RULE_LIMITS,
 	type Rule,
@@ -10,7 +9,8 @@ import {
 	type RuleConditions,
 	type RuleMatch,
 	type RulePlace,
-} from "shared/rules";
+} from "@podbay/mail/shared";
+import { type FormEvent, useEffect, useId, useState } from "react";
 import { t } from "~/i18n";
 import { labelDot } from "~/lib/labels";
 import { useLabels } from "~/queries/labels";

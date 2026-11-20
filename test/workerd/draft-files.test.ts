@@ -13,7 +13,10 @@
  */
 import { env, runInDurableObject } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES } from "../../shared/sending-limits.ts";
+import {
+	MAX_ATTACHMENTS,
+	MAX_ATTACHMENTS_BYTES,
+} from "../../modules/mail/shared/sending-limits.ts";
 import {
 	Browser,
 	createMailbox,

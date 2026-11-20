@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { SenderValidationError, validateSender } from "../../workers/lib/email-helpers.ts";
+import {
+	SenderValidationError,
+	validateSender,
+} from "../../modules/mail/worker/lib/email-helpers.ts";
 
 describe("validateSender", () => {
 	it("accepts the mailbox's own address, case-insensitively", () => {

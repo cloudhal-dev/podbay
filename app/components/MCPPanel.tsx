@@ -4,8 +4,8 @@
 // Modified by the Podbay contributors.
 
 import { PencilSimpleIcon, PlugsIcon, WrenchIcon } from "@phosphor-icons/react";
+import { MCP_TOOLS } from "@podbay/mail/shared";
 import { useParams } from "@tanstack/react-router";
-import { MCP_TOOLS } from "shared/mcp-tools";
 import { t } from "~/i18n";
 import AccessKeys from "./AccessKeys";
 import CopyButton from "./CopyButton";

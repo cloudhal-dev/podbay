@@ -9,17 +9,20 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { MODELS } from "../../workers/lib/models.ts";
+import { MODELS } from "../../modules/mail/worker/lib/models.ts";
 
 const ROOT = join(import.meta.dirname, "../..");
-const MODELS_FILE = "workers/lib/models.ts";
+const MODELS_FILE = "modules/mail/worker/lib/models.ts";
 
 function workerSources(): { path: string; source: string }[] {
-	const dir = join(ROOT, "workers");
-	return readdirSync(dir, { recursive: true, encoding: "utf8" })
+	return ["workers", "modules/mail/worker"]
+		.flatMap((root) =>
+			readdirSync(join(ROOT, root), { recursive: true, encoding: "utf8" }).map((file) =>
+				join(ROOT, root, file),
+			),
+		)
 		.filter((file) => /\.tsx?$/.test(file))
-		.map((file) => {
-			const full = join(dir, file);
+		.map((full) => {
 			return {
 				path: relative(ROOT, full).replaceAll("\\", "/"),
 				source: readFileSync(full, "utf8"),

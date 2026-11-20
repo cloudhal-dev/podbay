@@ -81,14 +81,15 @@ describe("the routes that need fresh proof", () => {
 		// Every way of reading it: a property, an index, `get`, and taking it apart from `c.var`.
 		const read =
 			/\bvar\s*(?:\.\s*fresh\b|\[\s*["'`]fresh["'`]\s*\])|\bget\(\s*["'`]fresh["'`]\s*\)|\{[^}]*\bfresh\b[^}]*\}\s*=\s*\w+\.var\b/g;
-		const readers = readdirSync("workers", { recursive: true, encoding: "utf8" })
-			.filter((name) => name.endsWith(".ts") && name !== "auth/middleware.ts")
-			.flatMap((name) =>
-				[...readFileSync(`workers/${name}`, "utf8").matchAll(read)].map(() => name),
-			);
+		const readers = ["workers", "modules/mail/worker"]
+			.flatMap((root) =>
+				readdirSync(root, { recursive: true, encoding: "utf8" }).map((name) => `${root}/${name}`),
+			)
+			.filter((file) => file.endsWith(".ts") && file !== "workers/auth/middleware.ts")
+			.flatMap((file) => [...readFileSync(file, "utf8").matchAll(read)].map(() => file));
 		// One read, in the handler of the one route marked sensitive.
-		expect(readers).toEqual(["routes/mailboxes.ts"]);
-		expect(readFileSync("workers/routes/mailboxes.ts", "utf8")).toMatch(
+		expect(readers).toEqual(["modules/mail/worker/routes/mailboxes.ts"]);
+		expect(readFileSync("modules/mail/worker/routes/mailboxes.ts", "utf8")).toMatch(
 			/mailboxes\.put\("\/api\/v1\/mailboxes\/:mailboxId"[\s\S]*?!c\.var\.fresh[\s\S]*?\n\}\);/,
 		);
 		for (const sample of [

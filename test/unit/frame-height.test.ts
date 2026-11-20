@@ -14,7 +14,7 @@ import {
 	type FrameReports,
 	MAIL_FRAME_SCRIPT,
 	nextFrameHeight,
-} from "../../shared/mail-frame.ts";
+} from "../../modules/mail/shared/mail-frame.ts";
 
 const fresh = (): FrameReports => ({ counts: new Map() });
 

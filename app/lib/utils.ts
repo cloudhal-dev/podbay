@@ -4,6 +4,7 @@
 // Modified by the Podbay contributors.
 
 import { formatQuotedDate } from "@podbay/i18n/dates";
+import { oneLineTextOf, plainTextOf } from "@podbay/mail/shared";
 /**
  * Shared utility functions used across the frontend.
  *
@@ -11,8 +12,7 @@ import { formatQuotedDate } from "@podbay/i18n/dates";
  * Re-export for backwards compatibility with existing imports.
  */
 import DOMPurify from "dompurify";
-import { oneLineTextOf, plainTextOf } from "shared/html-text";
-import { quoteLanguage, t } from "../i18n";
+import { quoteLanguage, t } from "../i18n/index";
 
 export {
 	formatDetailDate,

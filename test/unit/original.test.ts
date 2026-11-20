@@ -15,7 +15,7 @@ import {
 	MAX_ORIGINAL_BYTES,
 	ORIGINAL_SHOWN_BYTES,
 	originalFileName,
-} from "../../shared/original.ts";
+} from "../../modules/mail/shared/original.ts";
 import {
 	AUTH_RESULTS_MAX,
 	authenticationOf,
@@ -24,7 +24,7 @@ import {
 	platformStatement,
 	RAW_KEY,
 	splitOriginal,
-} from "../../workers/lib/original.ts";
+} from "../../modules/mail/worker/lib/original.ts";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 

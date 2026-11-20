@@ -286,7 +286,9 @@ describe("the browser's copy and the account's document", () => {
 describe("where the schema is loaded", () => {
 	it("keeps the schema library out of the app: the app never loads the strict half", () => {
 		expect(readFileSync("shared/choices.ts", "utf8")).not.toMatch(/from "zod"/);
-		expect(readFileSync("shared/known-addresses.ts", "utf8")).not.toMatch(/from "zod"/);
+		expect(readFileSync("modules/mail/shared/known-addresses.ts", "utf8")).not.toMatch(
+			/from "zod"/,
+		);
 		for (const file of sources("app")) {
 			expect(readFileSync(file, "utf8"), file).not.toContain("choices-schema");
 		}
@@ -295,7 +297,8 @@ describe("where the schema is loaded", () => {
 	it("gives nobody but the person's own two routes a way to the stored choices", () => {
 		// The table is named in its migration, in the store that reads and merges it, and nowhere
 		// else in the Worker: not in the list of people, not in a tool of the assistant or MCP.
-		const naming = sources("workers").filter((file) =>
+		// Mail's Worker side is read too: its code moved out of workers/ (ADR-0018, step 3.1).
+		const naming = [...sources("workers"), ...sources("modules/mail/worker")].filter((file) =>
 			/user_choices|auth\/choices|shared\/choices/.test(readFileSync(file, "utf8")),
 		);
 		expect(naming.sort()).toEqual(["workers/auth/choices.ts", "workers/routes/choices.ts"]);

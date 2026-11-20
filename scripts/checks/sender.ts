@@ -4,18 +4,18 @@
  * caller of the adapter around it; and the handover that function makes has no other caller.
  *
  * - the send binding (`.EMAIL`) is read in one file only;
- * - the adapter (`workers/email-sender.ts`) is called from that file only, and once;
- * - the handover (`handOver` of `workers/durableObject/submissions.ts`) is called from that
+ * - the adapter (`modules/mail/worker/email-sender.ts`) is called from that file only, and once;
+ * - the handover (`handOver` of `modules/mail/worker/durableObject/submissions.ts`) is called from that
  *   file only, and once.
  */
 import { existsSync } from "node:fs";
 import { type Check, read, repoFiles } from "./lib.ts";
 
 /** The one file that lets mail leave. */
-export const LEAVING = "workers/durableObject/leaving.ts";
-const ADAPTER = "workers/email-sender.ts";
-const HANDOVER = "workers/durableObject/submissions.ts";
-const SHIPPED = /^(workers|shared|packages)\/.*\.ts$/;
+export const LEAVING = "modules/mail/worker/durableObject/leaving.ts";
+const ADAPTER = "modules/mail/worker/email-sender.ts";
+const HANDOVER = "modules/mail/worker/durableObject/submissions.ts";
+const SHIPPED = /^(workers|shared|packages|modules)\/.*\.ts$/;
 
 /** Comments are prose about the rule, not code that breaks it. */
 function withoutComments(source: string): string {

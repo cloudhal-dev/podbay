@@ -3,8 +3,8 @@
 
 import { Button, Input, useKumoToastManager } from "@cloudflare/kumo";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "@phosphor-icons/react";
+import { blockedSenderOf, RULE_LIMITS, type Rule } from "@podbay/mail/shared";
 import { type FormEvent, useState } from "react";
-import { blockedSenderOf, RULE_LIMITS, type Rule } from "shared/rules";
 import { useConfirm } from "~/components/Confirm";
 import IconButton from "~/components/IconButton";
 import FilterDialog from "~/components/rules/FilterDialog";

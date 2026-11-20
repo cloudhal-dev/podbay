@@ -27,7 +27,7 @@
  * accident on a call it did not expect.
  */
 
-import { Folders } from "../../shared/folders.ts";
+import { Folders } from "../../modules/mail/shared/folders.ts";
 import type { Env } from "../../workers/types.ts";
 
 export interface FakeAiCall {

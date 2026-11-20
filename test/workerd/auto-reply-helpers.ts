@@ -7,7 +7,7 @@
  * each test, with a send binding of the tests that counts every call.
  */
 import { beforeAll, beforeEach, expect } from "vitest";
-import type { AutoReplyAnswer } from "../../shared/rules.ts";
+import type { AutoReplyAnswer } from "../../modules/mail/shared/rules.ts";
 import { json, mime } from "./helpers.ts";
 import {
 	as,

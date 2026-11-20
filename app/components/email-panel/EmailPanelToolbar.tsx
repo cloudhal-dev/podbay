@@ -25,7 +25,7 @@ import {
 	WarningOctagonIcon,
 	XIcon,
 } from "@phosphor-icons/react";
-import { Folders } from "shared/folders";
+import { Folders } from "@podbay/mail/shared";
 import IconButton from "~/components/IconButton";
 import LabelMenu from "~/components/LabelMenu";
 import MoveMenu from "~/components/MoveMenu";

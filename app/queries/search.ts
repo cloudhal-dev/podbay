@@ -3,8 +3,8 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import type { ListOrder } from "@podbay/mail/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ListOrder } from "shared/list-order";
 import { filterOf, filterParams } from "~/lib/search-filter";
 import { parseSearchQuery } from "~/lib/search-parser";
 import api from "~/services/api";

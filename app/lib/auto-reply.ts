@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import type { AutoReply } from "@podbay/mail/shared";
 /**
  * What the settings screen of the automatic reply shows and what it saves (ADR-0008).
  *
@@ -9,8 +10,7 @@
  * back: whoever presses Save becomes the person on whose standing the reply leaves, and they
  * are made that only for what they saw. A reply with HTML is saved here as its words.
  */
-import { plainTextOf } from "shared/html-text";
-import type { AutoReply } from "shared/rules";
+import { plainTextOf } from "@podbay/mail/shared";
 
 /**
  * The words the screen shows: the text of the reply, or the text of its HTML when it has only

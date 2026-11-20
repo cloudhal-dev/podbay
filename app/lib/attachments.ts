@@ -1,12 +1,12 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { servedContentType } from "@podbay/mail/shared";
 /**
  * Attachments in the app (rule S5): downloading one the reader has acknowledged, and showing
  * the images a message embeds.
  */
 import { useQuery } from "@tanstack/react-query";
-import { servedContentType } from "shared/attachment-risk";
 import { ApiError } from "~/services/api";
 import type { Attachment } from "~/types";
 import {

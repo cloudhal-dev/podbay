@@ -5,16 +5,19 @@
  * - `lintWarnings`: Biome warnings (the seed's debt, listed per file in biome.json overrides)
  * - `consoleCalls`: `console.*` calls outside the log module, per directory
  * - `oversizedFiles`: files above MAX_LINES, with their line counts
+ * - `authDebt`: how many imports of the shell's `workers/auth/` a module's files make, in all
+ *   (`AUTH_DEBT` in `imports.ts` holds the same debt file by file; ADR-0018, step 2.5 pays it)
  *
  *   node scripts/checks/ratchets.ts            check
  *   node scripts/checks/ratchets.ts --update   write the current numbers (only ever lower them)
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
+import { authImports } from "./imports.ts";
 import { type Check, read, readJson, repoFiles } from "./lib.ts";
 
 export const MAX_LINES = 800;
-const SOURCE = /^(app|workers|shared|packages|scripts|test)\/.*\.(ts|tsx)$/;
+const SOURCE = /^(app|workers|shared|packages|modules|scripts|test)\/.*\.(ts|tsx)$/;
 const CONSOLE = /\bconsole\.(log|info|warn|error|debug)\(/g;
 const LOG_MODULE = "packages/platform/log.ts";
 
@@ -22,6 +25,7 @@ interface Ratchets {
 	lintWarnings: number;
 	consoleCalls: number;
 	oversizedFiles: Record<string, number>;
+	authDebt: number;
 }
 
 function lintWarnings(): number {
@@ -44,21 +48,24 @@ function lintWarnings(): number {
 export function measure(): Ratchets {
 	let consoleCalls = 0;
 	const oversizedFiles: Record<string, number> = {};
+	const modules: [string, string][] = [];
 	for (const path of repoFiles()) {
 		if (!SOURCE.test(path) || !existsSync(path)) continue;
 		const text = read(path);
+		if (path.startsWith("modules/")) modules.push([path, text]);
 		const lines = text.split("\n").length;
 		if (lines > MAX_LINES) oversizedFiles[path] = lines;
 		if (path !== LOG_MODULE && !path.startsWith("scripts/") && !path.startsWith("test/")) {
 			consoleCalls += text.match(CONSOLE)?.length ?? 0;
 		}
 	}
-	return { lintWarnings: lintWarnings(), consoleCalls, oversizedFiles };
+	const authDebt = [...authImports(modules).values()].reduce((sum, count) => sum + count, 0);
+	return { lintWarnings: lintWarnings(), consoleCalls, oversizedFiles, authDebt };
 }
 
 export function compare(baseline: Ratchets, now: Ratchets): string[] {
 	const problems: string[] = [];
-	const number = (name: "lintWarnings" | "consoleCalls") => {
+	const number = (name: "lintWarnings" | "consoleCalls" | "authDebt") => {
 		if (now[name] > baseline[name]) {
 			problems.push(`${name} grew from ${baseline[name]} to ${now[name]}`);
 		} else if (now[name] < baseline[name]) {
@@ -67,6 +74,7 @@ export function compare(baseline: Ratchets, now: Ratchets): string[] {
 	};
 	number("lintWarnings");
 	number("consoleCalls");
+	number("authDebt");
 	for (const [path, lines] of Object.entries(now.oversizedFiles)) {
 		const allowed = baseline.oversizedFiles[path];
 		if (allowed === undefined) problems.push(`${path}: ${lines} lines, the limit is ${MAX_LINES}`);

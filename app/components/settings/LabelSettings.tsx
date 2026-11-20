@@ -3,9 +3,9 @@
 
 import { Button } from "@cloudflare/kumo";
 import { PlusIcon } from "@phosphor-icons/react";
+import { LABEL_LIMITS } from "@podbay/mail/shared";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { LABEL_LIMITS } from "shared/labels";
 import { useConfirm } from "~/components/Confirm";
 import LabelDialog from "~/components/LabelDialog";
 import { plural, t } from "~/i18n";

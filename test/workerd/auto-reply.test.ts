@@ -18,7 +18,7 @@
  * Saving it, and the right of the person who saved it, are in `auto-reply-standing.test.ts`.
  */
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { AUTO_REPLY } from "../../shared/rules.ts";
+import { AUTO_REPLY } from "../../modules/mail/shared/rules.ts";
 import {
 	aMailboxThatAnswers,
 	answered,

@@ -1,6 +1,8 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { mailboxAddressFor } from "@podbay/mail/shared";
+import type { MailboxDO } from "@podbay/mail/worker";
 import { errorFields, log } from "@podbay/platform/log";
 /**
  * The guard in front of every API route (rules S1, S2 and S11).
@@ -20,8 +22,6 @@ import { errorFields, log } from "@podbay/platform/log";
  *    session is read from the database too: the flag `fresh` it is given is never the cookie's.
  */
 import { createMiddleware } from "hono/factory";
-import type { MailboxDO } from "../durableObject";
-import { mailboxAddressFor } from "../lib/inbound";
 import type { Env } from "../types";
 import {
 	type Action,

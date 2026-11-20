@@ -16,11 +16,17 @@
  * in `original-routes.test.ts`.
  */
 import { beforeAll, describe, expect, it } from "vitest";
-import { MAX_ORIGINAL_BYTES } from "../../shared/original.ts";
-import { applyMigrations, mailboxMigrations } from "../../workers/durableObject/migrations.ts";
-import { ARRIVAL_STALE_MS, MAX_ROW_BYTES } from "../../workers/durableObject/originals.ts";
-import { deleteMessage } from "../../workers/lib/messages.ts";
-import { RAW_KEY } from "../../workers/lib/original.ts";
+import { MAX_ORIGINAL_BYTES } from "../../modules/mail/shared/original.ts";
+import {
+	applyMigrations,
+	mailboxMigrations,
+} from "../../modules/mail/worker/durableObject/migrations.ts";
+import {
+	ARRIVAL_STALE_MS,
+	MAX_ROW_BYTES,
+} from "../../modules/mail/worker/durableObject/originals.ts";
+import { deleteMessage } from "../../modules/mail/worker/lib/messages.ts";
+import { RAW_KEY } from "../../modules/mail/worker/lib/original.ts";
 import { Browser, createMailbox, json, testEnv } from "./helpers.ts";
 import {
 	as,

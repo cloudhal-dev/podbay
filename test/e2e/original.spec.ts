@@ -18,7 +18,7 @@
  */
 import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
-import { AUTHENTICATION_SHOWN } from "../../shared/original.ts";
+import { AUTHENTICATION_SHOWN } from "../../modules/mail/shared/original.ts";
 import { type App, BASE, expect, mime, test } from "./fixtures.ts";
 
 /** A script that reports itself in every way a script could. */

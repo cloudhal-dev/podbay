@@ -1,9 +1,9 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { Folders } from "@podbay/mail/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { Folders } from "shared/folders";
 import { useDisplay } from "~/hooks/useDisplay";
 import { newMailKey, useLiveConnected } from "~/hooks/useLive";
 import { useUIStore } from "~/hooks/useUIStore";

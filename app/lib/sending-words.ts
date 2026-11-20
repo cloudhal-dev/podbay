@@ -7,7 +7,7 @@
  * return, and the unit tests hold them.
  */
 import { formatDetailDate } from "@podbay/i18n/dates";
-import { SENDING } from "shared/sending";
+import { SENDING } from "@podbay/mail/shared";
 import { dateLanguage, m, t } from "~/i18n";
 
 const NOT_SET_UP = m(

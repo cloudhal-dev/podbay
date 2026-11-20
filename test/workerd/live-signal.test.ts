@@ -24,11 +24,14 @@ import {
 	type LiveKind,
 	type LiveState,
 	liveMessage,
-} from "../../shared/live.ts";
+} from "../../modules/mail/shared/live.ts";
+import { MailboxDO } from "../../modules/mail/worker/durableObject/index.ts";
+import { ABOUT, WATCHED, watch } from "../../modules/mail/worker/durableObject/live.ts";
+import {
+	applyMigrations,
+	mailboxMigrations,
+} from "../../modules/mail/worker/durableObject/migrations.ts";
 import worker from "../../workers/app.ts";
-import { MailboxDO } from "../../workers/durableObject/index.ts";
-import { ABOUT, WATCHED, watch } from "../../workers/durableObject/live.ts";
-import { applyMigrations, mailboxMigrations } from "../../workers/durableObject/migrations.ts";
 import {
 	Browser,
 	createMailbox,

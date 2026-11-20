@@ -12,8 +12,8 @@
 
 import { runInDurableObject, SELF } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { MCP_TOOLS, type McpToolName } from "../../shared/mcp-tools.ts";
-import { MCP_TOOL_NAMES } from "../../workers/mcp/server.ts";
+import { MCP_TOOLS, type McpToolName } from "../../modules/mail/shared/mcp-tools.ts";
+import { MCP_TOOL_NAMES } from "../../modules/mail/worker/mcp/server.ts";
 import {
 	createMailbox,
 	migrate,

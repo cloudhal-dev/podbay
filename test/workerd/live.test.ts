@@ -17,10 +17,15 @@
  */
 import { evictDurableObject, SELF } from "cloudflare:test";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { LIVE_CLOSE_CODE, LIVE_CLOSED, LIVE_LIMITS, LIVE_PONG } from "../../shared/live.ts";
+import {
+	LIVE_CLOSE_CODE,
+	LIVE_CLOSED,
+	LIVE_LIMITS,
+	LIVE_PONG,
+} from "../../modules/mail/shared/live.ts";
+import { liveRequest } from "../../modules/mail/worker/durableObject/live.ts";
 import { upgradeRefusal } from "../../workers/auth/middleware.ts";
 import { ROUTE_TABLE } from "../../workers/auth/route-table.ts";
-import { liveRequest } from "../../workers/durableObject/live.ts";
 import {
 	Browser,
 	createMailbox,

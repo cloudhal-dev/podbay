@@ -80,7 +80,7 @@
 			"pageUpdated": "2026-11-12",
 			"verifiedAt": "2026-11-17",
 			"evidence": "A map of environment variables to set when deploying your Worker.",
-			"code": ["wrangler.jsonc", "workers/lib/features.ts"]
+			"code": ["wrangler.jsonc", "modules/mail/worker/lib/features.ts"]
 		},
 		{
 			"id": "wrangler.send_email",
@@ -90,7 +90,7 @@
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Configure a `send_email` binding in your Wrangler configuration file to enable email sending:",
-			"code": ["wrangler.jsonc", "workers/email-sender.ts"],
+			"code": ["wrangler.jsonc", "modules/mail/worker/email-sender.ts"],
 			"note": "The send bindings page describes an entry without a restriction attribute as able to send to any verified destination address. The pricing page says arbitrary recipients need Workers Paid."
 		},
 		{
@@ -111,7 +111,7 @@
 			"pageUpdated": "2026-11-12",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Unlike other bindings, this binding is limited to one AI binding per Worker project.",
-			"code": ["wrangler.jsonc", "workers/lib/ai.ts"]
+			"code": ["wrangler.jsonc", "modules/mail/worker/lib/ai.ts"]
 		},
 		{
 			"id": "wrangler.durable_objects",
@@ -153,9 +153,9 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "readonly from: string; // Sender email address (envelope MAIL FROM)",
 			"code": [
-				"workers/lib/inbound.ts",
-				"workers/arrival.ts",
-				"workers/durableObject/auto-reply.ts"
+				"modules/mail/shared/inbound.ts",
+				"modules/mail/worker/arrival.ts",
+				"modules/mail/worker/durableObject/auto-reply.ts"
 			],
 			"note": "The page does not say what `from` holds for a message with an empty reverse path (a bounce). Podbay answers only something that is one whole address, so an empty value, `<>` and anything else get no automatic reply (test/workerd/auto-reply.test.ts)."
 		},
@@ -167,7 +167,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "readonly to: string; // Recipient email address (envelope RCPT TO)",
-			"code": ["workers/arrival.ts", "workers/lib/inbound.ts"]
+			"code": ["modules/mail/worker/arrival.ts", "modules/mail/shared/inbound.ts"]
 		},
 		{
 			"id": "runtime.email.message.raw",
@@ -177,7 +177,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "readonly raw: ReadableStream; // Raw MIME email content stream",
-			"code": ["workers/arrival.ts", "workers/lib/inbound.ts"]
+			"code": ["modules/mail/worker/arrival.ts", "modules/mail/shared/inbound.ts"]
 		},
 		{
 			"id": "runtime.email.message.rawSize",
@@ -187,7 +187,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "readonly rawSize: number; // Size of raw email in bytes",
-			"code": ["workers/arrival.ts", "workers/lib/inbound.ts"]
+			"code": ["modules/mail/worker/arrival.ts", "modules/mail/shared/inbound.ts"]
 		},
 		{
 			"id": "runtime.email.message.setReject",
@@ -197,7 +197,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Reject emails with a permanent SMTP error:",
-			"code": ["workers/arrival.ts", "workers/lib/inbound.ts"]
+			"code": ["modules/mail/worker/arrival.ts", "modules/mail/shared/inbound.ts"]
 		},
 		{
 			"id": "runtime.email.authentication_results",
@@ -207,7 +207,11 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "To check for `dmarc=pass`, read the first `Authentication-Results` header through `message.headers` and verify that its authentication service identifier is `mx.cloudflare.net`.",
-			"code": ["workers/lib/original.ts", "workers/arrival.ts", "docs/architecture.md"],
+			"code": [
+				"modules/mail/worker/lib/original.ts",
+				"modules/mail/worker/arrival.ts",
+				"docs/architecture.md"
+			],
 			"note": "The page also says: \"Other `Authentication-Results` headers may have been supplied by the sender and should not be trusted.\" It does not say how `headers` gives a field that occurs more than once, so Podbay cuts the value at the first comma outside a quoted string or a comment and keeps nothing when that cannot be told (ADR-0015, decision 19)."
 		},
 		{
@@ -218,7 +222,10 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-18",
 			"evidence": "send(message: EmailMessage | EmailMessageBuilder): Promise<EmailSendResult>;",
-			"code": ["workers/email-sender.ts", "workers/durableObject/leaving.ts"]
+			"code": [
+				"modules/mail/worker/email-sender.ts",
+				"modules/mail/worker/durableObject/leaving.ts"
+			]
 		},
 		{
 			"id": "runtime.send_email.message",
@@ -228,7 +235,10 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-18",
 			"evidence": "to?: string | EmailAddress | (string | EmailAddress)[];",
-			"code": ["workers/email-sender.ts", "workers/lib/outgoing-message.ts"],
+			"code": [
+				"modules/mail/worker/email-sender.ts",
+				"modules/mail/worker/lib/outgoing-message.ts"
+			],
 			"note": "On 2026-11-18 the page writes `to` as optional: at least one of `to`, `cc` or `bcc` is required, and the three together hold at most 50 addresses. Podbay always gives `to`."
 		},
 		{
@@ -239,7 +249,10 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-18",
 			"evidence": "content: string | ArrayBuffer | ArrayBufferView; // Base64 string or binary content",
-			"code": ["workers/email-sender.ts", "workers/durableObject/leaving.ts"]
+			"code": [
+				"modules/mail/worker/email-sender.ts",
+				"modules/mail/worker/durableObject/leaving.ts"
+			]
 		},
 		{
 			"id": "runtime.send_email.headers",
@@ -249,7 +262,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-18",
 			"evidence": "headers?: { [key: string]: string };",
-			"code": ["workers/email-sender.ts", "workers/lib/outgoing-message.ts"]
+			"code": ["modules/mail/worker/email-sender.ts", "modules/mail/worker/lib/outgoing-message.ts"]
 		},
 		{
 			"id": "runtime.send_email.result",
@@ -259,7 +272,11 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-18",
 			"evidence": "// Errors are thrown as standard Error objects with a `code` property",
-			"code": ["workers/email-sender.ts", "workers/durableObject/leaving.ts", "shared/sending.ts"]
+			"code": [
+				"modules/mail/worker/email-sender.ts",
+				"modules/mail/worker/durableObject/leaving.ts",
+				"modules/mail/shared/sending.ts"
+			]
 		},
 		{
 			"id": "runtime.r2.get",
@@ -270,11 +287,11 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "`get` `(key: string, options?: R2GetOptions): Promise<R2ObjectBody | R2Object | null>`",
 			"code": [
-				"workers/index.ts",
-				"workers/arrival.ts",
-				"workers/durableObject/leaving.ts",
-				"workers/routes/drafts.ts",
-				"workers/routes/original.ts"
+				"modules/mail/worker/router.ts",
+				"modules/mail/worker/arrival.ts",
+				"modules/mail/worker/durableObject/leaving.ts",
+				"modules/mail/worker/routes/drafts.ts",
+				"modules/mail/worker/routes/original.ts"
 			]
 		},
 		{
@@ -285,7 +302,11 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Stores the given `value` and metadata under the associated `key`. Once the write succeeds, returns an `R2Object` containing metadata about the stored Object.",
-			"code": ["workers/arrival.ts", "workers/lib/attachments.ts", "workers/routes/drafts.ts"]
+			"code": [
+				"modules/mail/worker/arrival.ts",
+				"modules/mail/worker/lib/attachments.ts",
+				"modules/mail/worker/routes/drafts.ts"
+			]
 		},
 		{
 			"id": "runtime.r2.delete",
@@ -296,10 +317,10 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "R2 deletes are strongly consistent. Once the Promise resolves, all subsequent read operations will no longer see the provided key value pairs globally.",
 			"code": [
-				"workers/lib/messages.ts",
-				"workers/arrival.ts",
-				"workers/lib/outgoing.ts",
-				"workers/routes/drafts.ts"
+				"modules/mail/worker/lib/messages.ts",
+				"modules/mail/worker/arrival.ts",
+				"modules/mail/worker/lib/outgoing.ts",
+				"modules/mail/worker/routes/drafts.ts"
 			]
 		},
 		{
@@ -310,7 +331,11 @@
 			"pageUpdated": "2026-11-05",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Named Durable Objects are the most common method of referring to Durable Objects.",
-			"code": ["workers/arrival.ts", "workers/auth/middleware.ts", "workers/routes/mailboxes.ts"]
+			"code": [
+				"modules/mail/worker/arrival.ts",
+				"workers/auth/middleware.ts",
+				"modules/mail/worker/routes/mailboxes.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.sql.exec",
@@ -320,7 +345,10 @@
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-17",
 			"evidence": "`exec(query: string, ...bindings: any[])`: `SqlStorageCursor`",
-			"code": ["workers/durableObject/index.ts", "workers/durableObject/migrations.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/index.ts",
+				"modules/mail/worker/durableObject/migrations.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.transactionSync",
@@ -330,7 +358,10 @@
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Note that `sql.exec()` cannot execute transaction-related statements like `BEGIN TRANSACTION` or `SAVEPOINT`.",
-			"code": ["workers/durableObject/migrations.ts", "workers/durableObject/index.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/migrations.ts",
+				"modules/mail/worker/durableObject/index.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.fts5",
@@ -350,7 +381,7 @@
 			"pageUpdated": "2026-10-12",
 			"verifiedAt": "2026-11-18",
 			"evidence": "`ctx.waitUntil()` extends the lifetime of your Worker, allowing you to perform work without blocking returning a response, and that may continue after a response is returned.",
-			"code": ["workers/arrival.ts"]
+			"code": ["modules/mail/worker/arrival.ts"]
 		},
 		{
 			"id": "runtime.access.jwt_header",
@@ -380,7 +411,7 @@
 			"pageUpdated": "2026-04-21",
 			"verifiedAt": "2026-11-17",
 			"evidence": "`async env.AI.run()` runs a model. Takes a model as the first parameter, and an object as the second parameter.",
-			"code": ["workers/lib/ai.ts"]
+			"code": ["modules/mail/worker/lib/ai.ts"]
 		},
 		{
 			"id": "runtime.ai.model.glm-4.7-flash",
@@ -390,7 +421,7 @@
 			"pageUpdated": null,
 			"verifiedAt": "2026-11-17",
 			"evidence": "Optimized for dialogue, instruction-following, and multi-turn tool calling across 100+ languages.",
-			"code": ["workers/lib/models.ts", "workers/agent/index.ts"],
+			"code": ["modules/mail/worker/lib/models.ts", "modules/mail/worker/agent/index.ts"],
 			"note": "The page states the model id, `Function calling | Yes`, `Reasoning | Yes`, $0.0605 per M input and $0.40 per M output tokens, and carries no paid-access or planned-deprecation label. The changelog of 2026-07-28 names it among the models that remain on the Workers Free plan. It replaces `@cf/moonshotai/kimi-k2.5`, which the changelog of 2026-05-08 aliased to `kimi-k2.6` from 2026-05-30; `kimi-k2.6` needs the Workers Paid plan and is retired on 2026-11-20."
 		},
 		{
@@ -401,7 +432,7 @@
 			"pageUpdated": null,
 			"verifiedAt": "2026-11-17",
 			"evidence": "const response = await env.AI.run(\"@cf/ibm-granite/granite-4.0-h-micro\", { messages });",
-			"code": ["workers/lib/models.ts", "workers/lib/ai.ts"],
+			"code": ["modules/mail/worker/lib/models.ts", "modules/mail/worker/lib/ai.ts"],
 			"note": "The page's output schema is `response` (string), `usage`, `tool_calls`; it lists no reasoning, $0.017 per M input and $0.112 per M output tokens (the lowest text-model row on the pricing page), and no paid-access or planned-deprecation label. It replaces `@cf/meta/llama-3.1-8b-instruct-fast`: on 2026-11-17 that model page returns 404 and the catalog does not list the id, although the changelog of 2026-05-08 said the `-fast` variants remain active."
 		},
 		{
@@ -412,18 +443,18 @@
 			"pageUpdated": null,
 			"verifiedAt": "2026-11-17",
 			"evidence": "const response = await env.AI.run(\"@cf/meta/llama-4-scout-17b-16e-instruct\", { messages });",
-			"code": ["workers/lib/models.ts", "workers/lib/ai.ts"],
+			"code": ["modules/mail/worker/lib/models.ts", "modules/mail/worker/lib/ai.ts"],
 			"note": "The page's output schema is `response` (string), `usage`, `tool_calls`; it lists no reasoning, $0.27 per M input and $0.85 per M output tokens, and no paid-access or planned-deprecation label."
 		},
 		{
 			"id": "runtime.ai.model_retirement",
 			"kind": "runtime",
-			"relies": "Cloudflare retires Workers AI model ids on announced dates; a retired id fails every request. None of the three ids in `workers/lib/models.ts` is on the list for 2026-11-20.",
+			"relies": "Cloudflare retires Workers AI model ids on announced dates; a retired id fails every request. None of the three ids in `modules/mail/worker/lib/models.ts` is on the list for 2026-11-20.",
 			"source": "https://developers.cloudflare.com/changelog/post/2026-11-05-planned-model-deprecations/",
 			"pageUpdated": "2026-11-05",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Starting November 20, 2026, these models will stop returning responses. Requests to them will fail with an HTTP `410 Gone` error",
-			"code": ["workers/lib/models.ts", "workers/lib/ai.ts"],
+			"code": ["modules/mail/worker/lib/models.ts", "modules/mail/worker/lib/ai.ts"],
 			"note": "The error is code `5028`. The list names `@cf/moonshotai/kimi-k2.6`, `@cf/meta/llama-3.1-8b-instruct-fp8` and 14 other text models. When a model call fails, the injection scan blocks the automatic draft and the draft verifier refuses the draft (both fail closed), so a retired id stops the assistant from drafting but sends and leaks nothing. Read the Workers AI changelog before each release."
 		},
 		{
@@ -497,7 +528,11 @@
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| **Inbound message size** | 25 MiB | Messages larger than this are rejected |",
-			"code": ["docs/architecture.md", "shared/original.ts", "workers/arrival.ts"]
+			"code": [
+				"docs/architecture.md",
+				"modules/mail/shared/original.ts",
+				"modules/mail/worker/arrival.ts"
+			]
 		},
 		{
 			"id": "limit.email.outbound_size",
@@ -508,9 +543,9 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "| **Total message size** | 25 MiB | Including attachments |",
 			"code": [
-				"shared/sending-limits.ts",
-				"workers/lib/schemas.ts",
-				"workers/lib/outgoing-message.ts"
+				"modules/mail/shared/sending-limits.ts",
+				"modules/mail/worker/lib/schemas.ts",
+				"modules/mail/worker/lib/outgoing-message.ts"
 			],
 			"note": "The same table: `| **Recipients (to, cc, bcc)** | 50 per email | Combined across all recipient fields |`."
 		},
@@ -523,9 +558,9 @@
 			"verifiedAt": "2026-11-19",
 			"evidence": "Each Durable Object is able to schedule a single alarm at a time by calling `setAlarm()`.",
 			"code": [
-				"workers/durableObject/alarm.ts",
-				"workers/durableObject/submissions.ts",
-				"workers/durableObject/index.ts",
+				"modules/mail/worker/durableObject/alarm.ts",
+				"modules/mail/worker/durableObject/submissions.ts",
+				"modules/mail/worker/durableObject/index.ts",
 				"docs/adr/0010-snooze-and-mute.md",
 				"docs/adr/0018-one-workspace-one-worker-many-modules.md"
 			],
@@ -550,7 +585,11 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| Maximum string, `BLOB` or table row size | 8 MB |",
-			"code": ["docs/architecture.md", "workers/durableObject/originals.ts", "workers/arrival.ts"],
+			"code": [
+				"docs/architecture.md",
+				"modules/mail/worker/durableObject/originals.ts",
+				"modules/mail/worker/arrival.ts"
+			],
 			"note": "The page does not say whether 8 MB is 8,000,000 or 8,388,608 bytes. The local runtime took a string of 8,000,001 bytes and refused one of 8,388,608 (`SQLITE_TOOBIG`; tried in test/workerd on 2026-11-17). Podbay treats more than 8,000,000 bytes of text as too large, and a refusal by the database the same way."
 		},
 		{
@@ -561,7 +600,7 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| Maximum bound parameters per query | 100 |",
-			"code": ["docs/adr/0007-places-and-labels.md", "workers/durableObject/known.ts"]
+			"code": ["docs/adr/0007-places-and-labels.md", "modules/mail/worker/durableObject/known.ts"]
 		},
 		{
 			"id": "limit.durable_objects.like_pattern",
@@ -571,7 +610,10 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| Maximum characters (bytes) in a `LIKE` or `GLOB` pattern | 50 bytes |",
-			"code": ["workers/durableObject/index.ts", "workers/durableObject/known.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/index.ts",
+				"modules/mail/worker/durableObject/known.ts"
+			]
 		},
 		{
 			"id": "limit.durable_objects.point_in_time_recovery",
@@ -707,7 +749,7 @@
 			"pageUpdated": "2026-10-27",
 			"verifiedAt": "2026-11-17",
 			"evidence": "The handler is stateless: it builds a fresh server for every request, so you do not need a Durable Object, protocol session, or WebSocket.",
-			"code": ["workers/mcp/server.ts", "workers/app.ts", "wrangler.jsonc"]
+			"code": ["modules/mail/worker/mcp/server.ts", "workers/app.ts", "wrangler.jsonc"]
 		},
 		{
 			"id": "runtime.agents.mcp_handler.origin",
@@ -717,7 +759,7 @@
 			"pageUpdated": "2026-10-27",
 			"verifiedAt": "2026-11-17",
 			"evidence": "The Workers wrapper validates every present browser Origin. It rejects malformed, opaque, and non-HTTP Origins with `403`. Origin-less non-browser MCP clients remain valid.",
-			"code": ["workers/mcp/server.ts"],
+			"code": ["modules/mail/worker/mcp/server.ts"],
 			"note": "The page says a custom domain with wildcard CORS must set `allowedHostnames` and `allowedOriginHostnames` itself; Podbay sets the Origin list on every request and sends no CORS headers."
 		},
 		{
@@ -739,7 +781,7 @@
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Object key length | 1,024 bytes",
-			"code": ["workers/lib/filenames.ts"]
+			"code": ["modules/mail/worker/lib/filenames.ts"]
 		},
 		{
 			"id": "limit.email.attachments_count",
@@ -750,9 +792,9 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "`attachments` array exceeds 32 entries",
 			"code": [
-				"shared/sending-limits.ts",
-				"workers/durableObject/drafts.ts",
-				"workers/lib/outgoing-message.ts",
+				"modules/mail/shared/sending-limits.ts",
+				"modules/mail/worker/durableObject/drafts.ts",
+				"modules/mail/worker/lib/outgoing-message.ts",
 				"app/hooks/useDraftFiles.ts"
 			]
 		},
@@ -764,7 +806,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "If `value` is a `ReadableStream`, its length must be known",
-			"code": ["workers/routes/drafts.ts"]
+			"code": ["modules/mail/worker/routes/drafts.ts"]
 		},
 		{
 			"id": "limit.workers.subrequests",
@@ -774,7 +816,7 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Subrequests per invocation | 50 | 10,000 (up to 10M)",
-			"code": ["shared/sending-limits.ts", "workers/routes/drafts.ts"],
+			"code": ["modules/mail/shared/sending-limits.ts", "modules/mail/worker/routes/drafts.ts"],
 			"note": "The page does not say plainly whether a call to a bucket counts against this number or against the larger one for internal services; the limit is chosen under the smaller."
 		},
 		{
@@ -785,7 +827,7 @@
 			"pageUpdated": "2026-11-18",
 			"verifiedAt": "2026-11-19",
 			"evidence": "request body size limits depend on the domain's Cloudflare plan, not your Workers plan",
-			"code": ["workers/routes/drafts.ts", "shared/sending-limits.ts"]
+			"code": ["modules/mail/worker/routes/drafts.ts", "modules/mail/shared/sending-limits.ts"]
 		},
 		{
 			"id": "runtime.email.message.headers",
@@ -795,7 +837,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-17",
 			"evidence": "readonly headers: Headers; // Email headers (Subject, Message-ID, etc.)",
-			"code": ["workers/lib/inbound.ts", "workers/lib/original.ts"],
+			"code": ["modules/mail/shared/inbound.ts", "modules/mail/worker/lib/original.ts"],
 			"note": "The page does not say how a field that occurs more than once is given. In the Workers runtime `Headers.get` joins the values with a comma and a space, in their order (test/workerd/original-routes.test.ts)."
 		},
 		{
@@ -806,7 +848,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": null,
 			"evidence": "needs verification: send one message with a forged field of the platform's identifier to a real domain of the test zone, by hand, and record here what arrives (ADR-0015, decision 19)",
-			"code": ["shared/original.ts", "test/unit/original.test.ts"]
+			"code": ["modules/mail/shared/original.ts", "test/unit/original.test.ts"]
 		},
 		{
 			"id": "runtime.email.handler.throws",
@@ -816,7 +858,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": null,
 			"evidence": "needs verification: the pages read on 2026-11-17 do not say what the sending server is told when the `email` handler throws",
-			"code": ["workers/app.ts", "workers/arrival.ts"]
+			"code": ["workers/app.ts", "modules/mail/worker/arrival.ts"]
 		},
 		{
 			"id": "runtime.email.unauthenticated_rejected",
@@ -837,7 +879,7 @@
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "On the Workers Free plan, complex handlers may exceed these limits and fail to process a message.",
-			"code": ["workers/arrival.ts", "workers/durableObject/originals.ts"]
+			"code": ["modules/mail/worker/arrival.ts", "modules/mail/worker/durableObject/originals.ts"]
 		},
 		{
 			"id": "limit.workers.cpu_time",
@@ -847,7 +889,7 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| CPU time per HTTP request | 10 ms | 5 min (default: 30 seconds) |",
-			"code": ["docs/adr/0015-the-original-message-is-kept.md", "workers/arrival.ts"],
+			"code": ["docs/adr/0015-the-original-message-is-kept.md", "modules/mail/worker/arrival.ts"],
 			"note": "The page gives the figure for an HTTP request and for a Cron Trigger and names none for the `email` handler. It also says: \"Waiting on network requests (such as `fetch()` calls, KV reads, or database queries) does **not** count toward CPU time.\""
 		},
 		{
@@ -858,7 +900,7 @@
 			"pageUpdated": "2026-04-23",
 			"verifiedAt": "2026-11-17",
 			"evidence": "when using `FixedLengthStream` to produce either a `Response` or `Request`, the fixed length of the stream will be used as the `Content-Length` header value",
-			"code": ["workers/routes/original.ts", "workers/routes/drafts.ts"],
+			"code": ["modules/mail/worker/routes/original.ts", "modules/mail/worker/routes/drafts.ts"],
 			"note": "The same paragraph: \"An error will occur if too many, or too few bytes are written through the stream.\""
 		},
 		{
@@ -869,7 +911,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "`R2GetOptions` accepts a `range` parameter, which can be used to restrict the data returned in `body`.",
-			"code": ["workers/routes/original.ts"],
+			"code": ["modules/mail/worker/routes/original.ts"],
 			"note": "That `size` stays the size of the whole object is not said on the page; it is asserted in test/workerd/original-routes.test.ts against the local bucket."
 		},
 		{
@@ -880,7 +922,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Retrieves the `R2Object` for the given key containing only object metadata, if the key exists, and `null` if the key does not exist.",
-			"code": ["workers/arrival.ts", "workers/lib/outgoing.ts"]
+			"code": ["modules/mail/worker/arrival.ts", "modules/mail/worker/lib/outgoing.ts"]
 		},
 		{
 			"id": "limit.r2.delete_keys",
@@ -890,7 +932,7 @@
 			"pageUpdated": "2026-11-04",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Up to 1000 keys may be deleted per call.",
-			"code": ["workers/lib/messages.ts"]
+			"code": ["modules/mail/worker/lib/messages.ts"]
 		},
 		{
 			"id": "limit.r2.upload_size",
@@ -900,7 +942,7 @@
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "The max upload size is 5 MiB less than 5 GiB, so 4.995 GiB.",
-			"code": ["workers/arrival.ts"]
+			"code": ["modules/mail/worker/arrival.ts"]
 		},
 		{
 			"id": "plan.r2.price",
@@ -933,8 +975,8 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "These headers are auto-generated by the Cloudflare Email Service infrastructure. You cannot set or override them.",
 			"code": [
-				"workers/lib/outgoing-message.ts",
-				"workers/durableObject/submissions.ts",
+				"modules/mail/worker/lib/outgoing-message.ts",
+				"modules/mail/worker/durableObject/submissions.ts",
 				"app/components/email-panel/EmailPanelDialogs.tsx"
 			]
 		},
@@ -979,7 +1021,10 @@
 			"pageUpdated": "2026-09-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "which allows a Durable Object to be removed from memory to save costs while keeping its WebSockets connected.",
-			"code": ["workers/durableObject/live.ts", "workers/durableObject/index.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/live.ts",
+				"modules/mail/worker/durableObject/index.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.websocket.hibernation",
@@ -990,9 +1035,9 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "When an event arrives, the Durable Object is re-initialized and its `constructor` runs",
 			"code": [
-				"workers/durableObject/live.ts",
-				"workers/durableObject/index.ts",
-				"workers/durableObject/migrations.ts"
+				"modules/mail/worker/durableObject/live.ts",
+				"modules/mail/worker/durableObject/index.ts",
+				"modules/mail/worker/durableObject/migrations.ts"
 			],
 			"note": "The same page: \"Clients remain connected while the Durable Object is not in memory\" and \"In-memory state is reset\". Shown locally with `evictDurableObject` (test/workerd/live.test.ts); not shown on Cloudflare's network."
 		},
@@ -1004,7 +1049,7 @@
 			"pageUpdated": "2026-09-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Each tag is a maximum of 256 characters and there can be at most 10 tags associated with a WebSocket.",
-			"code": ["workers/durableObject/live.ts"],
+			"code": ["modules/mail/worker/durableObject/live.ts"],
 			"note": "No page says in words that tags outlast hibernation; `getWebSockets` and `getTags` are documented as part of the Hibernation API. test/workerd/live.test.ts shows it in the local runtime after `evictDurableObject`: a connection is found by its tag and closed for the right person. Not shown on Cloudflare's network."
 		},
 		{
@@ -1015,7 +1060,7 @@
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Serialized attachments persist through hibernation as long as the WebSocket remains healthy",
-			"code": ["workers/durableObject/live.ts"],
+			"code": ["modules/mail/worker/durableObject/live.ts"],
 			"note": "The same list: \"Maximum serialized size is 16,384 bytes\"; an attachment here is a number and a message of at most 256 bytes."
 		},
 		{
@@ -1026,7 +1071,11 @@
 			"pageUpdated": "2026-09-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "If a request is received matching the provided request then the auto-response will be returned without waking WebSockets in hibernation and incurring billable duration charges.",
-			"code": ["workers/durableObject/live.ts", "shared/live.ts", "app/lib/live.ts"],
+			"code": [
+				"modules/mail/worker/durableObject/live.ts",
+				"modules/mail/shared/live.ts",
+				"app/lib/live.ts"
+			],
 			"note": "\"Both request and response are limited to 2,048 characters each.\""
 		},
 		{
@@ -1037,7 +1086,7 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": null,
 			"evidence": "needs verification: the page says an auto-response is not charged wall-clock time, in a footnote on duration; it does not say whether one counts as a received message.",
-			"code": ["workers/durableObject/live.ts", "app/lib/live.ts"],
+			"code": ["modules/mail/worker/durableObject/live.ts", "app/lib/live.ts"],
 			"note": "The footnote: \"Application level auto-response messages handled by\" `state.setWebSocketAutoResponse()` \"will not incur additional wall-clock time, and so they will not be charged.\" Cannot be tested locally: billing is not simulated. To settle on a real account, from the Durable Objects request metrics of an idle mailbox with one open tab."
 		},
 		{
@@ -1048,7 +1097,7 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-17",
 			"evidence": "For compute requests billing-only, a 20:1 ratio is applied to incoming WebSocket messages to factor in smaller messages for real-time communication.",
-			"code": ["workers/durableObject/live.ts", "app/lib/live.ts"],
+			"code": ["modules/mail/worker/durableObject/live.ts", "app/lib/live.ts"],
 			"note": "The same footnote: \"A request is needed to create a WebSocket connection. There is no charge for outgoing WebSocket messages\"."
 		},
 		{
@@ -1059,7 +1108,7 @@
 			"pageUpdated": "2026-10-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "After 10 seconds of no incoming request or event, and all the above conditions satisfied, the Durable Object will transition into the **hibernated** state.",
-			"code": ["workers/durableObject/live.ts"],
+			"code": ["modules/mail/worker/durableObject/live.ts"],
 			"note": "The conditions above it: no `setTimeout`/`setInterval` callback, no unfinished I/O or `waitUntil` promise, \"No WebSocket standard API is used\", no request still being processed."
 		},
 		{
@@ -1070,7 +1119,7 @@
 			"pageUpdated": "2026-09-18",
 			"verifiedAt": "2026-11-17",
 			"evidence": "With this flag active, you no longer need to call `close()` in your `close` event handler. The runtime handles the close handshake automatically.",
-			"code": ["workers/durableObject/live.ts", "wrangler.jsonc"],
+			"code": ["modules/mail/worker/durableObject/live.ts", "wrangler.jsonc"],
 			"note": "The flag is `web_socket_auto_reply_to_close`, on by default from compatibility date 2026-04-07 (the state API page says the same)."
 		},
 		{
@@ -1081,7 +1130,7 @@
 			"pageUpdated": "2026-09-30",
 			"verifiedAt": "2026-11-17",
 			"evidence": "The WebSocket Hibernation API permits a maximum of 32,768 WebSocket connections per Durable Object",
-			"code": ["workers/durableObject/live.ts", "shared/live.ts"]
+			"code": ["modules/mail/worker/durableObject/live.ts", "modules/mail/shared/live.ts"]
 		},
 		{
 			"id": "limit.durable_objects.websocket_message",
@@ -1091,7 +1140,7 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-17",
 			"evidence": "| WebSocket message size | 32 MiB (only for received messages) |",
-			"code": ["workers/durableObject/live.ts"]
+			"code": ["modules/mail/worker/durableObject/live.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.code_updates",
@@ -1113,9 +1162,9 @@
 			"verifiedAt": "2026-11-17",
 			"evidence": "Validate requests in your Worker to avoid billing for invalid requests against a Durable Object.",
 			"code": [
-				"workers/routes/live.ts",
+				"modules/mail/worker/routes/live.ts",
 				"workers/auth/middleware.ts",
-				"workers/durableObject/live.ts"
+				"modules/mail/worker/durableObject/live.ts"
 			],
 			"note": "The page's Worker passes the browser's own request on; Podbay builds a new one, so that no cookie or header of the browser reaches the object (ADR-0013, decision 10). The page's example answers a request that is not an upgrade with 426, as the guard does."
 		},
@@ -1127,7 +1176,10 @@
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-17",
 			"evidence": "Any series of write operations with no intervening `await` will automatically be submitted atomically",
-			"code": ["workers/durableObject/live.ts", "workers/durableObject/index.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/live.ts",
+				"modules/mail/worker/durableObject/index.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.sql.total_changes",
@@ -1137,7 +1189,7 @@
 			"pageUpdated": null,
 			"verifiedAt": "2026-11-17",
 			"evidence": "\"total_changes\"_kj,",
-			"code": ["workers/durableObject/live.ts"],
+			"code": ["modules/mail/worker/durableObject/live.ts"],
 			"note": "The SQL API page (updated 2026-09-21) points at this file and commit: \"Refer to the [source code ↗︎](…) for the full list of supported functions.\" The quoted line is in `ALLOWED_SQLITE_FUNCTIONS`. test/workerd/live-signal.test.ts runs it in the local runtime: a read leaves it as it was, a write moves it."
 		},
 		{
@@ -1170,9 +1222,9 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "Only one instance of `alarm()` will ever run at a given time per Durable Object instance.",
 			"code": [
-				"workers/durableObject/index.ts",
-				"workers/durableObject/alarm.ts",
-				"workers/durableObject/leaving.ts"
+				"modules/mail/worker/durableObject/index.ts",
+				"modules/mail/worker/durableObject/alarm.ts",
+				"modules/mail/worker/durableObject/leaving.ts"
 			]
 		},
 		{
@@ -1183,7 +1235,7 @@
 			"pageUpdated": "2026-04-21",
 			"verifiedAt": "2026-11-18",
 			"evidence": "Retries are performed using exponential backoff starting at a 2 second delay from the first failure with up to 6 retries allowed.",
-			"code": ["workers/durableObject/alarm.ts"]
+			"code": ["modules/mail/worker/durableObject/alarm.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.alarm.restart",
@@ -1193,7 +1245,10 @@
 			"pageUpdated": "2026-04-21",
 			"verifiedAt": "2026-11-18",
 			"evidence": "Following a short delay, the `alarm()` handler will run from the beginning on the other machine.",
-			"code": ["workers/durableObject/leaving.ts", "workers/durableObject/submissions.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/leaving.ts",
+				"modules/mail/worker/durableObject/submissions.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.alarm.lateness",
@@ -1204,9 +1259,9 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "will usually execute within a few milliseconds after the set time, but can be delayed by up to a minute due to maintenance or failures while failover takes place.",
 			"code": [
-				"workers/durableObject/alarm.ts",
-				"workers/durableObject/submissions.ts",
-				"shared/sending.ts"
+				"modules/mail/worker/durableObject/alarm.ts",
+				"modules/mail/worker/durableObject/submissions.ts",
+				"modules/mail/shared/sending.ts"
 			]
 		},
 		{
@@ -1217,7 +1272,7 @@
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-18",
 			"evidence": "If `setAlarm()` is called with a time equal to or before `Date.now()`, the alarm will be scheduled for asynchronous execution in the immediate future.",
-			"code": ["workers/durableObject/alarm.ts"]
+			"code": ["modules/mail/worker/durableObject/alarm.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.alarm.getAlarm",
@@ -1227,7 +1282,10 @@
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-18",
 			"evidence": "The alarm is considered to be set if it has not started, or if it has failed and any retry has not begun.",
-			"code": ["workers/durableObject/alarm.ts", "workers/durableObject/index.ts"],
+			"code": [
+				"modules/mail/worker/durableObject/alarm.ts",
+				"modules/mail/worker/durableObject/index.ts"
+			],
 			"note": "The alarms page adds that `getAlarm` answers `null` while a handler is running unless `setAlarm` was called since it started; the handler always calls `setAlarm` or `deleteAlarm` at its end."
 		},
 		{
@@ -1238,7 +1296,10 @@
 			"pageUpdated": "2026-04-21",
 			"verifiedAt": "2026-11-18",
 			"evidence": "If you wish to call `setAlarm` inside the constructor of a Durable Object, ensure that you are first checking whether an alarm has already been set.",
-			"code": ["workers/durableObject/alarm.ts", "workers/durableObject/index.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/alarm.ts",
+				"modules/mail/worker/durableObject/index.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.alarm.held",
@@ -1248,7 +1309,10 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-18",
 			"evidence": "An alarm scheduled more than seven days ago is deleted while held.",
-			"code": ["workers/durableObject/alarm.ts", "workers/durableObject/leaving.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/alarm.ts",
+				"modules/mail/worker/durableObject/leaving.ts"
+			]
 		},
 		{
 			"id": "limit.durable_objects.alarm_wall_time",
@@ -1258,7 +1322,7 @@
 			"pageUpdated": "2026-11-13",
 			"verifiedAt": "2026-11-18",
 			"evidence": "Alarm handler invocations have a maximum wall time of 15 minutes.",
-			"code": ["shared/sending.ts", "workers/durableObject/leaving.ts"]
+			"code": ["modules/mail/shared/sending.ts", "modules/mail/worker/durableObject/leaving.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.deleteAll.alarm",
@@ -1268,7 +1332,7 @@
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-18",
 			"evidence": "For Workers with a compatibility date of `2026-02-24` or later, `deleteAll()` also deletes any active [alarm](https://developers.cloudflare.com/durable-objects/api/alarms/).",
-			"code": ["workers/durableObject/index.ts", "wrangler.jsonc"]
+			"code": ["modules/mail/worker/durableObject/index.ts", "wrangler.jsonc"]
 		},
 		{
 			"id": "runtime.durable_objects.output_gate",
@@ -1278,7 +1342,10 @@
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-18",
 			"evidence": "By default, the system will pause outgoing network messages from the Durable Object until all previous writes have been confirmed flushed to disk.",
-			"code": ["workers/durableObject/leaving.ts", "workers/durableObject/submissions.ts"]
+			"code": [
+				"modules/mail/worker/durableObject/leaving.ts",
+				"modules/mail/worker/durableObject/submissions.ts"
+			]
 		},
 		{
 			"id": "runtime.durable_objects.sync",
@@ -1288,7 +1355,7 @@
 			"pageUpdated": "2026-09-21",
 			"verifiedAt": "2026-11-18",
 			"evidence": "Synchronizes any pending writes to disk.",
-			"code": ["workers/durableObject/leaving.ts"]
+			"code": ["modules/mail/worker/durableObject/leaving.ts"]
 		},
 		{
 			"id": "runtime.durable_objects.env",
@@ -1299,9 +1366,9 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "`env` contains the environment bindings available to this Durable Object, as defined in your Wrangler configuration.",
 			"code": [
-				"workers/durableObject/leaving.ts",
-				"workers/durableObject/index.ts",
-				"workers/auth/standing.ts"
+				"modules/mail/worker/durableObject/leaving.ts",
+				"modules/mail/worker/durableObject/index.ts",
+				"modules/mail/worker/standing.ts"
 			]
 		},
 		{
@@ -1312,7 +1379,10 @@
 			"pageUpdated": "2026-05-27",
 			"verifiedAt": "2026-11-18",
 			"evidence": "The `name` property is also available on `ctx.id` inside the Durable Object when the caller uses `idFromName()` or `getByName()`.",
-			"code": ["workers/durableObject/leaving.ts", "workers/durableObject/rules.ts"],
+			"code": [
+				"modules/mail/worker/durableObject/leaving.ts",
+				"modules/mail/worker/durableObject/rules.ts"
+			],
 			"note": "The page: the name is `undefined` when the caller used `idFromString()`, and for alarms created before 2026-03-15. Podbay reaches a mailbox only by `idFromName` (`getMailboxStub`, the guard). Seen to hold in the local runtime on 2026-11-18 (`test/workerd/sending.test.ts`)."
 		},
 		{
@@ -1324,8 +1394,8 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "Email Service errors have a `code` property. The following error codes may be returned when sending emails:",
 			"code": [
-				"shared/sending.ts",
-				"workers/durableObject/leaving.ts",
+				"modules/mail/shared/sending.ts",
+				"modules/mail/worker/durableObject/leaving.ts",
 				"app/lib/sending-words.ts",
 				"test/unit/sending.test.ts"
 			],
@@ -1339,7 +1409,7 @@
 			"pageUpdated": "2026-11-17",
 			"verifiedAt": "2026-11-18",
 			"evidence": "If the argument to `send()` does not match the [interface](#interface), `send()` throws a `TypeError` without a `code` property.",
-			"code": ["shared/sending.ts", "workers/durableObject/leaving.ts"]
+			"code": ["modules/mail/shared/sending.ts", "modules/mail/worker/durableObject/leaving.ts"]
 		},
 		{
 			"id": "runtime.send_email.no_idempotency_key",
@@ -1350,9 +1420,9 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "messageId: string; // Unique email ID",
 			"code": [
-				"workers/durableObject/leaving.ts",
-				"workers/durableObject/submissions.ts",
-				"shared/sending.ts"
+				"modules/mail/worker/durableObject/leaving.ts",
+				"modules/mail/worker/durableObject/submissions.ts",
+				"modules/mail/shared/sending.ts"
 			],
 			"note": "A fact of absence: the interface on the page lists `to`, `cc`, `bcc`, `from`, `subject`, `html`, `text`, `replyTo`, `attachments` and `headers`, and names no key of that kind. Read again when the page changes."
 		},
@@ -1386,9 +1456,9 @@
 			"verifiedAt": "2026-11-18",
 			"evidence": "Values include `no`, `auto-generated`, `auto-replied`, and extension tokens.",
 			"code": [
-				"workers/lib/outgoing-message.ts",
-				"workers/durableObject/auto-reply.ts",
-				"shared/rules.ts"
+				"modules/mail/worker/lib/outgoing-message.ts",
+				"modules/mail/worker/durableObject/auto-reply.ts",
+				"modules/mail/shared/rules.ts"
 			],
 			"note": "Not seen on Cloudflare's network: the automatic reply is tried with a send binding of the tests (test/workerd/auto-reply.test.ts)."
 		},
@@ -1400,7 +1470,10 @@
 			"pageUpdated": "2026-11-11",
 			"verifiedAt": "2026-11-18",
 			"evidence": "Email Service rejects the entire send request if it contains a disallowed header.",
-			"code": ["workers/lib/outgoing-message.ts", "workers/lib/email-helpers.ts"]
+			"code": [
+				"modules/mail/worker/lib/outgoing-message.ts",
+				"modules/mail/worker/lib/email-helpers.ts"
+			]
 		},
 		{
 			"id": "limit.workers.script_size",

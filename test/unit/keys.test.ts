@@ -3,7 +3,7 @@
  * shape of a token. The store and the endpoint are tested in test/workerd-agent/mcp.test.ts.
  */
 import { describe, expect, it } from "vitest";
-import { MCP_TOOLS } from "../../shared/mcp-tools.ts";
+import { MCP_TOOLS } from "../../modules/mail/shared/mcp-tools.ts";
 import { MAILBOX_ROLES } from "../../workers/auth/authorize.ts";
 import { KEY_ACCESS, KEY_PREFIX, keyAllows, newKeyToken } from "../../workers/auth/keys.ts";
 

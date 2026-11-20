@@ -2,8 +2,8 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Button, Checkbox, Input, InputArea, useKumoToastManager } from "@cloudflare/kumo";
+import { AUTO_REPLY } from "@podbay/mail/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { AUTO_REPLY } from "shared/rules";
 import DateTimeField from "~/components/controls/DateTimeField";
 import { useFreshProof } from "~/components/FreshProof";
 import { t } from "~/i18n";

@@ -2,10 +2,9 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { LayerDialog, Loader } from "@cloudflare/kumo";
+import { attachmentRisk, NO_ORIGINAL_CODE, ORIGINAL_MISSING_CODE } from "@podbay/mail/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { attachmentRisk } from "shared/attachment-risk";
-import { NO_ORIGINAL_CODE, ORIGINAL_MISSING_CODE } from "shared/original";
 import { t } from "~/i18n";
 import { downloadOriginal, originalExtent } from "~/lib/original";
 import { authenticationWords, markOriginal } from "~/lib/original-text";

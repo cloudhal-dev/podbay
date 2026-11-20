@@ -1,5 +1,6 @@
 {
 	"lintWarnings": 0,
 	"consoleCalls": 0,
-	"oversizedFiles": {}
+	"oversizedFiles": {},
+	"authDebt": 26
 }

@@ -13,8 +13,8 @@
  */
 import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { SENDING } from "../../shared/sending.ts";
-import { SENDS_PER_HOUR } from "../../workers/durableObject/sending.ts";
+import { SENDING } from "../../modules/mail/shared/sending.ts";
+import { SENDS_PER_HOUR } from "../../modules/mail/worker/durableObject/sending.ts";
 import {
 	Browser,
 	createMailbox,

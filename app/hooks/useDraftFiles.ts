@@ -1,8 +1,8 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES, MAX_COPIED_AT_ONCE } from "@podbay/mail/shared";
 import { useRef, useState } from "react";
-import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES, MAX_COPIED_AT_ONCE } from "shared/sending-limits";
 import { t } from "~/i18n";
 import api, { type DraftFileLeft, type DraftFileShown } from "~/services/api";
 import type { Attachment } from "~/types";

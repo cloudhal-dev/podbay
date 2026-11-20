@@ -15,7 +15,7 @@ import { log } from "@podbay/platform/log";
 import { generateText, stepCountIs } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Folders } from "../../shared/folders.ts";
+import { Folders } from "../../modules/mail/shared/folders.ts";
 import {
 	AGENT_TOOL_NAMES,
 	AgentSendRefused,
@@ -26,10 +26,10 @@ import {
 	RULE_METHODS,
 	SENDING_METHODS,
 	withoutSend,
-} from "../../workers/agent/tools.ts";
-import { sendEmail } from "../../workers/email-sender.ts";
-import { getMailboxStub } from "../../workers/lib/email-helpers.ts";
-import * as sharedTools from "../../workers/lib/tools.ts";
+} from "../../modules/mail/worker/agent/tools.ts";
+import { sendEmail } from "../../modules/mail/worker/email-sender.ts";
+import { getMailboxStub } from "../../modules/mail/worker/lib/email-helpers.ts";
+import * as sharedTools from "../../modules/mail/worker/lib/tools.ts";
 import { asks, MAILBOX, STRANGER, says, world } from "../helpers/fake-ai.ts";
 
 const SEND_REPLY = {
@@ -65,7 +65,7 @@ describe("the assistant's tool set", () => {
 	});
 
 	it("imports no send function and never reads the send binding", () => {
-		const dir = join(import.meta.dirname, "../../workers/agent");
+		const dir = join(import.meta.dirname, "../../modules/mail/worker/agent");
 		const files = readdirSync(dir, { recursive: true, encoding: "utf8" }).filter((file) =>
 			/\.tsx?$/.test(file),
 		);
@@ -367,7 +367,11 @@ describe("the environment the assistant's tools run with", () => {
 		expect(mailbox.sendingCalls).toEqual([]);
 		expect(send.calls).toEqual([]);
 		// No file of the assistant, of MCP or of their shared tools names one of them.
-		for (const file of ["workers/mcp/server.ts", "workers/lib/tools.ts", "shared/mcp-tools.ts"]) {
+		for (const file of [
+			"modules/mail/worker/mcp/server.ts",
+			"modules/mail/worker/lib/tools.ts",
+			"modules/mail/shared/mcp-tools.ts",
+		]) {
 			const source = readFileSync(file, "utf8");
 			for (const method of RULE_METHODS) expect(source, `${file}: ${method}`).not.toContain(method);
 		}
@@ -385,7 +389,10 @@ describe("the environment the assistant's tools run with", () => {
 	});
 
 	it("is the one every tool of the assistant and of MCP is given", () => {
-		for (const file of ["workers/agent/tools.ts", "workers/mcp/server.ts"]) {
+		for (const file of [
+			"modules/mail/worker/agent/tools.ts",
+			"modules/mail/worker/mcp/server.ts",
+		]) {
 			const source = readFileSync(file, "utf8");
 			expect(source, file).toContain("const env = withoutSend(callerEnv);");
 			// The caller's own environment is named where the guarded one is made, and for
@@ -393,7 +400,7 @@ describe("the environment the assistant's tools run with", () => {
 			expect(source, file).not.toMatch(/callerEnv\.(MAILBOX|EMAIL)|getMailboxStub\(callerEnv/);
 		}
 		// The shared tools reach a mailbox only through the environment they are handed.
-		const shared = readFileSync("workers/lib/tools.ts", "utf8");
+		const shared = readFileSync("modules/mail/worker/lib/tools.ts", "utf8");
 		expect(shared.match(/getMailboxStub\(/g)?.length).toBe(
 			shared.match(/getMailboxStub\(env, mailboxId\)/g)?.length,
 		);

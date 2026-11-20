@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import type { ListOrder } from "@podbay/mail/shared";
 import { useEffect, useSyncExternalStore } from "react";
 import {
 	type Appearance,
@@ -18,11 +19,11 @@ import {
 	type TravellingKey,
 	withDocument,
 } from "shared/choices";
-import type { ListOrder } from "shared/list-order";
 import { create } from "zustand";
 import { deviceLanguage, setLanguage } from "~/i18n";
 import { fetchChoices, saveChoices } from "~/lib/session";
 
+export { LIST_ORDERS, type ListOrder } from "@podbay/mail/shared";
 // The schema of the choices is shared with the Worker (ADR-0012); the screens take it from here.
 export {
 	AFTER_FILING,
@@ -43,7 +44,6 @@ export {
 	type ReadingPane,
 	readChoices,
 } from "shared/choices";
-export { LIST_ORDERS, type ListOrder } from "shared/list-order";
 
 const KEY = "podbay.display";
 /** The reading pane needs room: without it a conversation always replaces the list. */

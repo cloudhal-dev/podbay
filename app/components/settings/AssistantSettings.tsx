@@ -9,7 +9,7 @@ import { useUpdateMailbox } from "~/queries/mailboxes";
 import type { Mailbox } from "~/types";
 
 // Shown while no prompt of the mailbox's own is set. The prompt that is really used is in the
-// Worker (workers/agent/index.ts).
+// Worker (modules/mail/worker/agent/index.ts).
 const PROMPT_PLACEHOLDER = `You are an email assistant that helps manage this inbox. You read emails, draft replies, and help organize conversations.\n\nWrite like a real person. Short, direct, flowing prose. Plain text only.\n\n(Leave empty to use the built-in prompt)`;
 
 /** How the assistant of this mailbox is told to behave. */

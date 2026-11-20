@@ -16,7 +16,7 @@
  */
 import { env, runInDurableObject } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
-import { NOT_NOW_CODES, SENDING } from "../../shared/sending.ts";
+import { NOT_NOW_CODES, SENDING } from "../../modules/mail/shared/sending.ts";
 import {
 	Browser,
 	createMailbox,

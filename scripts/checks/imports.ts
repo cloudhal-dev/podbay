@@ -79,7 +79,13 @@ export function importSpecs(source: string): string[] {
 const RUNTIME = /^(@podbay\/i18n|.*\bpackages\/i18n)(\/index(\.ts)?)?$/;
 
 /** For each file of the shell's sign-in and access code a module imports: how many of its files do. */
-export const AUTH_DEBT: Readonly<Record<string, number>> = {};
+export const AUTH_DEBT: Readonly<Record<string, number>> = {
+	"workers/auth/middleware.ts": 14,
+	"workers/auth/store.ts": 8,
+	"workers/auth/keys.ts": 2,
+	"workers/auth/authorize.ts": 1,
+	"workers/auth/fresh.ts": 1,
+};
 
 interface Manifest {
 	dependencies?: Record<string, string>;

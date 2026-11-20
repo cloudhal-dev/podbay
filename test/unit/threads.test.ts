@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSubject } from "../../workers/durableObject/threads.ts";
+import { normalizeSubject } from "../../modules/mail/worker/durableObject/threads.ts";
 
 describe("comparing the subjects of two messages", () => {
 	it.each([

@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import type { Submission } from "shared/sending";
+import type { Submission } from "@podbay/mail/shared";
 
 export interface SignatureSettings {
 	enabled: boolean;

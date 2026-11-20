@@ -47,6 +47,16 @@ describe("account", () => {
 		).toHaveLength(1);
 	});
 
+	it("reads a module's code and a package's as shipped code", () => {
+		expect(
+			accountProblems(
+				"modules/mail/worker/x.ts",
+				'fetch("https://api.cloudflare.com/client/v4/zones")',
+			),
+		).toHaveLength(1);
+		expect(accountProblems("packages/platform/x.ts", "env.CF_API_TOKEN")).toHaveLength(1);
+	});
+
 	it("refuses a credential variable in shipped code and in the Worker configuration", () => {
 		expect(accountProblems("workers/x.ts", "env.CF_API_TOKEN")).toHaveLength(1);
 		expect(

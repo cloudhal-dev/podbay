@@ -2,8 +2,8 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Input, LayerDialog } from "@cloudflare/kumo";
+import { LABEL_LIMITS } from "@podbay/mail/shared";
 import { type FormEvent, useEffect, useState } from "react";
-import { LABEL_LIMITS } from "shared/labels";
 import { t } from "~/i18n";
 import { LABEL_PALETTE } from "~/lib/labels";
 import { useCreateLabel, useUpdateLabel } from "~/queries/labels";

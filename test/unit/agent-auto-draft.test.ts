@@ -12,7 +12,7 @@
 import { log } from "@podbay/platform/log";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Folders } from "../../shared/folders.ts";
+import { Folders } from "../../modules/mail/shared/folders.ts";
 import {
 	BLOCKED_BODY,
 	BLOCKED_THREAD,
@@ -20,8 +20,8 @@ import {
 	type NewEmailEvent,
 	NO_DRAFT,
 	runAutoDraft,
-} from "../../workers/agent/auto-draft.ts";
-import { MODELS } from "../../workers/lib/models.ts";
+} from "../../modules/mail/worker/agent/auto-draft.ts";
+import { MODELS } from "../../modules/mail/worker/lib/models.ts";
 import { asks, MAILBOX, messageOf, STRANGER, says, world } from "../helpers/fake-ai.ts";
 
 const EVENT: NewEmailEvent = {

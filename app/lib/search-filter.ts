@@ -1,8 +1,8 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import type { BulkFilter } from "shared/bulk";
-import { labelKey } from "shared/labels";
+import type { BulkFilter } from "@podbay/mail/shared";
+import { labelKey } from "@podbay/mail/shared";
 import { parseSearchQuery } from "~/lib/search-parser";
 import type { Label } from "~/types";
 

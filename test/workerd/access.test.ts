@@ -190,6 +190,12 @@ describe("the route table covers the API", () => {
 		.map((r) => `${r.method} ${r.path}`);
 	const table = ROUTE_TABLE.map((r) => `${r.method} ${r.path}`);
 
+	it("serves the API under /api/ alone: no route of the shell or of mail's router is anywhere else", () => {
+		expect(
+			api.routes.filter((r) => !r.path.startsWith("/api/")).map((r) => `${r.method} ${r.path}`),
+		).toEqual([]);
+	});
+
 	it("lists every registered route", () => {
 		expect(registered.filter((r) => !table.includes(r))).toEqual([]);
 	});

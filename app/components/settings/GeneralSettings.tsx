@@ -2,8 +2,8 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Button, Select } from "@cloudflare/kumo";
+import { UNDO_SECONDS, type UndoSeconds } from "@podbay/mail/shared";
 import { useEffect, useRef, useState } from "react";
-import { UNDO_SECONDS, type UndoSeconds } from "shared/sending";
 import { PAGE_SIZES, type PageSize, useDisplay } from "~/hooks/useDisplay";
 import { useUIStore } from "~/hooks/useUIStore";
 import { LANGUAGE_NAMES, LANGUAGES, m, t } from "~/i18n";

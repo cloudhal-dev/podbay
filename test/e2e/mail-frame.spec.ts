@@ -6,7 +6,7 @@
  * only when the reader asks, embedded images without a request, links that open outside the
  * app and tell the destination nothing.
  */
-import { MAIL_FRAME_SANDBOX } from "../../shared/mail-frame.ts";
+import { MAIL_FRAME_SANDBOX } from "../../modules/mail/shared/mail-frame.ts";
 import { expect, mime, test } from "./fixtures.ts";
 import { png } from "./png.ts";
 

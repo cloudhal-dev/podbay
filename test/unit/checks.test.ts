@@ -341,7 +341,7 @@ describe("imports", () => {
 });
 
 describe("ratchets", () => {
-	const base = { lintWarnings: 10, consoleCalls: 5, oversizedFiles: { "a.ts": 900 } };
+	const base = { lintWarnings: 10, consoleCalls: 5, oversizedFiles: { "a.ts": 900 }, authDebt: 26 };
 
 	it("passes when nothing moved", () => {
 		expect(compare(base, base)).toEqual([]);
@@ -350,10 +350,13 @@ describe("ratchets", () => {
 	it("fails when a number grows", () => {
 		expect(compare(base, { ...base, lintWarnings: 11 })).toHaveLength(1);
 		expect(compare(base, { ...base, consoleCalls: 6 })).toHaveLength(1);
+		// A module that imports the shell's sign-in and access code once more.
+		expect(compare(base, { ...base, authDebt: 27 })).toHaveLength(1);
 	});
 
 	it("asks for a lower baseline when a number shrinks", () => {
 		expect(compare(base, { ...base, lintWarnings: 9 })[0]).toContain("lower the baseline");
+		expect(compare(base, { ...base, authDebt: 25 })[0]).toContain("lower the baseline");
 	});
 
 	it("fails on a new oversized file and on a listed one that grew", () => {
