@@ -58,7 +58,7 @@ export default function SignatureSettings({ mailbox }: { mailbox: Mailbox }) {
 					<RichTextEditor value={html} onChange={setHtml} focusOnLoad={false} />
 				</div>
 				{isOwner ? (
-					<Button variant="primary" size="sm" loading={updateMailbox.isPending} onClick={save}>
+					<Button variant="primary" loading={updateMailbox.isPending} onClick={save}>
 						{t("Save signature")}
 					</Button>
 				) : (

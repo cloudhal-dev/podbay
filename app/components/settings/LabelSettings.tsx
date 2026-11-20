@@ -56,8 +56,7 @@ export default function LabelSettings({
 				{canChange && (
 					<Button
 						variant="secondary"
-						size="sm"
-						icon={<PlusIcon size={14} />}
+						icon={<PlusIcon size={16} />}
 						onClick={() => setEditing("new")}
 					>
 						{t("New label")}

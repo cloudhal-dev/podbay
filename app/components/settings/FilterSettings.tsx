@@ -121,8 +121,7 @@ export default function FilterSettings({
 					{canChange && (
 						<Button
 							variant="secondary"
-							size="sm"
-							icon={<PlusIcon size={14} />}
+							icon={<PlusIcon size={16} />}
 							disabled={rules.length >= RULE_LIMITS.rules}
 							onClick={() => setEditing("new")}
 						>
@@ -202,7 +201,7 @@ export default function FilterSettings({
 						<div className="min-w-0 flex-1">
 							<Input
 								label={t("An address or a domain")}
-								size="sm"
+								className="w-full"
 								value={sender}
 								placeholder={EXAMPLE_DOMAIN}
 								onChange={(event) => setSender(event.target.value)}
@@ -211,7 +210,6 @@ export default function FilterSettings({
 						<Button
 							type="submit"
 							variant="secondary"
-							size="sm"
 							loading={blockSender.isPending}
 							disabled={sender.trim() === "" || blocked.length >= RULE_LIMITS.blocked}
 						>

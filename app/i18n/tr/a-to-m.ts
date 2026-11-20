@@ -495,4 +495,6 @@ export const trAtoM: Readonly<Record<string, string>> = {
 		"Gönderdiğiniz bir iletinin ne kadar süre geri alınabileceği. Bu süre dolunca ileti gider.",
 	"A message you send later waits here until its time.":
 		"Daha sonra gönderdiğiniz bir ileti, zamanı gelene kadar burada bekler.",
+	"Earlier sections": "Önceki bölümler",
+	"Later sections": "Sonraki bölümler",
 };
