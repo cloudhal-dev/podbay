@@ -186,7 +186,9 @@ test("the Overview counts people, mailboxes and invitations waiting, and leads t
 			.getByRole("link", { name: "Overview" }),
 	).toHaveAttribute("aria-current", "page");
 
-	// Each figure is what the area's own routes say at the same moment.
+	// Each figure is what the area's own routes say at the same moment. That holds because the
+	// browser tests run one at a time (workers: 1): no other test invites or makes a mailbox
+	// between the page's reads and these.
 	const read = async (path: string) => (await (await page.request.get(path)).json()) as unknown[];
 	const people = (await read("/api/v1/users")).length;
 	const mailboxes = (await read("/api/v1/registry/mailboxes")).length;

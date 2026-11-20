@@ -29,6 +29,12 @@ export default function OverviewPage() {
 	const waiting = (invitations.data ?? []).filter((one) => one.state === "pending");
 	const count = (role: string) => (people.data ?? []).filter((one) => one.role === role).length;
 	const recent = [...(mailboxes.data ?? [])].slice(0, 5);
+	// Each count in a variable of its own: the words check reads what `plural` is given only when
+	// its first argument is plain.
+	const owners = count("owner");
+	const admins = count("admin");
+	const members = count("member");
+	const yours = (mailboxes.data ?? []).filter((one) => one.role !== null).length;
 
 	return (
 		<>
@@ -45,9 +51,9 @@ export default function OverviewPage() {
 						detail={
 							people.data &&
 							[
-								plural(count("owner"), "{count} owner", "{count} owners"),
-								plural(count("admin"), "{count} administrator", "{count} administrators"),
-								plural(count("member"), "{count} member", "{count} members"),
+								plural(owners, "{count} owner", "{count} owners"),
+								plural(admins, "{count} administrator", "{count} administrators"),
+								plural(members, "{count} member", "{count} members"),
 							].join(" · ")
 						}
 						to="/admin/people"
@@ -58,11 +64,7 @@ export default function OverviewPage() {
 						value={mailboxes.data?.length}
 						detail={
 							mailboxes.data &&
-							plural(
-								mailboxes.data.filter((one) => one.role !== null).length,
-								"you are a member of {count}",
-								"you are a member of {count}",
-							)
+							plural(yours, "you are a member of {count}", "you are a member of {count}")
 						}
 						to="/admin/mailboxes"
 						linkLabel={t("See mailboxes")}
@@ -76,7 +78,7 @@ export default function OverviewPage() {
 					/>
 				</Grid>
 				<Grid variant="2-1" gap="base" className="items-start">
-					<Card title={t("Mailboxes")}>
+					<Card title={t("Mailboxes and their members")}>
 						{(mailboxes.data ?? []).length === 0 ? (
 							<Empty size="sm" title={t("There are no mailboxes yet.")} />
 						) : (
@@ -98,7 +100,7 @@ export default function OverviewPage() {
 							</ul>
 						)}
 					</Card>
-					<Card title={t("Invitations waiting")}>
+					<Card title={t("Who is invited")}>
 						{waiting.length === 0 ? (
 							<Empty
 								size="sm"
