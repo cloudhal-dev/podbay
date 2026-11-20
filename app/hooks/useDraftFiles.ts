@@ -73,6 +73,16 @@ export function useDraftFiles(
 	const removals = useRef(new Map<string, Removal>());
 	/** The uploads on their way, by key, so a file taken away stops travelling at once. */
 	const travelling = useRef(new Map<string, AbortController>());
+	/**
+	 * The files the upload's loop is done with, by key, with the id each was declared under, or
+	 * `null` when it never was. The loop and a click each decide by this, not by the file as the
+	 * screen last drew it. The loop marks a file on every way out of its turn (its bytes stored,
+	 * its upload or its declaration failed, never declared), in the same step in which it last
+	 * looks whether the file was taken away; a click reads it in the step in which it takes the
+	 * file away. So whichever comes second sees the first: a removal is left to the loop only
+	 * while the loop will still look, and a removal that is opened is always finished (#140).
+	 */
+	const done = useRef(new Map<string, string | null>());
 
 	/** Marks a file as on its way out, until `finish` says whether it left. */
 	const leaving = (key: string, id: string | null) => {
@@ -183,6 +193,7 @@ export function useDraftFiles(
 				unhandled = at + 1;
 				// Taken away before it was sent: it is never declared.
 				if (gone.has(key)) {
+					done.current.set(key, null);
 					removals.current.get(key)?.finish(null);
 					continue;
 				}
@@ -210,6 +221,8 @@ export function useDraftFiles(
 					}
 				} catch (caught) {
 					if (!gone.has(key)) {
+						// Done with it: what was declared, if anything, a click takes out itself.
+						done.current.set(key, declaredId);
 						travelling.current.delete(key);
 						if (session !== writing.current) return;
 						patch(key, null);
@@ -219,6 +232,8 @@ export function useDraftFiles(
 					}
 				}
 				travelling.current.delete(key);
+				// Done with it, in the same step as the last look: from here a click takes it out.
+				done.current.set(key, declaredId);
 				// Taken away while it travelled: what was declared leaves the draft again.
 				if (gone.has(key)) {
 					const left =
@@ -239,26 +254,37 @@ export function useDraftFiles(
 				if (session === writing.current) patch(key, { uploading: null });
 			}
 		} finally {
-			for (const left of entries.slice(unhandled)) removals.current.get(left.key)?.finish(null);
+			// Never declared: done with, and any removal of them ends, since they left already.
+			for (const left of entries.slice(unhandled)) {
+				done.current.set(left.key, null);
+				removals.current.get(left.key)?.finish(null);
+			}
 		}
 	};
 
 	const removeFile = async (file: DraftFile) => {
 		patch(file.key, null);
-		// A file whose bytes are still on the way stops travelling, and leaves the draft after.
-		if (file.uploading !== null) {
+		// What the loop is done with is read here, not from the file as it was drawn: the drawing
+		// can still say "uploading" after the loop has looked for the last time.
+		// A removal already open for this file is the removal: a second click joins it.
+		if (removals.current.has(file.key)) return;
+		const finished = done.current.has(file.key);
+		// A file whose bytes are still on the way stops travelling, and the loop takes it out.
+		if (file.uploading !== null && !finished) {
 			removed.current.add(file.key);
 			leaving(file.key, file.id);
 			travelling.current.get(file.key)?.abort();
 			return;
 		}
-		if (!mailboxId || file.id === null) return;
+		// Done with by the loop, or never in flight: taken out here, if the draft holds it at all.
+		const id = finished ? (done.current.get(file.key) ?? null) : file.id;
+		if (!mailboxId || id === null) return;
 		const session = writing.current;
-		const removal = leaving(file.key, file.id);
+		const removal = leaving(file.key, id);
 		const draftId = await ensureDraft();
-		const left = draftId !== null && (await takeOut(draftId, file.id));
+		const left = draftId !== null && (await takeOut(draftId, id));
 		removal.finish(left ? null : file.name);
-		if (!left) stayed(session, file);
+		if (!left) stayed(session, { ...file, id, uploading: null });
 	};
 
 	/**

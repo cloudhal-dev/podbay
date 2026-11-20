@@ -14,7 +14,7 @@ import { message, Problem, Section } from "~/components/security/parts";
 import Sessions from "~/components/security/Sessions";
 import { dateLanguage, t } from "~/i18n";
 import { authClient, passkeysSupported, unwrap } from "~/lib/auth-client";
-import { sessionKeys, useMe } from "~/lib/session";
+import { sessionChanged, sessionKeys, useMe } from "~/lib/session";
 
 const PASSKEYS = ["security", "passkeys"] as const;
 
@@ -41,7 +41,7 @@ function Passkeys() {
 		try {
 			await withFreshProof(action);
 			await queryClient.invalidateQueries({ queryKey: PASSKEYS });
-			await queryClient.invalidateQueries({ queryKey: sessionKeys.me });
+			await sessionChanged(queryClient, sessionKeys.me);
 		} catch (caught) {
 			setError(message(caught, fallback));
 		} finally {
@@ -209,7 +209,7 @@ function AuthenticatorApp({ enabled }: { enabled: boolean }) {
 			setBusy(false);
 		}
 	}
-	const refresh = () => queryClient.invalidateQueries({ queryKey: sessionKeys.me });
+	const refresh = () => sessionChanged(queryClient, sessionKeys.me);
 
 	if (codes) {
 		return (

@@ -7,7 +7,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { t } from "~/i18n";
 import { rich } from "~/i18n/rich";
-import { acceptInvitation, invitationFor, signIn } from "~/lib/session";
+import { acceptInvitation, invitationFor, sessionChanged, signIn } from "~/lib/session";
 import { ApiError } from "~/services/api";
 
 const MIN_PASSWORD_LENGTH = 12;
@@ -35,7 +35,7 @@ export default function AcceptRoute() {
 		try {
 			await acceptInvitation(token, name.trim(), password);
 			await signIn(invitation.email, password);
-			await queryClient.invalidateQueries();
+			await sessionChanged(queryClient);
 			await navigate({ to: "/" });
 		} catch (caught) {
 			setError(

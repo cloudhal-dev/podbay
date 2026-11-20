@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from "react";
 import { t } from "~/i18n";
 import { needsFreshProof } from "~/lib/auth-client";
-import { sessionKeys, useMe } from "~/lib/session";
+import { sessionChanged, sessionKeys, useMe } from "~/lib/session";
 import SignInSteps from "./SignInSteps";
 
 type Run = <T>(action: () => Promise<T>) => Promise<T>;
@@ -63,7 +63,7 @@ export function FreshProofProvider({ children }: { children: ReactNode }) {
 							<SignInSteps
 								fixedEmail={me?.user.email ?? ""}
 								onDone={async () => {
-									await queryClient.invalidateQueries({ queryKey: sessionKeys.me });
+									await sessionChanged(queryClient, sessionKeys.me);
 									finish(true);
 								}}
 							/>
