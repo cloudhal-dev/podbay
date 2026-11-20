@@ -136,8 +136,40 @@ describe("what a package or a module may import, from its own path and manifest"
 		}
 		expect(dynamic("app/router.tsx", 'import("@podbay/mail/app")')).toEqual([]);
 		expect(dynamic("modules/mail/app/a.tsx", "import('./b')")).toEqual([]);
-		// Words about it in a comment are not an import.
-		expect(importProblems("app/x.ts", "// import(name) is refused\nexport {};", WORLD)).toEqual([]);
+	});
+
+	it("reads every rule where a miss is the danger from the whole text, whatever came before", () => {
+		const shell = (file: string, ...lines: string[]) =>
+			importProblems(file, lines.join("\n"), WORLD);
+		// A string holding "/*" or " //" must not hide what follows it.
+		for (const tail of [
+			'const m = await import("../modules/mail/worker/x");',
+			'export * from "../modules/mail/worker/x";',
+			`const n = await import(\`../modules/mail/worker/\${name}\`);`,
+		]) {
+			expect(shell("workers/index.ts", 'app.use("/api/*", guard);', tail), tail).not.toEqual([]);
+		}
+		expect(
+			shell(
+				"app/routes.tsx",
+				'const glob = "routes/*";',
+				'const A = lazy(() => import("@podbay/mail/worker"));',
+			),
+		).not.toEqual([]);
+		expect(
+			shell(
+				"workers/x.ts",
+				'const u = "a //b"; const m = await import("../modules/mail/worker/x");',
+			),
+		).not.toEqual([]);
+		// A name that is not ASCII, and a statement that does not start its line.
+		expect(shell("workers/x.ts", 'import é from "../modules/mail/worker/x";')).not.toEqual([]);
+		expect(
+			shell("modules/mail/worker/a.ts", 'const a = 1; import { b } from "react-dom";'),
+		).not.toEqual([]);
+		expect(shell("modules/mail/worker/a.ts", 'import é from "react-dom";')).not.toEqual([]);
+		// Read from the whole text, an import() in a comment counts too: a false alarm costs a line.
+		expect(shell("app/x.ts", "// import(name) is refused", "export {};")).not.toEqual([]);
 	});
 
 	it("reads imports from statements only, over lines, and never from a string", () => {

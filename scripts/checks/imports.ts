@@ -37,9 +37,32 @@ import { existsSync, readdirSync } from "node:fs";
 import { posix } from "node:path";
 import { type Check, read, readJson, repoFiles } from "./lib.ts";
 
+/**
+ * Two readings, chosen by what a mistake costs.
+ *
+ * - **The whole text** (`wideSpecs`): every `from "…"`, `import "…"` and `import("…")`, in code,
+ *   strings and comments alike. Every rule where a miss is the danger reads this: a path into a
+ *   module or the shell, the wrong side's entry, a climb out of a name, the Node-only modules,
+ *   the UI and the Worker apart, and the counted debt. Words that only look like an import cost
+ *   a false alarm, which costs a line; nothing that is an import can hide from it.
+ * - **Statements** (`importSpecs`): the source of an import or export statement, with comments
+ *   taken out. Only the question "is this bare name declared in the manifest" reads this, since
+ *   prose in a string (the assistant's prompt says 'from "…"') would otherwise be read as an
+ *   import of an undeclared package. It reads a statement wherever it starts on its line and
+ *   whatever its names are written in, but it does not know a string from code: a string holding
+ *   a comment's opening can hide what follows it. A miss there lets an undeclared package pass
+ *   the manifest rule, never a path past the boundaries, which the whole text holds.
+ */
+const WIDE = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
+
+/** What the whole text names as an import, strings and comments included. */
+export function wideSpecs(source: string): string[] {
+	return [...source.matchAll(WIDE)].map((match) => match[1] ?? "");
+}
+
 /** An import or export statement's source: default, named, namespace or type, over lines. */
 const STATEMENT =
-	/^[ \t]*(?:import|export)\s+(?:type\s+)?(?:[\w$]+\s*,?\s*)?(?:\{[^}]*\}\s*)?(?:\*\s*(?:as\s+[\w$]+\s*)?)?from\s*["']([^"']+)["']/gm;
+	/(?<![\w$.])(?:import|export)\s+(?:type\s+)?(?:[^\s,{}*"'`;]+\s*,?\s*)?(?:\{[^}]*\}\s*)?(?:\*\s*(?:as\s+[^\s,{}*"'`;]+\s*)?)?from\s*["']([^"']+)["']/g;
 /** An import for its effect alone: `import "x";`. */
 const BARE = /^[ \t]*import\s*["']([^"']+)["']/gm;
 /** A dynamic import of one plain string. */
@@ -125,7 +148,7 @@ export function boundaryProblems(
 	const problems: string[] = [];
 	const place = placeOf(file);
 	const refuse = (spec: string, why: string) => problems.push(`${file}: ${why} (${spec})`);
-	for (const spec of importSpecs(source)) {
+	for (const spec of wideSpecs(source)) {
 		const relative = spec.startsWith(".");
 		const target = relative ? posix.normalize(posix.join(posix.dirname(file), spec)) : "";
 		const named = /^@podbay\/([^/]+)(\/.*)?$/.exec(spec);
@@ -149,7 +172,6 @@ export function boundaryProblems(
 			continue;
 		}
 
-		const manifest = world.manifest(place.root) ?? {};
 		if (relative) {
 			if (place.kind === "package") {
 				if (!target.startsWith(`${place.root}/`))
@@ -189,8 +211,14 @@ export function boundaryProblems(
 		}
 		if (spec.startsWith("~/") || spec.startsWith("node:") || spec === "fs" || spec === "path") {
 			refuse(spec, "not a package, a module's entry or a declared dependency");
-			continue;
 		}
+		// A bare name: whether it is declared is read from statements, below.
+	}
+	if (place.kind === "shell") return problems;
+	const manifest = world.manifest(place.root) ?? {};
+	for (const spec of importSpecs(source)) {
+		if (/^(\.|@podbay\/|cloudflare:|~\/|node:)/.test(spec) || spec === "fs" || spec === "path")
+			continue;
 		const name = packageName(spec);
 		if (
 			manifest.dependencies?.[name] === undefined &&
@@ -209,7 +237,8 @@ function withoutComments(source: string): string {
 
 /** Every `import(` whose argument is not one plain string, which this check could not read. */
 export function unreadImports(file: string, source: string): string[] {
-	const code = withoutComments(source);
+	// The whole text: a miss here would let any import past every rule.
+	const code = source;
 	const problems: string[] = [];
 	for (const call of code.matchAll(/\bimport\s*\(/g)) {
 		const rest = code.slice((call.index ?? 0) + call[0].length);
@@ -240,7 +269,7 @@ export function authImports(files: readonly [string, string][]): Map<string, num
 		const place = placeOf(file);
 		if (place.kind !== "module") continue;
 		const reached = new Set<string>();
-		for (const spec of importSpecs(source)) {
+		for (const spec of wideSpecs(source)) {
 			if (!spec.startsWith(".")) continue;
 			const target = posix.normalize(posix.join(posix.dirname(file), spec)).replace(/\.ts$/, "");
 			if (target.startsWith("workers/auth/")) reached.add(`${target}.ts`);
@@ -290,7 +319,7 @@ export function importProblems(file: string, source: string, world: World = repo
 		problems.push(...unreadImports(file, source));
 	}
 	if (!worker && !ui) return problems;
-	for (const spec of importSpecs(source)) {
+	for (const spec of wideSpecs(source)) {
 		if (worker && (spec.startsWith("node:") || spec === "fs" || spec === "path")) {
 			problems.push(`${file}: imports the Node-only module "${spec}"`);
 		}
