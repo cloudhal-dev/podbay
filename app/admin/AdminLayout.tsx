@@ -7,6 +7,7 @@ import {
 	EnvelopeSimpleIcon,
 	type Icon,
 	ShieldCheckIcon,
+	SquaresFourIcon,
 	UsersIcon,
 } from "@phosphor-icons/react";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
@@ -25,7 +26,8 @@ interface AdminPart {
  * here, with its route in `./routes.ts`: one line each. The groups leave room for the parts to
  * come (an overview with figures, domains, activity).
  */
-export const ADMIN_GROUPS: readonly { label: string; parts: readonly AdminPart[] }[] = [
+export const ADMIN_GROUPS: readonly { label?: string; parts: readonly AdminPart[] }[] = [
+	{ parts: [{ to: "/admin", label: m("Overview"), icon: SquaresFourIcon }] },
 	{
 		label: m("Directory"),
 		parts: [
@@ -61,11 +63,15 @@ export default function AdminLayout() {
 				<Sidebar.Content>
 					<nav aria-label={t("Administration")}>
 						{ADMIN_GROUPS.map((group) => (
-							<Sidebar.Group key={group.label}>
-								<Sidebar.GroupLabel>{t(group.label)}</Sidebar.GroupLabel>
+							<Sidebar.Group key={group.parts[0]?.to}>
+								{group.label && <Sidebar.GroupLabel>{t(group.label)}</Sidebar.GroupLabel>}
 								<Sidebar.Menu>
 									{group.parts.map((part) => {
-										const active = pathname === part.to || pathname.startsWith(`${part.to}/`);
+										// The Overview is the area's own address; a part is active on its pages too.
+										const active =
+											part.to === "/admin"
+												? pathname === "/admin" || pathname === "/admin/"
+												: pathname === part.to || pathname.startsWith(`${part.to}/`);
 										return (
 											<Sidebar.MenuButton
 												key={part.to}
