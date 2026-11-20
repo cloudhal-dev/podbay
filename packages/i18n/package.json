@@ -1,0 +1,12 @@
+{
+	"name": "@podbay/i18n",
+	"version": "0.0.0",
+	"private": true,
+	"description": "The message runtime every module's words go through, and dates in the reader's language; each module hands it its own catalogs (ADR-0018, decisions 2 and 8)",
+	"license": "Apache-2.0",
+	"type": "module",
+	"exports": {
+		".": "./index.ts",
+		"./dates": "./dates.ts"
+	}
+}

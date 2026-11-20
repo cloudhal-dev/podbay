@@ -21,8 +21,8 @@ import {
 	TrashIcon,
 	WarningOctagonIcon,
 } from "@phosphor-icons/react";
+import { formatDetailDate } from "@podbay/i18n/dates";
 import { useState } from "react";
-import { formatDetailDate } from "shared/dates";
 import IconButton from "~/components/IconButton";
 import { useDisplay } from "~/hooks/useDisplay";
 import { dateLanguage, t } from "~/i18n";

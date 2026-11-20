@@ -187,7 +187,7 @@ A new behaviour of this kind gets a line here and a test there, in the same chan
 
 ### Words are messages (D8, `pnpm static messages`)
 
-The app speaks English and Turkish. Every word a person reads or hears goes through `app/i18n/`:
+The app speaks English and Turkish. Every word a person reads or hears goes through `~/i18n` (`app/i18n/index.ts`), which hands the app's catalogs to the message runtime, `@podbay/i18n` in `packages/i18n/`; a screen never imports the runtime itself:
 
 | To show | Write | Why |
 |---|---|---|

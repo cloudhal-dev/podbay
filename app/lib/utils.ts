@@ -3,6 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { formatQuotedDate } from "@podbay/i18n/dates";
 /**
  * Shared utility functions used across the frontend.
  *
@@ -10,7 +11,6 @@
  * Re-export for backwards compatibility with existing imports.
  */
 import DOMPurify from "dompurify";
-import { formatQuotedDate } from "shared/dates";
 import { oneLineTextOf, plainTextOf } from "shared/html-text";
 import { quoteLanguage, t } from "../i18n";
 
@@ -18,7 +18,7 @@ export {
 	formatDetailDate,
 	formatListDate,
 	formatShortDate,
-} from "shared/dates";
+} from "@podbay/i18n/dates";
 
 /** @deprecated Use `formatQuotedDate` from `shared/dates` directly. */
 export const formatComposeDate = formatQuotedDate;

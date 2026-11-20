@@ -6,7 +6,7 @@
  * and the times the app offers for sending later. Pure functions: the screens show what these
  * return, and the unit tests hold them.
  */
-import { formatDetailDate } from "shared/dates";
+import { formatDetailDate } from "@podbay/i18n/dates";
 import { SENDING } from "shared/sending";
 import { dateLanguage, m, t } from "~/i18n";
 

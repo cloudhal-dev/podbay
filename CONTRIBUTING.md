@@ -17,6 +17,8 @@ pnpm check      # everything CI runs: lint, static checks, typecheck, tests, bui
 pnpm dev        # local development with simulated mail
 ```
 
+Run `pnpm install` again after you pull a change to `pnpm-workspace.yaml` or any `package.json`. The code shared by the parts of the product lives in workspace packages under `packages/`, and pnpm links each one into `node_modules` only when it installs. Until it does, a new package does not resolve: the dev server answers 500, and the type check and tests fail to find it.
+
 The two slower suites run in CI on every pull request; run them yourself when you touch what they prove:
 
 ```bash

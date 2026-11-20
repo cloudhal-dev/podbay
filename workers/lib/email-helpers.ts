@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { formatQuotedDate } from "../../shared/dates";
+import { formatQuotedDate } from "@podbay/i18n/dates";
 import { Folders } from "../../shared/folders";
 import { oneLineTextOf } from "../../shared/html-text";
 /**
