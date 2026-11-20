@@ -5,7 +5,7 @@
  * Sign-in, sign-out, setup and the signed-in person. Plain requests to the Worker: the session
  * lives in a cookie that scripts cannot read, so there is nothing to keep in the browser.
  */
-import { useQuery } from "@tanstack/react-query";
+import { type QueryClient, type QueryKey, useQuery } from "@tanstack/react-query";
 import type { ChoicesAnswer, ChoicesChange } from "shared/choices";
 import { closeLive } from "~/lib/live";
 import { ApiError } from "~/services/api";
@@ -38,6 +38,26 @@ export const sessionKeys = {
 	me: ["session", "me"] as const,
 	setup: ["session", "setup"] as const,
 };
+
+/**
+ * After the session changed, every question asked before the change answered for the session
+ * before it, so its answer is not waited for: it is cancelled, then asked again. Waiting would
+ * not do: the query library hands a request still on its way to whoever asks again while the
+ * query has no answer yet (a refetch cancels one only when there is an answer to keep), so a
+ * "who am I" sent before signing in would come back "nobody" after it (#140).
+ *
+ * The changes of the session the app itself makes go through here: signing in (the sign-in
+ * screen, an accepted invitation, the first owner's setup), a recovery, which ends every session,
+ * and confirming who one is or changing the second step, which change what the session may do
+ * (`only`: the person alone). Signing out clears everything instead (`queryClient.clear()`),
+ * which no answer on its way can reach. A session that ends by itself or in another browser is
+ * not a change the app makes: nothing here is called for it.
+ */
+export async function sessionChanged(client: QueryClient, only?: QueryKey): Promise<void> {
+	const filters = only === undefined ? {} : { queryKey: only };
+	await client.cancelQueries(filters);
+	await client.invalidateQueries(filters);
+}
 
 /** The signed-in person, or null when there is no session. */
 export function useMe() {

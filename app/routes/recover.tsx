@@ -2,12 +2,12 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
 import { Button, Input } from "@cloudflare/kumo";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { t } from "~/i18n";
 import { rich } from "~/i18n/rich";
-import { recoveryFor, redeemRecovery } from "~/lib/session";
+import { recoveryFor, redeemRecovery, sessionChanged } from "~/lib/session";
 import { ApiError } from "~/services/api";
 
 const MIN_PASSWORD_LENGTH = 12;
@@ -22,6 +22,7 @@ export default function RecoverRoute() {
 		queryFn: () => recoveryFor(token),
 		retry: false,
 	});
+	const queryClient = useQueryClient();
 	const [password, setPassword] = useState("");
 	const [again, setAgain] = useState("");
 	const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,8 @@ export default function RecoverRoute() {
 		setError(null);
 		try {
 			await redeemRecovery(token, password);
+			// Every session of the account ended, this browser's too if it had one.
+			await sessionChanged(queryClient);
 			setPassword("");
 			setAgain("");
 			setDone(true);

@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { t } from "~/i18n";
-import { createFirstOwner, signIn, useSetupStatus } from "~/lib/session";
+import { createFirstOwner, sessionChanged, signIn, useSetupStatus } from "~/lib/session";
 import { ApiError } from "~/services/api";
 
 const MIN_PASSWORD_LENGTH = 12;
@@ -38,7 +38,7 @@ export default function SetupRoute() {
 				password,
 			});
 			await signIn(email.trim(), password);
-			await queryClient.invalidateQueries();
+			await sessionChanged(queryClient);
 			await navigate({ to: "/" });
 		} catch (caught) {
 			setError(
