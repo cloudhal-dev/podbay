@@ -19,7 +19,12 @@ import {
 } from "../../app/i18n/index.ts";
 import { rich } from "../../app/i18n/rich.ts";
 import { tr } from "../../app/i18n/tr.ts";
-import { bareWords, catalogProblems, messagesOf } from "../../scripts/checks/messages.ts";
+import {
+	bareWords,
+	catalogProblems,
+	messagesOf,
+	unreadPlurals,
+} from "../../scripts/checks/messages.ts";
 
 afterEach(() => setLanguage("en"));
 
@@ -128,6 +133,27 @@ describe("the messages check", () => {
 			"A long message on a line of its own",
 			"{count} attachment",
 			"{count} attachments",
+		]);
+	});
+
+	it("refuses a plural() it cannot read, so it passes only by having read every one", () => {
+		const source = [
+			'const a = plural(files.length, "{count} file", "{count} files");',
+			"const b = plural(",
+			"\tmessages,",
+			'\t"{count} message",',
+			'\t"{count} messages",',
+			");",
+			'const c = plural(count("owner"), "{count} owner", "{count} owners");',
+			"const d = plural(n, ONE, OTHER);",
+			'const e = plural(list.filter((x) => x.on).length, "{count} on", "{count} on");',
+			"// plural(count(), words) in a comment is prose",
+			"export function plural(count: number, one: string, other: string) {}",
+		].join("\n");
+		expect(unreadPlurals("app/x.tsx", source)).toEqual([
+			"app/x.tsx:7: plural() is given what this check cannot read; give it a plain count and two literal strings (rule D8)",
+			"app/x.tsx:8: plural() is given what this check cannot read; give it a plain count and two literal strings (rule D8)",
+			"app/x.tsx:9: plural() is given what this check cannot read; give it a plain count and two literal strings (rule D8)",
 		]);
 	});
 

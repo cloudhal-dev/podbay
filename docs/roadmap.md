@@ -53,7 +53,7 @@ Known defects that stand in the way are in [status](status.md), section 3: conve
 
 [ADR-0018](adr/0018-one-workspace-one-worker-many-modules.md), accepted on 2026-11-19, makes the repository a pnpm workspace of apps, modules and shared packages, with every module in the one Worker and nothing an installed instance depends on renamed. It builds no module and moves no phase. The move is several small pull requests, in this order:
 
-1. The checks that pin versions and read licences read every package of the workspace. This may come at any time.
+1. The checks that pin versions and read licences read every package of the workspace. **Done**: on 2026-11-19 (`e5220bc`), with the exceptions kept in the root `package.json` ([status](status.md), the pins row); on 2026-11-20 the messages check came to refuse what it cannot read.
 2. The shared packages, one at a time, out of `shared/`.
 3. Mail into `modules/mail`, its Worker side and its app side each in its own change.
 4. The shell into `apps/podbay`.

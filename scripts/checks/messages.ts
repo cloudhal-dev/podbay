@@ -3,9 +3,11 @@
  * `t("…")`, `plural(…)` or `rich("…")`, or kept in a constant under `m("…")`; every other
  * language has a catalog in `app/i18n/<language>.ts`.
  *
- * This check holds three things:
+ * This check holds four things:
  *  - every message the code names has a translation in every catalog, with the same `{values}`;
  *  - a catalog holds nothing the code no longer names;
+ *  - every call of `plural` is one it can read: a plain count and two literal strings. One it
+ *    cannot read would name messages it never sees, and pass with no translation; it is refused;
  *  - words do not stand bare in the markup of a screen (text between tags, and the attributes
  *    a person reads or hears).
  *
@@ -24,6 +26,8 @@ const NOT_A_CATALOG = new Set(["index.ts", "rich.ts"]);
 const STRING = String.raw`("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')`;
 const NAMED = new RegExp(String.raw`(?<![\w.])(?:t|m|rich)\(\s*${STRING}`, "g");
 const PLURAL = new RegExp(String.raw`(?<![\w.])plural\(\s*[^,()]+,\s*${STRING},\s*${STRING}`, "g");
+/** Every call of `plural`, read or not; a definition (`function plural(`) is not a call. */
+const PLURAL_CALL = /(?<![\w.])(?<!function\s+)plural\(/g;
 const VALUE = /\{(\w+)\}/g;
 
 /** Names and code are not words: they read the same in every language. */
@@ -61,6 +65,26 @@ export function messagesOf(source: string): string[] {
 		found.push(literal(match[1] ?? '""'), literal(match[2] ?? '""'));
 	}
 	return found;
+}
+
+/**
+ * Calls of `plural` this check cannot read: anything but a plain count and two literal strings
+ * (a count that is itself a call, say). Each would name messages the check never sees.
+ */
+export function unreadPlurals(file: string, source: string): string[] {
+	const code = withoutComments(source);
+	const problems: string[] = [];
+	for (const call of code.matchAll(PLURAL_CALL)) {
+		const at = call.index ?? 0;
+		const read = new RegExp(PLURAL.source, "y");
+		read.lastIndex = at;
+		if (read.test(code)) continue;
+		const line = code.slice(0, at).split("\n").length;
+		problems.push(
+			`${file}:${line}: plural() is given what this check cannot read; give it a plain count and two literal strings (rule D8)`,
+		);
+	}
+	return problems;
 }
 
 const valuesOf = (text: string): string =>
@@ -150,6 +174,7 @@ export const check: Check = {
 			if (!UI_FILE.test(file) || file.startsWith(`${CATALOG_DIR}/`) || !existsSync(file)) continue;
 			const source = read(file);
 			for (const message of messagesOf(source)) if (!named.has(message)) named.set(message, file);
+			problems.push(...unreadPlurals(file, source));
 			problems.push(...bareWords(file, source));
 		}
 		for (const [language, catalog] of await catalogs()) {
