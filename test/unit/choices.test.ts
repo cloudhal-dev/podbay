@@ -297,7 +297,8 @@ describe("where the schema is loaded", () => {
 	it("gives nobody but the person's own two routes a way to the stored choices", () => {
 		// The table is named in its migration, in the store that reads and merges it, and nowhere
 		// else in the Worker: not in the list of people, not in a tool of the assistant or MCP.
-		const naming = sources("workers").filter((file) =>
+		// Mail's Worker side is read too: its code moved out of workers/ (ADR-0018, step 3.1).
+		const naming = [...sources("workers"), ...sources("modules/mail/worker")].filter((file) =>
 			/user_choices|auth\/choices|shared\/choices/.test(readFileSync(file, "utf8")),
 		);
 		expect(naming.sort()).toEqual(["workers/auth/choices.ts", "workers/routes/choices.ts"]);

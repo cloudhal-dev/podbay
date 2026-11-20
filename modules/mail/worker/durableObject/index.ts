@@ -283,7 +283,7 @@ export class MailboxDO extends DurableObject<Env> {
 
 	/**
 	 * Deletes a message's rows and names the objects it had at that moment. The caller has
-	 * deleted its objects first (`messageKeys`, `workers/lib/messages.ts`). A message that waits
+	 * deleted its objects first (`messageKeys`, `lib/messages.ts`). A message that waits
 	 * to leave is not deleted: it is taken back first.
 	 */
 	async deleteEmail(id: string) {
@@ -369,7 +369,7 @@ export class MailboxDO extends DurableObject<Env> {
 	/**
 	 * Takes a message a person sent: it waits in Scheduled and leaves at its time. Nothing is
 	 * handed to the sending service here. The assistant and MCP get a handle on the mailbox
-	 * without this method and the three after it (`workers/agent/tools.ts`).
+	 * without this method and the three after it (`agent/tools.ts`).
 	 */
 	async submit(message: submissions.ToTake) {
 		const taken = submissions.take(this.ctx.storage, message, Date.now());
@@ -397,7 +397,7 @@ export class MailboxDO extends DurableObject<Env> {
 	}
 
 	// ── Rules for incoming mail (ADR-0008, ./rules, ./auto-reply) ──
-	// The assistant and MCP get a handle on the mailbox without these (`workers/agent/tools.ts`).
+	// The assistant and MCP get a handle on the mailbox without these (`agent/tools.ts`).
 
 	async getRules() {
 		return rules.list(this.ctx.storage.sql);

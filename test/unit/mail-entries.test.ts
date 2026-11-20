@@ -7,7 +7,7 @@
  * that builds a schema with the schema library is given as types only, or not at all, so the
  * library stays out of the app's bundle.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const ENTRY = "modules/mail/shared/index.ts";
@@ -47,5 +47,22 @@ describe("mail's shared entry", () => {
 				'export * from "./a.ts";\nexport type * from "./b.ts";\nexport { type C, d } from "./e.ts";\nexport { type F } from "./g.ts";',
 			),
 		).toEqual(["a.ts", "e.ts"]);
+	});
+});
+
+describe("mail's router", () => {
+	it("is mounted once, by the shell's API behind its guard: only workers/index.ts takes it", () => {
+		const shipped = ["workers", "app", "shared", "packages", "modules"].flatMap((root) =>
+			readdirSync(root, { recursive: true, encoding: "utf8" })
+				.filter((name) => /\.tsx?$/.test(name))
+				.map((name) => `${root}/${name}`),
+		);
+		const takers = shipped.filter((file) =>
+			/\{[^}]*\bapp\b[^}]*\}\s*from\s*"(@podbay\/mail\/worker|[./]*router(\.ts)?)"/.test(
+				readFileSync(file, "utf8"),
+			),
+		);
+		// The entry itself gives it on; the shell's API is the one that mounts it.
+		expect(takers.sort()).toEqual(["modules/mail/worker/index.ts", "workers/index.ts"]);
 	});
 });

@@ -8,7 +8,7 @@
  *
  * **Nothing leaves here.** A send route checks the request, stores the message in Scheduled
  * with the time it leaves, and answers. The message leaves later, from the mailbox's own
- * object (`workers/durableObject/leaving.ts`), which reads it from the stored rows: nothing
+ * object (`durableObject/leaving.ts`), which reads it from the stored rows: nothing
  * of the request reaches the sending service by any other way.
  *
  * A message with files is sent from its draft (ADR-0011): the request names the draft, whose

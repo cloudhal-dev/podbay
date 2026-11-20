@@ -6,14 +6,14 @@
 /ratchets.json            @madraka
 /biome.json               @madraka
 /docs/engineering-rules.md @madraka
-/workers/lib/inbound.ts   @madraka
-/workers/lib/filenames.ts @madraka
+/modules/mail/shared/inbound.ts       @madraka
+/modules/mail/worker/lib/filenames.ts @madraka
 /.claude/skills/          @madraka
 /docs/security/           @madraka
 /docs/cloudflare/         @madraka
 /app/lib/mail-html.ts     @madraka
 /app/components/EmailIframe.tsx @madraka
-/shared/log.ts            @madraka
+/packages/platform/log.ts             @madraka
 /.github/dependabot.yml   @madraka
 /workers/auth/            @madraka
 /workers/routes/account.ts @madraka

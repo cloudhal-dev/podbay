@@ -35,7 +35,7 @@ export const MAX_RECIPIENTS = 50;
 
 /**
  * What the text of a message weighs on its way to the sending service, in both its forms.
- * Its files are counted beside it, as the base64 they travel as (`workers/lib/outgoing.ts`).
+ * Its files are counted beside it, as the base64 they travel as (`modules/mail/worker/lib/outgoing.ts`).
  */
 export function messageBytes(message: { html?: string; text?: string }): number {
 	const encoder = new TextEncoder();

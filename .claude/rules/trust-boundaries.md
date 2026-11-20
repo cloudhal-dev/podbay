@@ -2,6 +2,10 @@
 paths:
   - "workers/auth/**"
   - "workers/routes/**"
+  - "workers/index.ts"
+  - "modules/mail/worker/index.ts"
+  - "modules/mail/worker/routes/**"
+  - "modules/mail/worker/standing.ts"
   - "modules/mail/worker/mcp/**"
   - "modules/mail/worker/agent/**"
   - "workers/app.ts"

@@ -5,7 +5,7 @@
  * What mail needs of the Worker it runs in: the bindings and variables it uses, by the names
  * `wrangler.jsonc` gives them (ADR-0018, decision 3: none of them changes name). The shell's own
  * Env, generated from `wrangler.jsonc`, has all of these, so mail never names the shell's type.
- * Secrets are not here: they are read with the shell's `secret()`.
+ * Mail reads no secret: none is here, and nothing of mail asks the shell for one.
  */
 import type { EmailAgent } from "./agent";
 import type { MailboxDO } from "./durableObject";
