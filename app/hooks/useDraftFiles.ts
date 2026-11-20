@@ -73,6 +73,15 @@ export function useDraftFiles(
 	const removals = useRef(new Map<string, Removal>());
 	/** The uploads on their way, by key, so a file taken away stops travelling at once. */
 	const travelling = useRef(new Map<string, AbortController>());
+	/**
+	 * The files the upload's loop is done with, by key, and the id each was declared under. The
+	 * loop and a click each decide by this, not by the file as the screen last drew it: the loop
+	 * adds a file here in the same step in which it looks whether the file was taken away, and a
+	 * click reads it in the step in which it takes the file away. So whichever comes second sees
+	 * the first, and a removal that is opened is always finished (#140): by the loop when the file
+	 * was taken away before it looked, by the click when after.
+	 */
+	const landed = useRef(new Map<string, string>());
 
 	/** Marks a file as on its way out, until `finish` says whether it left. */
 	const leaving = (key: string, id: string | null) => {
@@ -236,6 +245,8 @@ export function useDraftFiles(
 					}
 					continue;
 				}
+				// Done with it: from here a click takes it out itself.
+				if (declaredId !== null) landed.current.set(key, declaredId);
 				if (session === writing.current) patch(key, { uploading: null });
 			}
 		} finally {
@@ -245,20 +256,24 @@ export function useDraftFiles(
 
 	const removeFile = async (file: DraftFile) => {
 		patch(file.key, null);
-		// A file whose bytes are still on the way stops travelling, and leaves the draft after.
-		if (file.uploading !== null) {
+		// What the loop is done with is read here, not from the file as it was drawn: the drawing
+		// can still say "uploading" after the loop has looked for the last time.
+		const landedId = landed.current.get(file.key);
+		// A file whose bytes are still on the way stops travelling, and the loop takes it out.
+		if (file.uploading !== null && landedId === undefined) {
 			removed.current.add(file.key);
 			leaving(file.key, file.id);
 			travelling.current.get(file.key)?.abort();
 			return;
 		}
-		if (!mailboxId || file.id === null) return;
+		const id = landedId ?? file.id;
+		if (!mailboxId || id === null) return;
 		const session = writing.current;
-		const removal = leaving(file.key, file.id);
+		const removal = leaving(file.key, id);
 		const draftId = await ensureDraft();
-		const left = draftId !== null && (await takeOut(draftId, file.id));
+		const left = draftId !== null && (await takeOut(draftId, id));
 		removal.finish(left ? null : file.name);
-		if (!left) stayed(session, file);
+		if (!left) stayed(session, { ...file, id, uploading: null });
 	};
 
 	/**

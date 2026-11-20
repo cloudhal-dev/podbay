@@ -15,6 +15,7 @@
 		"app/lib/live.ts",
 		"app/lib/utils.ts",
 		"app/hooks/useDisplay.ts",
+		"app/hooks/useDraftFiles.ts",
 		"app/hooks/useUIStore.ts",
 		"app/hooks/useAnswerFollowsToWindow.ts",
 		"app/components/EmailIframe.tsx",
