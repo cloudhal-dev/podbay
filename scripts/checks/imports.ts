@@ -37,7 +37,21 @@ import { existsSync, readdirSync } from "node:fs";
 import { posix } from "node:path";
 import { type Check, read, readJson, repoFiles } from "./lib.ts";
 
-const IMPORT = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
+/** An import or export statement's source: default, named, namespace or type, over lines. */
+const STATEMENT =
+	/^[ \t]*(?:import|export)\s+(?:type\s+)?(?:[\w$]+\s*,?\s*)?(?:\{[^}]*\}\s*)?(?:\*\s*(?:as\s+[\w$]+\s*)?)?from\s*["']([^"']+)["']/gm;
+/** An import for its effect alone: `import "x";`. */
+const BARE = /^[ \t]*import\s*["']([^"']+)["']/gm;
+/** A dynamic import of one plain string. */
+const DYNAMIC = /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g;
+
+/** What a file imports, read from its statements only: words in a string or a comment are not. */
+export function importSpecs(source: string): string[] {
+	const code = withoutComments(source);
+	return [STATEMENT, BARE, DYNAMIC].flatMap((pattern) =>
+		[...code.matchAll(pattern)].map((match) => match[1] ?? ""),
+	);
+}
 /** The message runtime itself, by its name or its path, but not its dates. */
 const RUNTIME = /^(@podbay\/i18n|.*\bpackages\/i18n)(\/index(\.ts)?)?$/;
 
@@ -111,8 +125,7 @@ export function boundaryProblems(
 	const problems: string[] = [];
 	const place = placeOf(file);
 	const refuse = (spec: string, why: string) => problems.push(`${file}: ${why} (${spec})`);
-	for (const match of source.matchAll(IMPORT)) {
-		const spec = match[1] ?? "";
+	for (const spec of importSpecs(source)) {
 		const relative = spec.startsWith(".");
 		const target = relative ? posix.normalize(posix.join(posix.dirname(file), spec)) : "";
 		const named = /^@podbay\/([^/]+)(\/.*)?$/.exec(spec);
@@ -227,8 +240,7 @@ export function authImports(files: readonly [string, string][]): Map<string, num
 		const place = placeOf(file);
 		if (place.kind !== "module") continue;
 		const reached = new Set<string>();
-		for (const match of source.matchAll(IMPORT)) {
-			const spec = match[1] ?? "";
+		for (const spec of importSpecs(source)) {
 			if (!spec.startsWith(".")) continue;
 			const target = posix.normalize(posix.join(posix.dirname(file), spec)).replace(/\.ts$/, "");
 			if (target.startsWith("workers/auth/")) reached.add(`${target}.ts`);
@@ -278,8 +290,7 @@ export function importProblems(file: string, source: string, world: World = repo
 		problems.push(...unreadImports(file, source));
 	}
 	if (!worker && !ui) return problems;
-	for (const match of source.matchAll(IMPORT)) {
-		const spec = match[1] ?? "";
+	for (const spec of importSpecs(source)) {
 		if (worker && (spec.startsWith("node:") || spec === "fs" || spec === "path")) {
 			problems.push(`${file}: imports the Node-only module "${spec}"`);
 		}

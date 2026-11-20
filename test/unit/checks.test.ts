@@ -5,6 +5,7 @@ import {
 	authImports,
 	debtProblems,
 	importProblems,
+	importSpecs,
 	manifestNameProblems,
 	type World,
 } from "../../scripts/checks/imports.ts";
@@ -137,6 +138,34 @@ describe("what a package or a module may import, from its own path and manifest"
 		expect(dynamic("modules/mail/app/a.tsx", "import('./b')")).toEqual([]);
 		// Words about it in a comment are not an import.
 		expect(importProblems("app/x.ts", "// import(name) is refused\nexport {};", WORLD)).toEqual([]);
+	});
+
+	it("reads imports from statements only, over lines, and never from a string", () => {
+		const source = [
+			'import type { A } from "type-only";',
+			"import {",
+			"\tb,",
+			"\tc,",
+			'} from "over-lines";',
+			'import d, { e } from "default-and-named";',
+			'import * as f from "namespace";',
+			'export * from "./again";',
+			'export { g } from "./named-again";',
+			'import "./effect";',
+			'const h = await import("./later");',
+			'const prompt = `Say where it is from "not an import" and import "nor this".`;',
+			'const note = "export a from \\"nor this\\"";',
+		].join("\n");
+		expect(importSpecs(source)).toEqual([
+			"type-only",
+			"over-lines",
+			"default-and-named",
+			"namespace",
+			"./again",
+			"./named-again",
+			"./effect",
+			"./later",
+		]);
 	});
 
 	it("names every package and module after its folder", () => {
