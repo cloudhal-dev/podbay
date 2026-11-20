@@ -1,12 +1,12 @@
 # ADR-0019: Figures in the administration area: an instance's counts, a mailbox's own figures, and charts by echarts
 
-- Status: **Proposed**
+- Status: **Accepted**
 - Date: 2026-11-20
-- Decided by: the project lead, when accepted. The lead decided what to build on 2026-11-20 ([#130](https://github.com/cloudhal-dev/podbay/issues/130), comment 7024361515); this record proposes how, and what that decision left open.
+- Decided by: Halil (@madraka), project lead, on 2026-11-20, as proposed, with options B1 and A1 ([#132](https://github.com/cloudhal-dev/podbay/pull/132), comment 7033486834). The lead decided what to build on 2026-11-20 ([#130](https://github.com/cloudhal-dev/podbay/issues/130), comment 7024361515); this record proposes how, and what that decision left open.
 - Proposed by: the coding agent, for issue [#130](https://github.com/cloudhal-dev/podbay/issues/130)
 - Sources: read on 2026-11-20 and listed at the end. Every fact about the code was read on `main` at e856154. The facts about echarts were read in its published source at the 6.1.0 tags, its package metadata, its advisories and its handbook on that day, by a research agent and an independent reading in the audit (#132, comment 7025381113); each was checked against the installed Kumo files or the source. No Cloudflare fact is relied on (see "Within one request"). Nothing of this record is built.
 
-**Two choices for the lead, before anything else.** The record follows the lead's decision everywhere but in one place, and reads one word of it one way:
+**Two choices for the lead, before anything else.** The record follows the lead's decision everywhere but in one place, and reads one word of it one way. **The lead took both as proposed on 2026-11-20: every member (B1), and the audit log's entries about the instance (A1).**
 
 1. **Who sees a mailbox's figures.** The lead's words name a mailbox's *owners*. This record proposes **every member** of the mailbox (option B1, decision 2): a member already reads every message and could count them, so the figures tell them nothing new, and a manager who is a reader of a mailbox then sees it, as the lead's first point asks. The other way, owners only (option B2), is written out and costs one new right.
 2. **What "activity" is.** This record reads the instance's "activity" as **the audit log's entries about the instance**: people, invitations, memberships, keys, recovery, mailboxes made and deleted, counted by kind and day (decision 1). If the lead meant mail, that is option A2, and the record explains why it is not proposed: an instance's total of mail gives one mailbox's traffic away when there are few.
