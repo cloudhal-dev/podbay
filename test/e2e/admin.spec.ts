@@ -36,6 +36,12 @@ test("an owner opens the administration area from their mailboxes, and People li
 	await expect(page.getByRole("heading", { name: "All mailboxes" })).toHaveCount(0);
 	await expect(page.getByRole("button", { name: "New Mailbox" })).toHaveCount(0);
 	await page.getByRole("link", { name: "Administration" }).click();
+	// The area opens on its Overview; People is a part of its rail.
+	await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+	await page
+		.getByRole("navigation", { name: "Administration" })
+		.getByRole("link", { name: "People" })
+		.click();
 
 	await expect(page).toHaveURL(/\/admin\/people$/);
 	await expect(page.getByRole("heading", { name: "People", level: 1 })).toBeVisible();
@@ -65,9 +71,9 @@ test("an owner opens the administration area from their mailboxes, and People li
 	// The way back to mail is always there.
 	await page.getByRole("link", { name: "Back to mail" }).click();
 	await expect(page.getByRole("heading", { name: "Mailboxes", exact: true })).toBeVisible();
-	// The area opens on People, and its addresses can be linked to.
+	// The area opens on its Overview.
 	await page.goto("/admin");
-	await expect(page).toHaveURL(/\/admin\/people$/);
+	await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
 });
 
 test("a person who only has a mailbox sees no way into the area, and its addresses answer as not found", async ({
@@ -160,6 +166,49 @@ test("Mailboxes lists every mailbox, makes one, and has a page for each with its
 
 	// The old members address takes a manager to the mailbox's page.
 	await page.goto(`/members/${encodeURIComponent(app.account.mailbox)}`);
+	// … on the Members tab: it was the address of the members.
 	await expect.poll(() => pathNow(page)).toBe(`/admin/mailboxes/${app.account.mailbox}`);
-	await expect(page.getByRole("heading", { name: "Details" })).toBeVisible();
+	expect(new URL(page.url()).searchParams.get("tab")).toBe("members");
+	await expect(page.getByRole("heading", { name: "Who has access" })).toBeVisible();
+});
+
+test("the Overview counts people, mailboxes and invitations waiting, and leads to each list", async ({
+	page,
+	app,
+}) => {
+	await app.signIn();
+	await page.goto("/admin");
+	await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+	await expect(page).toHaveTitle("Overview - Administration - Podbay");
+	await expect(
+		page
+			.getByRole("navigation", { name: "Administration" })
+			.getByRole("link", { name: "Overview" }),
+	).toHaveAttribute("aria-current", "page");
+
+	// Each figure is what the area's own routes say at the same moment. That holds because the
+	// browser tests run one at a time (workers: 1): no other test invites or makes a mailbox
+	// between the page's reads and these.
+	const read = async (path: string) => (await (await page.request.get(path)).json()) as unknown[];
+	const people = (await read("/api/v1/users")).length;
+	const mailboxes = (await read("/api/v1/registry/mailboxes")).length;
+	const waiting = ((await read("/api/v1/invitations")) as { state: string }[]).filter(
+		(one) => one.state === "pending",
+	).length;
+	for (const [figure, value] of [
+		["People", people],
+		["Mailboxes", mailboxes],
+		["Invitations waiting", waiting],
+	] as const) {
+		await expect(
+			page.getByRole("region", { name: figure }).getByText(String(value), { exact: true }),
+			figure,
+		).toBeVisible();
+	}
+
+	await page
+		.getByRole("region", { name: "Mailboxes" })
+		.getByRole("link", { name: "See mailboxes" })
+		.click();
+	await expect(page.getByRole("heading", { name: "Mailboxes", level: 1 })).toBeVisible();
 });

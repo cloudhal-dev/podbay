@@ -18,7 +18,14 @@ export default function MembersRoute() {
 	const { data: me, isPending } = useMe();
 	if (isPending) return null;
 	if (managesInstance(me?.role)) {
-		return <Navigate to="/admin/mailboxes/$mailboxId" params={{ mailboxId }} replace />;
+		return (
+			<Navigate
+				to="/admin/mailboxes/$mailboxId"
+				params={{ mailboxId }}
+				search={{ tab: "members" }}
+				replace
+			/>
+		);
 	}
 	return (
 		<div className="min-h-screen bg-kumo-recessed">

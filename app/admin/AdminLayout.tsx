@@ -1,12 +1,13 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { Button, Sidebar, Tooltip } from "@cloudflare/kumo";
+import { Button, Sidebar, Tooltip, useSidebar } from "@cloudflare/kumo";
 import {
 	ArrowLeftIcon,
 	EnvelopeSimpleIcon,
 	type Icon,
 	ShieldCheckIcon,
+	SquaresFourIcon,
 	UsersIcon,
 } from "@phosphor-icons/react";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
@@ -25,7 +26,8 @@ interface AdminPart {
  * here, with its route in `./routes.ts`: one line each. The groups leave room for the parts to
  * come (an overview with figures, domains, activity).
  */
-export const ADMIN_GROUPS: readonly { label: string; parts: readonly AdminPart[] }[] = [
+export const ADMIN_GROUPS: readonly { label?: string; parts: readonly AdminPart[] }[] = [
+	{ parts: [{ to: "/admin", label: m("Overview"), icon: SquaresFourIcon }] },
 	{
 		label: m("Directory"),
 		parts: [
@@ -34,6 +36,16 @@ export const ADMIN_GROUPS: readonly { label: string; parts: readonly AdminPart[]
 		],
 	},
 ];
+
+/**
+ * Kumo's sidebar trigger, named in the app's own words: its own name is English. (Kumo's
+ * breadcrumbs, and the sidebar's sheet on a phone, name themselves "breadcrumb" and
+ * "Navigation" and take no name of ours.)
+ */
+function MenuTrigger() {
+	const { open } = useSidebar();
+	return <Sidebar.Trigger aria-label={open ? t("Hide the menu") : t("Show the menu")} />;
+}
 
 /** Whether a person may manage the instance. The Worker decides again on every request. */
 export const managesInstance = (role: string | undefined) => role === "owner" || role === "admin";
@@ -61,11 +73,15 @@ export default function AdminLayout() {
 				<Sidebar.Content>
 					<nav aria-label={t("Administration")}>
 						{ADMIN_GROUPS.map((group) => (
-							<Sidebar.Group key={group.label}>
-								<Sidebar.GroupLabel>{t(group.label)}</Sidebar.GroupLabel>
+							<Sidebar.Group key={group.parts[0]?.to}>
+								{group.label && <Sidebar.GroupLabel>{t(group.label)}</Sidebar.GroupLabel>}
 								<Sidebar.Menu>
 									{group.parts.map((part) => {
-										const active = pathname === part.to || pathname.startsWith(`${part.to}/`);
+										// The Overview is the area's own address; a part is active on its pages too.
+										const active =
+											part.to === "/admin"
+												? pathname === "/admin" || pathname === "/admin/"
+												: pathname === part.to || pathname.startsWith(`${part.to}/`);
 										return (
 											<Sidebar.MenuButton
 												key={part.to}
@@ -93,7 +109,7 @@ export default function AdminLayout() {
 			</Sidebar>
 			<div className="flex min-h-0 min-w-0 flex-1 flex-col">
 				<header className="flex h-14 shrink-0 items-center gap-2 border-b border-kumo-line bg-kumo-base px-4">
-					<Sidebar.Trigger />
+					<MenuTrigger />
 					<span className="flex-1" />
 					{/* The person's own account, as the mail screens' bar has it. */}
 					<Tooltip content={t("Sign-in and security")} side="bottom" asChild>

@@ -29,6 +29,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"No emails": "E-posta yok",
 	"No end date": "Bitiş tarihi yok",
 	"No highlight": "Vurgu yok",
+	"No invitation is waiting.": "Bekleyen davet yok.",
 	"No labels yet. Make one in the rail.": "Henüz etiket yok. Kenar çubuğundan bir tane oluşturun.",
 	"No mailbox selected.": "Posta kutusu seçilmedi.",
 	"No mailboxes yet": "Henüz posta kutusu yok",
@@ -80,6 +81,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	Orange: "Turuncu",
 	"Order of a list": "Liste sırası",
 	"Original message": "Özgün ileti",
+	Overview: "Genel bakış",
 	Owner: "Sahip",
 	Owners: "Sahipler",
 	Passkey: "Geçiş anahtarı",
@@ -158,6 +160,9 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Search options": "Arama seçenekleri",
 	"Search results for {query}": "{query} için arama sonuçları",
 	Searching: "Aranıyor",
+	"See invitations": "Davetleri gör",
+	"See mailboxes": "Posta kutularını gör",
+	"See people": "Kişileri gör",
 	"See the members": "Üyeleri gör",
 	Select: "Seç",
 	"Select all conversations on this page": "Bu sayfadaki tüm yazışmaları seç",
@@ -193,6 +198,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"Show original": "Özgün iletiyi göster",
 	"Show quoted text": "Alıntılanan metni göster",
 	"Show the button": "Düğmeyi göster",
+	"Show the menu": "Menüyü göster",
 	"Show the shortcuts": "Kısayolları göster",
 	"Show them": "Göster",
 	"Show this list": "Bu listeyi göster",
@@ -269,6 +275,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"The filters could not be saved": "Filtreler kaydedilemedi",
 	"The first {shown} of {size}. Download the message to have all of it.":
 		"{size} boyutundaki iletinin ilk {shown} kadarı. Tamamı için iletiyi indirin.",
+	"The instance at a glance, and what waits for you.":
+		"Kurulumun bir bakışta görünümü ve sizi bekleyenler.",
 	"The invitation could not be created.": "Davet oluşturulamadı.",
 	"The invitation could not be withdrawn": "Davet geri çekilemedi",
 	"The invitation is withdrawn": "Davet geri çekildi",
@@ -438,6 +446,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"While it is on, this mailbox answers people who write to it, by itself and in its own name. A sender is answered once in seven days. Lists, automatic mail, mail in Spam and mail that does not name this address are never answered, and nothing of the message that arrived is in the answer.":
 		"Açıkken bu posta kutusu, kendisine yazanları kendiliğinden ve kendi adıyla yanıtlar. Bir gönderen yedi günde bir kez yanıtlanır. Listeler, otomatik postalar, Spam'deki postalar ve bu adresi belirtmeyen postalar hiçbir zaman yanıtlanmaz; gelen iletiden hiçbir şey yanıtta yer almaz.",
 	"Who has access": "Kimlerin erişimi var",
+	"Who is invited": "Kimler davet edildi",
 	"Who may read this mailbox and send as it.":
 		"Bu posta kutusunu kimlerin okuyabileceği ve onun adına gönderebileceği.",
 	Withdraw: "Geri çek",
@@ -450,6 +459,7 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	Yellow: "Sarı",
 	You: "Siz",
 	"You are a member": "Üyesiniz",
+	"you are a member of {count}": "{count} tanesinin üyesisiniz",
 	"You are not a member of any mailbox yet. A mailbox owner can add you.":
 		"Henüz hiçbir posta kutusunun üyesi değilsiniz. Bir posta kutusu sahibi sizi ekleyebilir.",
 	"You are not a member of this mailbox, so you cannot read its mail. You manage who is. If you add yourself, that is recorded and its owners see it below.":
@@ -509,6 +519,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"{by} made {person} a sender": "{by}, {person} kişisini gönderen yaptı",
 	"{by} made {person} an owner": "{by}, {person} kişisini sahip yaptı",
 	"{by} removed {person}": "{by}, {person} kişisini çıkardı",
+	"{count} administrator": "{count} yönetici",
+	"{count} administrators": "{count} yönetici",
 	"{count} attachment": "{count} ek",
 	"{count} attachments": "{count} ek",
 	"{count} conversation": "{count} yazışma",
@@ -533,6 +545,8 @@ export const trNtoZ: Readonly<Record<string, string>> = {
 	"{count} message in this conversation": "Bu yazışmada {count} ileti",
 	"{count} messages": "{count} ileti",
 	"{count} messages in this conversation": "Bu yazışmada {count} ileti",
+	"{count} owner": "{count} sahip",
+	"{count} owners": "{count} sahip",
 	"{count} selected": "{count} seçili",
 	"{done} of {total} done so far. Leaving this page stops it where it is; what was done stays done.":
 		"Şimdiye kadar {total} içinden {done} tamamlandı. Bu sayfadan ayrılmak işlemi olduğu yerde durdurur; yapılanlar yapılmış olarak kalır.",

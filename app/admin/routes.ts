@@ -1,10 +1,11 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
-import { type AnyRoute, createRoute, redirect } from "@tanstack/react-router";
+import { type AnyRoute, createRoute } from "@tanstack/react-router";
 import AdminLayout from "./AdminLayout";
 import MailboxesPage from "./MailboxesPage";
 import MailboxPage, { MAILBOX_TABS, type MailboxTab } from "./MailboxPage";
+import OverviewPage from "./OverviewPage";
 import PeoplePage from "./PeoplePage";
 
 /**
@@ -13,14 +14,7 @@ import PeoplePage from "./PeoplePage";
  */
 export function adminRoutes(root: AnyRoute) {
 	const area = createRoute({ getParentRoute: () => root, path: "/admin", component: AdminLayout });
-	// The area opens on its first part until it has an overview of its own.
-	const index = createRoute({
-		getParentRoute: () => area,
-		path: "/",
-		beforeLoad: () => {
-			throw redirect({ to: "/admin/people", replace: true });
-		},
-	});
+	const index = createRoute({ getParentRoute: () => area, path: "/", component: OverviewPage });
 	const people = createRoute({ getParentRoute: () => area, path: "people", component: PeoplePage });
 	const mailboxes = createRoute({
 		getParentRoute: () => area,
