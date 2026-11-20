@@ -10,10 +10,10 @@ import {
 	StarIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
+import { formatListDate } from "@podbay/i18n/dates";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { BulkFilter } from "shared/bulk";
-import { formatListDate } from "shared/dates";
 import { Folders } from "shared/folders";
 import {
 	type ConversationActions,

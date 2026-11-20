@@ -41,6 +41,7 @@
 		"@modelcontextprotocol/server": "catalog:",
 		"@phosphor-icons/react": "catalog:",
 		"@podbay/contract": "workspace:*",
+		"@podbay/i18n": "workspace:*",
 		"@podbay/platform": "workspace:*",
 		"@tanstack/react-query": "catalog:",
 		"@tanstack/react-router": "catalog:",
