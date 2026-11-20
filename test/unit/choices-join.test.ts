@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { joinTables, PERSON_CHOICES } from "../../packages/contract/choices.ts";
-import { CHOICES } from "../../shared/choices.ts";
+import { CHOICES, DEVICE_KEYS, TRAVELLING } from "../../shared/choices.ts";
 import { MAIL_CHOICES } from "../../shared/mail-choices.ts";
 
 const yesOrNo = { values: [true, false], initial: true, kept: "person" } as const;
@@ -36,6 +36,14 @@ describe("joining the tables of choices", () => {
 		expect(() => joinTables<{ a: boolean }>(["a"], [{ a: yesOrNo, b: yesOrNo }])).toThrow(
 			"the order leaves out the choices b",
 		);
+	});
+
+	it("keeps with the device exactly the choices its type keeps from travelling", () => {
+		const onDevice = Object.entries(CHOICES)
+			.filter(([, rule]) => rule.kept === "device")
+			.map(([key]) => key);
+		expect(onDevice).toEqual([...DEVICE_KEYS]);
+		expect([...TRAVELLING, ...DEVICE_KEYS].sort()).toEqual(Object.keys(CHOICES).sort());
 	});
 
 	it("gives each choice the rule of the table that has it, and nothing else", () => {

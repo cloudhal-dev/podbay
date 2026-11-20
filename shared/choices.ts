@@ -71,8 +71,17 @@ const ORDER: readonly ChoiceKey[] = [
 
 export const CHOICES = joinTables<Choices>(ORDER, [PERSON_CHOICES, MAIL_CHOICES]);
 
-/** The choices that travel with the person. The others never leave the browser. */
-export type TravellingKey = Exclude<ChoiceKey, "density" | "readingPane" | "notifications">;
+/**
+ * The choices kept with the device: they never leave the browser. The table says the same of
+ * each (`kept: "device"`), and a test holds that the two agree.
+ */
+export const DEVICE_KEYS = [
+	"density",
+	"readingPane",
+	"notifications",
+] as const satisfies readonly ChoiceKey[];
+/** The choices that travel with the person. */
+export type TravellingKey = Exclude<ChoiceKey, (typeof DEVICE_KEYS)[number]>;
 /** What is kept with the account: the version, and only what the person chose. */
 export type ChoicesDocument = ChoicesDocumentOf<Choices, TravellingKey>;
 /** A change: only the keys that changed. `null` takes a choice back to its default. */
