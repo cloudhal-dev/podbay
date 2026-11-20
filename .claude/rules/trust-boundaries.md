@@ -32,6 +32,8 @@ paths:
   - "shared/rules.ts"
   - "shared/rules-schema.ts"
   - "workers/lib/rule-facts.ts"
+  - "packages/platform/log.ts"
+  - "packages/*/package.json"
   - "migrations/**"
   - ".github/**"
   - ".claude/settings.json"

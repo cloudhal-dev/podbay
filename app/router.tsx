@@ -7,6 +7,7 @@
  */
 import { Button, Empty, LinkProvider, Toasty, TooltipProvider } from "@cloudflare/kumo";
 import { WarningIcon } from "@phosphor-icons/react";
+import { errorFields, log } from "@podbay/platform/log";
 import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	createRootRoute,
@@ -19,7 +20,6 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { forwardRef, useEffect, useState } from "react";
-import { errorFields, log } from "shared/log";
 import { adminRoutes } from "~/admin/routes";
 import { ComposeSession } from "~/components/ComposeSession";
 import { ConfirmProvider } from "~/components/Confirm";

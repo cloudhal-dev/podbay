@@ -3,6 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { errorFields, log } from "@podbay/platform/log";
 /**
  * A message arrives (ADR-0015, decision 5). The steps, in this order and no other:
  *
@@ -26,7 +27,6 @@
  * in the bucket that no row of the mailbox names.
  */
 import PostalMime, { type Email } from "postal-mime";
-import { errorFields, log } from "../shared/log";
 import { MAX_ORIGINAL_BYTES, type Unparsed } from "../shared/original";
 import { mailboxExists } from "./auth/store";
 import type { MailboxDO } from "./durableObject";

@@ -74,6 +74,18 @@ describe("imports", () => {
 		expect(importProblems("workers/x.ts", 'import { a } from "../test/helpers";')).toHaveLength(1);
 	});
 
+	it("holds a package as Worker code that imports no product code", () => {
+		const pkg = "packages/platform/x.ts";
+		expect(importProblems(pkg, 'import { readFileSync } from "node:fs";')).toHaveLength(1);
+		expect(importProblems(pkg, 'import { a } from "~/components/A";')).toHaveLength(1);
+		expect(importProblems(pkg, 'import { a } from "../../app/lib/a";')).toHaveLength(1);
+		expect(importProblems(pkg, 'import { a } from "../../workers/lib/a";')).toHaveLength(1);
+		expect(importProblems(pkg, 'import { a } from "../../shared/mail-frame.ts";')).toHaveLength(1);
+		expect(importProblems(pkg, 'import { a } from "shared/folders";')).toHaveLength(1);
+		expect(importProblems(pkg, 'import { log } from "@podbay/platform/log";')).toEqual([]);
+		expect(importProblems(pkg, 'import { z } from "zod";')).toEqual([]);
+	});
+
 	it("accepts shared code and package imports", () => {
 		expect(
 			importProblems(

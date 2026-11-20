@@ -1,5 +1,5 @@
+import { errorFields, logLine, redact } from "@podbay/platform/log";
 import { describe, expect, it } from "vitest";
-import { errorFields, logLine, redact } from "../../shared/log.ts";
 
 describe("redact", () => {
 	it("masks every address", () => {

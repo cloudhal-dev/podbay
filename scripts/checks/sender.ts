@@ -15,7 +15,7 @@ import { type Check, read, repoFiles } from "./lib.ts";
 export const LEAVING = "workers/durableObject/leaving.ts";
 const ADAPTER = "workers/email-sender.ts";
 const HANDOVER = "workers/durableObject/submissions.ts";
-const SHIPPED = /^(workers|shared)\/.*\.ts$/;
+const SHIPPED = /^(workers|shared|packages)\/.*\.ts$/;
 
 /** Comments are prose about the rule, not code that breaks it. */
 function withoutComments(source: string): string {

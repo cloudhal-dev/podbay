@@ -11,11 +11,11 @@
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { log } from "@podbay/platform/log";
 import { generateText, stepCountIs } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Folders } from "../../shared/folders.ts";
-import { log } from "../../shared/log.ts";
 import {
 	AGENT_TOOL_NAMES,
 	AgentSendRefused,

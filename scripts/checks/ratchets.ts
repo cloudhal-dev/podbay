@@ -14,9 +14,9 @@ import { existsSync, writeFileSync } from "node:fs";
 import { type Check, read, readJson, repoFiles } from "./lib.ts";
 
 export const MAX_LINES = 800;
-const SOURCE = /^(app|workers|shared|scripts|test)\/.*\.(ts|tsx)$/;
+const SOURCE = /^(app|workers|shared|packages|scripts|test)\/.*\.(ts|tsx)$/;
 const CONSOLE = /\bconsole\.(log|info|warn|error|debug)\(/g;
-const LOG_MODULE = "shared/log.ts";
+const LOG_MODULE = "packages/platform/log.ts";
 
 interface Ratchets {
 	lintWarnings: number;

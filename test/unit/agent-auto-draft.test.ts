@@ -9,10 +9,10 @@
  * binding. No real model, no real mail.
  */
 
+import { log } from "@podbay/platform/log";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Folders } from "../../shared/folders.ts";
-import { log } from "../../shared/log.ts";
 import {
 	BLOCKED_BODY,
 	BLOCKED_THREAD,

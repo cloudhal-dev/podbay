@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { errorFields, log } from "@podbay/platform/log";
 /**
  * Invitations, the people on the instance, and the members of a mailbox.
  *
@@ -10,7 +11,6 @@
  */
 import { Hono } from "hono";
 import { z } from "zod";
-import { errorFields, log } from "../../shared/log";
 import { isMailboxRole } from "../auth/authorize";
 import { AuthNotConfigured, authFor } from "../auth/instance";
 import type { ApiContext } from "../auth/middleware";

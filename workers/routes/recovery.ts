@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { errorFields, log } from "@podbay/platform/log";
 /**
  * Recovery links: issued by an owner or an administrator for another person, or by the operator
  * for an owner; used by the person who lost access. The link is shown once to whoever issued it,
@@ -8,7 +9,6 @@
  */
 import { Hono } from "hono";
 import { z } from "zod";
-import { errorFields, log } from "../../shared/log";
 import { AuthNotConfigured, authFor } from "../auth/instance";
 import type { ApiContext } from "../auth/middleware";
 import { MIN_PASSWORD_LENGTH } from "../auth/options";

@@ -14,10 +14,10 @@
  * `test/workerd-agent/sending.test.ts` prove it.
  */
 
+import { log } from "@podbay/platform/log";
 import { type Tool, tool } from "ai";
 import { z } from "zod";
 import { FOLDER_TOOL_DESCRIPTION, Folders } from "../../shared/folders";
-import { log } from "../../shared/log";
 import {
 	toolDiscardDraft,
 	toolDraftEmail,

@@ -4,6 +4,7 @@
 // Modified by the Podbay contributors.
 
 import { AIChatAgent, type OnChatMessageOptions } from "@cloudflare/ai-chat";
+import { errorFields, log } from "@podbay/platform/log";
 import { createAI } from "agents/models/ai-sdk";
 import {
 	convertToModelMessages,
@@ -14,7 +15,6 @@ import {
 	type UIMessage,
 } from "ai";
 import { z } from "zod";
-import { errorFields, log } from "../../shared/log";
 import { mailboxSettings } from "../auth/store";
 import { MODELS } from "../lib/models";
 import type { Env } from "../types";
