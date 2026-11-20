@@ -238,9 +238,11 @@ test("a sign-in is not undone by the answer to a 'who am I' asked before it", as
 	);
 	await page.getByRole("button", { name: "Sign in" }).click();
 	await signedIn;
+	// The page asks again before that answer arrives. Without the fix it never does: it waits for
+	// the question on its way, so this holds whichever reaches the page first afterwards.
+	await expect.poll(() => asked, "who am I was asked again after the sign-in").toBeGreaterThan(1);
 	// The first question, sent before the sign-in, is answered only now.
 	release();
 	await expect(page.getByText(`Signed in as ${app.account.email}`)).toBeVisible();
-	expect(asked, "who am I was asked again after the sign-in").toBeGreaterThan(1);
 	await page.unroute(/\/api\/v1\/me$/);
 });

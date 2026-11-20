@@ -46,10 +46,12 @@ export const sessionKeys = {
  * query has no answer yet (a refetch cancels one only when there is an answer to keep), so a
  * "who am I" sent before signing in would come back "nobody" after it (#140).
  *
- * Every change of the session goes through here: signing in (the sign-in screen, an accepted
- * invitation, the first owner's setup), a recovery, which ends every session, and confirming who
- * one is, which changes what the session may do (`only`: the person alone). Signing out clears
- * everything instead (`queryClient.clear()`), which no answer on its way can reach.
+ * The changes of the session the app itself makes go through here: signing in (the sign-in
+ * screen, an accepted invitation, the first owner's setup), a recovery, which ends every session,
+ * and confirming who one is or changing the second step, which change what the session may do
+ * (`only`: the person alone). Signing out clears everything instead (`queryClient.clear()`),
+ * which no answer on its way can reach. A session that ends by itself or in another browser is
+ * not a change the app makes: nothing here is called for it.
  */
 export async function sessionChanged(client: QueryClient, only?: QueryKey): Promise<void> {
 	const filters = only === undefined ? {} : { queryKey: only };
