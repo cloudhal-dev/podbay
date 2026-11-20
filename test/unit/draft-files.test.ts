@@ -27,12 +27,9 @@ vi.mock("~/services/api", () => ({
 
 const MAILBOX = "box@example.com";
 let hook: ReturnType<typeof useDraftFiles>;
+const said = vi.fn<(message: string | null) => void>();
 function Harness() {
-	hook = useDraftFiles(
-		MAILBOX,
-		async () => "draft-1",
-		() => {},
-	);
+	hook = useDraftFiles(MAILBOX, async () => "draft-1", said);
 	return null;
 }
 
@@ -45,12 +42,14 @@ const settledWithin = () =>
 
 let root: Root;
 let answerUpload: () => void;
+let failUpload: () => void;
 beforeEach(async () => {
 	vi.mocked(api.declareDraftFile).mockResolvedValue({ id: "f1", filename: "notes.txt" } as never);
 	vi.mocked(api.uploadDraftFile).mockImplementation(
 		() =>
-			new Promise<void>((resolve) => {
+			new Promise<void>((resolve, reject) => {
 				answerUpload = resolve;
+				failUpload = () => reject(new Error("the upload failed"));
 			}) as never,
 	);
 	vi.mocked(api.removeDraftFile).mockResolvedValue(undefined as never);
@@ -94,6 +93,57 @@ describe("a file taken away while it is attached", () => {
 		expect(await settledWithin()).toBe("settled");
 		expect(api.removeDraftFile).toHaveBeenCalledTimes(1);
 		expect(api.removeDraftFile).toHaveBeenCalledWith(MAILBOX, "draft-1", "f1");
+	});
+
+	it("is taken out when its upload failed and the click acts on the drawing from before", async () => {
+		const drawn = await attachAndTakeTheDrawnFile();
+		await act(async () => failUpload());
+		await vi.waitFor(() => expect(hook.files).toEqual([]));
+		await act(async () => hook.removeFile(drawn));
+		expect(await settledWithin()).toBe("settled");
+		// It was declared: what the draft holds of it is taken out.
+		expect(api.removeDraftFile).toHaveBeenCalledWith(MAILBOX, "draft-1", "f1");
+	});
+
+	it("opens no removal when it was never declared and the click acts on the drawing from before", async () => {
+		let refuse = () => {};
+		vi.mocked(api.declareDraftFile).mockImplementation(
+			() =>
+				new Promise((_, reject) => {
+					refuse = () => reject(new Error("refused"));
+				}) as never,
+		);
+		await act(async () => {
+			void hook.addFiles([new File(["notes"], "notes.txt", { type: "text/plain" })]);
+		});
+		const drawn = hook.files[0];
+		if (!drawn) throw new Error("the file was not drawn");
+		await act(async () => refuse());
+		await vi.waitFor(() => expect(hook.files).toEqual([]));
+		await act(async () => hook.removeFile(drawn));
+		expect(await settledWithin()).toBe("settled");
+		expect(api.removeDraftFile).not.toHaveBeenCalled();
+	});
+
+	it("is one removal however often it is clicked, and says nothing when the second is refused", async () => {
+		await attachAndTakeTheDrawnFile();
+		await act(async () => answerUpload());
+		await vi.waitFor(() => expect(hook.files[0]?.uploading).toBeNull());
+		const now = hook.files[0];
+		if (!now) throw new Error("the file is gone");
+		// A second DELETE of a file that already left is refused by the Worker.
+		vi.mocked(api.removeDraftFile)
+			.mockResolvedValueOnce(undefined as never)
+			.mockRejectedValueOnce(new Error("not found"));
+		said.mockClear();
+		await act(async () => {
+			void hook.removeFile(now);
+			void hook.removeFile(now);
+		});
+		expect(await settledWithin()).toBe("settled");
+		expect(api.removeDraftFile).toHaveBeenCalledTimes(1);
+		expect(hook.files).toEqual([]);
+		expect(said.mock.calls.filter(([message]) => message !== null)).toEqual([]);
 	});
 
 	it("is taken out once when the click comes after the drawing caught up", async () => {
