@@ -352,6 +352,9 @@ importers:
       '@podbay/i18n':
         specifier: workspace:*
         version: link:packages/i18n
+      '@podbay/mail':
+        specifier: workspace:*
+        version: link:modules/mail
       '@podbay/platform':
         specifier: workspace:*
         version: link:packages/platform
@@ -485,6 +488,8 @@ importers:
       wrangler:
         specifier: 'catalog:'
         version: 4.162.0(@types/node@24.19.2)
+
+  modules/mail: {}
 
   packages/contract: {}
 

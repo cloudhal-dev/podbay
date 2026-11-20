@@ -23,6 +23,7 @@
 		"workers/**/*",
 		"shared/**/*",
 		"packages/**/*",
+		"modules/**/*",
 		"scripts/**/*",
 		"worker-configuration.d.ts"
 	],
