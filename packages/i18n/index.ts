@@ -20,18 +20,29 @@ export type Language = (typeof LANGUAGES)[number];
 export const LANGUAGE_NAMES: Record<Language, string> = { en: "English", tr: "Türkçe" };
 
 /**
- * The catalog of each language but English, handed in by the app (`addCatalog`): a catalog
- * belongs to the code whose words it holds (ADR-0018, decision 8), and the runtime names none.
+ * The catalogs of each language but English, by who handed them in (`addCatalog`): a catalog
+ * belongs to the code whose words it holds, and each part of the product hands in its own for
+ * the same language (ADR-0018, decision 8). The runtime names none.
  */
+const OWNED = new Map<Language, Map<string, Readonly<Record<string, string>>>>();
+/** Each language's catalogs put together, as `t` reads them. */
 const CATALOGS: Partial<Record<Language, Readonly<Record<string, string>>>> = {};
 
-/** Gives the runtime the words of one language. A language's words are handed in once. */
+/**
+ * Gives the runtime the words of one language from one owner (the app, a module, the shell).
+ * The same owner again replaces what it gave, as when the words are edited while the app runs;
+ * different owners are put together. That two owners never give one message different words is
+ * held by `pnpm static messages`, which reads every catalog, not by the page.
+ */
 export function addCatalog(
+	owner: string,
 	next: Exclude<Language, "en">,
 	catalog: Readonly<Record<string, string>>,
 ): void {
-	if (CATALOGS[next] !== undefined) throw new Error(`the catalog of ${next} is handed in twice`);
-	CATALOGS[next] = catalog;
+	const owners = OWNED.get(next) ?? new Map<string, Readonly<Record<string, string>>>();
+	owners.set(owner, catalog);
+	OWNED.set(next, owners);
+	CATALOGS[next] = Object.assign({}, ...owners.values());
 }
 
 let language: Language = "en";

@@ -86,6 +86,21 @@ describe("imports", () => {
 		expect(importProblems(pkg, 'import { z } from "zod";')).toEqual([]);
 	});
 
+	it("lets only the app's entry for words take them from the runtime", () => {
+		const screen = "app/components/A.tsx";
+		expect(importProblems(screen, 'import { t } from "@podbay/i18n";')).toHaveLength(1);
+		expect(
+			importProblems(screen, 'import { t } from "../../packages/i18n/index.ts";'),
+		).toHaveLength(1);
+		expect(importProblems(screen, 'import { t } from "~/i18n";')).toEqual([]);
+		expect(importProblems(screen, 'import { formatListDate } from "@podbay/i18n/dates";')).toEqual(
+			[],
+		);
+		expect(
+			importProblems("app/i18n/index.ts", 'import { addCatalog } from "@podbay/i18n";'),
+		).toEqual([]);
+	});
+
 	it("accepts shared code and package imports", () => {
 		expect(
 			importProblems(

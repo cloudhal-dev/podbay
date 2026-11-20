@@ -8,6 +8,6 @@
 import { addCatalog } from "@podbay/i18n";
 import { tr } from "./tr";
 
-addCatalog("tr", tr);
+addCatalog("app", "tr", tr);
 
 export * from "@podbay/i18n";
