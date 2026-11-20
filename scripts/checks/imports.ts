@@ -19,8 +19,13 @@
  *   an entry that module exports for its side (`@podbay/<m>/worker`, `/app`, `/shared`), and what
  *   its own `package.json` declares. A module's `worker/` may also use the platform's own
  *   modules (`cloudflare:`);
- * - the shell (`workers/`, `app/`, `shared/`) reaches a module only by an entry it exports, never
- *   by a path into it.
+ * - the shell reaches a module only by an entry it exports for the shell's own side (`workers/`
+ *   takes `./worker` and `./shared`, `app/` takes `./app` and `./shared`, `shared/` takes
+ *   `./shared`), never by a path into it, however the path is written;
+ * - no import names a package or an alias and then climbs out of it with `..`;
+ * - in shipped code an `import(…)` takes one plain string, so this check can read it.
+ *
+ * Every package and module is named `@podbay/<its folder>`: the rule reads a name as a folder.
  *
  * One debt is let through, by name and count: the files of the shell's sign-in and access code
  * (`workers/auth/`) that mail's Worker side imports until that code is a package of its own
@@ -28,7 +33,7 @@
  * it. A count above its number is refused, and so is one below it until the number is lowered;
  * a file not listed is refused. The list only shrinks.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { posix } from "node:path";
 import { type Check, read, readJson, repoFiles } from "./lib.ts";
 
@@ -85,11 +90,16 @@ function packageName(spec: string): string {
 }
 
 /** The entries of another module a file of this side may take. */
-const ENTRIES: Readonly<Record<Side | "shell", readonly string[]>> = {
+const ENTRIES: Readonly<Record<Side, readonly string[]>> = {
 	worker: ["./worker", "./shared"],
 	app: ["./app", "./shared"],
 	shared: ["./shared"],
-	shell: ["./worker", "./app", "./shared"],
+};
+/** The side of the shell a file stands on: its Worker, its app, or the code both run. */
+const SHELL_SIDES: Readonly<Record<string, Side>> = {
+	workers: "worker",
+	app: "app",
+	shared: "shared",
 };
 
 /** What a package or a module imports that its path and its manifest do not allow. */
@@ -110,12 +120,18 @@ export function boundaryProblems(
 		const isModule = named !== null && world.manifest(`modules/${moduleName}`) !== null;
 		const entry = named ? `.${named[2] ?? ""}` : "";
 
+		if (!relative && spec.split("/").includes("..")) {
+			refuse(spec, "an import names a package or an alias and then climbs out of it");
+			continue;
+		}
 		if (place.kind === "shell") {
-			if (relative && target.startsWith("modules/")) {
-				refuse(spec, "the shell reaches a module only by an entry it exports");
-			}
-			if (isModule && !ENTRIES.shell.includes(entry)) {
-				refuse(spec, "the shell reaches a module only by an entry it exports");
+			const side = SHELL_SIDES[file.split("/")[0] ?? ""];
+			const intoModule = relative
+				? target.startsWith("modules/")
+				: !named && /(^|\/)modules\//.test(spec);
+			if (intoModule) refuse(spec, "the shell reaches a module only by an entry it exports");
+			else if (isModule && (side === undefined || !ENTRIES[side].includes(entry))) {
+				refuse(spec, "the shell takes a module's entry for its own side only");
 			}
 			continue;
 		}
@@ -173,6 +189,37 @@ export function boundaryProblems(
 	return problems;
 }
 
+/** Comments are prose about the code, not code. */
+function withoutComments(source: string): string {
+	return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
+}
+
+/** Every `import(` whose argument is not one plain string, which this check could not read. */
+export function unreadImports(file: string, source: string): string[] {
+	const code = withoutComments(source);
+	const problems: string[] = [];
+	for (const call of code.matchAll(/\bimport\s*\(/g)) {
+		const rest = code.slice((call.index ?? 0) + call[0].length);
+		if (/^\s*(["'])[^"'`\n]*\1\s*\)/.test(rest)) continue;
+		problems.push(`${file}: an import() this check cannot read; give it one plain string`);
+	}
+	return problems;
+}
+
+/** Every package and module named `@podbay/<its folder>`, since the rule reads a name as a folder. */
+export function manifestNameProblems(manifests: readonly [string, string | undefined][]): string[] {
+	const problems: string[] = [];
+	for (const [root, name] of manifests) {
+		const folder = root.split("/").pop() ?? "";
+		if (name !== `@podbay/${folder}`) {
+			problems.push(
+				`${root}/package.json: is named ${JSON.stringify(name)}, not "@podbay/${folder}"`,
+			);
+		}
+	}
+	return problems;
+}
+
 /** For each file of `workers/auth/` the given module files import, how many of them import it. */
 export function authImports(files: readonly [string, string][]): Map<string, number> {
 	const counts = new Map<string, number>();
@@ -225,9 +272,11 @@ export function importProblems(file: string, source: string, world: World = repo
 		/^(workers|shared|packages)\//.test(file) ||
 		(place.kind === "module" && (place.side === "worker" || place.side === "shared"));
 	const ui = file.startsWith("app/") || (place.kind === "module" && place.side === "app");
-	if (place.kind !== "shell") problems.push(...boundaryProblems(file, source, world));
-	else if (/^(workers|app|shared)\//.test(file))
+	const shipped = place.kind !== "shell" || /^(workers|app|shared)\//.test(file);
+	if (shipped) {
 		problems.push(...boundaryProblems(file, source, world));
+		problems.push(...unreadImports(file, source));
+	}
 	if (!worker && !ui) return problems;
 	for (const match of source.matchAll(IMPORT)) {
 		const spec = match[1] ?? "";
@@ -261,6 +310,15 @@ export const check: Check = {
 			if (file.startsWith("modules/")) modules.push([file, source]);
 		}
 		problems.push(...debtProblems(authImports(modules)));
+		const manifests: [string, string | undefined][] = [];
+		for (const kind of ["packages", "modules"]) {
+			if (!existsSync(kind)) continue;
+			for (const folder of readdirSync(kind)) {
+				const manifest = repository.manifest(`${kind}/${folder}`) as { name?: string } | null;
+				if (manifest !== null) manifests.push([`${kind}/${folder}`, manifest.name]);
+			}
+		}
+		problems.push(...manifestNameProblems(manifests));
 		return problems;
 	},
 };

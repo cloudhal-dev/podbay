@@ -5,6 +5,7 @@ import {
 	authImports,
 	debtProblems,
 	importProblems,
+	manifestNameProblems,
 	type World,
 } from "../../scripts/checks/imports.ts";
 import { checkLicences, licenceAllowed } from "../../scripts/checks/licences.ts";
@@ -100,6 +101,54 @@ describe("what a package or a module may import, from its own path and manifest"
 		expect(imports("app/router.tsx", "@podbay/mail/app")).toEqual([]);
 		expect(imports("workers/app.ts", "../modules/mail/worker/index.ts")).not.toEqual([]);
 		expect(imports("app/router.tsx", "@podbay/mail/app/routes/inbox")).not.toEqual([]);
+	});
+
+	it("holds the shell to its own side of a module: the Worker, the app and their shared code", () => {
+		expect(imports("workers/app.ts", "@podbay/mail/shared")).toEqual([]);
+		expect(imports("app/router.tsx", "@podbay/mail/shared")).toEqual([]);
+		expect(imports("shared/x.ts", "@podbay/mail/shared")).toEqual([]);
+		expect(imports("app/router.tsx", "@podbay/mail/worker")).not.toEqual([]);
+		expect(imports("workers/app.ts", "@podbay/mail/app")).not.toEqual([]);
+		expect(imports("shared/x.ts", "@podbay/mail/worker")).not.toEqual([]);
+		expect(imports("shared/x.ts", "@podbay/mail/app")).not.toEqual([]);
+	});
+
+	it("refuses a path into a module however it is written, and one that climbs out of a name", () => {
+		expect(imports("workers/app.ts", "modules/mail/worker/routes/x")).not.toEqual([]);
+		expect(imports("app/router.tsx", "~/../modules/mail/app/x")).not.toEqual([]);
+		expect(imports("app/router.tsx", "shared/../modules/mail/shared/x")).not.toEqual([]);
+		expect(imports("packages/ui/src/x.ts", "@podbay/ui/../../workers/lib/a")).not.toEqual([]);
+		expect(imports("modules/mail/worker/a.ts", "@podbay/i18n/../../app/x")).not.toEqual([]);
+	});
+
+	it("refuses in shipped code an import() whose argument is not one plain string", () => {
+		const dynamic = (file: string, call: string) =>
+			importProblems(file, `const m = await ${call};`, WORLD);
+		const where = "modules/mail";
+		for (const [file, call] of [
+			["workers/app.ts", `import(\`../${where}/worker/x\`)`],
+			["modules/mail/worker/a.ts", `import(\`../../../workers/lib/\${name}\`)`],
+			["app/router.tsx", "import(path)"],
+			["packages/ui/src/x.ts", 'import("./a" + b)'],
+		] as const) {
+			expect(dynamic(file, call), call).not.toEqual([]);
+		}
+		expect(dynamic("app/router.tsx", 'import("@podbay/mail/app")')).toEqual([]);
+		expect(dynamic("modules/mail/app/a.tsx", "import('./b')")).toEqual([]);
+		// Words about it in a comment are not an import.
+		expect(importProblems("app/x.ts", "// import(name) is refused\nexport {};", WORLD)).toEqual([]);
+	});
+
+	it("names every package and module after its folder", () => {
+		expect(
+			manifestNameProblems([
+				["packages/platform", "@podbay/platform"],
+				["modules/mail", "@podbay/mail"],
+			]),
+		).toEqual([]);
+		expect(manifestNameProblems([["packages/ui", "@podbay/platform"]])).toHaveLength(1);
+		expect(manifestNameProblems([["modules/mail", "mail"]])).toHaveLength(1);
+		expect(manifestNameProblems([["modules/mail", undefined]])).toHaveLength(1);
 	});
 
 	it("lets a module's Worker side import the shell's sign-in and access code only as a counted debt", () => {
