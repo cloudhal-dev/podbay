@@ -625,7 +625,7 @@ test("settings are in tabs; a person's choices take effect at once and stay, a m
 	const base = `/mailbox/${encodeURIComponent(app.account.mailbox)}`;
 	await page.goto(`${base}/settings`);
 	const tabs = page.getByRole("navigation", { name: "Settings" });
-	await expect(tabs.getByRole("link", { name: "General" })).toHaveAttribute("aria-current", "page");
+	await expect(tabs.getByRole("tab", { name: "General" })).toHaveAttribute("aria-selected", "true");
 
 	// A page of ten.
 	await choose(page.getByRole("combobox", { name: "Conversations on a page" }), "10");
@@ -683,7 +683,7 @@ test("settings are in tabs; a person's choices take effect at once and stay, a m
 	await page.getByRole("button", { name: "Save signature" }).click();
 
 	// Labels are managed here as well as in the rail.
-	await tabs.getByRole("link", { name: "Labels" }).click();
+	await tabs.getByRole("tab", { name: "Labels" }).click();
 	await page.getByRole("button", { name: "New label" }).click();
 	const dialog = page.getByRole("dialog", { name: "New label" });
 	await dialog.getByLabel("Name").fill("From settings");

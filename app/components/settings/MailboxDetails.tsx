@@ -72,14 +72,14 @@ export default function MailboxDetails({ mailbox }: { mailbox: Mailbox }) {
 					<div className="min-w-0 flex-1">
 						<Input
 							aria-label={t("Name")}
-							size="sm"
+							className="w-full"
 							value={name}
 							disabled={!isOwner}
 							onChange={(event) => setName(event.target.value)}
 						/>
 					</div>
 					{isOwner && (
-						<Button type="submit" variant="primary" size="sm" loading={updateMailbox.isPending}>
+						<Button type="submit" variant="primary" loading={updateMailbox.isPending}>
 							{t("Save")}
 						</Button>
 					)}
@@ -106,7 +106,7 @@ export default function MailboxDetails({ mailbox }: { mailbox: Mailbox }) {
 				)}
 			>
 				{isOwner ? (
-					<Button variant="secondary" size="sm" loading={forgetting} onClick={forgetAddresses}>
+					<Button variant="secondary" loading={forgetting} onClick={forgetAddresses}>
 						{t("Forget all addresses")}
 					</Button>
 				) : (

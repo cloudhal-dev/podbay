@@ -42,7 +42,7 @@ test("a person chooses Turkish, and the screens, the notes and the dates follow"
 			.getByRole("radiogroup", { name: "Dil" })
 			.getByRole("radio", { name: "Türkçe", exact: true }),
 	).toBeFocused();
-	await expect(page.getByRole("link", { name: "Genel", exact: true })).toBeVisible();
+	await expect(page.getByRole("tab", { name: "Genel", exact: true })).toBeVisible();
 	await expect(page.getByRole("radiogroup", { name: "Language" })).toHaveCount(0);
 
 	// The list: places, the compose button, the search box. The message keeps its own words.

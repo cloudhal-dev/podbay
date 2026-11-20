@@ -3,7 +3,7 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
-import { Loader } from "@cloudflare/kumo";
+import { Loader, Tabs } from "@cloudflare/kumo";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 import AccountSettings from "~/components/settings/AccountSettings";
 import AssistantSettings from "~/components/settings/AssistantSettings";
@@ -53,26 +53,31 @@ export default function SettingsRoute() {
 		<div className="h-full overflow-y-auto">
 			<div className="px-4 pt-5 md:px-8">
 				<h1 className="m-0 text-[22px] font-normal leading-7 text-kumo-default">{t("Settings")}</h1>
-				<nav
-					aria-label={t("Settings")}
-					className="mt-4 flex gap-1 overflow-x-auto border-b border-kumo-line"
-				>
-					{tabs.map((tab) => (
-						<Link
-							key={tab.id}
-							to="/mailbox/$mailboxId/settings"
-							params={{ mailboxId }}
-							search={{ tab: tab.id }}
-							aria-current={current === tab.id ? "page" : undefined}
-							className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm no-underline ${
-								current === tab.id
-									? "border-kumo-brand font-semibold text-kumo-default"
-									: "border-transparent text-kumo-subtle hover:text-kumo-default"
-							}`}
-						>
-							{t(tab.name)}
-						</Link>
-					))}
+				{/* Kumo's tabs: a row wider than the column scrolls, and a mark at its edge says so (#118).
+				    Kumo 2.18.1 draws that mark on its segmented tabs only, and brings the section in use
+				    into view when the screen opens on it. Each section is a link, so it keeps its own
+				    address. */}
+				<nav aria-label={t("Settings")} className="mt-4">
+					<Tabs
+						variant="segmented"
+						// As wide as its sections, and never wider than the column: past that it scrolls.
+						className="w-fit max-w-full"
+						value={current}
+						labels={{ scrollStart: t("Earlier sections"), scrollEnd: t("Later sections") }}
+						tabs={tabs.map((tab) => ({
+							value: tab.id,
+							label: t(tab.name),
+							nativeButton: false,
+							render: (
+								<Link
+									to="/mailbox/$mailboxId/settings"
+									params={{ mailboxId }}
+									search={{ tab: tab.id }}
+									className="no-underline"
+								/>
+							),
+						}))}
+					/>
 				</nav>
 			</div>
 			<div className="max-w-3xl px-4 py-5 md:px-8">
