@@ -346,6 +346,9 @@ importers:
       '@phosphor-icons/react':
         specifier: 'catalog:'
         version: 2.1.10(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@podbay/platform':
+        specifier: workspace:*
+        version: link:packages/platform
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
@@ -476,6 +479,8 @@ importers:
       wrangler:
         specifier: 'catalog:'
         version: 4.162.0(@types/node@24.19.2)
+
+  packages/platform: {}
 
 packages:
 

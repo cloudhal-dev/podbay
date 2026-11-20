@@ -5,8 +5,8 @@
 
 import { Loader, Tabs } from "@cloudflare/kumo";
 import { PlugsIcon, RobotIcon } from "@phosphor-icons/react";
+import { errorFields, log } from "@podbay/platform/log";
 import { useEffect, useState } from "react";
-import { errorFields, log } from "shared/log";
 import { t } from "~/i18n";
 import { useFeatures } from "~/queries/config";
 import MCPPanel from "./MCPPanel";

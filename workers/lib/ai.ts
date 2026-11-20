@@ -16,7 +16,7 @@
  * here is ever run against a real model in a test.
  */
 
-import { errorFields, log } from "../../shared/log";
+import { errorFields, log } from "@podbay/platform/log";
 import { stripHtmlToText, textToHtml } from "./email-helpers";
 import { MODELS } from "./models";
 

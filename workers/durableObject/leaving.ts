@@ -24,7 +24,7 @@
  * A log line carries opaque ids, the state and a code: never the service's own words, which
  * may hold an address.
  */
-import { errorFields, log } from "../../shared/log";
+import { errorFields, log } from "@podbay/platform/log";
 import { type Outcome, outcomeOfRefusal, SENDING } from "../../shared/sending";
 import { AUTO_REPLY_RIGHT, type Standing, standingOf } from "../auth/standing";
 import { type SendEmailParams, sendEmail } from "../email-sender";

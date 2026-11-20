@@ -3,10 +3,10 @@
 //     https://opensource.org/licenses/Apache-2.0
 // Modified by the Podbay contributors.
 
+import { errorFields, log } from "@podbay/platform/log";
 import { routeAgentRequest } from "agents";
 import { Hono } from "hono";
 import { createRemoteJWKSet, jwtVerify } from "jose";
-import { errorFields, log } from "../shared/log";
 import { API_CACHE_CONTROL, API_HEADERS } from "../shared/security-headers";
 import { receiveEmail } from "./arrival";
 import { callerForToken, touchKey } from "./auth/keys";

@@ -19,12 +19,12 @@ import {
 	UserIcon,
 	WrenchIcon,
 } from "@phosphor-icons/react";
+import { errorFields, log } from "@podbay/platform/log";
 import { useParams } from "@tanstack/react-router";
 import type { DynamicToolUIPart, ToolUIPart, UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { errorFields, log } from "shared/log";
 import { useConfirm } from "~/components/Confirm";
 import { useUIStore } from "~/hooks/useUIStore";
 import { m, t } from "~/i18n";

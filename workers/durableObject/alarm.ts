@@ -20,7 +20,7 @@
  * catches every error of every kind and always sets the next alarm; and whenever the object
  * wakes for any reason, `repair` sets the alarm again when something waits and none is set.
  */
-import { errorFields, log } from "../../shared/log";
+import { errorFields, log } from "@podbay/platform/log";
 import { type Leaver, leave } from "./leaving";
 import { leavingTimes } from "./submissions";
 

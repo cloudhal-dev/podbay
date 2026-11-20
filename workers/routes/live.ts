@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { errorFields, log } from "@podbay/platform/log";
 /**
  * The connection on which a mailbox tells the open app that something changed (ADR-0013).
  *
@@ -13,7 +14,6 @@
  * request travels on, and the object keeps neither a session nor a role.
  */
 import { Hono } from "hono";
-import { errorFields, log } from "../../shared/log";
 import type { ApiContext } from "../auth/middleware";
 import type { MailboxDO } from "../durableObject";
 import { liveRequest } from "../durableObject/live";

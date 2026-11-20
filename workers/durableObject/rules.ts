@@ -18,7 +18,7 @@
  * Every query is a constant with bound values: nothing a person or a message wrote is ever
  * part of a statement, and nothing is compared as a pattern.
  */
-import { errorFields, log } from "../../shared/log";
+import { errorFields, log } from "@podbay/platform/log";
 import {
 	type BlockedSender,
 	evaluate,

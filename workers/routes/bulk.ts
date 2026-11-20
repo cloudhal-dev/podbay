@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { log } from "@podbay/platform/log";
 /**
  * One request acts on many conversations (ADR-0014).
  *
@@ -24,7 +25,6 @@ import {
 	namesSomething,
 } from "../../shared/bulk";
 import { isLabelId } from "../../shared/labels";
-import { log } from "../../shared/log";
 import type { ApiContext } from "../auth/middleware";
 import { writeAudit } from "../auth/store";
 import type { DeedNotice, DeedRefusal } from "../durableObject/deed-steps";

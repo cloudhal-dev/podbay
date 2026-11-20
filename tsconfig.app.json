@@ -1,5 +1,11 @@
 {
-	"include": ["app/**/*", "workers/**/*", "shared/**/*", "worker-configuration.d.ts"],
+	"include": [
+		"app/**/*",
+		"workers/**/*",
+		"shared/**/*",
+		"packages/**/*",
+		"worker-configuration.d.ts"
+	],
 	"compilerOptions": {
 		"composite": true,
 		"noEmit": true,

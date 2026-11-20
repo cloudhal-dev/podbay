@@ -21,7 +21,7 @@
 | No credential shapes, no tracked environment file | S6 | `pnpm static secrets` |
 | No Cloudflare REST call or account credential in shipped code | S14 | `pnpm static account` |
 | Mail HTML has one renderer; no HTML injection in the UI | S4 | A resource address that is neither embedded data nor remote (a relative one would resolve against the app) is taken out whatever the reader allowed; quoted text at the end of a reply is folded inside the same single pass. `pnpm static html`, `test/unit/mail-html.test.ts` (hostile bodies, real sanitiser) |
-| Logs only through `shared/log.ts`, addresses masked | S7 | Biome `noConsole`, `test/unit/log.test.ts` |
+| Logs only through `packages/platform/log.ts`, addresses masked | S7 | Biome `noConsole`, `test/unit/log.test.ts` |
 | Dependency direction | D5 | `pnpm static imports` |
 | No deployment configuration or workflow names a `cloudhal.com` host | ADR-0003 | `pnpm static hosts` |
 | The vendored security skill is unmodified | S18 | `pnpm static vendored` |

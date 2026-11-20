@@ -1,6 +1,7 @@
 // Copyright 2026 Cloudhal and the Podbay contributors
 // Licensed under the Apache 2.0 license found in the LICENSE file.
 
+import { errorFields, log } from "@podbay/platform/log";
 /**
  * The mailbox tells the open app that something changed, and nothing more (ADR-0013).
  *
@@ -34,7 +35,6 @@ import {
 	type LiveState,
 	liveMessage,
 } from "../../shared/live";
-import { errorFields, log } from "../../shared/log";
 
 /** What a connection keeps through the object's sleep. Neither a session nor a role. */
 interface Held {

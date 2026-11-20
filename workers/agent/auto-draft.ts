@@ -12,9 +12,9 @@
  * be read and scanned, never reaches the chat model.
  */
 
+import { errorFields, log } from "@podbay/platform/log";
 import { generateText, type LanguageModel, stepCountIs } from "ai";
 import { Folders } from "../../shared/folders";
-import { errorFields, log } from "../../shared/log";
 import { isPromptInjectionText, verifyDraft } from "../lib/ai";
 import { getMailboxStub, stripHtmlToText, textToHtml } from "../lib/email-helpers";
 import type { EmailFull, EmailMetadata } from "../lib/schemas";
