@@ -17,8 +17,8 @@ allowBuilds:
 # V1 (docs/engineering-rules.md, ADR-0018 decision 4): every version of the workspace is written
 # here once, exactly; a package names it as "catalog:". scripts/pins.ts holds both.
 catalog:
-  "@ai-sdk/provider": 4.0.38
-  "@ai-sdk/react": 4.0.177
+  "@ai-sdk/provider": 4.0.39
+  "@ai-sdk/react": 4.0.181
   "@better-auth/passkey": 1.7.25
   "@biomejs/biome": 2.6.8
   "@cloudflare/ai-chat": 0.12.2
@@ -48,7 +48,7 @@ catalog:
   "@types/react-dom": 19.3.0
   "@vitejs/plugin-react": 6.3.0
   agents: 0.33.0
-  ai: 7.0.173
+  ai: 7.0.177
   better-auth: 1.7.25
   dompurify: 3.4.18
   drizzle-orm: 0.45.4
