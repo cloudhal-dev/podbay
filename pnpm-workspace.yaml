@@ -19,7 +19,7 @@ allowBuilds:
 catalog:
   "@ai-sdk/provider": 4.0.38
   "@ai-sdk/react": 4.0.177
-  "@better-auth/passkey": 1.7.25
+  "@better-auth/passkey": 1.7.26
   "@biomejs/biome": 2.6.8
   "@cloudflare/ai-chat": 0.12.2
   "@cloudflare/kumo": 2.18.1
@@ -49,7 +49,7 @@ catalog:
   "@vitejs/plugin-react": 6.3.0
   agents: 0.33.0
   ai: 7.0.173
-  better-auth: 1.7.25
+  better-auth: 1.7.26
   dompurify: 3.4.18
   drizzle-orm: 0.45.4
   hono: 4.13.18
